@@ -110,7 +110,7 @@ export default function Home() {
             </div>
 
             {/* Top bar — Back + Logo + Help */}
-            <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-3 pb-2 relative">
+            <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-1 pb-0 relative">
               <div className="flex items-start justify-between w-full">
                 <div className="flex-1 flex justify-start pt-1 sm:pt-4">
                   <button
