@@ -27,14 +27,20 @@ let currentBGMTrack = 0;
 
 export const BGM_TRACK_NAMES = [
     "Feel The Beat",
-    "Retro Wave",
-    "Neon Beach",
-    "Miami Sun",
-    "Arcade Pop"
+    "Chill Wave",
+    "Bossa Antigua",
+    "Samba Isobel",
+    "Local Forecast",
+    "Kool Kats"
 ];
 
 const BGM_FILES = [
-    "/music/feel-the-beat.mp3"
+    "/music/feel-the-beat.mp3",
+    "/music/chill-wave.mp3",
+    "/music/bossa-antigua.mp3",
+    "/music/samba-isobel.mp3",
+    "/music/local-forecast-slower.mp3",
+    "/music/kool-kats.mp3"
 ];
 
 function stopMP3() {
@@ -50,9 +56,7 @@ function startMP3() {
             bgmAudio = new Audio();
             bgmAudio.loop = true;
         }
-
-        // We only have 1 actual MP3 file right now.
-        // Even if the UI cycles through track *names*, loop the same source safely.
+        // Load the selected track
         const targetSrc = BGM_FILES[currentBGMTrack % BGM_FILES.length] || BGM_FILES[0];
         if (!bgmAudio.src.endsWith(targetSrc)) {
             bgmAudio.src = targetSrc;
