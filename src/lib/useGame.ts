@@ -9,6 +9,7 @@ import {
     createInitialState,
     isAdjacentSwap,
     processTurn,
+    triggerSpecialTile,
     hasValidMoves,
 } from "./gameEngine";
 import {
@@ -83,12 +84,129 @@ export function useGame(): UseGameReturn {
         setIsAnimating(false);
     }, []);
 
+    // Shared helper: apply a TurnResult to game state with effects
+    const applyResult = useCallback((
+        prev: GameState,
+        result: TurnResult,
+        effectPos: Position,
+        costMove: boolean,
+    ): GameState => {
+        const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
+        const newScore = prev.score + result.scoreGained;
+        const newMatchCount = prev.matchCount + result.matchesFound.length;
+        const newMaxCombo = Math.max(prev.maxCombo, result.combo);
+        const maxMatchSize = Math.max(...result.matchesFound.map(m => m.positions.length));
+        const allPositions = result.matchesFound.flatMap(m => m.positions);
+
+        // Play match sounds (escalated)
+        playMatchSound(result.scoreGained, result.combo, maxMatchSize);
+
+        // Play special tile sounds
+        for (const special of result.specialTilesCreated) {
+            setTimeout(() => {
+                if (special.type === "bomb") playBombSound();
+                if (special.type === "cosmic_blast") playCosmicBlastSound();
+            }, 200);
+        }
+
+        // Play cascade sounds
+        if (result.cascadeCount > 0) {
+            for (let i = 0; i < result.cascadeCount; i++) {
+                setTimeout(() => playCascadeSound(i + 1), 250 + i * 150);
+            }
+        }
+
+        // Calculate match intensity for visual effects
+        const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
+
+        // Set match effect for board to consume
+        setMatchEffect({
+            intensity,
+            scoreGained: result.scoreGained,
+            combo: result.combo,
+            maxMatchSize,
+            positions: allPositions,
+            timestamp: Date.now(),
+        });
+
+        // Haptic feedback on mobile
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+            const pattern =
+                intensity === "ultra" ? [50, 30, 80]
+                    : intensity === "mega" ? [50]
+                        : intensity === "big" ? [30]
+                            : [15];
+            navigator.vibrate(pattern);
+        }
+
+        // Clear match effect after animation
+        setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 1800 : intensity === "mega" ? 1200 : 800);
+
+        // Add score popup
+        const popupId = `popup_${popupCounter.current++}`;
+        setScorePopups((pops) => [
+            ...pops,
+            {
+                id: popupId,
+                value: result.scoreGained,
+                x: effectPos.col,
+                y: effectPos.row,
+            },
+        ]);
+
+        // Remove popup after animation
+        setTimeout(() => {
+            setScorePopups((pops) => pops.filter((p) => p.id !== popupId));
+        }, 2000);
+
+        setLastTurnResult(result);
+
+        // Start animation sequence
+        setIsAnimating(true);
+        setTimeout(() => {
+            setIsAnimating(false);
+        }, 500);
+
+        // Check game over
+        const gameOver = newMovesLeft <= 0 || !hasValidMoves(result.board);
+
+        if (gameOver) {
+            setTimeout(() => playGameOverSound(), 600);
+        }
+
+        return {
+            ...prev,
+            board: result.board,
+            score: newScore,
+            movesLeft: newMovesLeft,
+            combo: result.combo,
+            maxCombo: newMaxCombo,
+            selectedTile: null,
+            gamePhase: gameOver ? "gameover" : "playing",
+            matchCount: newMatchCount,
+        };
+    }, []);
+
     const selectTile = useCallback(
         (pos: Position) => {
             if (!state || state.gamePhase !== "playing" || isAnimating) return;
 
             setState((prev) => {
                 if (!prev) return prev;
+
+                // Check if clicked tile is a special tile — activate it immediately
+                const clickedCell = prev.board[pos.row]?.[pos.col];
+                if (clickedCell?.isSpecial) {
+                    const result = triggerSpecialTile(prev.board, pos, prev.gameBadges);
+                    if (result) {
+                        // Play the appropriate special tile sound
+                        if (clickedCell.isSpecial === "bomb") playBombSound();
+                        else if (clickedCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
+                        else playBombSound(); // vibestreak uses bomb-like sound
+
+                        return applyResult(prev, result, pos, true);
+                    }
+                }
 
                 // No tile selected yet — select this one
                 if (!prev.selectedTile) {
@@ -125,109 +243,10 @@ export function useGame(): UseGameReturn {
                     return { ...prev, selectedTile: null };
                 }
 
-                // Valid move — update state
-                const newMovesLeft = prev.movesLeft - 1;
-                const newScore = prev.score + result.scoreGained;
-                const newMatchCount = prev.matchCount + result.matchesFound.length;
-                const newMaxCombo = Math.max(prev.maxCombo, result.combo);
-
-                // Find the largest match
-                const maxMatchSize = Math.max(...result.matchesFound.map(m => m.positions.length));
-
-                // Collect all matched positions for effects
-                const allPositions = result.matchesFound.flatMap(m => m.positions);
-
-                // Play match sounds (escalated)
-                playMatchSound(result.scoreGained, result.combo, maxMatchSize);
-
-                // Play special tile sounds
-                for (const special of result.specialTilesCreated) {
-                    setTimeout(() => {
-                        if (special.type === "bomb") playBombSound();
-                        if (special.type === "cosmic_blast") playCosmicBlastSound();
-                    }, 200);
-                }
-
-                // Play cascade sounds
-                if (result.cascadeCount > 0) {
-                    for (let i = 0; i < result.cascadeCount; i++) {
-                        setTimeout(() => playCascadeSound(i + 1), 250 + i * 150);
-                    }
-                }
-
-                // Calculate match intensity for visual effects
-                const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
-
-                // Set match effect for board to consume
-                setMatchEffect({
-                    intensity,
-                    scoreGained: result.scoreGained,
-                    combo: result.combo,
-                    maxMatchSize,
-                    positions: allPositions,
-                    timestamp: Date.now(),
-                });
-
-                // Haptic feedback on mobile
-                if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-                    const pattern =
-                        intensity === "ultra" ? [50, 30, 80]
-                            : intensity === "mega" ? [50]
-                                : intensity === "big" ? [30]
-                                    : [15];
-                    navigator.vibrate(pattern);
-                }
-
-                // Clear match effect after animation
-                setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 1800 : intensity === "mega" ? 1200 : 800);
-
-                // Add score popup
-                const popupId = `popup_${popupCounter.current++}`;
-                setScorePopups((pops) => [
-                    ...pops,
-                    {
-                        id: popupId,
-                        value: result.scoreGained,
-                        x: pos.col,
-                        y: pos.row,
-                    },
-                ]);
-
-                // Remove popup after animation
-                setTimeout(() => {
-                    setScorePopups((pops) => pops.filter((p) => p.id !== popupId));
-                }, 2000);
-
-                setLastTurnResult(result);
-
-                // Start animation sequence
-                setIsAnimating(true);
-                setTimeout(() => {
-                    setIsAnimating(false);
-                }, 500);
-
-                // Check game over
-                const gameOver =
-                    newMovesLeft <= 0 || !hasValidMoves(result.board);
-
-                if (gameOver) {
-                    setTimeout(() => playGameOverSound(), 600);
-                }
-
-                return {
-                    ...prev,
-                    board: result.board,
-                    score: newScore,
-                    movesLeft: newMovesLeft,
-                    combo: result.combo,
-                    maxCombo: newMaxCombo,
-                    selectedTile: null,
-                    gamePhase: gameOver ? "gameover" : "playing",
-                    matchCount: newMatchCount,
-                };
+                return applyResult(prev, result, pos, true);
             });
         },
-        [state, isAnimating]
+        [state, isAnimating, applyResult]
     );
 
     return {

@@ -75,11 +75,11 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
         fetch(`/api/scores?mode=${gameMode}`)
             .then(res => res.json())
             .then(data => {
-                if (data.scores && data.scores.length > 0) {
-                    setGlobalBest(data.scores[0].score);
-                    setGlobalBestUser(data.scores[0].username);
+                if (data.leaderboard && data.leaderboard.length > 0) {
+                    setGlobalBest(data.leaderboard[0].score);
+                    setGlobalBestUser(data.leaderboard[0].username);
                     if (username) {
-                        const userScore = data.scores.find((s: { username: string }) => s.username === username);
+                        const userScore = data.leaderboard.find((s: { username: string }) => s.username === username);
                         if (userScore) setPersonalBest(userScore.score);
                     }
                 }
