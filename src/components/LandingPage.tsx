@@ -34,7 +34,7 @@ function FloatingBadges() {
 
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const count = isMobile ? 15 : 35; // Drastically reduce from 320 to prevent iOS Safari memory crashes
+        const count = isMobile ? 40 : 85; // Increased density after removing drop-shadows
 
         // Extreme density badge fill
         const pooledBadges = Array(15).fill(BADGES).flat();
