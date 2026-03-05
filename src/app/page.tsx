@@ -11,7 +11,7 @@ import LandingPage from "@/components/LandingPage";
 import InstructionsModal from "@/components/InstructionsModal";
 import FlameBackground from "@/components/FlameBackground";
 import { ArrowLeft, HelpCircle, Volume2, VolumeX, Music } from "lucide-react";
-import { isMuted, toggleMute, startBGM, switchBGMTrack } from "@/lib/sounds";
+import { isMuted, toggleMute, startBGM, switchBGMTrack, unlockAudio } from "@/lib/sounds";
 import Image from "next/image";
 
 type AppView = "landing" | "playing";
@@ -43,6 +43,10 @@ export default function Home() {
     if (username) {
       setUserProfile({ username, avatarUrl: avatarUrl || "" });
     }
+
+    // Crucial for iOS/Safari: MUST interact with AudioContext during a direct click/tap event
+    unlockAudio();
+
     game.startGame(mode);
     setIsDealing(true);
     setView("playing");

@@ -12,6 +12,12 @@ export function toggleMute(muted: boolean): boolean {
     if (bgmAudio) {
         bgmAudio.volume = muted ? 0 : 0.3;
     }
+
+    // Explicitly try to resume AudioContext here — Safari requires this within a user gesture!
+    if (!muted && audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => { });
+    }
+
     return isMuted;
 }
 
@@ -24,14 +30,15 @@ export const BGM_TRACK_NAMES = [
     "Retro Wave",
     "Neon Beach",
     "Miami Sun",
-    "Arcade Pop",
-    "Sunset Drive",
-    "Starlight Cruise",
-    "Crystal Coast"
+    "Arcade Pop"
 ];
 
 const BGM_FILES = [
     "/music/feel-the-beat.mp3",
+    "/music/retro-wave.mp3",
+    "/music/neon-beach.mp3",
+    "/music/miami-sun.mp3",
+    "/music/arcade-pop.mp3"
 ];
 
 function stopMP3() {
@@ -44,11 +51,26 @@ function stopMP3() {
 function startMP3() {
     try {
         if (!bgmAudio) {
-            bgmAudio = new Audio(BGM_FILES[0]);
+            bgmAudio = new Audio();
             bgmAudio.loop = true;
-            bgmAudio.volume = isMuted ? 0 : 0.3;
         }
-        bgmAudio.play().catch(() => { });
+
+        // Only set src if it changed or is empty
+        const targetSrc = BGM_FILES[currentBGMTrack % BGM_FILES.length];
+        if (!bgmAudio.src.endsWith(targetSrc)) {
+            bgmAudio.src = targetSrc;
+            bgmAudio.load();
+        }
+
+        bgmAudio.volume = isMuted ? 0 : 0.3;
+
+        // Safari/iOS strict play policy requires handling the promise
+        const playPromise = bgmAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.warn("Autoplay prevented by browser:", error);
+            });
+        }
     } catch {
         // Audio not available
     }
@@ -56,7 +78,13 @@ function startMP3() {
 
 export function switchBGMTrack(): string {
     currentBGMTrack = (currentBGMTrack + 1) % BGM_TRACK_NAMES.length;
-    // Only first track has MP3, others are just labels for now
+
+    // Actually switch the playing music if unmuted!
+    if (bgmAudio) {
+        stopMP3();
+    }
+    startMP3();
+
     return BGM_TRACK_NAMES[currentBGMTrack];
 }
 
@@ -64,13 +92,20 @@ export function startBGM() {
     startMP3();
 }
 
+// Ensure AudioContext is only created immediately when needed, or unlocked on touch
+export function unlockAudio() {
+    getAudioContext();
+}
 
 function getAudioContext(): AudioContext {
     if (!audioCtx) {
-        audioCtx = new AudioContext();
+        const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+        }
     }
     if (audioCtx.state === "suspended") {
-        audioCtx.resume();
+        audioCtx.resume().catch(() => { });
     }
     return audioCtx;
 }
