@@ -226,7 +226,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 YOUR BEST
                             </div>
-                            <div className="font-display tracking-[0.05em] text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-[0.1em] text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {personalBest > 0 ? personalBest.toLocaleString() : '—'}
                             </div>
                         </div>
@@ -237,7 +237,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 GLOBAL BEST
                             </div>
-                            <div className="font-display tracking-[0.05em] text-xl sm:text-2xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.3), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-[0.1em] text-xl sm:text-2xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.3), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {globalBest > 0 ? globalBest.toLocaleString() : '—'}
                             </div>
                         </div>
