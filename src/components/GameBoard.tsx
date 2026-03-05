@@ -502,7 +502,7 @@ export default function GameBoard({
             {scorePopups.map((popup) => (
                 <motion.div
                     key={popup.id}
-                    className="score-popup absolute pointer-events-none z-30 font-display font-black text-3xl sm:text-5xl"
+                    className="score-popup absolute pointer-events-none z-50 font-display font-black text-3xl sm:text-5xl"
                     style={{
                         left: `${(popup.x / 8) * 100 + 6.25}%`,
                         top: `${(popup.y / 8) * 100 + 6.25}%`,
