@@ -12,110 +12,49 @@ interface GameHUDProps {
 
 const TOTAL_MOVES = 30;
 
-/* ===== SVG Radial Ring for Moves ===== */
-function MovesRing({ movesLeft }: { movesLeft: number }) {
-    const radius = 52;
-    const strokeWidth = 5;
-    const circumference = 2 * Math.PI * radius;
-    const progress = movesLeft / TOTAL_MOVES;
-    const dashOffset = circumference * (1 - progress);
-
-    // Color transitions: green → gold → orange → red
-    let strokeColor: string;
-    let glowColor: string;
-    if (progress > 0.6) {
-        strokeColor = "#4ADE80"; // green
-        glowColor = "rgba(74,222,128,0.5)";
-    } else if (progress > 0.35) {
-        strokeColor = "#FFE048"; // gold
-        glowColor = "rgba(255,224,72,0.5)";
-    } else if (progress > 0.15) {
-        strokeColor = "#FF8C00"; // orange
-        glowColor = "rgba(255,140,0,0.5)";
-    } else {
-        strokeColor = "#EF4444"; // red
-        glowColor = "rgba(239,68,68,0.6)";
-    }
-
-    return (
-        <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 120 120"
-            style={{ transform: "rotate(-90deg)" }}
-        >
-            <defs>
-                <filter id="ringGlow">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
-            {/* Background track */}
-            <circle
-                cx="60"
-                cy="60"
-                r={radius}
-                fill="none"
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth={strokeWidth}
-            />
-            {/* Animated progress ring */}
-            <motion.circle
-                cx="60"
-                cy="60"
-                r={radius}
-                fill="none"
-                stroke={strokeColor}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                animate={{
-                    strokeDashoffset: dashOffset,
-                    stroke: strokeColor,
-                    filter: `drop-shadow(0 0 6px ${glowColor})`,
-                }}
-                transition={{ type: "spring", stiffness: 80, damping: 20 }}
-            />
-        </svg>
-    );
-}
-
 /* ===== Card wrapper for consistent styling ===== */
 function HudCard({
     children,
     borderColor = "rgba(123, 80, 184, 0.5)",
     glowColor = "rgba(156, 101, 240, 0.15)",
+    borderProgress,
     className = "",
 }: {
     children: React.ReactNode;
     borderColor?: string;
     glowColor?: string;
+    borderProgress?: number; // 0-1, fraction of border filled
     className?: string;
 }) {
+    const usesProgressBorder = borderProgress !== undefined;
+
     return (
         <div
-            className={`relative w-full rounded-2xl overflow-hidden flex flex-col items-center justify-center ${className}`}
+            className={`relative w-full rounded-2xl flex flex-col items-center justify-center ${className}`}
             style={{
-                border: `3px solid ${borderColor}`,
-                boxShadow: `0 0 20px ${glowColor}, inset 0 4px 10px rgba(255,255,255,0.08)`,
+                padding: "3px",
+                boxShadow: `0 0 20px ${glowColor}`,
+                background: usesProgressBorder
+                    ? `conic-gradient(from -90deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.1) ${borderProgress! * 360}deg)`
+                    : borderColor,
+                borderRadius: "1rem",
             }}
         >
-            {/* Purple gradient background */}
+            {/* Inner card — sits inside the 3px "border" padding */}
             <div
-                className="absolute inset-0 z-0"
+                className="absolute inset-[3px] z-0 rounded-[calc(1rem-3px)] overflow-hidden"
                 style={{
                     background: "linear-gradient(180deg, #4A1D80 0%, #2E0F58 50%, #1E0840 100%)",
                 }}
-            />
-            {/* Inner highlight shimmer */}
-            <div
-                className="absolute inset-0 z-0 opacity-30"
-                style={{
-                    background: "radial-gradient(ellipse at 50% 15%, rgba(180,140,255,0.35) 0%, transparent 60%)",
-                }}
-            />
+            >
+                {/* Inner highlight shimmer */}
+                <div
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                        background: "radial-gradient(ellipse at 50% 15%, rgba(180,140,255,0.35) 0%, transparent 60%)",
+                    }}
+                />
+            </div>
             <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
                 {children}
             </div>
@@ -220,7 +159,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
             {!hideHighScores && (
                 <>
                     {/* Score Card */}
-                    <HudCard className="flex-[1.3] min-h-0 py-3">
+                    <HudCard className="flex-1 min-h-0 py-3">
                         <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
                             SCORE
                         </div>
@@ -240,33 +179,25 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                         </motion.div>
                     </HudCard>
 
-                    {/* Moves Card — with radial ring */}
-                    <div className="relative w-full flex-1 min-h-0">
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="h-full py-3">
-                            <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
-                                MOVES
-                            </div>
-                            <div className="relative">
-                                {/* SVG Ring behind the number */}
-                                <div className="absolute -inset-5 sm:-inset-6">
-                                    <MovesRing movesLeft={movesLeft} />
-                                </div>
-                                <AnimatePresence mode="popLayout">
-                                    <motion.div
-                                        key={movesLeft}
-                                        className={`font-display text-5xl sm:text-6xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"}`}
-                                        style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
-                                        initial={{ scale: 1.4, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0.6, opacity: 0 }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                                    >
-                                        {movesLeft}
-                                    </motion.div>
-                                </AnimatePresence>
-                            </div>
-                        </HudCard>
-                    </div>
+                    {/* Moves Card — border acts as radial indicator */}
+                    <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-3">
+                        <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                            MOVES
+                        </div>
+                        <AnimatePresence mode="popLayout">
+                            <motion.div
+                                key={movesLeft}
+                                className={`font-display text-5xl sm:text-6xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"}`}
+                                style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                                initial={{ scale: 1.4, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.6, opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                            >
+                                {movesLeft}
+                            </motion.div>
+                        </AnimatePresence>
+                    </HudCard>
 
                     {/* Combo Card */}
                     <HudCard className="flex-[0.8] min-h-0 py-3">
