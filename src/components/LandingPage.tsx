@@ -34,7 +34,7 @@ function FloatingBadges() {
 
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const count = isMobile ? 40 : 85; // Increased density after removing drop-shadows
+        const count = isMobile ? 55 : 120; // Increased density after removing drop-shadows
 
         // Extreme density badge fill
         const pooledBadges = Array(15).fill(BADGES).flat();

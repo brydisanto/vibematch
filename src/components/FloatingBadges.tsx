@@ -40,7 +40,7 @@ export default function FloatingBadges() {
 
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        const count = isMobile ? 30 : 60; // More dense than 35, but less crazy than 320
+        const count = isMobile ? 45 : 80; // More dense than 35, but less crazy than 320
 
         // Generate random badges
         const generated = Array.from({ length: count }).map((_, i) => {
