@@ -72,7 +72,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
 
     useEffect(() => {
         const username = localStorage.getItem('vibematch_username');
-        fetch(`/api/scores?mode=${gameMode}`)
+        fetch(`/api/scores?mode=${gameMode}&skip_avatars=true`)
             .then(res => res.json())
             .then(data => {
                 if (data.leaderboard && data.leaderboard.length > 0) {

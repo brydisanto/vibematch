@@ -37,6 +37,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode'); // 'classic' or 'daily'
+    const skipAvatars = searchParams.get('skip_avatars') === 'true';
 
     try {
         let leaderboard: any = [];
@@ -61,6 +62,18 @@ export async function GET(req: Request) {
             }
         }
 
+        // If we only need the scores and user strings, skip mapping out full avatars
+        if (skipAvatars) {
+            const basicMapped = formatted.map((entry: any) => ({
+                username: entry.member || entry.value,
+                score: Number(entry.score)
+            }));
+            return NextResponse.json(
+                { leaderboard: basicMapped },
+                { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+            );
+        }
+
         // Enrich with avatars
         const enriched = await Promise.all(formatted.map(async (entry: any) => {
             const member = entry.member || entry.value;
@@ -73,7 +86,10 @@ export async function GET(req: Request) {
             };
         }));
 
-        return NextResponse.json({ leaderboard: enriched });
+        return NextResponse.json(
+            { leaderboard: enriched },
+            { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+        );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);
         return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
