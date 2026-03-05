@@ -33,10 +33,13 @@ function FloatingBadges() {
     >([]);
 
     useEffect(() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        const count = isMobile ? 15 : 35; // Drastically reduce from 320 to prevent iOS Safari memory crashes
+
         // Extreme density badge fill
         const pooledBadges = Array(15).fill(BADGES).flat();
         // Shuffle to distribute them randomly
-        const selected = pooledBadges.sort(() => Math.random() - 0.5).slice(0, 320);
+        const selected = pooledBadges.sort(() => Math.random() - 0.5).slice(0, count);
 
         const newItems = selected.map((badge, i) => {
             const rot = Math.random() * 360;
@@ -46,7 +49,7 @@ function FloatingBadges() {
                 x: Math.random() * 120 - 10, // -10% to 110% width
                 yStart: 110 + Math.random() * 100, // Start somewhere below the fold, spread out
                 yEnd: -40 - Math.random() * 40, // End well above the fold
-                size: 60 + Math.random() * 220, // Even more diverse scale for depth feeling
+                size: 60 + Math.random() * (isMobile ? 100 : 220), // Smaller max size on mobile
                 rotation: rot, // Start looking rotated randomly
                 rotationEnd: rot + (Math.random() > 0.5 ? 90 : -90),
                 duration: 20 + Math.random() * 40, // Very slow to moderately slow rise
@@ -93,7 +96,8 @@ function FloatingBadges() {
                         alt=""
                         width={item.size}
                         height={item.size}
-                        className="rounded-full drop-shadow-[0_15px_25px_rgba(0,0,0,0.6)] object-cover"
+                        className="rounded-full shadow-2xl shadow-black/60 object-cover"
+                        loading="lazy"
                     />
                 </div>
             ))}

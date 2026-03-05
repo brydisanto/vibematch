@@ -102,7 +102,6 @@ export default function Home() {
                 alt="Background"
                 fill
                 className="object-cover object-center"
-                quality={100}
                 priority
               />
               {/* Subtle overlay for readability */}
