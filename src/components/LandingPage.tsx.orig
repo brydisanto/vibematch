@@ -57,7 +57,7 @@ function FloatingBadges() {
     }, []);
 
     return (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#7B3FA8]"> {/* Rich purple base matching production */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#160d24]"> {/* Deep dark purple base */}
             <style>{`
                 @keyframes floatUpAndSpin {
                     0% {
@@ -97,11 +97,11 @@ function FloatingBadges() {
                     />
                 </div>
             ))}
-            {/* Very subtle vignette - keep background bright like production */}
+            {/* Soft, dark center vignette so the text remains legible over the bright badges */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    background: "radial-gradient(circle at center, transparent 30%, rgba(100,50,140,0.15) 100%)",
+                    background: "radial-gradient(circle at center, rgba(16,10,25,0.1) 15%, rgba(16,10,25,0.3) 60%, rgba(16,10,25,0.6) 100%)",
                 }}
             />
         </div>
@@ -167,7 +167,7 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
     };
 
     return (
-        <div className="relative min-h-screen flex flex-col items-center justify-start px-4 pt-[8vh] pb-6">
+        <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12">
             <FloatingBadges />
 
             <div className="relative z-10 w-full max-w-lg text-center">
@@ -202,20 +202,24 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                         className="group w-full text-left outline-none"
                     >
                         <div
-                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#B0DFF0] shadow-[0_4px_20px_rgba(168,219,232,0.5),0_8px_25px_rgba(0,0,0,0.15)]"
+                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]"
                         >
-                            <div className="relative bg-gradient-to-b from-[#E8F4F8] to-[#D5EDF5] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                <div className="relative flex items-center justify-between z-10 w-full">
+                            {/* Inner Enamel Area */}
+                            <div className="relative bg-[#110D17] rounded-[17px] p-5 sm:p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden">
+
+                                {/* Glow layer (Classic Yellow) */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD700]/10 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2 group-hover:bg-[#FFD700]/20 transition-colors duration-500" />
+                                <div className="relative flex items-center justify-between z-10 w-full pt-1">
                                     <div className="flex flex-col items-start justify-center">
-                                        <h2 className="font-display text-xl sm:text-2xl font-black text-[#2A5F6F] mb-1 uppercase">
-                                            Classic VibeMatch
+                                        <h2 className="font-display text-xl sm:text-2xl font-black text-white mb-2">
+                                            Classic
                                         </h2>
-                                        <p className="text-[#6B7B82] text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                            30 moves to score as high as you can.
+                                        <p className="text-white/50 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
+                                            30 moves. Score as high as possible. Pure strategy.
                                         </p>
                                     </div>
-                                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#C5E4ED]/60 flex items-center justify-center border border-[#A8DBE8] group-hover:bg-[#C5E4ED] transition-colors">
-                                        <ChevronRight size={18} className="text-[#5A9AAA] group-hover:text-[#2A5F6F] transition-colors" />
+                                    <div className="w-8 h-8 shrink-0 rounded-full bg-[#2A2333] flex items-center justify-center shadow-[inset_0_1px_3px_rgba(0,0,0,0.5),0_1px_1px_rgba(255,255,255,0.05)] border border-[#3A3344] group-hover:border-[#FFD700]/50 transition-colors">
+                                        <ChevronRight size={16} className="text-white/40 group-hover:text-[#FFD700] transition-colors" />
                                     </div>
                                 </div>
                             </div>
@@ -228,35 +232,45 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                         className="group w-full text-left outline-none"
                     >
                         <div
-                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#D8B8F0] shadow-[0_4px_20px_rgba(212,176,232,0.5),0_8px_25px_rgba(0,0,0,0.15)]"
+                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]"
                         >
-                            <div className="relative bg-gradient-to-b from-[#F3E8F9] to-[#E8D5F3] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                <div className="relative flex items-center justify-between z-10 w-full">
+                            {/* Inner Enamel Area */}
+                            <div className="relative bg-[#110D17] rounded-[17px] p-5 sm:p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden">
+
+                                {/* Glow layer (Daily Purple) */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#B366FF]/10 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2 group-hover:bg-[#B366FF]/20 transition-colors duration-500" />
+                                <div className="relative flex items-center justify-between z-10 w-full pt-1">
                                     <div className="flex flex-col items-start justify-center">
-                                        <h2 className="font-display text-xl sm:text-2xl font-black text-[#5B2D6E] mb-1 uppercase">
-                                            Daily Challenge Mode
-                                        </h2>
-                                        <p className="text-[#7B6B88] text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                            A new universal board every day. 1 chance to max stoke it.
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h2 className="font-display text-xl sm:text-2xl font-black text-white">
+                                                Daily Challenge
+                                            </h2>
+                                            <span className="px-2 py-0.5 rounded-full bg-[#B366FF]/20 border border-[#B366FF]/30 text-[#B366FF] text-[10px] font-bold uppercase tracking-wider font-mundial">
+                                                New
+                                            </span>
+                                        </div>
+                                        <p className="text-white/50 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
+                                            Same board for everyone. One shot to top the daily leaderboard.
                                         </p>
                                     </div>
-                                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#E8D0F0]/60 flex items-center justify-center border border-[#D4B0E8] group-hover:bg-[#E8D0F0] transition-colors">
-                                        <ChevronRight size={18} className="text-[#9A6BAA] group-hover:text-[#5B2D6E] transition-colors" />
+                                    <div className="w-8 h-8 shrink-0 rounded-full bg-[#2A2333] flex items-center justify-center shadow-[inset_0_1px_3px_rgba(0,0,0,0.5),0_1px_1px_rgba(255,255,255,0.05)] border border-[#3A3344] group-hover:border-[#B366FF]/50 transition-colors">
+                                        <ChevronRight size={16} className="text-white/40 group-hover:text-[#B366FF] transition-colors" />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </button>
-
                     {/* $VIBESTR RUSH — Coming Soon */}
-                    <div className="group w-full text-left outline-none cursor-not-allowed">
-                        <div className="relative overflow-hidden rounded-2xl">
-                            <div className="relative bg-[#9B6AAE]/50 backdrop-blur-sm rounded-2xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                    <div className="group w-full text-left outline-none opacity-60 cursor-not-allowed">
+                        <div
+                            className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                        >
+                            <div className="relative bg-[#110D17] rounded-[17px] p-5 sm:p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden">
                                 <div className="relative flex items-center justify-between z-10 w-full">
-                                    <h2 className="font-display text-xl sm:text-2xl font-black text-white/50 uppercase">
-                                        <em>$VIBESTR RUSH</em>
+                                    <h2 className="font-display text-xl sm:text-2xl font-black text-white/40 italic">
+                                        $VIBESTR RUSH
                                     </h2>
-                                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/50 text-[10px] font-bold uppercase tracking-wider font-mundial">
+                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/30 text-[10px] font-bold uppercase tracking-wider font-mundial">
                                         Coming Soon
                                     </span>
                                 </div>
@@ -283,7 +297,7 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
 
                                 <User size={18} className="relative z-10 text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
                                 <span className="relative z-10 text-[13px] sm:text-[15px] font-black tracking-widest text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
-                                    Profile
+                                    {username ? 'Profile' : 'Set Profile'}
                                 </span>
                             </div>
                         </button>

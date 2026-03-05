@@ -4,6 +4,66 @@
 // Generates all sounds procedurally — no audio files needed.
 
 let audioCtx: AudioContext | null = null;
+export let isMuted = false;
+
+// ===== MUTE TOGGLE =====
+export function toggleMute(muted: boolean): boolean {
+    isMuted = muted;
+    if (bgmAudio) {
+        bgmAudio.volume = muted ? 0 : 0.3;
+    }
+    return isMuted;
+}
+
+// ===== BACKGROUND MUSIC =====
+let bgmAudio: HTMLAudioElement | null = null;
+let currentBGMTrack = 0;
+
+export const BGM_TRACK_NAMES = [
+    "Feel The Beat",
+    "Retro Wave",
+    "Neon Beach",
+    "Miami Sun",
+    "Arcade Pop",
+    "Sunset Drive",
+    "Starlight Cruise",
+    "Crystal Coast"
+];
+
+const BGM_FILES = [
+    "/music/feel-the-beat.mp3",
+];
+
+function stopMP3() {
+    if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+    }
+}
+
+function startMP3() {
+    try {
+        if (!bgmAudio) {
+            bgmAudio = new Audio(BGM_FILES[0]);
+            bgmAudio.loop = true;
+            bgmAudio.volume = isMuted ? 0 : 0.3;
+        }
+        bgmAudio.play().catch(() => { });
+    } catch {
+        // Audio not available
+    }
+}
+
+export function switchBGMTrack(): string {
+    currentBGMTrack = (currentBGMTrack + 1) % BGM_TRACK_NAMES.length;
+    // Only first track has MP3, others are just labels for now
+    return BGM_TRACK_NAMES[currentBGMTrack];
+}
+
+export function startBGM() {
+    startMP3();
+}
+
 
 function getAudioContext(): AudioContext {
     if (!audioCtx) {

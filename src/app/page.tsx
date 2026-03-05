@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { GameMode } from "@/lib/gameEngine";
 import { useGame } from "@/lib/useGame";
@@ -10,9 +10,9 @@ import GameOver from "@/components/GameOver";
 import LandingPage from "@/components/LandingPage";
 import InstructionsModal from "@/components/InstructionsModal";
 import FlameBackground from "@/components/FlameBackground";
-import { ArrowLeft, HelpCircle } from "lucide-react";
+import { ArrowLeft, HelpCircle, Volume2, VolumeX, Music } from "lucide-react";
+import { isMuted, toggleMute, startBGM, switchBGMTrack } from "@/lib/sounds";
 import Image from "next/image";
-import { Toaster } from "react-hot-toast";
 
 type AppView = "landing" | "playing";
 
@@ -21,7 +21,23 @@ export default function Home() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [isDealing, setIsDealing] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string, avatarUrl: string } | null>(null);
+  const [muted, setMuted] = useState(isMuted);
+  const [trackLabel, setTrackLabel] = useState<string | null>(null);
+  const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
+
+  const handleToggleMute = () => {
+    const newMuted = toggleMute(!muted);
+    setMuted(newMuted);
+  };
+
+  const handleSwitchTrack = () => {
+    const trackName = switchBGMTrack();
+    // Show inline label next to music button
+    if (trackLabelTimeout.current) clearTimeout(trackLabelTimeout.current);
+    setTrackLabel(muted ? `🔇 ${trackName}` : `🎵 ${trackName}`);
+    trackLabelTimeout.current = setTimeout(() => setTrackLabel(null), 2500);
+  };
 
   const handleStartGame = (mode: GameMode, username?: string, avatarUrl?: string) => {
     if (username) {
@@ -30,6 +46,7 @@ export default function Home() {
     game.startGame(mode);
     setIsDealing(true);
     setView("playing");
+    startBGM(); // Initialize retro loop
   };
 
   // Clear dealing state after animation completes
@@ -54,8 +71,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#050505] relative">
-      <Toaster position="top-center" toastOptions={{ style: { background: '#2A2333', color: '#fff', border: '1px solid #3A3344' } }} />
-      <FlameBackground />
+
+      {view === "playing" && <FlameBackground />}
       <AnimatePresence mode="wait">
         {view === "landing" || !game.state ? (
           <motion.div
@@ -81,7 +98,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 z-0">
               <Image
-                src="/assets/bg-new.jpg"
+                src="/vibematchbg2.jpg"
                 alt="Background"
                 fill
                 className="object-cover object-center"
@@ -93,45 +110,89 @@ export default function Home() {
             </div>
 
             {/* Top bar — Back + Logo + Help */}
-            <div className="flex-shrink-0 z-40 px-4 pt-3 pb-2 relative">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={handleGoHome}
-                  className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
-                >
-                  <ArrowLeft size={16} className="text-white/80 group-hover:text-black transition-colors" />
-                </button>
+            <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-3 pb-2 relative">
+              <div className="flex items-start justify-between w-full">
+                <div className="flex-1 flex justify-start pt-1 sm:pt-4">
+                  <button
+                    onClick={handleGoHome}
+                    className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white/80 group-hover:text-black transition-colors" />
+                  </button>
+                </div>
 
-                <div className="relative pointer-events-none flex items-center justify-center -mb-4 z-50">
+                <div className="pointer-events-none flex items-center justify-center z-50">
                   <Image
                     src="/assets/logo-cropped.png"
                     alt="VIBE MATCH"
-                    width={400}
-                    height={200}
-                    className="w-auto h-24 sm:h-32 lg:h-40 drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+                    width={500}
+                    height={250}
+                    className="w-auto h-28 sm:h-40 lg:h-48 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                     priority
                   />
                 </div>
 
-                <button
-                  onClick={() => setShowInstructions(true)}
-                  className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
-                >
-                  <HelpCircle size={15} className="text-white/80 group-hover:text-black transition-colors" />
-                </button>
+                <div className="flex-1 flex justify-end items-start gap-2 pt-1 sm:pt-4">
+                  <button
+                    onClick={handleToggleMute}
+                    className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
+                  >
+                    {muted ? (
+                      <VolumeX className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
+                    ) : (
+                      <Volume2 className="w-5 h-5 text-white/80 group-hover:text-black transition-colors" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleSwitchTrack}
+                    className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#b366ff] flex items-center justify-center shadow-lg hover:bg-[#b366ff] transition-all duration-200 group"
+                  >
+                    <Music className="w-5 h-5 text-white/80 group-hover:text-black transition-colors" />
+                  </button>
+                  <AnimatePresence>
+                    {trackLabel && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-14 top-1 sm:top-4 bg-[#2A2333]/95 border border-[#b366ff]/50 rounded-lg px-3 py-1.5 shadow-lg whitespace-nowrap pointer-events-none"
+                      >
+                        <span className="font-display tracking-wide text-sm text-white">{trackLabel}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <button
+                    onClick={() => setShowInstructions(true)}
+                    className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
+                  >
+                    <HelpCircle className="w-5 h-5 text-white/80 group-hover:text-black transition-colors" />
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Game Layout — Royal Match style: HUD left, Board center */}
-            <div className="flex-1 flex items-center justify-center px-3 sm:px-6 pb-3 min-h-0 relative z-10">
-              <div className="h-full flex flex-row gap-4 items-center justify-center">
-                {/* Left HUD — stacked vertically taking full height */}
-                <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0" style={{ height: "min(100%, min(680px, calc(100vh - 140px)))" }}>
-                  <GameHUD state={game.state} />
-                </div>
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center p-2 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
+              {/* Left HUD — Desktop only */}
+              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0" style={{ height: "min(100vw - 16px, calc(100vh - 280px), 680px)" }}>
+                <GameHUD state={game.state} />
+              </div>
 
-                {/* Board — fills available height */}
-                <div className="flex-shrink-0" style={{ width: "min(100%, min(680px, calc(100vh - 140px)))", height: "min(100%, min(680px, calc(100vh - 140px)))" }}>
+              {/* Mobile HUD Top — Metrics only */}
+              <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-1 order-first">
+                <div className="w-full">
+                  <GameHUD state={game.state} hideHighScores />
+                </div>
+              </div>
+
+              {/* Board — fills available height, capped */}
+              <div className="flex-shrink-0 relative overflow-visible flex items-center justify-center -mb-1 sm:-mb-2" style={{
+                height: "min(100vw - 16px, calc(100vh - 280px), 680px)",
+                width: "min(100vw - 16px, calc(100vh - 280px), 680px)",
+              }}
+              >
+                <div className="absolute inset-0">
                   <GameBoard
                     board={game.state.board}
                     selectedTile={game.state.selectedTile}
@@ -143,10 +204,11 @@ export default function Home() {
                     isDealing={isDealing}
                   />
                 </div>
-
-                {/* Mobile HUD — below board on small screens */}
-                <div className="lg:hidden absolute bottom-2 left-2 right-2 z-30">
-                  <GameHUD state={game.state} />
+              </div>
+              {/* Mobile HUD Bottom — High Scores only */}
+              <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pt-0 pb-2 relative z-10 px-0 sm:px-2">
+                <div className="w-full">
+                  <GameHUD state={game.state} hideMetrics />
                 </div>
               </div>
             </div>
@@ -176,6 +238,6 @@ export default function Home() {
         isOpen={showInstructions}
         onClose={() => setShowInstructions(false)}
       />
-    </main>
+    </main >
   );
 }

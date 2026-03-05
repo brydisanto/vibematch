@@ -1,0 +1,15 @@
+@@ -107,3 +107,3 @@
+                     <div
+-                        className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-tr from-[#1a0533] via-[#2d1b69] to-[#1a1145]"
++                        className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-tr from-[#2d0840] via-[#5b157a] to-[#8f20b3]"
+                     >
+@@ -118,3 +118,3 @@
+                         className="absolute inset-0 pointer-events-none"
+-                        style={{ background: "radial-gradient(circle at center, rgba(179,102,255,0.05) 15%, rgba(138,43,226,0.15) 60%, rgba(26,5,51,0.4) 100%)" }}
++                        style={{ background: "radial-gradient(circle at center, rgba(143, 32, 179, 0.05) 15%, rgba(91, 21, 122, 0.2) 60%, rgba(45, 8, 64, 0.4) 100%)" }}
+                     />
+@@ -147,3 +147,3 @@
+                         <div
+-                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#4EEBFF] to-[#00B4D8] p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.8)]"
++                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#D0EFFF] to-[#A6DDF5] p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.15),inset_0_1px_2px_rgba(255,255,255,1)]"
+                         >

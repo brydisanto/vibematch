@@ -319,6 +319,17 @@ export default function GameBoard({
     combo,
     isDealing = false,
 }: GameBoardProps) {
+    const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
+
+    useEffect(() => {
+        if (matchEffect) {
+            setEffectsQueue(prev => [...prev, matchEffect]);
+            setTimeout(() => {
+                setEffectsQueue(prev => prev.filter(e => e.timestamp !== matchEffect.timestamp));
+            }, 2000);
+        }
+    }, [matchEffect]);
+
     // Board shake for mega+ matches
     const shakeClass = matchEffect?.intensity === "ultra"
         ? "animate-[board-shake_0.4s_ease-out]"
@@ -434,30 +445,30 @@ export default function GameBoard({
 
             {/* === HIERARCHICAL MATCH EFFECTS LAYER === */}
             <AnimatePresence>
-                {matchEffect && (
-                    <>
-                        {/* Particle burst — all tiers */}
-                        <MatchParticles effect={matchEffect} />
+                {effectsQueue.map(effect => (
+                    <motion.div key={effect.timestamp} className="absolute inset-0 pointer-events-none z-40">
+                        {/* Particle burst */}
+                        <MatchParticles effect={effect} />
 
-                        {/* Shockwave ring — big+ */}
-                        <ShockwaveRing effect={matchEffect} />
+                        {/* Shockwave ring */}
+                        <ShockwaveRing effect={effect} />
 
-                        {/* Screen edge glow — big+ */}
-                        <ScreenEdgeGlow intensity={matchEffect.intensity} />
+                        {/* Screen edge glow */}
+                        <ScreenEdgeGlow intensity={effect.intensity} />
 
-                        {/* Screen flash — all tiers */}
-                        <ScreenFlash intensity={matchEffect.intensity} />
+                        {/* Screen flash */}
+                        <ScreenFlash intensity={effect.intensity} />
 
-                        {/* Aurora overlay — ultra only */}
-                        <AuroraOverlay active={matchEffect.intensity === "ultra"} />
+                        {/* Aurora overlay */}
+                        <AuroraOverlay active={effect.intensity === "ultra"} />
 
-                        {/* Screen crack — ultra only */}
-                        <ScreenCrackOverlay active={matchEffect.intensity === "ultra"} />
+                        {/* Screen crack */}
+                        <ScreenCrackOverlay active={effect.intensity === "ultra"} />
 
-                        {/* Combo streak banner — big+ */}
-                        <ComboStreakBanner effect={matchEffect} />
-                    </>
-                )}
+                        {/* Combo streak banner */}
+                        <ComboStreakBanner effect={effect} />
+                    </motion.div>
+                ))}
             </AnimatePresence>
 
             {/* Score popups layer */}

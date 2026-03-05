@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { GameState } from "@/lib/gameEngine";
-import { useEffect } from "react";
-import { RotateCcw, Home, Share2 } from "lucide-react";
-import { TIER_COLORS } from "@/lib/badges";
+import { useEffect, useState, useRef } from "react";
+import { RotateCcw, Home, Target, Flame, Award } from "lucide-react";
+import { TIER_COLORS, BadgeTier } from "@/lib/badges";
+import toast from "react-hot-toast";
 
 interface GameOverProps {
     state: GameState;
@@ -14,47 +15,229 @@ interface GameOverProps {
     onGoHome: () => void;
 }
 
-/* ===== SVG RANK SHIELDS ===== */
-function RankShield({ color, accentColor, label }: { color: string; accentColor: string; label: string }) {
+/* ===== FLOATING RANK PARTICLES ===== */
+function RankParticles({ color }: { color: string }) {
+    const particles = Array.from({ length: 12 }, (_, i) => {
+        const angle = (i / 12) * Math.PI * 2;
+        const distance = 60 + Math.random() * 30;
+        return {
+            id: i,
+            x: Math.cos(angle) * distance,
+            y: Math.sin(angle) * distance,
+            size: 3 + Math.random() * 4,
+            delay: i * 0.04,
+        };
+    });
+
     return (
-        <div className="rank-shield-enter w-20 h-24 mx-auto mb-4">
-            <svg viewBox="0 0 80 96" className="w-full h-full" fill="none">
-                {/* Shield body */}
+        <div className="absolute inset-0 pointer-events-none">
+            {particles.map((p) => (
+                <motion.div
+                    key={p.id}
+                    className="absolute left-1/2 top-1/2 rounded-full"
+                    style={{
+                        width: p.size,
+                        height: p.size,
+                        background: color,
+                        boxShadow: `0 0 8px ${color}`,
+                        marginLeft: -p.size / 2,
+                        marginTop: -p.size / 2,
+                    }}
+                    initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+                    animate={{
+                        x: p.x,
+                        y: p.y,
+                        opacity: [0, 1, 0],
+                        scale: [0, 1.2, 0],
+                    }}
+                    transition={{
+                        duration: 0.8,
+                        delay: 0.4 + p.delay,
+                        ease: "easeOut",
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
+/* ===== ANIMATED RANK MEDALLION ===== */
+function RankMedallion({ color, accentColor, label }: { color: string; accentColor: string; label: string }) {
+    return (
+        <div className="relative w-28 h-28 sm:w-36 sm:h-36 mx-auto mb-2">
+            {/* Particle burst on reveal */}
+            <RankParticles color={color} />
+
+            {/* Outer glow halo — breathing */}
+            <motion.div
+                className="absolute inset-[-25%] rounded-full"
+                style={{
+                    background: `radial-gradient(circle, ${color}25 0%, transparent 65%)`,
+                }}
+                animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.4, 0.7, 0.4],
+                }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Conic light sweep */}
+            <motion.div
+                className="absolute inset-[-15%] rounded-full"
+                style={{
+                    background: `conic-gradient(from 0deg, transparent, ${color}18, transparent, ${color}12, transparent, ${color}18, transparent)`,
+                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Outer ring — dashed, spinning */}
+            <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full" fill="none">
+                <circle cx="60" cy="60" r="56" stroke={color} strokeWidth="2" strokeOpacity="0.2" />
+                <circle cx="60" cy="60" r="56" stroke={`url(#ring-grad-${label})`} strokeWidth="2.5" strokeDasharray="10 5" strokeLinecap="round">
+                    <animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="15s" repeatCount="indefinite" />
+                </circle>
+                <defs>
+                    <linearGradient id={`ring-grad-${label}`} x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor={color} />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.15" />
+                    </linearGradient>
+                </defs>
+            </svg>
+
+            {/* Shield body */}
+            <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full" fill="none">
                 <path
-                    d="M40 4 L72 16 L72 52 C72 68 56 82 40 92 C24 82 8 68 8 52 L8 16 Z"
+                    d="M60 16 L96 30 L96 68 C96 88 78 102 60 112 C42 102 24 88 24 68 L24 30 Z"
                     fill={`url(#shield-fill-${label})`}
                     stroke={color}
-                    strokeWidth="2.5"
+                    strokeWidth="2"
                 />
-                {/* Inner shield highlight */}
                 <path
-                    d="M40 12 L64 22 L64 50 C64 63 52 74 40 82 C28 74 16 63 16 50 L16 22 Z"
-                    fill="rgba(0,0,0,0.3)"
+                    d="M60 26 L86 37 L86 65 C86 81 72 92 60 100 C48 92 34 81 34 65 L34 37 Z"
+                    fill="rgba(0,0,0,0.35)"
                     stroke={color}
                     strokeWidth="1"
-                    strokeOpacity="0.4"
+                    strokeOpacity="0.25"
                 />
-                {/* Star/rank emblem */}
+                {/* Star emblem with pulse */}
                 <path
-                    d="M40 28 L44 40 L56 40 L46 48 L50 60 L40 52 L30 60 L34 48 L24 40 L36 40 Z"
+                    d="M60 40 L65 54 L80 54 L68 63 L73 77 L60 68 L47 77 L52 63 L40 54 L55 54 Z"
                     fill={color}
-                    fillOpacity="0.9"
+                    fillOpacity="0.95"
                 >
-                    <animate attributeName="fillOpacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="fillOpacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
                 </path>
-                {/* Glow effect */}
-                <circle cx="40" cy="46" r="18" fill={color} fillOpacity="0.1">
-                    <animate attributeName="r" values="18;22;18" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="fillOpacity" values="0.1;0.2;0.1" dur="2s" repeatCount="indefinite" />
+                {/* Inner glow */}
+                <circle cx="60" cy="60" r="22" fill={color} fillOpacity="0.06">
+                    <animate attributeName="r" values="22;27;22" dur="2.5s" repeatCount="indefinite" />
+                    <animate attributeName="fillOpacity" values="0.06;0.15;0.06" dur="2.5s" repeatCount="indefinite" />
                 </circle>
                 <defs>
                     <linearGradient id={`shield-fill-${label}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={accentColor} />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.3" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.25" />
                     </linearGradient>
                 </defs>
             </svg>
         </div>
+    );
+}
+
+/* ===== ANIMATED SCORE COUNTER ===== */
+function AnimatedScore({ target, color }: { target: number; color: string }) {
+    const [displayValue, setDisplayValue] = useState(0);
+    const [showShimmer, setShowShimmer] = useState(false);
+    const [showPulse, setShowPulse] = useState(false);
+    const frameRef = useRef<number>(0);
+
+    useEffect(() => {
+        const duration = 1800;
+        const startTime = performance.now();
+
+        const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out quart for satisfying deceleration
+            const eased = 1 - Math.pow(1 - progress, 4);
+            setDisplayValue(Math.round(eased * target));
+
+            if (progress < 1) {
+                frameRef.current = requestAnimationFrame(animate);
+            } else {
+                setShowShimmer(true);
+                setShowPulse(true);
+            }
+        };
+
+        const delay = setTimeout(() => {
+            frameRef.current = requestAnimationFrame(animate);
+        }, 900);
+
+        return () => {
+            clearTimeout(delay);
+            cancelAnimationFrame(frameRef.current);
+        };
+    }, [target]);
+
+    return (
+        <div className="relative inline-block">
+            {/* Score landing pulse */}
+            <AnimatePresence>
+                {showPulse && (
+                    <motion.div
+                        className="absolute inset-[-20px] rounded-full pointer-events-none"
+                        style={{
+                            background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
+                        }}
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: [0.5, 1.5], opacity: [0.8, 0] }}
+                        transition={{ duration: 0.6 }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <motion.span
+                className="font-display text-5xl sm:text-7xl font-black tabular-nums"
+                style={{
+                    color,
+                    textShadow: `0 0 40px ${color}80, 0 0 80px ${color}30`,
+                }}
+                animate={showPulse ? {
+                    scale: [1, 1.06, 1],
+                    filter: [`brightness(1)`, `brightness(1.3)`, `brightness(1)`],
+                } : {}}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+                {displayValue.toLocaleString()}
+            </motion.span>
+
+            {showShimmer && (
+                <motion.div
+                    className="absolute inset-0 pointer-events-none overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <div
+                        className="absolute inset-0 animate-shimmer"
+                        style={{
+                            background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
+                            backgroundSize: "200% 100%",
+                        }}
+                    />
+                </motion.div>
+            )}
+        </div>
+    );
+}
+
+/* ===== TWITTER/X ICON ===== */
+function XIcon({ size = 16 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
     );
 }
 
@@ -67,6 +250,150 @@ const RANK_CONFIG = [
 
 function getRank(score: number) {
     return RANK_CONFIG.find((r) => score >= r.threshold) || RANK_CONFIG[RANK_CONFIG.length - 1];
+}
+
+/* ===== TIER LABEL COLORS ===== */
+const TIER_LABEL_CONFIG: Record<BadgeTier, { bg: string; text: string }> = {
+    blue: { bg: "rgba(74, 158, 255, 0.15)", text: "#4A9EFF" },
+    silver: { bg: "rgba(192, 192, 192, 0.15)", text: "#C0C0C0" },
+    gold: { bg: "rgba(255, 224, 72, 0.15)", text: "#FFE048" },
+    cosmic: { bg: "rgba(179, 102, 255, 0.15)", text: "#B366FF" },
+};
+
+/* ===== STAT CARD ===== */
+function StatCard({
+    label,
+    value,
+    color,
+    icon: Icon,
+    delay,
+}: {
+    label: string;
+    value: string | number;
+    color: string;
+    icon: React.ElementType;
+    delay: number;
+}) {
+    return (
+        <motion.div
+            className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden group"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
+            whileHover={{ scale: 1.03, borderColor: "rgba(255,255,255,0.15)" }}
+        >
+            {/* Subtle top highlight */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+            <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                <Icon size={12} className="text-white/30" />
+                <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider">
+                    {label}
+                </div>
+            </div>
+            <div className={`font-display text-xl sm:text-2xl font-bold text-center ${color}`}>
+                {value}
+            </div>
+        </motion.div>
+    );
+}
+
+/* ===== BADGE SHOWCASE CARD ===== */
+function BadgeCard({
+    badge,
+    delay,
+}: {
+    badge: { id: string; name: string; image: string; tier: BadgeTier; pointMultiplier: number };
+    delay: number;
+}) {
+    const tierConfig = TIER_LABEL_CONFIG[badge.tier];
+
+    return (
+        <motion.div
+            className="relative flex flex-col items-center gap-1.5 p-2 sm:p-2.5 rounded-xl overflow-hidden"
+            style={{
+                background: `linear-gradient(180deg, ${TIER_COLORS[badge.tier]}08 0%, rgba(255,255,255,0.02) 100%)`,
+                border: `1px solid ${TIER_COLORS[badge.tier]}20`,
+            }}
+            initial={{ scale: 0, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 22,
+                delay,
+            }}
+            whileHover={{
+                scale: 1.08,
+                borderColor: `${TIER_COLORS[badge.tier]}50`,
+                boxShadow: `0 0 20px ${TIER_COLORS[badge.tier]}25`,
+            }}
+        >
+            {/* Top accent stripe */}
+            <div
+                className="absolute inset-x-0 top-0 h-[2px]"
+                style={{
+                    background: `linear-gradient(90deg, transparent, ${TIER_COLORS[badge.tier]}60, transparent)`,
+                }}
+            />
+
+            {/* Badge image with tier ring */}
+            <div className="relative">
+                <div
+                    className={`relative w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-full overflow-hidden
+                        ${badge.tier === "gold" ? "tile-tier-gold" : ""}
+                        ${badge.tier === "cosmic" ? "tile-tier-cosmic" : ""}
+                        ${badge.tier === "silver" ? "tile-tier-silver" : ""}
+                    `}
+                    style={{
+                        boxShadow: `0 0 0 2px ${TIER_COLORS[badge.tier]}, 0 0 12px ${TIER_COLORS[badge.tier]}35, 0 3px 8px rgba(0,0,0,0.5)`,
+                        background: `radial-gradient(circle at 30% 30%, ${TIER_COLORS[badge.tier]}12, #0a0a0a)`,
+                    }}
+                >
+                    <Image
+                        src={badge.image}
+                        alt={badge.name}
+                        width={52}
+                        height={52}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+
+                {/* Multiplier tag */}
+                {badge.pointMultiplier > 1 && (
+                    <div
+                        className="absolute -bottom-1 -right-1 text-[8px] font-mundial font-bold px-1 py-0.5 rounded-md"
+                        style={{
+                            background: TIER_COLORS[badge.tier],
+                            color: badge.tier === "gold" ? "#1a1200" : badge.tier === "silver" ? "#1a1a1a" : "#fff",
+                            boxShadow: `0 1px 4px rgba(0,0,0,0.4)`,
+                        }}
+                    >
+                        ×{badge.pointMultiplier}
+                    </div>
+                )}
+            </div>
+
+            {/* Badge name */}
+            <span
+                className="text-[9px] sm:text-[10px] font-mundial font-medium max-w-[60px] truncate text-center leading-tight"
+                style={{ color: `${TIER_COLORS[badge.tier]}c0` }}
+            >
+                {badge.name}
+            </span>
+
+            {/* Tier pill */}
+            <div
+                className="text-[7px] sm:text-[8px] font-mundial font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+                style={{
+                    background: tierConfig.bg,
+                    color: tierConfig.text,
+                }}
+            >
+                {badge.tier}
+            </div>
+        </motion.div>
+    );
 }
 
 export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: GameOverProps) {
@@ -88,13 +415,20 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
         }
     }, [score, gameMode, userProfile?.username]);
 
-    const handleShare = async () => {
-        const text = `🎮 VibeMatch ${gameMode === "daily" ? "Daily" : "Classic"}\n🏆 Score: ${score.toLocaleString()}\n🔥 Best Combo: ×${maxCombo}\n${rank.label}\n\nPlay at vibematch.gg 🤙`;
+    const handleShareX = () => {
+        const modeLabel = gameMode === "daily" ? "Daily Challenge" : "Classic";
+        const text = `🎮 I scored ${score.toLocaleString()} on VibeMatch ${modeLabel}!\n🏆 Rank: ${rank.label}\n🔥 Best Combo: ×${maxCombo}\n\nCan you beat me? 🤙\n\n#VibeMatch`;
+        const url = "https://vibematch.gg";
+        const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
 
-        if (navigator.share) {
-            try { await navigator.share({ text }); } catch { /* cancelled */ }
-        } else {
-            await navigator.clipboard.writeText(text);
+        const win = window.open(intentUrl, "_blank", "noopener,noreferrer");
+        if (!win) {
+            navigator.clipboard.writeText(`${text}\n\n${url}`).then(() => {
+                toast.success("Copied to clipboard!", {
+                    style: { background: "#1a1a1a", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" },
+                    iconTheme: { primary: "#FFE048", secondary: "#000" },
+                });
+            }).catch(() => { });
         }
     };
 
@@ -107,170 +441,212 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
         >
             {/* Backdrop */}
             <motion.div
-                className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                className="absolute inset-0 bg-black/80 backdrop-blur-xl"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
             />
 
             {/* Card */}
             <motion.div
-                className="relative w-full max-w-md rounded-3xl"
-                initial={{ scale: 0.8, y: 40, opacity: 0 }}
+                className="relative w-full max-w-md max-h-[90vh] overflow-y-auto"
+                style={{ scrollbarWidth: "none" }}
+                initial={{ scale: 0.8, y: 50, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 transition={{
                     type: "spring",
                     stiffness: 200,
                     damping: 20,
-                    delay: 0.2,
+                    delay: 0.15,
                 }}
             >
-                <div className="rounded-3xl p-6 sm:p-8 text-center bg-[#111] border-2 border-[#c9a84c]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.6)' }}>
-                    {/* Rank Shield */}
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 20,
-                            delay: 0.4,
-                        }}
-                    >
-                        <RankShield color={rank.color} accentColor={rank.accent} label={rank.label} />
-                    </motion.div>
-
-                    <motion.div
-                        className="font-display text-xl sm:text-2xl font-black mb-1"
-                        style={{ color: rank.color }}
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        {rank.label}
-                    </motion.div>
-
-                    <motion.div
-                        className="text-white/50 text-xs sm:text-sm font-mundial mb-6"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        {gameMode === "daily" ? "Daily Challenge" : "Classic Mode"} Complete
-                    </motion.div>
-
-                    {/* Score */}
-                    <motion.div
-                        className="font-display text-5xl sm:text-6xl font-black mb-6"
+                {/* Animated gradient border wrapper */}
+                <div className="gameover-card-border rounded-[28px] p-[2px]">
+                    <div
+                        className="rounded-[26px] px-5 py-7 sm:px-8 sm:py-9 text-center relative overflow-hidden"
                         style={{
-                            color: "var(--gvc-gold)",
-                            textShadow: "0 0 40px rgba(255, 224, 72, 0.5)",
-                        }}
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 200,
-                            damping: 15,
-                            delay: 0.7,
+                            background: "linear-gradient(180deg, #151515 0%, #0d0d0d 100%)",
                         }}
                     >
-                        {score.toLocaleString()}
-                    </motion.div>
+                        {/* Subtle inner radial glow keyed to rank */}
+                        <div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: `radial-gradient(ellipse at 50% 15%, ${rank.color}0a 0%, transparent 55%)`,
+                            }}
+                        />
 
-                    {/* Stats */}
-                    <motion.div
-                        className="grid grid-cols-3 gap-3 mb-6"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                    >
-                        {[
-                            { label: "Matches", value: matchCount, color: "text-white" },
-                            { label: "Best Combo", value: `×${maxCombo}`, color: "text-[#FF5F1F]" },
-                            { label: "Badges Used", value: gameBadges.length, color: "text-white" },
-                        ].map((stat) => (
-                            <div key={stat.label} className="bg-white/5 border border-[#FFE048]/30 rounded-xl p-3">
-                                <div className="text-[10px] sm:text-xs text-white/40 font-mundial uppercase mb-1">
-                                    {stat.label}
-                                </div>
-                                <div className={`font-display text-lg sm:text-xl font-bold ${stat.color}`}>
-                                    {stat.value}
-                                </div>
-                            </div>
-                        ))}
-                    </motion.div>
+                        {/* Top decorative line */}
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-                    {/* Badges used preview — larger with tier glow */}
-                    <motion.div
-                        className="flex justify-center gap-2 mb-6"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.9 }}
-                    >
-                        {gameBadges.slice(0, 8).map((badge) => (
+                        {/* ===== RANK MEDALLION — with slam entrance ===== */}
+                        <motion.div
+                            initial={{ scale: 0, rotate: -15 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 250,
+                                damping: 16,
+                                delay: 0.3,
+                            }}
+                        >
+                            <RankMedallion color={rank.color} accentColor={rank.accent} label={rank.label} />
+                        </motion.div>
+
+                        {/* ===== RANK LABEL — with scale pop ===== */}
+                        <motion.div
+                            className="font-display text-xl sm:text-2xl font-black tracking-wider mb-0.5"
+                            style={{
+                                color: rank.color,
+                                textShadow: `0 0 24px ${rank.color}50`,
+                            }}
+                            initial={{ y: 20, opacity: 0, scale: 0.7 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 18,
+                                delay: 0.55,
+                            }}
+                        >
+                            {rank.label}
+                        </motion.div>
+
+                        {/* ===== MODE SUBTITLE ===== */}
+                        <motion.div
+                            className="text-white/40 text-xs sm:text-sm font-mundial mb-5"
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.65 }}
+                        >
+                            {gameMode === "daily" ? "Daily Challenge" : "Classic Mode"} Complete
+                        </motion.div>
+
+                        {/* ===== ANIMATED SCORE — with glow pulse ===== */}
+                        <motion.div
+                            className="mb-7 relative"
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 200,
+                                damping: 15,
+                                delay: 0.7,
+                            }}
+                        >
+                            {/* Score ambient glow */}
                             <div
-                                key={badge.id}
-                                className="group relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg overflow-hidden border-2 transition-transform hover:scale-110"
+                                className="absolute inset-0 pointer-events-none"
                                 style={{
-                                    borderColor: TIER_COLORS[badge.tier],
-                                    boxShadow: `0 0 10px ${TIER_COLORS[badge.tier]}50`,
+                                    background: `radial-gradient(ellipse at 50% 50%, ${rank.color}12 0%, transparent 60%)`,
                                 }}
+                            />
+                            <AnimatedScore target={score} color={rank.color} />
+                        </motion.div>
+
+                        {/* ===== STATS ROW ===== */}
+                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-5">
+                            <StatCard
+                                label="Matches"
+                                value={matchCount}
+                                color="text-white"
+                                icon={Target}
+                                delay={0.9}
+                            />
+                            <StatCard
+                                label="Best Combo"
+                                value={`×${maxCombo}`}
+                                color="text-[#FF5F1F]"
+                                icon={Flame}
+                                delay={1.0}
+                            />
+                            <StatCard
+                                label="Badges"
+                                value={gameBadges.length}
+                                color="text-white"
+                                icon={Award}
+                                delay={1.1}
+                            />
+                        </div>
+
+                        {/* ===== BADGES PLAYED — Trophy Showcase ===== */}
+                        <motion.div
+                            className="mb-6"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 1.15 }}
+                        >
+                            {/* Section header */}
+                            <div className="flex items-center gap-3 mb-3.5">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                                <span className="text-[10px] sm:text-xs text-white/30 font-mundial uppercase tracking-[0.2em]">
+                                    Badges Played
+                                </span>
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                            </div>
+
+                            {/* Badge grid — 4 columns */}
+                            <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                                {gameBadges.slice(0, 8).map((badge, i) => (
+                                    <BadgeCard
+                                        key={badge.id}
+                                        badge={badge}
+                                        delay={1.2 + i * 0.07}
+                                    />
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        {/* ===== ACTION BUTTONS ===== */}
+                        <motion.div
+                            className="flex gap-2.5 sm:gap-3"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 1.7 }}
+                        >
+                            {/* Home button */}
+                            <button
+                                onClick={onGoHome}
+                                className={`${gameMode === "daily" ? "flex-1" : ""} flex items-center justify-center gap-2 py-3.5 px-4 sm:px-5 rounded-2xl
+                                    bg-white/[0.04] border border-white/[0.1] text-white/60 hover:bg-white/[0.1] hover:text-white
+                                    font-mundial font-semibold text-sm transition-all duration-200 active:scale-[0.97]`}
                             >
-                                <Image
-                                    src={badge.image}
-                                    alt={badge.name}
-                                    width={44}
-                                    height={44}
-                                    className="w-full h-full object-cover"
-                                />
-                                {/* Name tooltip on hover */}
-                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/80 px-2 py-0.5 rounded text-[8px] text-white font-mundial z-10">
-                                    {badge.name}
-                                </div>
-                            </div>
-                        ))}
-                    </motion.div>
+                                <Home size={16} />
+                                Home
+                            </button>
 
-                    {/* Action buttons */}
-                    <motion.div
-                        className="flex gap-3"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 1 }}
-                    >
-                        <button
-                            onClick={onGoHome}
-                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                                bg-[#111] border-2 border-[#c9a84c] text-white/70 hover:bg-[#FFE048] hover:border-[#FFE048] hover:text-black
-                                font-mundial font-semibold text-sm transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
-                        >
-                            <Home size={16} />
-                            Home
-                        </button>
-                        <button
-                            onClick={handleShare}
-                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                                bg-[#111] border-2 border-[#c9a84c] text-white/70 hover:bg-[#FFE048] hover:border-[#FFE048] hover:text-black
-                                font-mundial font-semibold text-sm transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
-                        >
-                            <Share2 size={16} />
-                        </button>
-                        <button
-                            onClick={onPlayAgain}
-                            className="flex-1 relative overflow-hidden bg-[#FFE048] text-black font-cooper font-bold uppercase tracking-wider py-3 rounded-xl hover:bg-white transition-all shadow-[0_0_20px_rgba(255,224,72,0.4)] active:scale-95 duration-200 flex items-center justify-center gap-2 group"
-                        >
-                            {/* Shimmer overlay */}
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer" />
-                            </div>
-                            {/* Sparkle dots */}
-                            <div className="absolute w-1 h-1 top-2 right-4 bg-white/60 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2s' }} />
-                            <div className="absolute w-1 h-1 bottom-2 left-6 bg-white/50 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+                            {/* Share on X button — branded */}
+                            <button
+                                onClick={handleShareX}
+                                className={`${gameMode === "daily" ? "flex-1" : ""} flex items-center justify-center gap-2 py-3.5 px-4 sm:px-5 rounded-2xl
+                                    bg-white text-black border border-white/20
+                                    hover:bg-black hover:text-white hover:border-white/40
+                                    font-mundial font-semibold text-sm transition-all duration-200 active:scale-[0.97]
+                                    shadow-[0_0_16px_rgba(255,255,255,0.15)]`}
+                            >
+                                <XIcon size={14} />
+                                Share on 𝕏
+                            </button>
 
-                            <RotateCcw size={16} className="relative z-10 text-black/60 group-hover:text-black transition-colors" />
-                            <span className="relative z-10 text-sm">REMATCH</span>
-                        </button>
-                    </motion.div>
+                            {/* Rematch button — Classic only */}
+                            {gameMode === "classic" && (
+                                <button
+                                    onClick={onPlayAgain}
+                                    className="flex-1 relative overflow-hidden bg-gradient-to-r from-[#FFE048] to-[#FFD000] text-black font-cooper font-bold uppercase tracking-wider py-3.5 rounded-2xl hover:brightness-110 transition-all shadow-[0_0_24px_rgba(255,224,72,0.35)] active:scale-[0.97] duration-200 flex items-center justify-center gap-2 group"
+                                >
+                                    {/* Shimmer overlay */}
+                                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                        <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shimmer" />
+                                    </div>
+                                    {/* Sparkle dots */}
+                                    <div className="absolute w-1 h-1 top-2 right-4 bg-white/60 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2s' }} />
+                                    <div className="absolute w-1 h-1 bottom-2 left-6 bg-white/50 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+
+                                    <RotateCcw size={16} className="relative z-10 text-black/50 group-hover:text-black transition-colors" />
+                                    <span className="relative z-10 text-sm">REMATCH</span>
+                                </button>
+                            )}
+                        </motion.div>
+                    </div>
                 </div>
             </motion.div>
         </motion.div>
