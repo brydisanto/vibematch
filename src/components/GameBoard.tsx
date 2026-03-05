@@ -268,15 +268,19 @@ function ScreenCrackOverlay({ active }: { active: boolean }) {
     );
 }
 
-/* ===== COMBO STREAK BANNER ===== */
+/* ===== COMBO STREAK BANNER — Street Fighter style ===== */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
-    if (effect.intensity === "normal") return null;
+    if (effect.combo < 2) return null;
 
-    const config = {
-        big: { label: "NICE!", bg: "from-[#FFE048]/20 to-[#FF5F1F]/20", border: "border-[#FFE048]/40", text: "text-[#FFE048]", size: "text-4xl sm:text-5xl" },
-        mega: { label: "MEGA!", bg: "from-[#FF5F1F]/30 to-[#FFE048]/20", border: "border-[#FF5F1F]/50", text: "text-[#FF5F1F]", size: "text-5xl sm:text-7xl", extra: "text-fire-trail" },
-        ultra: { label: "ULTRA!!", bg: "from-[#B366FF]/30 to-[#FF5F1F]/20", border: "border-[#B366FF]/50", text: "text-[#FFE048]", size: "text-6xl sm:text-8xl", extra: "text-chromatic" },
-    }[effect.intensity as "big" | "mega" | "ultra"] || { label: "", bg: "", border: "", text: "", size: "" };
+    // Map combo count to escalating hype labels
+    const COMBO_TIERS = [
+        { minCombo: 2, label: "YUGE!", fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-8xl lg:text-9xl" },
+        { minCombo: 3, label: "BIG VIBES!!", fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.8)", rotate: 2, size: "text-6xl sm:text-8xl lg:text-[7rem]" },
+        { minCombo: 4, label: "ELECTRIC!!!", fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,0.9)", rotate: -2, size: "text-6xl sm:text-8xl lg:text-[7rem]", italic: true },
+        { minCombo: 5, label: "MAX STOKED!!!!", fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.8)", rotate: 3, size: "text-5xl sm:text-7xl lg:text-[6.5rem]" },
+    ];
+
+    const tier = [...COMBO_TIERS].reverse().find(t => effect.combo >= t.minCombo) || COMBO_TIERS[0];
 
     return (
         <motion.div
@@ -284,22 +288,59 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
         >
-            {/* Streak banner */}
-            <div className={`combo-streak-banner px-8 py-3 rounded-xl bg-gradient-to-r ${config.bg} backdrop-blur-md border ${config.border}`}>
-                <div className={`font-display ${config.size} font-black ${config.text} ${(config as Record<string, string>).extra || ""}`}>
-                    {config.label}
-                </div>
-            </div>
+            {/* Background flash */}
+            <motion.div
+                className="absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.3, 0] }}
+                transition={{ duration: 0.4 }}
+                style={{ background: `radial-gradient(circle, ${tier.shadow} 0%, transparent 70%)` }}
+            />
+
+            {/* Main combo text — massive, multi-layered */}
+            <motion.div
+                className={`font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""}`}
+                initial={{ scale: 3, opacity: 0, rotate: tier.rotate * 3 }}
+                animate={{
+                    scale: [3, 0.9, 1.05, 1],
+                    opacity: [0, 1, 1, 1],
+                    rotate: [tier.rotate * 3, tier.rotate * -0.5, tier.rotate],
+                }}
+                exit={{ scale: 1.5, opacity: 0, y: -40 }}
+                transition={{
+                    duration: 0.5,
+                    times: [0, 0.4, 0.7, 1],
+                    ease: "easeOut",
+                }}
+                style={{
+                    color: tier.fill,
+                    WebkitTextStroke: `4px ${tier.stroke}`,
+                    paintOrder: "stroke fill",
+                    textShadow: `
+                        0 0 40px ${tier.shadow},
+                        0 0 80px ${tier.shadow},
+                        0 6px 0 ${tier.stroke},
+                        0 8px 20px rgba(0,0,0,0.8)
+                    `,
+                    transform: `rotate(${tier.rotate}deg)`,
+                    letterSpacing: "-0.02em",
+                }}
+            >
+                {tier.label}
+            </motion.div>
 
             {/* Score number */}
             <motion.div
-                className="font-display text-4xl sm:text-5xl font-black text-white mt-2"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: [0, 1, 1, 1, 0], y: [15, -5, -5, -5, -20] }}
-                transition={{ duration: 1.8, delay: 0.15, times: [0, 0.15, 0.5, 0.85, 1], ease: "easeOut" }}
+                className="font-display text-4xl sm:text-5xl font-black text-white mt-3"
+                initial={{ opacity: 0, y: 20, scale: 0.5 }}
+                animate={{ opacity: [0, 1, 1, 1, 0], y: [20, -5, -5, -5, -30], scale: [0.5, 1.1, 1, 1, 0.8] }}
+                transition={{ duration: 2, delay: 0.2, times: [0, 0.15, 0.3, 0.8, 1], ease: "easeOut" }}
                 style={{
-                    textShadow: "0 0 25px rgba(255, 224, 72, 1), 0 3px 6px rgba(0,0,0,0.8), 0 -2px 4px rgba(0,0,0,0.4)",
+                    textShadow: "0 0 30px rgba(255, 224, 72, 1), 0 4px 8px rgba(0,0,0,0.9), 0 -2px 4px rgba(0,0,0,0.4)",
+                    WebkitTextStroke: "2px rgba(0,0,0,0.5)",
+                    paintOrder: "stroke fill",
                 }}
             >
                 +{effect.scoreGained.toLocaleString()}
