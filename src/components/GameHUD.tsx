@@ -35,7 +35,7 @@ function HudCard({
                 padding: "3px",
                 boxShadow: `0 0 20px ${glowColor}`,
                 background: usesProgressBorder
-                    ? `conic-gradient(from -90deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.1) ${borderProgress! * 360}deg)`
+                    ? `conic-gradient(from 0deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.1) ${borderProgress! * 360}deg)`
                     : borderColor,
                 borderRadius: "1rem",
             }}
@@ -92,14 +92,14 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
     let movesBorderColor: string;
     let movesGlow: string;
     if (movesProgress > 0.6) {
-        movesBorderColor = "#4ADE80";
-        movesGlow = "rgba(74,222,128,0.35)";
-    } else if (movesProgress > 0.35) {
         movesBorderColor = "#FFE048";
         movesGlow = "rgba(255,224,72,0.35)";
-    } else if (movesProgress > 0.15) {
+    } else if (movesProgress > 0.35) {
         movesBorderColor = "#FF8C00";
         movesGlow = "rgba(255,140,0,0.35)";
+    } else if (movesProgress > 0.15) {
+        movesBorderColor = "#FF5F1F";
+        movesGlow = "rgba(255,95,31,0.35)";
     } else {
         movesBorderColor = "#EF4444";
         movesGlow = "rgba(239,68,68,0.4)";
