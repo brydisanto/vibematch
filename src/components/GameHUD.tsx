@@ -109,12 +109,12 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
     // When only showing high scores (mobile bottom row)
     if (hideMetrics) {
         return (
-            <div className="flex gap-2">
-                <HudCard className="flex-1 py-4 px-2 sm:p-2">
+            <div className="flex gap-1.5">
+                <HudCard className="flex-1 pt-5 pb-4 px-1 sm:p-2">
                     <div className="text-[#B399D4] text-[9px] font-black tracking-[0.15em] font-mundial mb-1">YOUR BEST</div>
                     <div className="font-display text-xl font-black text-[#FFE048]" style={{ textShadow: "0 0 12px rgba(255,224,72,0.3)" }}>{personalBest > 0 ? personalBest.toLocaleString() : '—'}</div>
                 </HudCard>
-                <HudCard className="flex-1 py-4 px-2 sm:p-2">
+                <HudCard className="flex-1 pt-5 pb-4 px-1 sm:p-2">
                     <div className="text-[#B399D4] text-[9px] font-black tracking-[0.15em] font-mundial mb-1">GLOBAL BEST</div>
                     <div className="font-display text-xl font-black text-[#C48CFF]" style={{ textShadow: "0 0 12px rgba(196,140,255,0.3)" }}>{globalBest > 0 ? globalBest.toLocaleString() : '—'}</div>
                 </HudCard>
@@ -127,16 +127,16 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
 
             {/* Mobile metrics row (top HUD on mobile) */}
             {hideHighScores && (
-                <div className="flex gap-2 w-full -mt-4">
+                <div className="flex gap-1.5 w-full -mt-4">
                     {/* Score */}
-                    <HudCard className="flex-1 py-4 px-2 sm:p-2">
+                    <HudCard className="flex-1 pt-6 pb-5 px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
                         <motion.div className="font-display text-2xl font-black leading-none text-center" key={score} style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}>
                             {score.toLocaleString()}
                         </motion.div>
                     </HudCard>
                     {/* Moves */}
-                    <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="flex-1 py-4 px-2 sm:p-2">
+                    <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="flex-1 pt-6 pb-5 px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
                         <AnimatePresence mode="popLayout">
                             <motion.div key={movesLeft} className={`font-display text-3xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"}`} style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}>
@@ -145,7 +145,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                         </AnimatePresence>
                     </HudCard>
                     {/* Combo */}
-                    <HudCard className="flex-1 py-4 px-2 sm:p-2">
+                    <HudCard className="flex-1 pt-6 pb-5 px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9px] font-black tracking-[0.15em] font-mundial mb-1">COMBO</div>
                         <AnimatePresence mode="popLayout">
                             <motion.div key={combo} className={`font-display text-3xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"}`}>
