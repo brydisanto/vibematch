@@ -27,20 +27,20 @@ let currentBGMTrack = 0;
 
 export const BGM_TRACK_NAMES = [
     "Feel The Beat",
-    "Chill Wave",
-    "Bossa Antigua",
-    "Samba Isobel",
-    "Local Forecast",
-    "Kool Kats"
+    "Fluidscape",
+    "Immersed",
+    "Meditation 01",
+    "Reaching Out",
+    "At Rest"
 ];
 
 const BGM_FILES = [
     "/music/feel-the-beat.mp3",
-    "/music/chill-wave.mp3",
-    "/music/bossa-antigua.mp3",
-    "/music/samba-isobel.mp3",
-    "/music/local-forecast-slower.mp3",
-    "/music/kool-kats.mp3"
+    "/music/fluidscape.mp3",
+    "/music/immersed.mp3",
+    "/music/meditation-impromptu-01.mp3",
+    "/music/reaching-out.mp3",
+    "/music/at-rest.mp3"
 ];
 
 function stopMP3() {
