@@ -15,8 +15,8 @@ const TOTAL_MOVES = 30;
 /* ===== Card wrapper for consistent styling ===== */
 function HudCard({
     children,
-    borderColor = "rgba(123, 80, 184, 0.5)",
-    glowColor = "rgba(156, 101, 240, 0.15)",
+    borderColor = "rgba(179, 102, 255, 0.8)",
+    glowColor = "rgba(156, 101, 240, 0.2)",
     borderProgress,
     className = "",
 }: {
@@ -33,7 +33,7 @@ function HudCard({
             className={`relative w-full rounded-2xl flex flex-col items-center justify-center ${className}`}
             style={{
                 padding: "3px",
-                boxShadow: `0 0 20px ${glowColor}`,
+                boxShadow: `0 8px 16px rgba(0,0,0,0.6), 0 0 20px ${glowColor}`,
                 background: usesProgressBorder
                     ? `conic-gradient(from 0deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.1) ${borderProgress! * 360}deg)`
                     : borderColor,
@@ -44,12 +44,13 @@ function HudCard({
             <div
                 className="absolute inset-[3px] z-0 rounded-[calc(1rem-3px)] overflow-hidden"
                 style={{
-                    background: "linear-gradient(180deg, #4A1D80 0%, #2E0F58 50%, #1E0840 100%)",
+                    background: "linear-gradient(180deg, #3A1061 0%, #21083B 50%, #110321 100%)",
+                    boxShadow: "inset 0 6px 15px rgba(0,0,0,0.7), inset 0 -2px 5px rgba(0,0,0,0.5)",
                 }}
             >
                 {/* Inner highlight shimmer */}
                 <div
-                    className="absolute inset-0 z-0 opacity-60"
+                    className="absolute inset-0 z-0 opacity-60 pointer-events-none"
                     style={{
                         background: "radial-gradient(ellipse at 85% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
                     }}
@@ -225,18 +226,18 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 YOUR BEST
                             </div>
-                            <div className="font-display text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-[0.05em] text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {personalBest > 0 ? personalBest.toLocaleString() : '—'}
                             </div>
                         </div>
 
-                        <div className="w-2/3 h-px bg-white/10 my-2" />
+                        <div className="w-[85%] h-[2px] bg-white/20 my-2 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
 
                         <div className="flex flex-col items-center w-full">
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 GLOBAL BEST
                             </div>
-                            <div className="font-display text-xl sm:text-2xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.3), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-[0.05em] text-xl sm:text-2xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.3), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {globalBest > 0 ? globalBest.toLocaleString() : '—'}
                             </div>
                         </div>
