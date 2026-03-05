@@ -331,20 +331,6 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
                 {tier.label}
             </motion.div>
 
-            {/* Score number */}
-            <motion.div
-                className="font-display text-4xl sm:text-5xl font-black text-white mt-3"
-                initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                animate={{ opacity: [0, 1, 1, 1, 0], y: [20, -5, -5, -5, -30], scale: [0.5, 1.1, 1, 1, 0.8] }}
-                transition={{ duration: 2, delay: 0.2, times: [0, 0.15, 0.3, 0.8, 1], ease: "easeOut" }}
-                style={{
-                    textShadow: "0 0 30px rgba(255, 224, 72, 1), 0 4px 8px rgba(0,0,0,0.9), 0 -2px 4px rgba(0,0,0,0.4)",
-                    WebkitTextStroke: "2px rgba(0,0,0,0.5)",
-                    paintOrder: "stroke fill",
-                }}
-            >
-                +{effect.scoreGained.toLocaleString()}
-            </motion.div>
         </motion.div>
     );
 }
