@@ -51,7 +51,7 @@ function HudCard({
                 <div
                     className="absolute inset-0 z-0 opacity-60"
                     style={{
-                        background: "radial-gradient(ellipse at 50% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
+                        background: "radial-gradient(ellipse at 85% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
                     }}
                 />
             </div>
