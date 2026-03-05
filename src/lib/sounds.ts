@@ -27,20 +27,20 @@ let currentBGMTrack = 0;
 
 export const BGM_TRACK_NAMES = [
     "Feel The Beat",
-    "Fluidscape",
-    "Immersed",
-    "Meditation 01",
-    "Reaching Out",
-    "At Rest"
+    "Funkorama",
+    "Night in Venice",
+    "RetroFuture Clean",
+    "Voxel Revolution",
+    "Late Night Radio"
 ];
 
 const BGM_FILES = [
     "/music/feel-the-beat.mp3",
-    "/music/fluidscape.mp3",
-    "/music/immersed.mp3",
-    "/music/meditation-impromptu-01.mp3",
-    "/music/reaching-out.mp3",
-    "/music/at-rest.mp3"
+    "/music/funkorama.mp3",
+    "/music/night-in-venice.mp3",
+    "/music/retrofuture-clean.mp3",
+    "/music/voxel-revolution.mp3",
+    "/music/late-night-radio.mp3"
 ];
 
 function stopMP3() {
