@@ -28,19 +28,25 @@ let currentBGMTrack = 0;
 export const BGM_TRACK_NAMES = [
     "Feel The Beat",
     "Funkorama",
-    "Night in Venice",
-    "RetroFuture Clean",
+    "Late Night Radio",
     "Voxel Revolution",
-    "Late Night Radio"
+    "Werq",
+    "Basic Implosion",
+    "Electrodoodle",
+    "Beach Party",
+    "EDM Detection Mode"
 ];
 
 const BGM_FILES = [
     "/music/feel-the-beat.mp3",
     "/music/funkorama.mp3",
-    "/music/night-in-venice.mp3",
-    "/music/retrofuture-clean.mp3",
+    "/music/late-night-radio.mp3",
     "/music/voxel-revolution.mp3",
-    "/music/late-night-radio.mp3"
+    "/music/werq.mp3",
+    "/music/basic-implosion.mp3",
+    "/music/electrodoodle.mp3",
+    "/music/beach-party.mp3",
+    "/music/edm-detection-mode.mp3"
 ];
 
 function stopMP3() {
