@@ -18,22 +18,7 @@ interface LeaderboardModalProps {
 
 const formatScoreWithCommas = (value: number) => {
     if (value <= 0) return "—";
-    const str = value.toLocaleString();
-    const parts = str.split(',');
-    if (parts.length <= 1) return str;
-
-    return (
-        <>
-            {parts.map((part, i) => (
-                <span key={i}>
-                    {part}
-                    {i < parts.length - 1 && (
-                        <span className="inline-block translate-y-[0.26em] mx-[-0.02em] opacity-100" style={{ fontSize: '1.05em' }}>,</span>
-                    )}
-                </span>
-            ))}
-        </>
-    );
+    return value.toLocaleString();
 };
 
 export default function LeaderboardModal({ onClose, currentUsername }: LeaderboardModalProps) {
