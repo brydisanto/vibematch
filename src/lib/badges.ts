@@ -657,15 +657,15 @@ export function getDailySeed(date?: string): number {
 
 // Tier color map
 export const TIER_COLORS: Record<BadgeTier, string> = {
-    blue: "#4A9EFF",
-    silver: "#C0C0C0",
+    blue: "#E0E0E0",     // Grey/White = Common
+    silver: "#4A9EFF",   // Blue = Uncommon
     gold: "#FFE048",
     cosmic: "#B366FF",
 };
 
 export const TIER_BORDER_COLORS: Record<BadgeTier, string> = {
-    blue: "rgba(74, 158, 255, 0.5)",
-    silver: "rgba(192, 192, 192, 0.5)",
+    blue: "rgba(224, 224, 224, 0.4)",
+    silver: "rgba(74, 158, 255, 0.5)",
     gold: "rgba(255, 224, 72, 0.6)",
     cosmic: "rgba(179, 102, 255, 0.7)",
 };

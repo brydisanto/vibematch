@@ -147,7 +147,6 @@ function RankMedallion({ color, accentColor, label }: { color: string; accentCol
 /* ===== ANIMATED SCORE COUNTER ===== */
 function AnimatedScore({ target, color }: { target: number; color: string }) {
     const [displayValue, setDisplayValue] = useState(0);
-    const [showShimmer, setShowShimmer] = useState(false);
     const [showPulse, setShowPulse] = useState(false);
     const frameRef = useRef<number>(0);
 
@@ -165,7 +164,6 @@ function AnimatedScore({ target, color }: { target: number; color: string }) {
             if (progress < 1) {
                 frameRef.current = requestAnimationFrame(animate);
             } else {
-                setShowShimmer(true);
                 setShowPulse(true);
             }
         };
@@ -201,33 +199,16 @@ function AnimatedScore({ target, color }: { target: number; color: string }) {
                 className="font-display text-5xl sm:text-7xl font-black tabular-nums"
                 style={{
                     color,
-                    textShadow: `0 0 40px ${color}80, 0 0 80px ${color}30`,
+                    textShadow: `0 0 40px ${color}60, 0 0 80px ${color}20`,
                 }}
                 animate={showPulse ? {
                     scale: [1, 1.06, 1],
-                    filter: [`brightness(1)`, `brightness(1.3)`, `brightness(1)`],
+                    filter: [`brightness(1)`, `brightness(1.2)`, `brightness(1)`],
                 } : {}}
                 transition={{ duration: 0.4, ease: "easeOut" }}
             >
                 {displayValue.toLocaleString()}
             </motion.span>
-
-            {showShimmer && (
-                <motion.div
-                    className="absolute inset-0 pointer-events-none overflow-hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <div
-                        className="absolute inset-0 animate-shimmer"
-                        style={{
-                            background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
-                            backgroundSize: "200% 100%",
-                        }}
-                    />
-                </motion.div>
-            )}
         </div>
     );
 }
@@ -254,8 +235,8 @@ function getRank(score: number) {
 
 /* ===== TIER LABEL COLORS ===== */
 const TIER_LABEL_CONFIG: Record<BadgeTier, { bg: string; text: string }> = {
-    blue: { bg: "rgba(74, 158, 255, 0.15)", text: "#4A9EFF" },
-    silver: { bg: "rgba(192, 192, 192, 0.15)", text: "#C0C0C0" },
+    blue: { bg: "rgba(255, 255, 255, 0.1)", text: "#E0E0E0" }, // Grey/White
+    silver: { bg: "rgba(74, 158, 255, 0.15)", text: "#4A9EFF" }, // Blue
     gold: { bg: "rgba(255, 224, 72, 0.15)", text: "#FFE048" },
     cosmic: { bg: "rgba(179, 102, 255, 0.15)", text: "#B366FF" },
 };
@@ -280,7 +261,11 @@ function StatCard({
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
-            whileHover={{ scale: 1.03, borderColor: "rgba(255,255,255,0.15)" }}
+            whileHover={{
+                scale: 1.03,
+                borderColor: "rgba(255,255,255,0.2)",
+                transition: { duration: 0.15, ease: "easeOut" }
+            }}
         >
             {/* Subtle top highlight */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -324,8 +309,9 @@ function BadgeCard({
             }}
             whileHover={{
                 scale: 1.08,
-                borderColor: `${TIER_COLORS[badge.tier]}50`,
-                boxShadow: `0 0 20px ${TIER_COLORS[badge.tier]}25`,
+                borderColor: `${TIER_COLORS[badge.tier]}60`,
+                boxShadow: `0 0 20px ${TIER_COLORS[badge.tier]}30`,
+                transition: { type: "spring", stiffness: 400, damping: 25 }
             }}
         >
             {/* Top accent stripe */}
@@ -375,7 +361,7 @@ function BadgeCard({
 
             {/* Badge name */}
             <span
-                className="text-[9px] sm:text-[10px] font-mundial font-medium max-w-[60px] truncate text-center leading-tight"
+                className="text-[9px] sm:text-[10px] font-mundial font-medium text-center leading-tight px-1"
                 style={{ color: `${TIER_COLORS[badge.tier]}c0` }}
             >
                 {badge.name}

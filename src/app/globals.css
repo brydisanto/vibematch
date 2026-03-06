@@ -9,8 +9,8 @@
   --color-pink-accent: #FF6B9D;
   --color-gvc-orange: #FF5F1F;
   --color-gvc-green: #2EFF2E;
-  --color-gvc-blue: #4A9EFF;
-  --color-gvc-silver: #C0C0C0;
+  --color-gvc-blue: #E0E0E0;
+  --color-gvc-silver: #4A9EFF;
   --color-gvc-cosmic: #B366FF;
 
   --font-family-display: var(--font-brice), serif;
@@ -19,15 +19,10 @@
 }
 
 :root {
+  --gvc-blue: #E0E0E0;
+  --gvc-silver: #4A9EFF;
   --gvc-gold: #FFE048;
-  --gvc-gold-dim: rgba(255, 224, 72, 0.5);
-  --gvc-orange: #FF5F1F;
-  --gvc-orange-dim: rgba(255, 95, 31, 0.5);
-  --gvc-green: #2EFF2E;
   --gvc-cosmic: #B366FF;
-  --gvc-cosmic-dim: rgba(179, 102, 255, 0.5);
-  --gvc-blue: #4A9EFF;
-  --gvc-silver: #C0C0C0;
   --gvc-dark: #1a1035;
   --gvc-deep: #0d2137;
   --foreground: #ffffff;
@@ -936,11 +931,11 @@ body {
 
 /* ===== TIER GLOW COLORS ===== */
 .tier-glow-blue {
-  box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+  box-shadow: 0 0 12px rgba(224, 224, 224, 0.4);
 }
 
 .tier-glow-silver {
-  box-shadow: 0 0 12px rgba(192, 192, 192, 0.4);
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
 }
 
 .tier-glow-gold {
