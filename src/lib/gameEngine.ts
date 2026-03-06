@@ -360,6 +360,13 @@ export function hasValidMoves(board: Cell[][]): boolean {
 
 // ===== PROCESS TURN =====
 
+export interface TurnStep {
+    board: Cell[][];
+    type: "swap" | "match" | "gravity" | "special";
+    matchesFound?: Match[];
+    scoreGained?: number;
+}
+
 export interface TurnResult {
     board: Cell[][];
     scoreGained: number;
@@ -367,6 +374,7 @@ export interface TurnResult {
     combo: number;
     specialTilesCreated: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
+    steps: TurnStep[];
 }
 
 export function processTurn(
@@ -377,6 +385,13 @@ export function processTurn(
 ): TurnResult | null {
     // Swap tiles
     let currentBoard = swapTiles(board, pos1, pos2);
+    const steps: TurnStep[] = [];
+
+    // Step 1: The Swap
+    steps.push({
+        board: currentBoard.map(row => row.map(c => ({ ...c }))),
+        type: "swap"
+    });
 
     // Check for matches
     const initialMatches = findAllMatches(currentBoard);
@@ -396,18 +411,19 @@ export function processTurn(
         totalMatches = [...totalMatches, ...matches];
 
         // Check for special tiles to create
+        const roundSpecials: { pos: Position; type: SpecialTileType }[] = [];
         for (const match of matches) {
             const specialType = getSpecialTileForMatch(match);
             if (specialType) {
-                // Place special tile at the midpoint of the match
                 const midIdx = Math.floor(match.positions.length / 2);
                 const specialPos = match.positions[midIdx];
+                roundSpecials.push({ pos: specialPos, type: specialType });
                 specialTilesCreated.push({ pos: specialPos, type: specialType });
             }
         }
 
-        // Score this cascade
-        totalScore += calculateMatchScore(matches, combo);
+        const scoreThisRound = calculateMatchScore(matches, combo);
+        totalScore += scoreThisRound;
         combo++;
 
         // Mark matched tiles
@@ -418,7 +434,7 @@ export function processTurn(
             }
         }
 
-        // Check for special tile activations in matched cells
+        // Special tile activations
         for (const posKey of matchedPositions) {
             const [r, c] = posKey.split(",").map(Number);
             const cell = currentBoard[r][c];
@@ -427,11 +443,11 @@ export function processTurn(
                 for (const aPos of affected) {
                     matchedPositions.add(`${aPos.row},${aPos.col}`);
                 }
-                totalScore += 200; // Bonus for special activation
+                totalScore += 200;
             }
         }
 
-        // Remove matched tiles
+        // Capture Match State (Matched tiles marked for removal)
         currentBoard = currentBoard.map((row, r) =>
             row.map((cell, c) => ({
                 ...cell,
@@ -439,21 +455,30 @@ export function processTurn(
             }))
         );
 
+        steps.push({
+            board: currentBoard.map(row => row.map(c => ({ ...c }))),
+            type: "match",
+            matchesFound: matches,
+            scoreGained: scoreThisRound
+        });
+
         // Apply gravity and fill
         currentBoard = applyGravity(currentBoard, gameBadges);
 
-        // Place special tiles that were earned
-        for (const special of specialTilesCreated) {
-            if (
-                special.pos.row < BOARD_SIZE &&
-                special.pos.col < BOARD_SIZE
-            ) {
+        // Place special tiles
+        for (const special of roundSpecials) {
+            if (special.pos.row < BOARD_SIZE && special.pos.col < BOARD_SIZE) {
                 currentBoard[special.pos.row][special.pos.col] = {
                     ...currentBoard[special.pos.row][special.pos.col],
                     isSpecial: special.type,
                 };
             }
         }
+
+        steps.push({
+            board: currentBoard.map(row => row.map(c => ({ ...c }))),
+            type: "gravity"
+        });
 
         // Check for new matches from cascade
         matches = findAllMatches(currentBoard);
@@ -467,6 +492,7 @@ export function processTurn(
         combo,
         specialTilesCreated,
         cascadeCount,
+        steps
     };
 }
 
@@ -481,37 +507,30 @@ export function triggerSpecialTile(
     if (!cell.isSpecial) return null;
 
     let currentBoard = board.map(row => row.map(c => ({ ...c })));
+    const steps: TurnStep[] = [];
     const specialType = cell.isSpecial;
 
-    // Get affected positions
+    // Phase 1: Special activation
     const affected = applySpecialTile(currentBoard, pos, specialType);
-
-    // Mark affected tiles as matched
     const matchedPositions = new Set<string>();
-    for (const aPos of affected) {
-        matchedPositions.add(`${aPos.row},${aPos.col}`);
-    }
-    // Also clear the special tile itself
+    for (const aPos of affected) matchedPositions.add(`${aPos.row},${aPos.col}`);
     matchedPositions.add(`${pos.row},${pos.col}`);
 
-    // Check if any affected tiles are also special — chain them
+    // Chain reaction check
     for (const posKey of matchedPositions) {
         const [r, c] = posKey.split(",").map(Number);
         const affectedCell = currentBoard[r][c];
         if (affectedCell.isSpecial && !(r === pos.row && c === pos.col)) {
             const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, affectedCell.isSpecial);
-            for (const chainPos of chainAffected) {
-                matchedPositions.add(`${chainPos.row},${chainPos.col}`);
-            }
+            for (const chainPos of chainAffected) matchedPositions.add(`${chainPos.row},${chainPos.col}`);
         }
     }
 
-    // Score the special activation
     let totalScore = 200 + (affected.length * 25);
     let combo = 1;
     let cascadeCount = 0;
 
-    // Remove matched tiles
+    // Mark matched
     currentBoard = currentBoard.map((row, r) =>
         row.map((c, col) => ({
             ...c,
@@ -520,31 +539,38 @@ export function triggerSpecialTile(
         }))
     );
 
+    steps.push({
+        board: currentBoard.map(row => row.map(c => ({ ...c }))),
+        type: "special",
+        scoreGained: totalScore
+    });
+
     // Apply gravity
     currentBoard = applyGravity(currentBoard, gameBadges);
+    steps.push({
+        board: currentBoard.map(row => row.map(c => ({ ...c }))),
+        type: "gravity"
+    });
 
-    // Process any resulting cascades
+    // Process cascades
     let matches = findAllMatches(currentBoard);
     while (matches.length > 0) {
         combo++;
         cascadeCount++;
-        totalScore += calculateMatchScore(matches, combo);
+        const scoreThisRound = calculateMatchScore(matches, combo);
+        totalScore += scoreThisRound;
 
         const cascadeMatched = new Set<string>();
         for (const match of matches) {
-            for (const p of match.positions) {
-                cascadeMatched.add(`${p.row},${p.col}`);
-            }
+            for (const p of match.positions) cascadeMatched.add(`${p.row},${p.col}`);
         }
 
-        // Check special tile activations in cascade
+        // Check special activations in cascade
         for (const posKey of cascadeMatched) {
             const [r, c] = posKey.split(",").map(Number);
             if (currentBoard[r][c].isSpecial) {
                 const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, currentBoard[r][c].isSpecial!);
-                for (const chainPos of chainAffected) {
-                    cascadeMatched.add(`${chainPos.row},${chainPos.col}`);
-                }
+                for (const chainPos of chainAffected) cascadeMatched.add(`${chainPos.row},${chainPos.col}`);
                 totalScore += 200;
             }
         }
@@ -556,16 +582,23 @@ export function triggerSpecialTile(
             }))
         );
 
+        steps.push({
+            board: currentBoard.map(row => row.map(c => ({ ...c }))),
+            type: "match",
+            matchesFound: matches,
+            scoreGained: scoreThisRound
+        });
+
         currentBoard = applyGravity(currentBoard, gameBadges);
+        steps.push({
+            board: currentBoard.map(row => row.map(c => ({ ...c }))),
+            type: "gravity"
+        });
+
         matches = findAllMatches(currentBoard);
     }
 
-    // Build a synthetic match for effects
-    const syntheticMatch: Match = {
-        positions: affected,
-        badge: cell.badge,
-        isHorizontal: true,
-    };
+    const syntheticMatch: Match = { positions: affected, badge: cell.badge, isHorizontal: true };
 
     return {
         board: currentBoard,
@@ -574,5 +607,6 @@ export function triggerSpecialTile(
         combo,
         specialTilesCreated: [],
         cascadeCount,
+        steps
     };
 }

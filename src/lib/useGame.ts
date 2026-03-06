@@ -84,169 +84,141 @@ export function useGame(): UseGameReturn {
         setIsAnimating(false);
     }, []);
 
-    // Shared helper: apply a TurnResult to game state with effects
-    const applyResult = useCallback((
-        prev: GameState,
+    // Sequentially apply board steps with delays to allow animations to play
+    const applySteps = useCallback(async (
+        initialState: GameState,
         result: TurnResult,
         effectPos: Position,
         costMove: boolean,
-    ): GameState => {
-        const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
-        const newScore = prev.score + result.scoreGained;
-        const newMatchCount = prev.matchCount + result.matchesFound.length;
-        const newMaxCombo = Math.max(prev.maxCombo, result.combo);
-        const maxMatchSize = Math.max(...result.matchesFound.map(m => m.positions.length));
-        const allPositions = result.matchesFound.flatMap(m => m.positions);
+    ) => {
+        setIsAnimating(true);
+        const movesAfterTurn = costMove ? initialState.movesLeft - 1 : initialState.movesLeft;
+        let currentScore = initialState.score;
+        let currentMatchCount = initialState.matchCount;
 
-        // Play match sounds (escalated)
-        playMatchSound(result.scoreGained, result.combo, maxMatchSize);
+        // Process each step returned by the engine
+        for (let i = 0; i < result.steps.length; i++) {
+            const step = result.steps[i];
+            const isLast = i === result.steps.length - 1;
 
-        // Play special tile sounds
-        for (const special of result.specialTilesCreated) {
-            setTimeout(() => {
-                if (special.type === "bomb") playBombSound();
-                if (special.type === "cosmic_blast") playCosmicBlastSound();
-            }, 200);
-        }
+            // 1. Play sounds for specific step types
+            if (step.type === "match" && step.matchesFound) {
+                const stepScore = step.scoreGained || 0;
+                const maxMatchSize = Math.max(...step.matchesFound.map(m => m.positions.length));
+                playMatchSound(stepScore, i / 2, maxMatchSize); // Approximation of combo
+                currentScore += stepScore;
+                currentMatchCount += step.matchesFound.length;
 
-        // Play cascade sounds
-        if (result.cascadeCount > 0) {
-            for (let i = 0; i < result.cascadeCount; i++) {
-                setTimeout(() => playCascadeSound(i + 1), 250 + i * 150);
+                // Set match effect for visual layer
+                const allPositions = step.matchesFound.flatMap(m => m.positions);
+                const intensity = getIntensity(stepScore, i / 2, maxMatchSize);
+                setMatchEffect({
+                    intensity,
+                    scoreGained: stepScore,
+                    combo: Math.floor(i / 2) + 1,
+                    maxMatchSize,
+                    positions: allPositions,
+                    timestamp: Date.now(),
+                });
+
+                // Add score popup
+                const popupId = `popup_${popupCounter.current++}`;
+                setScorePopups(pops => [...pops, { id: popupId, value: stepScore, x: effectPos.col, y: effectPos.row }]);
+                setTimeout(() => setScorePopups(pops => pops.filter(p => p.id !== popupId)), 2000);
+
+                // Haptic feedback
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                    navigator.vibrate(intensity === "ultra" ? [50, 30, 80] : intensity === "mega" ? [50] : [30]);
+                }
+            } else if (step.type === "special") {
+                playBombSound();
+                currentScore += step.scoreGained || 0;
+            } else if (step.type === "gravity" && i > 1) {
+                // Secondary gravity in cascades
+                playCascadeSound(Math.floor(i / 2));
             }
+
+            // 2. Update board state
+            setState(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    board: step.board,
+                    score: currentScore,
+                    matchCount: currentMatchCount,
+                    movesLeft: movesAfterTurn,
+                    combo: Math.floor(i / 2) + (step.type === "match" ? 1 : 0),
+                    // If last step, sync gamePhase
+                    gamePhase: isLast && (movesAfterTurn <= 0 || !hasValidMoves(step.board)) ? "gameover" : "playing"
+                };
+            });
+
+            // 3. Wait for animation to finish before next step
+            const delay = step.type === "swap" ? 280
+                : step.type === "match" ? 450
+                    : step.type === "special" ? 500
+                        : 400; // gravity
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            if (step.type === "match") setMatchEffect(null);
         }
 
-        // Calculate match intensity for visual effects
-        const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
-
-        // Set match effect for board to consume
-        setMatchEffect({
-            intensity,
-            scoreGained: result.scoreGained,
-            combo: result.combo,
-            maxMatchSize,
-            positions: allPositions,
-            timestamp: Date.now(),
-        });
-
-        // Haptic feedback on mobile
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            const pattern =
-                intensity === "ultra" ? [50, 30, 80]
-                    : intensity === "mega" ? [50]
-                        : intensity === "big" ? [30]
-                            : [15];
-            navigator.vibrate(pattern);
-        }
-
-        // Clear match effect after animation
-        setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 1800 : intensity === "mega" ? 1200 : 800);
-
-        // Add score popup
-        const popupId = `popup_${popupCounter.current++}`;
-        setScorePopups((pops) => [
-            ...pops,
-            {
-                id: popupId,
-                value: result.scoreGained,
-                x: effectPos.col,
-                y: effectPos.row,
-            },
-        ]);
-
-        // Remove popup after animation
-        setTimeout(() => {
-            setScorePopups((pops) => pops.filter((p) => p.id !== popupId));
-        }, 2000);
-
+        setIsAnimating(false);
         setLastTurnResult(result);
 
-        // Start animation sequence
-        setIsAnimating(true);
-        setTimeout(() => {
-            setIsAnimating(false);
-        }, 500);
-
-        // Check game over
-        const gameOver = newMovesLeft <= 0 || !hasValidMoves(result.board);
-
-        if (gameOver) {
-            setTimeout(() => playGameOverSound(), 600);
-        }
-
-        return {
-            ...prev,
-            board: result.board,
-            score: newScore,
-            movesLeft: newMovesLeft,
-            combo: result.combo,
-            maxCombo: newMaxCombo,
-            selectedTile: null,
-            gamePhase: gameOver ? "gameover" : "playing",
-            matchCount: newMatchCount,
-        };
+        // Final game over check/sound
+        setState(final => {
+            if (final?.gamePhase === "gameover") {
+                playGameOverSound();
+            }
+            return final;
+        });
     }, []);
 
     const selectTile = useCallback(
         (pos: Position) => {
             if (!state || state.gamePhase !== "playing" || isAnimating) return;
 
-            setState((prev) => {
-                if (!prev) return prev;
-
-                // Check if clicked tile is a special tile — activate it immediately
-                const clickedCell = prev.board[pos.row]?.[pos.col];
-                if (clickedCell?.isSpecial) {
-                    const result = triggerSpecialTile(prev.board, pos, prev.gameBadges);
-                    if (result) {
-                        // Play the appropriate special tile sound
-                        if (clickedCell.isSpecial === "bomb") playBombSound();
-                        else if (clickedCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
-                        else playBombSound(); // vibestreak uses bomb-like sound
-
-                        return applyResult(prev, result, pos, true);
-                    }
+            // Check if clicked tile is a special tile
+            const clickedCell = state.board[pos.row]?.[pos.col];
+            if (clickedCell?.isSpecial) {
+                const result = triggerSpecialTile(state.board, pos, state.gameBadges);
+                if (result) {
+                    applySteps(state, result, pos, true);
+                    return;
                 }
+            }
 
-                // No tile selected yet — select this one
-                if (!prev.selectedTile) {
-                    playSelectSound();
-                    return { ...prev, selectedTile: pos };
-                }
+            // No selection
+            if (!state.selectedTile) {
+                playSelectSound();
+                setState(prev => prev ? ({ ...prev, selectedTile: pos }) : null);
+                return;
+            }
 
-                // Clicking same tile — deselect
-                if (
-                    prev.selectedTile.row === pos.row &&
-                    prev.selectedTile.col === pos.col
-                ) {
-                    playDeselectSound();
-                    return { ...prev, selectedTile: null };
-                }
+            // Same tile
+            if (state.selectedTile.row === pos.row && state.selectedTile.col === pos.col) {
+                playDeselectSound();
+                setState(prev => prev ? ({ ...prev, selectedTile: null }) : null);
+                return;
+            }
 
-                // Not adjacent — reselect new tile
-                if (!isAdjacentSwap(prev.selectedTile, pos)) {
-                    playSelectSound();
-                    return { ...prev, selectedTile: pos };
-                }
-
-                // Adjacent tile — attempt swap
-                const result = processTurn(
-                    prev.board,
-                    prev.selectedTile,
-                    pos,
-                    prev.gameBadges
-                );
-
+            // Adjacent swap
+            if (isAdjacentSwap(state.selectedTile, pos)) {
+                const result = processTurn(state.board, state.selectedTile, pos, state.gameBadges);
                 if (!result) {
-                    // Invalid swap — no match. Deselect
                     playInvalidSwapSound();
-                    return { ...prev, selectedTile: null };
+                    setState(prev => prev ? ({ ...prev, selectedTile: null }) : null);
+                    return;
                 }
-
-                return applyResult(prev, result, pos, true);
-            });
+                applySteps(state, result, pos, true);
+            } else {
+                // Non-adjacent, just reselect
+                playSelectSound();
+                setState(prev => prev ? ({ ...prev, selectedTile: pos }) : null);
+            }
         },
-        [state, isAnimating, applyResult]
+        [state, isAnimating, applySteps]
     );
 
     return {
