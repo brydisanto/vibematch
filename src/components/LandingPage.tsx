@@ -280,10 +280,10 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                                 <div className="relative flex items-center justify-between z-10 w-full">
                                     <div className="flex flex-col items-start justify-center">
                                         <h2 className="font-display text-xl sm:text-2xl font-black text-[#5B2D6E] mb-1 uppercase">
-                                            Daily Challenge Mode
+                                            THE DAILY CHALLENGE
                                         </h2>
                                         <p className="text-[#7B6B88] text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                            A new universal board every day. 1 chance to max stoke it.
+                                            Same board for everyone. 1 shot to stoke it to the max!
                                         </p>
                                     </div>
                                     <div className="w-10 h-10 shrink-0 rounded-full bg-[#E8D0F0]/60 flex items-center justify-center border border-[#D4B0E8] group-hover:bg-[#E8D0F0] transition-colors">
