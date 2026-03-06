@@ -286,7 +286,6 @@ function StatCard({
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
             <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                <Icon size={12} className="text-white/30" />
                 <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider">
                     {label}
                 </div>
@@ -533,13 +532,6 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                 delay: 0.7,
                             }}
                         >
-                            {/* Score ambient glow */}
-                            <div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                    background: `radial-gradient(ellipse at 50% 50%, ${rank.color}12 0%, transparent 60%)`,
-                                }}
-                            />
                             <AnimatedScore target={score} color={rank.color} />
                         </motion.div>
 
@@ -584,9 +576,9 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                             </div>
 
-                            {/* Badge grid — 4 columns */}
-                            <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-                                {gameBadges.slice(0, 8).map((badge, i) => (
+                            {/* Badge grid — 3 columns for 6 badges */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                                {gameBadges.slice(0, 6).map((badge, i) => (
                                     <BadgeCard
                                         key={badge.id}
                                         badge={badge}
