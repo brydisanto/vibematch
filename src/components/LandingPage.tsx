@@ -56,7 +56,9 @@ function FloatingBadges() {
                 delay: -(Math.random() * 60), // Negative delay so the screen is pre-filled on load!
             };
         });
-        setItems(newItems);
+        requestAnimationFrame(() => {
+            setItems(newItems);
+        });
     }, []);
 
     return (
@@ -121,7 +123,9 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
     useEffect(() => {
         const savedUsername = localStorage.getItem('vibematch_username');
         if (savedUsername) {
-            setUsername(savedUsername);
+            requestAnimationFrame(() => {
+                setUsername(savedUsername);
+            });
             fetch(`/api/profiles?username=${savedUsername}`)
                 .then(res => res.json())
                 .then(data => {
