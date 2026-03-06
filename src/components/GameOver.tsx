@@ -541,7 +541,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                         </motion.div>
 
                         {/* ===== STATS ROW ===== */}
-                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-5">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-6">
                             <StatCard
                                 label="Matches"
                                 value={matchCount}
@@ -556,14 +556,35 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                 icon={Flame}
                                 delay={1.0}
                             />
-                            <StatCard
-                                label="Badges"
-                                value={gameBadges.length}
-                                color="text-white"
-                                icon={Award}
-                                delay={1.1}
-                            />
                         </div>
+
+                        {/* ===== BADGES PLAYED — Trophy Showcase ===== */}
+                        <motion.div
+                            className="mb-6"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 1.15 }}
+                        >
+                            {/* Section header */}
+                            <div className="flex items-center gap-3 mb-3.5">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                                <span className="text-[10px] sm:text-xs text-white/30 font-mundial uppercase tracking-[0.2em]">
+                                    Badges Played
+                                </span>
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                            </div>
+
+                            {/* Badge grid — 3 columns for 6 badges */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                                {gameBadges.slice(0, 6).map((badge, i) => (
+                                    <BadgeCard
+                                        key={badge.id}
+                                        badge={badge}
+                                        delay={1.2 + i * 0.07}
+                                    />
+                                ))}
+                            </div>
+                        </motion.div>
 
 
                         {/* ===== ACTION BUTTONS ===== */}
