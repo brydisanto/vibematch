@@ -51,7 +51,7 @@ function nextCellId(): string {
 
 export function createInitialState(mode: GameMode): GameState {
     const seed = mode === "daily" ? getDailySeed() : undefined;
-    const gameBadges = selectGameBadges(8, seed);
+    const gameBadges = selectGameBadges(6, seed);
     const board = createBoard(gameBadges, seed);
 
     return {

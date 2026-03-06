@@ -601,7 +601,7 @@ export const BADGES: Badge[] = [
 ];
 
 // Select N random badges for a game session, ensuring tier diversity
-export function selectGameBadges(count: number = 8, seed?: number): Badge[] {
+export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
 
     const byTier: Record<BadgeTier, Badge[]> = {
@@ -611,11 +611,11 @@ export function selectGameBadges(count: number = 8, seed?: number): Badge[] {
         cosmic: shuffle(BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
 
-    // Distribution: 3 blue, 2 silver, 2 gold, 1 cosmic = 8 tiles
+    // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
     const selected: Badge[] = [
         ...byTier.blue.slice(0, 3),
-        ...byTier.silver.slice(0, 2),
-        ...byTier.gold.slice(0, 2),
+        ...byTier.silver.slice(0, 1),
+        ...byTier.gold.slice(0, 1),
         ...byTier.cosmic.slice(0, 1),
     ];
 
