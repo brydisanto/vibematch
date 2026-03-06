@@ -83,11 +83,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                 <h2 className="font-display text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                                     {mode === "login" ? "Sign In!" : "Sign Up!"}
                                 </h2>
-                                {mode === "login" && (
-                                    <p className="text-white/40 text-[10px] font-mundial mt-2 uppercase tracking-widest font-bold max-w-[200px] mx-auto leading-relaxed">
-                                        Login to save your scores and play the daily challenge
-                                    </p>
-                                )}
+                                <p className="text-white/40 text-[10px] font-mundial mt-2 uppercase tracking-widest font-bold max-w-[200px] mx-auto leading-relaxed">
+                                    {mode === "login"
+                                        ? "Login to save your scores and play the daily challenge"
+                                        : "Sign up to save your scores and play the daily challenge"}
+                                </p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
