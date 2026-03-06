@@ -16,6 +16,26 @@ interface LeaderboardModalProps {
     currentUsername?: string;
 }
 
+const formatScoreWithCommas = (value: number) => {
+    if (value <= 0) return "—";
+    const str = value.toLocaleString();
+    const parts = str.split(',');
+    if (parts.length <= 1) return str;
+
+    return (
+        <>
+            {parts.map((part, i) => (
+                <span key={i}>
+                    {part}
+                    {i < parts.length - 1 && (
+                        <span className="inline-block translate-y-[0.26em] mx-[-0.02em] opacity-100" style={{ fontSize: '1.05em' }}>,</span>
+                    )}
+                </span>
+            ))}
+        </>
+    );
+};
+
 export default function LeaderboardModal({ onClose, currentUsername }: LeaderboardModalProps) {
     const [mode, setMode] = useState<"classic" | "daily">("classic");
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -69,8 +89,8 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                         <button
                             onClick={() => setMode("classic")}
                             className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${mode === "classic"
-                                    ? "bg-gradient-to-b from-[#FFD700] to-[#FF8C00] text-black shadow-[0_2px_8px_rgba(255,215,0,0.4)]"
-                                    : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                                ? "bg-gradient-to-b from-[#FFD700] to-[#FF8C00] text-black shadow-[0_2px_8px_rgba(255,215,0,0.4)]"
+                                : "text-white/40 hover:text-white/80 hover:bg-white/5"
                                 }`}
                         >
                             <Zap size={16} className={mode === "classic" ? "text-black" : "text-white/40"} />
@@ -79,8 +99,8 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                         <button
                             onClick={() => setMode("daily")}
                             className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${mode === "daily"
-                                    ? "bg-gradient-to-b from-[#B366FF] to-[#8A2BE2] text-white shadow-[0_2px_8px_rgba(179,102,255,0.4)]"
-                                    : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                                ? "bg-gradient-to-b from-[#B366FF] to-[#8A2BE2] text-white shadow-[0_2px_8px_rgba(179,102,255,0.4)]"
+                                : "text-white/40 hover:text-white/80 hover:bg-white/5"
                                 }`}
                         >
                             <Trophy size={16} className={mode === "daily" ? "text-white" : "text-white/40"} />
@@ -89,7 +109,7 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                     </div>
 
                     {/* Scrollable Leaderboard List */}
-                    <div className="w-full flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar min-h-[300px]">
+                    <div className="w-full flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar min-h-[350px]">
                         <AnimatePresence mode="wait">
                             {isLoading ? (
                                 <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-center items-center h-full">
@@ -108,12 +128,12 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                                         return (
                                             <div
                                                 key={`${entry.username}-${index}`}
-                                                className={`flex items-center gap-3 p-3 rounded-2xl mb-3 border ${isCurrentUser
-                                                        ? "bg-white/10 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-                                                        : "bg-[#1A1525] border-[#3A3344]"
+                                                className={`flex items-center gap-4 p-3 pr-5 rounded-2xl mb-3 border ${isCurrentUser
+                                                    ? "bg-white/10 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                                                    : "bg-[#1A1525] border-[#3A3344]"
                                                     }`}
                                             >
-                                                <div className="flex-shrink-0 w-8 text-center font-black text-white/40 text-lg">
+                                                <div className="flex-shrink-0 w-6 text-center font-black text-white/30 text-base">
                                                     {index + 1}
                                                 </div>
                                                 <div className="w-10 h-10 rounded-full bg-[#2A2333] border border-[#3A3344] overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -123,11 +143,11 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                                                         <span className="text-white/20 font-bold text-xs uppercase">{entry.username.substring(0, 2)}</span>
                                                     )}
                                                 </div>
-                                                <div className="flex-1 font-bold text-sm sm:text-base text-white truncate">
+                                                <div className="flex-1 font-bold text-sm sm:text-base text-white/90 truncate mr-2">
                                                     {entry.username}
                                                 </div>
-                                                <div className="flex-shrink-0 font-black text-[#FFD700] text-lg sm:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                                                    {entry.score.toLocaleString()}
+                                                <div className="flex-shrink-0 font-display font-black text-[#FFD700] text-xl sm:text-2xl tracking-[0.05em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                                    {formatScoreWithCommas(entry.score)}
                                                 </div>
                                             </div>
                                         );
