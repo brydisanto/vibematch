@@ -543,7 +543,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                         {/* ===== STATS ROW ===== */}
                         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-6">
                             <StatCard
-                                label="Matches"
+                                label="MATCHES MADE"
                                 value={matchCount}
                                 color="text-white"
                                 icon={Target}
@@ -597,7 +597,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             {/* Home button */}
                             <button
                                 onClick={onGoHome}
-                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group"
+                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group"
                             >
                                 <Home size={16} className="text-white/50 group-hover:text-white/80 transition-colors" />
                                 Home
@@ -606,7 +606,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             {/* Share on X button */}
                             <button
                                 onClick={handleShareX}
-                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group"
+                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group"
                             >
                                 <div className="text-white/50 group-hover:text-white/80 transition-colors">
                                     <XIcon size={14} />
@@ -618,7 +618,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             {gameMode === "classic" && (
                                 <button
                                     onClick={onPlayAgain}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-[#FFE048] hover:bg-white/[0.1] hover:border-[#FFE048]/50 hover:text-[#FFD000] font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group relative overflow-hidden"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-[#FFE048] hover:bg-white/[0.1] hover:border-[#FFE048]/50 hover:text-[#FFD000] font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group relative overflow-hidden"
                                     style={{ textShadow: "0 0 10px rgba(255,224,72,0.3)" }}
                                 >
                                     <RotateCcw size={16} className="text-[#FFE048]/60 group-hover:text-[#FFE048] transition-colors" />
