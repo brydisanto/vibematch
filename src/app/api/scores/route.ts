@@ -23,7 +23,14 @@ export async function POST(req: Request) {
             const maxCurrent = Math.max(Number(currentScore1 || 0), Number(currentScore2 || 0));
             isNewBest = maxCurrent === 0 || score > maxCurrent;
 
-            await kv.zadd('classic_leaderboard', { score, member: canonicalUsername });
+            // Vercel KV zadd will update the score even if lower, so always save the max known score
+            const scoreToSave = Math.max(maxCurrent, score);
+            await kv.zadd('classic_leaderboard', { score: scoreToSave, member: canonicalUsername });
+
+            // Clean up the split variant if it exists
+            if (canonicalUsername !== username && currentScore2 !== null) {
+                await kv.zrem('classic_leaderboard', username);
+            }
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
 
@@ -70,16 +77,34 @@ export async function GET(req: Request) {
         leaderboard = await kv.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
 
         // Normalize format
-        let formatted = [];
+        let formatted: { member: string, score: number }[] = [];
         if (leaderboard.length > 0) {
             if (typeof leaderboard[0] === 'object' && leaderboard[0] !== null) {
-                formatted = leaderboard;
+                formatted = leaderboard.map((entry: any) => ({
+                    member: entry.member || entry.value,
+                    score: Number(entry.score)
+                }));
             } else {
                 for (let i = 0; i < leaderboard.length; i += 2) {
-                    formatted.push({ member: leaderboard[i], score: leaderboard[i + 1] });
+                    formatted.push({ member: String(leaderboard[i]), score: Number(leaderboard[i + 1]) });
                 }
             }
         }
+
+        // Deduplicate case-insensitively, keeping the highest score
+        const uniqueEntriesMap = new Map<string, { member: string, score: number }>();
+        for (const entry of formatted) {
+            const memberStr = entry.member;
+            const lowerMember = memberStr.toLowerCase();
+            if (!uniqueEntriesMap.has(lowerMember) || entry.score > uniqueEntriesMap.get(lowerMember)!.score) {
+                uniqueEntriesMap.set(lowerMember, entry);
+            }
+        }
+
+        // Convert back to array, sort descending, and take top 10
+        let uniqueFormatted = Array.from(uniqueEntriesMap.values());
+        uniqueFormatted.sort((a, b) => b.score - a.score);
+        formatted = uniqueFormatted.slice(0, 10);
 
         // Fetch personal best if username provided
         let personalBest: number | null = null;
