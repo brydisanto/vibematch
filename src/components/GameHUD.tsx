@@ -9,8 +9,28 @@ interface GameHUDProps {
     hideMetrics?: boolean;
     hideHighScores?: boolean;
 }
-
 const TOTAL_MOVES = 30;
+
+// Utility to format scores with a stylized low-hanging comma
+const formatScoreWithCommas = (value: number) => {
+    if (value <= 0) return "—";
+    const str = value.toLocaleString();
+    const parts = str.split(',');
+    if (parts.length <= 1) return str;
+
+    return (
+        <>
+            {parts.map((part, i) => (
+                <span key={i}>
+                    {part}
+                    {i < parts.length - 1 && (
+                        <span className="inline-block translate-y-[0.35em] mx-[-0.08em] opacity-80" style={{ fontSize: '0.8em' }}>,</span>
+                    )}
+                </span>
+            ))}
+        </>
+    );
+};
 
 /* ===== Card wrapper for consistent styling ===== */
 function HudCard({
@@ -176,7 +196,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                                 textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
                             }}
                         >
-                            {score.toLocaleString()}
+                            {formatScoreWithCommas(score)}
                         </motion.div>
                     </HudCard>
 
@@ -227,7 +247,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                                 YOUR BEST
                             </div>
                             <div className="font-display tracking-[0.1em] text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
-                                {personalBest > 0 ? personalBest.toLocaleString() : '—'}
+                                {formatScoreWithCommas(personalBest)}
                             </div>
                         </div>
 
@@ -238,7 +258,7 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
                                 GLOBAL BEST
                             </div>
                             <div className="font-display tracking-[0.1em] text-xl sm:text-2xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.3), 0 2px 4px rgba(0,0,0,0.5)' }}>
-                                {globalBest > 0 ? globalBest.toLocaleString() : '—'}
+                                {formatScoreWithCommas(globalBest)}
                             </div>
                         </div>
                     </HudCard>
