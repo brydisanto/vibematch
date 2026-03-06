@@ -10,12 +10,20 @@ export let isMuted = false;
 export function toggleMute(muted: boolean): boolean {
     isMuted = muted;
     if (bgmAudio) {
-        bgmAudio.volume = muted ? 0 : 0.3;
+        if (muted) {
+            bgmAudio.pause();
+        } else {
+            bgmAudio.volume = 0.3;
+            // Only try to play if we actually have a source loaded to prevent empty play requests
+            if (bgmAudio.src) {
+                bgmAudio.play().catch(console.error);
+            }
+        }
     }
 
-    // Explicitly try to resume AudioContext here — Safari requires this within a user gesture!
+    // If unmuting, ensure audio context is running
     if (!muted && audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => { });
+        audioCtx.resume().catch(console.error);
     }
 
     return isMuted;
