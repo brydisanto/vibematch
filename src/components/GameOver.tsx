@@ -384,6 +384,7 @@ function BadgeCard({
 export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: GameOverProps) {
     const { score, matchCount, maxCombo, gameMode, gameBadges } = state;
     const rank = getRank(score);
+    const [isNewHighScore, setIsNewHighScore] = useState(false);
 
     // Persist score to Vercel KV Cloud Database
     useEffect(() => {
@@ -396,7 +397,14 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                     mode: gameMode,
                     score: score
                 })
-            }).catch(e => console.error("Failed to post score", e));
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isNewBest) {
+                        setIsNewHighScore(true);
+                    }
+                })
+                .catch(e => console.error("Failed to post score", e));
         }
     }, [score, gameMode, userProfile?.username]);
 
@@ -445,7 +453,13 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                 }}
             >
                 {/* Animated gradient border wrapper */}
-                <div className="gameover-card-border rounded-[28px] p-[2px]">
+                <div
+                    className="gameover-card-border rounded-[28px] p-[2px] shadow-2xl transition-all duration-1000"
+                    style={{
+                        boxShadow: `0 0 50px ${rank.color}30, inset 0 0 20px ${rank.color}20`,
+                        border: `1px solid ${rank.color}50`
+                    }}
+                >
                     <div
                         className="rounded-[26px] px-5 py-7 sm:px-8 sm:py-9 text-center relative overflow-hidden"
                         style={{
@@ -496,19 +510,10 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             {rank.label}
                         </motion.div>
 
-                        {/* ===== MODE SUBTITLE ===== */}
-                        <motion.div
-                            className="text-white/40 text-xs sm:text-sm font-mundial mb-5"
-                            initial={{ y: 10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.65 }}
-                        >
-                            {gameMode === "daily" ? "Daily Challenge" : "Classic Mode"} Complete
-                        </motion.div>
 
-                        {/* ===== ANIMATED SCORE — with glow pulse ===== */}
+                        {/* ===== ANIMATED SCORE — with glow pulse & NEW BEST decal ===== */}
                         <motion.div
-                            className="mb-7 relative"
+                            className="mb-8 relative"
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
@@ -519,6 +524,20 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             }}
                         >
                             <AnimatedScore target={score} color={rank.color} />
+
+                            {/* New High Score Decal */}
+                            <AnimatePresence>
+                                {isNewHighScore && (
+                                    <motion.div
+                                        className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#FF4500] to-[#FF8C00] text-white font-mundial font-black uppercase tracking-widest text-[9px] sm:text-[10px] px-3 py-1 rounded-full shadow-[0_0_15px_rgba(255,140,0,0.6)] z-10"
+                                        initial={{ opacity: 0, y: 10, scale: 0.5, rotate: -3 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                                        transition={{ delay: 2.2, type: "spring", stiffness: 400, damping: 12 }}
+                                    >
+                                        New Best!
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </motion.div>
 
                         {/* ===== STATS ROW ===== */}
@@ -546,81 +565,43 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             />
                         </div>
 
-                        {/* ===== BADGES PLAYED — Trophy Showcase ===== */}
+
+                        {/* ===== ACTION BUTTONS ===== */}
                         <motion.div
-                            className="mb-6"
+                            className="flex gap-2.5 sm:gap-3 w-full"
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 1.15 }}
                         >
-                            {/* Section header */}
-                            <div className="flex items-center gap-3 mb-3.5">
-                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                                <span className="text-[10px] sm:text-xs text-white/30 font-mundial uppercase tracking-[0.2em]">
-                                    Badges Played
-                                </span>
-                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                            </div>
-
-                            {/* Badge grid — 3 columns for 6 badges */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                                {gameBadges.slice(0, 6).map((badge, i) => (
-                                    <BadgeCard
-                                        key={badge.id}
-                                        badge={badge}
-                                        delay={1.2 + i * 0.07}
-                                    />
-                                ))}
-                            </div>
-                        </motion.div>
-
-                        {/* ===== ACTION BUTTONS ===== */}
-                        <motion.div
-                            className="flex gap-2.5 sm:gap-3"
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 1.7 }}
-                        >
                             {/* Home button */}
                             <button
                                 onClick={onGoHome}
-                                className={`${gameMode === "daily" ? "flex-1" : ""} flex items-center justify-center gap-2 py-3.5 px-4 sm:px-5 rounded-2xl
-                                    bg-white/[0.04] border border-white/[0.1] text-white/60 hover:bg-white/[0.1] hover:text-white
-                                    font-mundial font-semibold text-sm transition-all duration-200 active:scale-[0.97]`}
+                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group"
                             >
-                                <Home size={16} />
+                                <Home size={16} className="text-white/50 group-hover:text-white/80 transition-colors" />
                                 Home
                             </button>
 
-                            {/* Share on X button — branded */}
+                            {/* Share on X button */}
                             <button
                                 onClick={handleShareX}
-                                className={`${gameMode === "daily" ? "flex-1" : ""} flex items-center justify-center gap-2 py-3.5 px-4 sm:px-5 rounded-2xl
-                                    bg-white text-black border border-white/20
-                                    hover:bg-black hover:text-white hover:border-white/40
-                                    font-mundial font-semibold text-sm transition-all duration-200 active:scale-[0.97]
-                                    shadow-[0_0_16px_rgba(255,255,255,0.15)]`}
+                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group"
                             >
-                                <XIcon size={14} />
-                                Share on 𝕏
+                                <div className="text-white/50 group-hover:text-white/80 transition-colors">
+                                    <XIcon size={14} />
+                                </div>
+                                Share 𝕏
                             </button>
 
                             {/* Rematch button — Classic only */}
                             {gameMode === "classic" && (
                                 <button
                                     onClick={onPlayAgain}
-                                    className="flex-1 relative overflow-hidden bg-gradient-to-r from-[#FFE048] to-[#FFD000] text-black font-cooper font-bold uppercase tracking-wider py-3.5 rounded-2xl hover:brightness-110 transition-all shadow-[0_0_24px_rgba(255,224,72,0.35)] active:scale-[0.97] duration-200 flex items-center justify-center gap-2 group"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-[#FFE048] hover:bg-white/[0.1] hover:border-[#FFE048]/50 hover:text-[#FFD000] font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-200 active:scale-[0.97] group relative overflow-hidden"
+                                    style={{ textShadow: "0 0 10px rgba(255,224,72,0.3)" }}
                                 >
-                                    {/* Shimmer overlay */}
-                                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                        <div className="absolute w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shimmer" />
-                                    </div>
-                                    {/* Sparkle dots */}
-                                    <div className="absolute w-1 h-1 top-2 right-4 bg-white/60 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2s' }} />
-                                    <div className="absolute w-1 h-1 bottom-2 left-6 bg-white/50 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-
-                                    <RotateCcw size={16} className="relative z-10 text-black/50 group-hover:text-black transition-colors" />
-                                    <span className="relative z-10 text-sm">REMATCH</span>
+                                    <RotateCcw size={16} className="text-[#FFE048]/60 group-hover:text-[#FFE048] transition-colors" />
+                                    Rematch
                                 </button>
                             )}
                         </motion.div>

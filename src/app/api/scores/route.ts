@@ -9,7 +9,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
         }
 
+        let isNewBest = false;
+
         if (mode === 'classic') {
+            const currentScore = await kv.zscore('classic_leaderboard', username);
+            isNewBest = currentScore === null || score > currentScore;
             await kv.zadd('classic_leaderboard', { score, member: username });
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
@@ -25,9 +29,10 @@ export async function POST(req: Request) {
             // Mark as played and add score
             await kv.set(playedKey, 'true');
             await kv.zadd(`daily_leaderboard:${today}`, { score, member: username });
+            isNewBest = true; // Daily is effectively always a new personal best for that day
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, isNewBest });
     } catch (error) {
         console.error('KV error saving score:', error);
         return NextResponse.json({ error: 'Failed to save score' }, { status: 500 });
