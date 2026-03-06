@@ -25,7 +25,7 @@ const formatScoreWithCommas = (value: number) => {
                 <span key={i}>
                     {part}
                     {i < parts.length - 1 && (
-                        <span className="inline-block translate-y-[0.26em] mx-[-0.02em] opacity-100" style={{ fontSize: '1.05em' }}>,</span>
+                        <span className="inline-block translate-y-[0.26em] mx-[-0.06em] opacity-100" style={{ fontSize: '1.05em' }}>,</span>
                     )}
                 </span>
             ))}
@@ -254,7 +254,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 YOUR BEST
                             </div>
-                            <div className="font-display tracking-[0.1em] text-3xl sm:text-4xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.5), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-2xl sm:text-3xl font-black text-[#FFE048]" style={{ textShadow: '0 0 15px rgba(255,224,72,0.5), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {formatScoreWithCommas(personalBest)}
                             </div>
                         </div>
@@ -265,7 +265,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
                                 GLOBAL BEST
                             </div>
-                            <div className="font-display tracking-[0.1em] text-3xl sm:text-4xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-2xl sm:text-3xl font-black text-[#C48CFF]" style={{ textShadow: '0 0 15px rgba(196,140,255,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {formatScoreWithCommas(globalBest)}
                             </div>
                         </div>
