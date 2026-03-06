@@ -347,7 +347,7 @@ function BadgeCard({
                 {/* Multiplier tag */}
                 {badge.pointMultiplier > 1 && (
                     <div
-                        className="absolute -bottom-1 -right-1 text-[8px] font-mundial font-bold px-1 py-0.5 rounded-md"
+                        className="absolute -bottom-1 -right-1 text-[9px] sm:text-[10px] font-mundial font-bold px-1.5 py-0.5 rounded-md"
                         style={{
                             background: TIER_COLORS[badge.tier],
                             color: badge.tier === "gold" ? "#1a1200" : badge.tier === "silver" ? "#1a1a1a" : "#fff",
@@ -600,7 +600,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                 className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group"
                             >
                                 <Home size={16} className="text-white/50 group-hover:text-white/80 transition-colors" />
-                                Home
+                                HOME
                             </button>
 
                             {/* Share on X button */}
@@ -611,7 +611,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                 <div className="text-white/50 group-hover:text-white/80 transition-colors">
                                     <XIcon size={14} />
                                 </div>
-                                Share 𝕏
+                                SHARE
                             </button>
 
                             {/* Rematch button — Classic only */}
@@ -622,7 +622,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                                     style={{ textShadow: "0 0 10px rgba(255,224,72,0.3)" }}
                                 >
                                     <RotateCcw size={16} className="text-[#FFE048]/60 group-hover:text-[#FFE048] transition-colors" />
-                                    Rematch
+                                    REMATCH
                                 </button>
                             )}
                         </motion.div>
