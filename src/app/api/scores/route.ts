@@ -37,18 +37,23 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode'); // 'classic' or 'daily'
+    const username = searchParams.get('username');
     const skipAvatars = searchParams.get('skip_avatars') === 'true';
 
     try {
         let leaderboard: any = [];
+        let leaderboardKey = '';
+        const today = new Date().toISOString().split('T')[0];
+
         if (mode === 'classic') {
-            leaderboard = await kv.zrange('classic_leaderboard', 0, 9, { rev: true, withScores: true });
+            leaderboardKey = 'classic_leaderboard';
         } else if (mode === 'daily') {
-            const today = new Date().toISOString().split('T')[0];
-            leaderboard = await kv.zrange(`daily_leaderboard:${today}`, 0, 9, { rev: true, withScores: true });
+            leaderboardKey = `daily_leaderboard:${today}`;
         } else {
             return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
         }
+
+        leaderboard = await kv.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
 
         // Normalize format
         let formatted = [];
@@ -62,6 +67,12 @@ export async function GET(req: Request) {
             }
         }
 
+        // Fetch personal best if username provided
+        let personalBest: number | null = null;
+        if (username) {
+            personalBest = await kv.zscore(leaderboardKey, username);
+        }
+
         // If we only need the scores and user strings, skip mapping out full avatars
         if (skipAvatars) {
             const basicMapped = formatted.map((entry: any) => ({
@@ -69,8 +80,8 @@ export async function GET(req: Request) {
                 score: Number(entry.score)
             }));
             return NextResponse.json(
-                { leaderboard: basicMapped },
-                { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+                { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0 },
+                { headers: { 'Cache-Control': 'public, s-maxage=1, stale-while-revalidate=5' } } // Reduced cache for more immediate updates
             );
         }
 
@@ -87,8 +98,8 @@ export async function GET(req: Request) {
         }));
 
         return NextResponse.json(
-            { leaderboard: enriched },
-            { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+            { leaderboard: enriched, personalBest: personalBest ? Number(personalBest) : 0 },
+            { headers: { 'Cache-Control': 'public, s-maxage=1, stale-while-revalidate=5' } }
         );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);

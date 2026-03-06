@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 
 interface GameHUDProps {
     state: GameState;
+    username?: string;
     hideMetrics?: boolean;
     hideHighScores?: boolean;
 }
@@ -24,7 +25,7 @@ const formatScoreWithCommas = (value: number) => {
                 <span key={i}>
                     {part}
                     {i < parts.length - 1 && (
-                        <span className="inline-block translate-y-[0.18em] mx-[-0.04em] opacity-90" style={{ fontSize: '0.95em' }}>,</span>
+                        <span className="inline-block translate-y-[0.26em] mx-[-0.02em] opacity-100" style={{ fontSize: '1.05em' }}>,</span>
                     )}
                 </span>
             ))}
@@ -83,7 +84,7 @@ function HudCard({
     );
 }
 
-export default function GameHUD({ state, hideMetrics = false, hideHighScores = false }: GameHUDProps) {
+export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false }: GameHUDProps) {
     const { score, movesLeft, combo, gameMode } = state;
 
     // Fetch high scores
@@ -92,21 +93,28 @@ export default function GameHUD({ state, hideMetrics = false, hideHighScores = f
     const [globalBestUser, setGlobalBestUser] = useState<string>("");
 
     useEffect(() => {
-        const username = localStorage.getItem('vibematch_username');
-        fetch(`/api/scores?mode=${gameMode}&skip_avatars=true`)
+        const effectiveUsername = username || localStorage.getItem('vibematch_username');
+        const url = `/api/scores?mode=${gameMode}&skip_avatars=true${effectiveUsername ? `&username=${effectiveUsername}` : ''}`;
+
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 if (data.leaderboard && data.leaderboard.length > 0) {
                     setGlobalBest(data.leaderboard[0].score);
                     setGlobalBestUser(data.leaderboard[0].username);
-                    if (username) {
-                        const userScore = data.leaderboard.find((s: { username: string }) => s.username === username);
-                        if (userScore) setPersonalBest(userScore.score);
-                    }
+                }
+
+                // Use explicit personal best from API if available (handles users outside top 10)
+                if (data.personalBest !== undefined && data.personalBest !== null) {
+                    setPersonalBest(data.personalBest);
+                } else if (effectiveUsername && data.leaderboard) {
+                    // Fallback to checking leaderboard
+                    const userScore = data.leaderboard.find((s: { username: string }) => s.username === effectiveUsername);
+                    if (userScore) setPersonalBest(userScore.score);
                 }
             })
             .catch(() => { });
-    }, [gameMode]);
+    }, [gameMode, username]);
 
     // Moves ring color for the border
     const movesProgress = movesLeft / TOTAL_MOVES;

@@ -191,13 +191,13 @@ export default function Home() {
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center pt-1 pb-2 px-2 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
               <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0" style={{ height: "min(100vw - 16px, calc(100vh - 280px), 680px)" }}>
-                <GameHUD state={game.state} />
+                <GameHUD state={game.state} username={userProfile?.username} />
               </div>
 
               {/* Mobile HUD Top — Metrics only */}
               <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-1 order-first">
                 <div className="w-full">
-                  <GameHUD state={game.state} hideHighScores />
+                  <GameHUD state={game.state} username={userProfile?.username} hideHighScores />
                 </div>
               </div>
 
@@ -223,7 +223,7 @@ export default function Home() {
               {/* Mobile HUD Bottom — High Scores only */}
               <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pt-0 pb-2 relative z-10 px-0 sm:px-2">
                 <div className="w-full">
-                  <GameHUD state={game.state} hideMetrics />
+                  <GameHUD state={game.state} username={userProfile?.username} hideMetrics />
                 </div>
               </div>
             </div>
