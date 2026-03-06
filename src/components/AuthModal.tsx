@@ -80,10 +80,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                             </button>
 
                             <div className="text-center mb-8 pt-4">
-                                <h2 className="font-display text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                <h2 className="font-display text-4xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                                     {mode === "login" ? "Sign In!" : "Sign Up!"}
                                 </h2>
-                                <p className="text-white/40 text-[10px] font-mundial mt-2 uppercase tracking-widest font-bold max-w-[200px] mx-auto leading-relaxed">
+                                <p className="text-white/50 text-[10px] font-mundial mt-3 uppercase tracking-[0.2em] font-bold mx-auto leading-relaxed px-4">
                                     {mode === "login"
                                         ? "Login to save your scores and play the daily challenge"
                                         : "Sign up to save your scores and play the daily challenge"}
@@ -141,7 +141,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                         ) : (
                                             <>
                                                 <span className="relative z-10 text-sm font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
-                                                    {mode === "login" ? "Play VibeMatch!" : "Let's Go!"}
+                                                    Let's Freaking Vibe!
                                                 </span>
                                                 <ArrowRight size={18} className="text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] group-hover:translate-x-1 transition-transform" />
                                             </>
