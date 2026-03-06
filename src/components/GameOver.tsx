@@ -223,10 +223,11 @@ function XIcon({ size = 16 }: { size?: number }) {
 }
 
 const RANK_CONFIG = [
-    { threshold: 10000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", icon: "🌌" },
-    { threshold: 5000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", icon: "🥇" },
-    { threshold: 2500, label: "UNCOMMON", color: "#4A9EFF", accent: "#0a1a2a", icon: "🔵" },
-    { threshold: 0, label: "COMMON", color: "#E0E0E0", accent: "#1a1a1a", icon: "⚪" },
+    { threshold: 20000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", icon: "🌌" },
+    { threshold: 15000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", icon: "🥇" },
+    { threshold: 10000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", icon: "🥈" },
+    { threshold: 5000, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", icon: "🥉" },
+    { threshold: 0, label: "WOOD", color: "#A0522D", accent: "#2a1205", icon: "🪵" },
 ];
 
 function getRank(score: number) {
