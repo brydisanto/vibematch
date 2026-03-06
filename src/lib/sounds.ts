@@ -143,7 +143,7 @@ function playNote(
 }
 
 // Utility: white noise burst
-function playNoise(duration: number, volume: number = 0.05, delay: number = 0) {
+function playNoise(duration: number, volume: number = 0.05, delay: number = 0, filterType: BiquadFilterType = "highpass", filterFreq: number = 2000) {
     try {
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -163,8 +163,8 @@ function playNoise(duration: number, volume: number = 0.05, delay: number = 0) {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
 
         const filter = ctx.createBiquadFilter();
-        filter.type = "highpass";
-        filter.frequency.value = 2000;
+        filter.type = filterType;
+        filter.frequency.value = filterFreq;
 
         source.connect(filter);
         filter.connect(gain);
@@ -233,13 +233,29 @@ export function playCascadeSound(cascadeLevel: number) {
 
 // Combo fire — rising power tone
 export function playComboSound(comboLevel: number) {
-    const baseFreq = 400 + comboLevel * 150;
-    playNote(baseFreq, 0.1, "sawtooth", 0.06);
-    playNote(baseFreq * 1.5, 0.12, "sine", 0.1, 0.04);
-    playNote(baseFreq * 2, 0.15, "sine", 0.12, 0.08);
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const baseFreq = 300 + comboLevel * 200;
+    const now = ctx.currentTime;
+
+    // Power-up sweep
+    playNote(baseFreq, 0.2, "sawtooth", 0.08, 0);
+    // Secondary sweep layer
+    playNote(baseFreq * 2, 0.2, "sine", 0.12, 0.05);
+
     if (comboLevel >= 3) {
-        playNoise(0.15, 0.05, 0.06);
-        playNote(baseFreq * 2.5, 0.2, "sine", 0.12, 0.12);
+        playNoise(0.3, 0.08, 0);
+        // Fast arpeggio for excitement
+        [1, 1.25, 1.5, 2].forEach((multiplier, i) => {
+            playNote(baseFreq * multiplier, 0.1, "sine", 0.08, 0.1 + i * 0.03);
+        });
+    }
+
+    if (comboLevel >= 5) {
+        // Add a high-frequency sparkle for high-tier combos
+        playNote(baseFreq * 3, 0.3, "sine", 0.1, 0.15);
+        playNoise(0.4, 0.05, 0.1, "highpass", 5000);
     }
 }
 
