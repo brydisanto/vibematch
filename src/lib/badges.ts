@@ -663,6 +663,13 @@ export const TIER_COLORS: Record<BadgeTier, string> = {
     cosmic: "#B366FF",
 };
 
+export const TIER_DISPLAY_NAMES: Record<BadgeTier, string> = {
+    blue: "Common",
+    silver: "Uncommon",
+    gold: "Gold",
+    cosmic: "Cosmic",
+};
+
 export const TIER_BORDER_COLORS: Record<BadgeTier, string> = {
     blue: "rgba(224, 224, 224, 0.4)",
     silver: "rgba(74, 158, 255, 0.5)",

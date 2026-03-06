@@ -5,7 +5,7 @@ import Image from "next/image";
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 import { RotateCcw, Home, Target, Flame, Award } from "lucide-react";
-import { TIER_COLORS, BadgeTier } from "@/lib/badges";
+import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
 import toast from "react-hot-toast";
 
 interface GameOverProps {
@@ -225,8 +225,8 @@ function XIcon({ size = 16 }: { size?: number }) {
 const RANK_CONFIG = [
     { threshold: 10000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", icon: "🌌" },
     { threshold: 5000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", icon: "🥇" },
-    { threshold: 2500, label: "SILVER", color: "#C0C0C0", accent: "#1a1a1a", icon: "🥈" },
-    { threshold: 0, label: "BRONZE", color: "#4A9EFF", accent: "#0a1a2a", icon: "🔵" },
+    { threshold: 2500, label: "UNCOMMON", color: "#4A9EFF", accent: "#0a1a2a", icon: "🔵" },
+    { threshold: 0, label: "COMMON", color: "#E0E0E0", accent: "#1a1a1a", icon: "⚪" },
 ];
 
 function getRank(score: number) {
@@ -375,7 +375,7 @@ function BadgeCard({
                     color: tierConfig.text,
                 }}
             >
-                {badge.tier}
+                {TIER_DISPLAY_NAMES[badge.tier]}
             </div>
         </motion.div>
     );

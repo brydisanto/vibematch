@@ -11,17 +11,17 @@ interface InstructionsModalProps {
 
 const TIERS = [
     {
-        name: "Blue",
+        name: "Common",
         color: TIER_COLORS.blue,
         multiplier: "1×",
-        description: "Common — the foundation of your board",
+        description: "The foundation of your board",
         examples: "Doge, Pepe, Checkmate",
     },
     {
-        name: "Silver",
+        name: "Uncommon",
         color: TIER_COLORS.silver,
         multiplier: "1.5×",
-        description: "Uncommon — a nice score boost",
+        description: "A nice score boost",
         examples: "Captain, King, Showtime",
     },
     {
