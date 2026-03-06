@@ -25,8 +25,15 @@ const mundial = localFont({
 export const metadata: Metadata = {
   title: "VibeMatch | Good Vibes Club",
   description: "Match-3 puzzle game featuring GVC badges. Match badges, score big, climb the leaderboard.",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/shaka.png",
+    icon: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VibeMatch",
   },
 };
 
