@@ -427,13 +427,13 @@ export default function GameBoard({
                                         whileHover={{ scale: 1.06, zIndex: 5 }}
                                         whileTap={{ scale: 0.93 }}
                                         layout
-                                        initial={cell.isNew && !isDealing ? { y: -200, opacity: 0 } : false}
+                                        initial={cell.isNew && !isDealing ? { y: -60, opacity: 0 } : false}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{
                                             type: "spring",
-                                            stiffness: 300,
-                                            damping: 30,
-                                            mass: 1.1,
+                                            stiffness: 220,
+                                            damping: 22,
+                                            mass: 0.9,
                                         }}
                                     >
                                         {/* Badge image */}
