@@ -78,6 +78,9 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     const [globalBestUser, setGlobalBestUser] = useState<string>("");
 
     useEffect(() => {
+        // Only fetch at the start of a game or when explicitly requested
+        if (score > 0 && personalBest > 0 && globalBest > 0) return;
+
         const effectiveUsername = username || localStorage.getItem('vibematch_username');
         const url = `/api/scores?mode=${gameMode}&skip_avatars=true${effectiveUsername ? `&username=${effectiveUsername}` : ''}`;
 
@@ -99,7 +102,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                 }
             })
             .catch(() => { });
-    }, [gameMode, username]);
+    }, [gameMode, username, score]);
 
     // Moves ring color for the border
     const movesProgress = movesLeft / TOTAL_MOVES;

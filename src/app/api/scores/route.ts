@@ -9,17 +9,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
         }
 
+        // Ensure canonical casing from profile
+        const profileKey = `user:${username.toLowerCase()}`;
+        const profile = await kv.get(profileKey) as any;
+        const canonicalUsername = profile?.username || username;
+
         let isNewBest = false;
 
         if (mode === 'classic') {
-            const currentScore = await kv.zscore('classic_leaderboard', username);
-            isNewBest = currentScore === null || score > currentScore;
-            await kv.zadd('classic_leaderboard', { score, member: username });
+            const currentScore1 = await kv.zscore('classic_leaderboard', canonicalUsername);
+            const currentScore2 = (canonicalUsername !== username) ? await kv.zscore('classic_leaderboard', username) : null;
+
+            const maxCurrent = Math.max(Number(currentScore1 || 0), Number(currentScore2 || 0));
+            isNewBest = maxCurrent === 0 || score > maxCurrent;
+
+            await kv.zadd('classic_leaderboard', { score, member: canonicalUsername });
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
 
             // Check if already played today
-            const playedKey = `daily_played:${username.toLowerCase()}:${today}`;
+            const playedKey = `daily_played:${canonicalUsername.toLowerCase()}:${today}`;
             const hasPlayed = await kv.get(playedKey);
 
             if (hasPlayed) {
@@ -28,7 +37,7 @@ export async function POST(req: Request) {
 
             // Mark as played and add score
             await kv.set(playedKey, 'true');
-            await kv.zadd(`daily_leaderboard:${today}`, { score, member: username });
+            await kv.zadd(`daily_leaderboard:${today}`, { score, member: canonicalUsername });
             isNewBest = true; // Daily is effectively always a new personal best for that day
         }
 
@@ -80,11 +89,11 @@ export async function GET(req: Request) {
             const profile = await kv.get(profileKey) as any;
             const canonicalUsername = profile?.username || username;
 
-            personalBest = await kv.zscore(leaderboardKey, canonicalUsername);
+            const score1 = await kv.zscore(leaderboardKey, canonicalUsername);
+            const score2 = (canonicalUsername.toLowerCase() !== username.toLowerCase() || canonicalUsername !== username) ? await kv.zscore(leaderboardKey, username) : null;
 
-            // Fallback: try exactly what was passed if profile lookup didn't yield a score
-            if (personalBest === null && canonicalUsername.toLowerCase() !== username.toLowerCase()) {
-                personalBest = await kv.zscore(leaderboardKey, username);
+            if (score1 !== null || score2 !== null) {
+                personalBest = Math.max(Number(score1 || 0), Number(score2 || 0));
             }
         }
 
