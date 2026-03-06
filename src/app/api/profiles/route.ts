@@ -1,12 +1,23 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
     try {
+        const session = await getSession();
+        if (!session || !session.username) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { username, avatarUrl } = await req.json();
 
         if (!username) {
             return NextResponse.json({ error: 'Username required' }, { status: 400 });
+        }
+
+        // Prevent users from updating other people's profiles
+        if (username.toLowerCase() !== session.username.toLowerCase()) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const key = `user:${username.toLowerCase()}`;

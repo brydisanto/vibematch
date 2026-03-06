@@ -26,6 +26,18 @@ export default function Home() {
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
 
+  useEffect(() => {
+    // Sync profile on mount
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUserProfile({ username: data.user.username, avatarUrl: data.user.avatarUrl });
+        }
+      })
+      .catch(err => console.error("Initial session check failed:", err));
+  }, []);
+
   const handleToggleMute = () => {
     const newMuted = toggleMute(!muted);
     setMuted(newMuted);

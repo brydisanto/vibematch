@@ -114,26 +114,64 @@ function FloatingBadges() {
     );
 }
 
+import AuthModal from "./AuthModal";
+import { LogOut } from "lucide-react";
+
 export default function LandingPage({ onStartGame, onShowInstructions }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
 
     useEffect(() => {
-        const savedUsername = localStorage.getItem('vibematch_username');
-        if (savedUsername) {
-            requestAnimationFrame(() => {
-                setUsername(savedUsername);
-            });
-            fetch(`/api/profiles?username=${savedUsername}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.profile) setAvatarUrl(data.profile.avatarUrl);
-                })
-                .catch(err => console.error(err));
-        }
+        // Check session instead of just localStorage
+        fetch('/api/auth/session')
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    setIsLoggedIn(true);
+                    setUsername(data.user.username);
+                    setAvatarUrl(data.user.avatarUrl);
+                    localStorage.setItem('vibematch_username', data.user.username);
+                } else {
+                    setIsLoggedIn(false);
+                    // Legacy fallback for guests if they have a local username
+                    const savedUsername = localStorage.getItem('vibematch_username');
+                    if (savedUsername) {
+                        setUsername(savedUsername);
+                        fetch(`/api/profiles?username=${savedUsername}`)
+                            .then(res => res.json())
+                            .then(d => {
+                                if (d.profile) setAvatarUrl(d.profile.avatarUrl);
+                            })
+                            .catch(err => console.error(err));
+                    }
+                }
+            })
+            .catch(err => console.error("Session check error:", err));
     }, []);
+
+    const handleAuthSuccess = (newUsername: string, newAvatarUrl: string) => {
+        setIsLoggedIn(true);
+        setUsername(newUsername);
+        setAvatarUrl(newAvatarUrl);
+        localStorage.setItem('vibematch_username', newUsername);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            setIsLoggedIn(false);
+            setUsername("");
+            setAvatarUrl("");
+            localStorage.removeItem('vibematch_username');
+            toast.success("Logged out");
+        } catch (e) {
+            toast.error("Logout failed");
+        }
+    };
 
     const handleProfileSave = async (newUsername: string, newAvatarUrl: string) => {
         try {
@@ -156,9 +194,9 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
     };
 
     const handleStartDaily = async () => {
-        if (!username) {
-            toast.error("Set a profile first to play Daily Challenge!");
-            setIsProfileModalOpen(true);
+        if (!isLoggedIn) {
+            toast.error("Login to play Daily Challenge!");
+            setIsAuthModalOpen(true);
             return;
         }
         try {
@@ -281,9 +319,9 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                     transition={{ delay: 0.6, duration: 0.5 }}
                 >
                     <div className="flex gap-3 w-full">
-                        {/* Set Profile — Enamel Pin Style (Silver/Blue) */}
+                        {/* Profile/Login Button — Enamel Pin Style (Silver/Blue) */}
                         <button
-                            onClick={() => setIsProfileModalOpen(true)}
+                            onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
                             className="flex-1 group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#8E9EAA] to-[#5C6B77] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
                         >
                             <div className="relative h-full bg-[#B0BCC5] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#5C6B77]/50">
@@ -291,7 +329,7 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
 
                                 <User size={18} className="relative z-10 text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
                                 <span className="relative z-10 text-[13px] sm:text-[15px] font-black tracking-widest text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
-                                    Profile
+                                    {isLoggedIn ? "Profile" : "Login"}
                                 </span>
                             </div>
                         </button>
@@ -301,18 +339,11 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                             onClick={onShowInstructions}
                             className="flex-1 group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#E5C941] to-[#D4B32A] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
                         >
-                            {/* Enamel Fill */}
                             <div className="relative h-full bg-[#FFE048] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#D4B32A]/50">
-
-                                {/* Specular Highlight Base */}
                                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent mix-blend-overlay pointer-events-none" />
-                                {/* Sparkle dots */}
-                                <div className="absolute w-2 h-2 top-2 right-4 bg-white/60 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2s' }} />
-                                <div className="absolute w-1.5 h-1.5 bottom-2 left-4 bg-white/50 rounded-full blur-[1px] animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-
                                 <HelpCircle size={18} className="relative z-10 text-[#5C4D0A] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
                                 <span className="relative z-10 text-[13px] sm:text-[15px] font-black tracking-widest text-[#5C4D0A] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
-                                    How to Play
+                                    Rules
                                 </span>
                             </div>
                         </button>
@@ -324,18 +355,25 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                         className="group relative w-full overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#B366FF] to-[#8A2BE2] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
                     >
                         <div className="relative bg-[#9C4EEB] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#8A2BE2]/50">
-
                             <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent mix-blend-overlay pointer-events-none" />
-
                             <Crown size={18} className="relative z-10 text-white drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-[#FFD700] transition-colors" />
                             <span className="relative z-10 text-[15px] font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
                                 Leaderboards
                             </span>
                         </div>
                     </button>
+
+                    {/* Logout Button (Hidden if guest) */}
+                    {isLoggedIn && (
+                        <button
+                            onClick={handleLogout}
+                            className="mt-4 text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all flex items-center justify-center gap-2 hover:gap-3"
+                        >
+                            <LogOut size={12} />
+                            <span>Sign Out of VibeMatch</span>
+                        </button>
+                    )}
                 </motion.div>
-
-
             </div>
 
             {isProfileModalOpen && (
@@ -344,6 +382,14 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                     currentAvatarUrl={avatarUrl}
                     onSave={handleProfileSave}
                     onClose={() => setIsProfileModalOpen(false)}
+                />
+            )}
+
+            {isAuthModalOpen && (
+                <AuthModal
+                    isOpen={isAuthModalOpen}
+                    onClose={() => setIsAuthModalOpen(false)}
+                    onSuccess={handleAuthSuccess}
                 />
             )}
 
@@ -356,3 +402,4 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
         </div>
     );
 }
+
