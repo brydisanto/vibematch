@@ -70,7 +70,17 @@ export async function GET(req: Request) {
         // Fetch personal best if username provided
         let personalBest: number | null = null;
         if (username) {
-            personalBest = await kv.zscore(leaderboardKey, username);
+            // Robust lookup: ensure we use the canonical casing from the profile for the leaderboard
+            const profileKey = `user:${username.toLowerCase()}`;
+            const profile = await kv.get(profileKey) as any;
+            const canonicalUsername = profile?.username || username;
+
+            personalBest = await kv.zscore(leaderboardKey, canonicalUsername);
+
+            // Fallback: try exactly what was passed if profile lookup didn't yield a score
+            if (personalBest === null && canonicalUsername.toLowerCase() !== username.toLowerCase()) {
+                personalBest = await kv.zscore(leaderboardKey, username);
+            }
         }
 
         // If we only need the scores and user strings, skip mapping out full avatars

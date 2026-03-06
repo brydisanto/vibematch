@@ -108,8 +108,8 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                 if (data.personalBest !== undefined && data.personalBest !== null) {
                     setPersonalBest(data.personalBest);
                 } else if (effectiveUsername && data.leaderboard) {
-                    // Fallback to checking leaderboard
-                    const userScore = data.leaderboard.find((s: { username: string }) => s.username === effectiveUsername);
+                    // Fallback to checking leaderboard (multi-layer safety)
+                    const userScore = data.leaderboard.find((s: { username: string }) => s.username.toLowerCase() === effectiveUsername.toLowerCase());
                     if (userScore) setPersonalBest(userScore.score);
                 }
             })
