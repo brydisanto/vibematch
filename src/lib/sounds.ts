@@ -98,14 +98,15 @@ export function unlockAudio() {
     getAudioContext();
 }
 
-function getAudioContext(): AudioContext {
+function getAudioContext(): AudioContext | null {
     if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (typeof window === "undefined") return null;
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioContextClass) {
             audioCtx = new AudioContextClass();
         }
     }
-    if (audioCtx.state === "suspended") {
+    if (audioCtx && audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => { });
     }
     return audioCtx;
@@ -121,6 +122,7 @@ function playNote(
 ) {
     try {
         const ctx = getAudioContext();
+        if (!ctx) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -144,6 +146,7 @@ function playNote(
 function playNoise(duration: number, volume: number = 0.05, delay: number = 0) {
     try {
         const ctx = getAudioContext();
+        if (!ctx) return;
         const bufferSize = ctx.sampleRate * duration;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
