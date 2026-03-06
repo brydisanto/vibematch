@@ -81,8 +81,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
 
                             <div className="text-center mb-8 pt-4">
                                 <h2 className="font-display text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                    {mode === "login" ? "Login" : "Sign Up!"}
+                                    {mode === "login" ? "Sign In!" : "Sign Up!"}
                                 </h2>
+                                {mode === "login" && (
+                                    <p className="text-white/40 text-[10px] font-mundial mt-2 uppercase tracking-widest font-bold max-w-[200px] mx-auto leading-relaxed">
+                                        Login to save your scores and play the daily challenge
+                                    </p>
+                                )}
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,7 +141,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                         ) : (
                                             <>
                                                 <span className="relative z-10 text-sm font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
-                                                    Let's Go!
+                                                    {mode === "login" ? "Play VibeMatch!" : "Let's Go!"}
                                                 </span>
                                                 <ArrowRight size={18} className="text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] group-hover:translate-x-1 transition-transform" />
                                             </>
