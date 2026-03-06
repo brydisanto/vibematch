@@ -79,16 +79,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                 <X size={16} className="text-white/60 hover:text-white transition-colors" />
                             </button>
 
-                            <div className="text-center mb-8">
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#B366FF]/20 to-[#B366FF]/10 border border-[#B366FF]/30 mb-4 shadow-[0_8px_16px_rgba(179,102,255,0.1)]">
-                                    <Sparkles className="text-[#B366FF]" size={24} />
-                                </div>
-                                <h2 className="font-display text-2xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                    {mode === "login" ? "Welcome Back" : "Join the Stoke"}
+                            <div className="text-center mb-8 pt-4">
+                                <h2 className="font-display text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                    {mode === "login" ? "Login" : "Sign Up!"}
                                 </h2>
-                                <p className="text-white/40 text-xs font-mundial mt-1 uppercase tracking-widest font-bold">
-                                    {mode === "login" ? "Login to sync your vibes" : "Create an account to play"}
-                                </p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,7 +136,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                         ) : (
                                             <>
                                                 <span className="relative z-10 text-sm font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
-                                                    {mode === "login" ? "Enter Game" : "Begin Journey"}
+                                                    Let's Go!
                                                 </span>
                                                 <ArrowRight size={18} className="text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] group-hover:translate-x-1 transition-transform" />
                                             </>
