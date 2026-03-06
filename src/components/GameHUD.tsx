@@ -24,7 +24,7 @@ const formatScoreWithCommas = (value: number) => {
                 <span key={i}>
                     {part}
                     {i < parts.length - 1 && (
-                        <span className="inline-block translate-y-[0.35em] mx-[-0.08em] opacity-80" style={{ fontSize: '0.8em' }}>,</span>
+                        <span className="inline-block translate-y-[0.18em] mx-[-0.04em] opacity-90" style={{ fontSize: '0.95em' }}>,</span>
                     )}
                 </span>
             ))}
