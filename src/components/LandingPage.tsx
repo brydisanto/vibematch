@@ -146,11 +146,26 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
                             .then(d => {
                                 if (d.profile) setAvatarUrl(d.profile.avatarUrl);
                             })
-                            .catch(err => console.error(err));
+                            .catch(err => console.error("Could not fetch legacy profile"));
                     }
                 }
             })
             .catch(err => console.error("Session check error:", err));
+    }, []);
+
+    // SILENT PRELOADER: aggressively fetch all game piece images into browser cache 
+    // while the user is sitting on the landing page so the board loads instantly!
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            // Slight delay so we don't block the initial HTML page render
+            const timer = setTimeout(() => {
+                BADGES.forEach(badge => {
+                    const img = new window.Image();
+                    img.src = badge.image;
+                });
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
     }, []);
 
     const handleAuthSuccess = (newUsername: string, newAvatarUrl: string) => {
