@@ -65,7 +65,7 @@ function RankParticles({ color }: { color: string }) {
 /* ===== ANIMATED RANK MEDALLION ===== */
 function RankMedallion({ color, accentColor, label }: { color: string; accentColor: string; label: string }) {
     return (
-        <div className="relative w-28 h-28 sm:w-36 sm:h-36 mx-auto mb-2">
+        <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto -mb-2">
             {/* Particle burst on reveal */}
             <RankParticles color={color} />
 
@@ -463,7 +463,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                     }}
                 >
                     <div
-                        className="rounded-[26px] px-5 py-7 sm:px-8 sm:py-9 text-center relative overflow-hidden"
+                        className="rounded-[26px] px-5 py-6 sm:px-8 sm:py-7 text-center relative overflow-hidden"
                         style={{
                             background: "linear-gradient(180deg, #151515 0%, #0d0d0d 100%)",
                         }}
@@ -515,7 +515,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
 
                         {/* ===== ANIMATED SCORE — with glow pulse & NEW BEST decal ===== */}
                         <motion.div
-                            className="mb-8 relative"
+                            className="mb-4 relative"
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
@@ -601,7 +601,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                     onClick={onRequestLogin}
                                     className="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-[#B366FF] to-[#8A2BE2] text-white font-mundial font-bold tracking-widest text-xs sm:text-sm shadow-[0_4px_15px_rgba(179,102,255,0.4)] hover:shadow-[0_6px_20px_rgba(179,102,255,0.6)] transform hover:-translate-y-0.5 transition-all outline-none"
                                 >
-                                    Log in to save score!
+                                    LOG IN TO SAVE SCORE!
                                 </button>
                             </motion.div>
                         )}
