@@ -413,6 +413,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout 
             {isLeaderboardOpen && (
                 <LeaderboardModal
                     currentUsername={username}
+                    currentAvatarUrl={avatarUrl}
                     onClose={() => setIsLeaderboardOpen(false)}
                 />
             )}

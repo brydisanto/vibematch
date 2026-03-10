@@ -14,6 +14,7 @@ interface LeaderboardEntry {
 interface LeaderboardModalProps {
     onClose: () => void;
     currentUsername?: string;
+    currentAvatarUrl?: string;
 }
 
 const formatScoreWithCommas = (value: number) => {
@@ -21,7 +22,7 @@ const formatScoreWithCommas = (value: number) => {
     return value.toLocaleString();
 };
 
-export default function LeaderboardModal({ onClose, currentUsername }: LeaderboardModalProps) {
+export default function LeaderboardModal({ onClose, currentUsername, currentAvatarUrl }: LeaderboardModalProps) {
     const [mode, setMode] = useState<"classic" | "weekly" | "daily">("classic");
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +34,17 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                 const res = await fetch(`/api/scores?mode=${mode}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setLeaderboard(data.leaderboard || []);
+                    const rawList = data.leaderboard || [];
+
+                    // Optimistic UI: inject fresh avatar for the active user instantly, bypassing edge cache delays
+                    const enrichedList = rawList.map((entry: LeaderboardEntry) => {
+                        if (currentUsername && currentAvatarUrl && entry.username.toLowerCase() === currentUsername.toLowerCase()) {
+                            return { ...entry, avatarUrl: currentAvatarUrl };
+                        }
+                        return entry;
+                    });
+
+                    setLeaderboard(enrichedList);
                 }
             } catch (err) {
                 console.error("Failed to fetch leaderboard", err);
