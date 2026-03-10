@@ -130,25 +130,29 @@ export async function GET(req: Request) {
             }));
             return NextResponse.json(
                 { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0 },
-                { headers: { 'Cache-Control': 'public, s-maxage=1, stale-while-revalidate=5' } } // Reduced cache for more immediate updates
+                { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
             );
         }
 
         // Enrich with avatars
-        const enriched = await Promise.all(formatted.map(async (entry: any) => {
-            const member = entry.member || entry.value;
-            const pKey = `user:${member.toLowerCase()}`;
-            const profile = await kv.get(pKey) as any;
-            return {
-                username: member,
-                score: Number(entry.score),
-                avatarUrl: profile?.avatarUrl || ''
-            };
-        }));
+        let enriched: any[] = [];
+        if (formatted.length > 0) {
+            const pKeys = formatted.map((entry: any) => `user:${(entry.member || entry.value).toLowerCase()}`);
+            const profiles = await kv.mget(...pKeys);
+
+            enriched = formatted.map((entry: any, index: number) => {
+                const profile = profiles[index] as any;
+                return {
+                    username: entry.member || entry.value,
+                    score: Number(entry.score),
+                    avatarUrl: profile?.avatarUrl || ''
+                };
+            });
+        }
 
         return NextResponse.json(
             { leaderboard: enriched, personalBest: personalBest ? Number(personalBest) : 0 },
-            { headers: { 'Cache-Control': 'public, s-maxage=1, stale-while-revalidate=5' } }
+            { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
         );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);
