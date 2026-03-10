@@ -9,6 +9,7 @@ import GameHUD from "@/components/GameHUD";
 import GameOver from "@/components/GameOver";
 import LandingPage from "@/components/LandingPage";
 import InstructionsModal from "@/components/InstructionsModal";
+import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
 import { ArrowLeft, HelpCircle, Volume2, VolumeX, Music } from "lucide-react";
 import { isMuted, toggleMute, startBGM, switchBGMTrack, unlockAudio } from "@/lib/sounds";
@@ -19,6 +20,7 @@ type AppView = "landing" | "playing";
 export default function Home() {
   const [view, setView] = useState<AppView>("landing");
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showSystemAuthModal, setShowSystemAuthModal] = useState(false);
   const [isDealing, setIsDealing] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string, avatarUrl: string } | null>(null);
   const [muted, setMuted] = useState(isMuted);
@@ -101,6 +103,7 @@ export default function Home() {
             <LandingPage
               onStartGame={handleStartGame}
               onShowInstructions={() => setShowInstructions(true)}
+              onLogout={() => setUserProfile(null)}
             />
           </motion.div>
         ) : (
@@ -241,6 +244,7 @@ export default function Home() {
                   userProfile={userProfile}
                   onPlayAgain={handlePlayAgain}
                   onGoHome={handleGoHome}
+                  onRequestLogin={() => setShowSystemAuthModal(true)}
                 />
               )}
             </AnimatePresence>
@@ -252,6 +256,17 @@ export default function Home() {
       <InstructionsModal
         isOpen={showInstructions}
         onClose={() => setShowInstructions(false)}
+      />
+
+      {/* Global Auth Modal for Game Over Save Score */}
+      <AuthModal
+        isOpen={showSystemAuthModal}
+        onClose={() => setShowSystemAuthModal(false)}
+        onSuccess={(username, avatarUrl) => {
+          setUserProfile({ username, avatarUrl });
+          localStorage.setItem('vibematch_username', username);
+          setShowSystemAuthModal(false);
+        }}
       />
     </main >
   );

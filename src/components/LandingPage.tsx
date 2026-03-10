@@ -13,6 +13,7 @@ import { GameMode } from "@/lib/gameEngine";
 interface LandingPageProps {
     onStartGame: (mode: GameMode, username?: string, avatarUrl?: string) => void;
     onShowInstructions?: () => void;
+    onLogout?: () => void;
 }
 
 /* ===== FLOATING BADGES (UPWARD STREAM) ===== */
@@ -117,7 +118,7 @@ function FloatingBadges() {
 import AuthModal from "./AuthModal";
 import { LogOut } from "lucide-react";
 
-export default function LandingPage({ onStartGame, onShowInstructions }: LandingPageProps) {
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -183,6 +184,7 @@ export default function LandingPage({ onStartGame, onShowInstructions }: Landing
             setAvatarUrl("");
             localStorage.removeItem('vibematch_username');
             toast.success("Logged out");
+            onLogout?.();
         } catch (e) {
             toast.error("Logout failed");
         }
