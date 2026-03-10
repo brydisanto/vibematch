@@ -13,6 +13,7 @@ interface GameOverProps {
     userProfile?: { username: string; avatarUrl: string } | null;
     onPlayAgain: () => void;
     onGoHome: () => void;
+    onRequestLogin?: () => void;
 }
 
 /* ===== FLOATING RANK PARTICLES ===== */
@@ -382,7 +383,7 @@ function BadgeCard({
     );
 }
 
-export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: GameOverProps) {
+export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin }: GameOverProps) {
     const { score, matchCount, maxCombo, gameMode, gameBadges } = state;
     const rank = getRank(score);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
@@ -587,6 +588,23 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome }: 
                             </div>
                         </motion.div>
 
+
+                        {/* ===== LOGIN PROMPT FOR GUESTS ===== */}
+                        {!userProfile && onRequestLogin && (
+                            <motion.div
+                                className="mb-6"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 1.2 }}
+                            >
+                                <button
+                                    onClick={onRequestLogin}
+                                    className="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-[#B366FF] to-[#8A2BE2] text-white font-mundial font-bold tracking-widest text-xs sm:text-sm shadow-[0_4px_15px_rgba(179,102,255,0.4)] hover:shadow-[0_6px_20px_rgba(179,102,255,0.6)] transform hover:-translate-y-0.5 transition-all outline-none"
+                                >
+                                    Log in to save score!
+                                </button>
+                            </motion.div>
+                        )}
 
                         {/* ===== ACTION BUTTONS ===== */}
                         <motion.div
