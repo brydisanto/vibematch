@@ -1,6 +1,13 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 
+function getMonday() {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff)).toISOString().split('T')[0];
+}
+
 export async function POST(req: Request) {
     try {
         const { username, mode, score } = await req.json();
@@ -27,9 +34,19 @@ export async function POST(req: Request) {
             const scoreToSave = Math.max(maxCurrent, score);
             await kv.zadd('classic_leaderboard', { score: scoreToSave, member: canonicalUsername });
 
+            // Also save to weekly leaderboard
+            const weeklyKey = `classic_weekly:${getMonday()}`;
+            const currentWeekly1 = await kv.zscore(weeklyKey, canonicalUsername);
+            const currentWeekly2 = (canonicalUsername !== username) ? await kv.zscore(weeklyKey, username) : null;
+            const maxWeeklyCurrent = Math.max(Number(currentWeekly1 || 0), Number(currentWeekly2 || 0));
+            if (maxWeeklyCurrent === 0 || score > maxWeeklyCurrent) {
+                await kv.zadd(weeklyKey, { score, member: canonicalUsername });
+            }
+
             // Clean up the split variant if it exists
             if (canonicalUsername !== username && currentScore2 !== null) {
                 await kv.zrem('classic_leaderboard', username);
+                if (currentWeekly2 !== null) await kv.zrem(weeklyKey, username);
             }
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
@@ -68,6 +85,8 @@ export async function GET(req: Request) {
 
         if (mode === 'classic') {
             leaderboardKey = 'classic_leaderboard';
+        } else if (mode === 'weekly') {
+            leaderboardKey = `classic_weekly:${getMonday()}`;
         } else if (mode === 'daily') {
             leaderboardKey = `daily_leaderboard:${today}`;
         } else {

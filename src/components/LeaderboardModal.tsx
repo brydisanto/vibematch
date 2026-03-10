@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Zap, Crown } from "lucide-react";
+import { X, Trophy, Zap, Crown, Globe, Calendar } from "lucide-react";
 
 interface LeaderboardEntry {
     username: string;
@@ -22,7 +22,7 @@ const formatScoreWithCommas = (value: number) => {
 };
 
 export default function LeaderboardModal({ onClose, currentUsername }: LeaderboardModalProps) {
-    const [mode, setMode] = useState<"classic" | "daily">("classic");
+    const [mode, setMode] = useState<"classic" | "weekly" | "daily">("classic");
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -73,23 +73,38 @@ export default function LeaderboardModal({ onClose, currentUsername }: Leaderboa
                     <div className="flex bg-[#1A1525] rounded-xl p-1 mb-6 border border-[#3A3344] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] w-full">
                         <button
                             onClick={() => setMode("classic")}
-                            className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${mode === "classic"
+                            className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-[10px] sm:text-xs md:text-sm tracking-wider uppercase transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 leading-tight sm:leading-normal ${mode === "classic"
                                 ? "bg-gradient-to-b from-[#FFD700] to-[#FF8C00] text-black shadow-[0_2px_8px_rgba(255,215,0,0.4)]"
                                 : "text-white/40 hover:text-white/80 hover:bg-white/5"
                                 }`}
                         >
-                            <Zap size={16} className={mode === "classic" ? "text-black" : "text-white/40"} />
-                            Classic
+                            <Globe size={16} className={mode === "classic" ? "text-black hidden sm:block" : "text-white/40 hidden sm:block"} />
+                            <Globe size={14} className={mode === "classic" ? "text-black sm:hidden" : "text-white/40 sm:hidden"} />
+                            <span className="hidden sm:inline">All Time</span>
+                            <span className="sm:hidden">All Time</span>
+                        </button>
+                        <button
+                            onClick={() => setMode("weekly")}
+                            className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-[10px] sm:text-xs md:text-sm tracking-wider uppercase transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 leading-tight sm:leading-normal ${mode === "weekly"
+                                ? "bg-gradient-to-b from-[#4DB8FF] to-[#007BFF] text-white shadow-[0_2px_8px_rgba(77,184,255,0.4)]"
+                                : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                                }`}
+                        >
+                            <Calendar size={16} className={mode === "weekly" ? "text-white hidden sm:block" : "text-white/40 hidden sm:block"} />
+                            <Calendar size={14} className={mode === "weekly" ? "text-white sm:hidden" : "text-white/40 sm:hidden"} />
+                            <span>Weekly</span>
                         </button>
                         <button
                             onClick={() => setMode("daily")}
-                            className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${mode === "daily"
+                            className={`flex-1 py-2 sm:py-3 rounded-lg font-bold text-[10px] sm:text-xs md:text-sm tracking-wider uppercase transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 leading-tight sm:leading-normal ${mode === "daily"
                                 ? "bg-gradient-to-b from-[#B366FF] to-[#8A2BE2] text-white shadow-[0_2px_8px_rgba(179,102,255,0.4)]"
                                 : "text-white/40 hover:text-white/80 hover:bg-white/5"
                                 }`}
                         >
-                            <Trophy size={16} className={mode === "daily" ? "text-white" : "text-white/40"} />
-                            Daily
+                            <Zap size={16} className={mode === "daily" ? "text-white hidden sm:block" : "text-white/40 hidden sm:block"} />
+                            <Zap size={14} className={mode === "daily" ? "text-white sm:hidden" : "text-white/40 sm:hidden"} />
+                            <span className="hidden sm:inline">Daily Challenge</span>
+                            <span className="sm:hidden mt-0.5 leading-[1.1] text-center">Daily<br />Challenge</span>
                         </button>
                     </div>
 
