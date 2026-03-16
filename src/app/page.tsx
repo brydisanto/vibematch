@@ -126,16 +126,16 @@ export default function Home() {
     game.resetGame();
   };
 
-  // Record streak when a daily game ends
+  // Record streak when any game ends (daily or classic)
   useEffect(() => {
-    if (game.state?.gamePhase === "gameover" && game.state?.gameMode === "daily" && userProfile?.username) {
+    if (game.state?.gamePhase === "gameover" && userProfile?.username) {
       fetch('/api/streak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: userProfile.username }),
       }).catch(() => { });
     }
-  }, [game.state?.gamePhase, game.state?.gameMode, userProfile?.username]);
+  }, [game.state?.gamePhase, userProfile?.username]);
 
   const movesLeft = game.state?.movesLeft ?? 30;
   const combo = game.state?.combo ?? 0;

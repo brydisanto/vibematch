@@ -90,16 +90,6 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [globalBest, setGlobalBest] = useState<number>(0);
     const [globalBestUser, setGlobalBestUser] = useState<string>("");
-    const [streak, setStreak] = useState<number>(0);
-
-    useEffect(() => {
-        const effectiveUsername = username || localStorage.getItem('vibematch_username');
-        if (!effectiveUsername) return;
-        fetch(`/api/streak?username=${effectiveUsername}`)
-            .then(res => res.json())
-            .then(data => { if (data.streak > 0) setStreak(data.streak); })
-            .catch(() => { });
-    }, [username]);
 
     useEffect(() => {
         // Only fetch at the start of a game or when explicitly requested
@@ -297,15 +287,6 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             {combo > 0 ? combo : "—"}
                         </div>
                     </HudCard>
-                    {/* Streak */}
-                    {streak > 0 && (
-                        <HudCard borderColor="rgba(255,120,50,0.8)" glowColor="rgba(255,120,50,0.2)" className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
-                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">STREAK</div>
-                            <div className="font-display text-3xl font-black leading-none text-[#FF7832]" style={{ textShadow: "0 0 12px rgba(255,120,50,0.5)" }}>
-                                🔥{streak}
-                            </div>
-                        </HudCard>
-                    )}
                 </div>
             )}
 
@@ -367,18 +348,6 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             {combo > 0 ? `×${combo}` : "—"}
                         </div>
                     </HudCard>
-
-                    {/* Streak Card */}
-                    {streak > 0 && (
-                        <HudCard borderColor="rgba(255,120,50,0.8)" glowColor="rgba(255,120,50,0.2)" className="flex-[0.7] min-h-0 py-3">
-                            <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
-                                STREAK
-                            </div>
-                            <div className="font-display text-3xl sm:text-4xl font-black leading-none text-[#FF7832]" style={{ textShadow: "0 0 16px rgba(255,120,50,0.6)" }}>
-                                🔥{streak}
-                            </div>
-                        </HudCard>
-                    )}
 
                     {/* High Scores Card */}
                     <HudCard className="flex-1 min-h-0 py-3">
