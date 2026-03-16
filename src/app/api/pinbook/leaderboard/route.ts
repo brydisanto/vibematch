@@ -1,6 +1,11 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { BADGES, BadgeTier } from '@/lib/badges';
+
+// Tier → point value for Pin Score
+const TIER_POINTS: Record<BadgeTier, number> = { blue: 1, silver: 2, gold: 3, cosmic: 4 };
+const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
 
 // In-memory cache (30s TTL — collection data changes less often than scores)
 let cachedData: { data: any; expires: number } | null = null;
@@ -55,18 +60,27 @@ export async function GET() {
             const totalPins = Object.values(pins).reduce((sum, p) => sum + p.count, 0);
             const percentComplete = Math.round((uniqueCount / TOTAL_BADGES) * 100);
 
+            // Pin Score: each pin × tier points (dupes count)
+            let pinScore = 0;
+            for (const [badgeId, pin] of Object.entries(pins)) {
+                const tier = badgeTierMap.get(badgeId) || 'blue';
+                pinScore += pin.count * TIER_POINTS[tier];
+            }
+
             return {
                 username,
                 avatarUrl,
                 uniqueCount,
                 totalPins,
                 percentComplete,
+                pinScore,
             };
         }).filter(Boolean);
 
-        // Sort by % complete (desc), then unique count (desc), then total pins (desc)
+        // Sort by % complete (desc), then pin score (desc), then unique count (desc), then total pins (desc)
         entries.sort((a: any, b: any) =>
             b.percentComplete - a.percentComplete ||
+            b.pinScore - a.pinScore ||
             b.uniqueCount - a.uniqueCount ||
             b.totalPins - a.totalPins
         );

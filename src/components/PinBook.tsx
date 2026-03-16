@@ -38,6 +38,7 @@ interface PinLeaderboardEntry {
     uniqueCount: number;
     totalPins: number;
     percentComplete: number;
+    pinScore: number;
 }
 
 function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry; size?: number }) {
@@ -131,15 +132,18 @@ function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
                                 ) : entry.username}
                             </div>
                             <div className="text-[10px] text-white/30 font-bold mt-0.5">
-                                {entry.uniqueCount}/77 unique &middot; {entry.totalPins} total
+                                {entry.uniqueCount}/77 pins collected ({entry.totalPins} total)
                             </div>
                         </div>
 
-                        {/* % Complete — primary stat */}
+                        {/* Pin Score + % Complete */}
                         <div className="flex-shrink-0 text-right">
                             <div className="font-display font-extrabold text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                                 style={{ color: entry.percentComplete === 100 ? "#FFD700" : "#B366FF" }}>
                                 {entry.percentComplete}%
+                            </div>
+                            <div className="text-[10px] text-white/30 font-bold mt-0.5">
+                                {entry.pinScore} pts
                             </div>
                         </div>
                     </div>
