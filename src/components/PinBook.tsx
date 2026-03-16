@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Trophy } from "lucide-react";
 import {
     Badge,
     BADGES,
@@ -18,6 +18,7 @@ interface PinBookProps {
     onOpenCapsule: () => void;
     pins: Record<string, { count: number; firstEarned: string }>;
     unopenedCapsules: number;
+    currentUsername?: string;
 }
 
 const TIER_ORDER: BadgeTier[] = ["cosmic", "gold", "silver", "blue"];
@@ -29,13 +30,137 @@ const TIER_GLOW: Record<BadgeTier, string> = {
     blue: "0 0 10px rgba(224, 224, 224, 0.3), 0 0 20px rgba(224, 224, 224, 0.1)",
 };
 
+// --- PinBook Leaderboard ---
+
+interface PinLeaderboardEntry {
+    username: string;
+    avatarUrl: string;
+    uniqueCount: number;
+    totalPins: number;
+    percentComplete: number;
+}
+
+function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry; size?: number }) {
+    return (
+        <div className="rounded-full bg-[#2A1845] border border-[#3A2855] overflow-hidden flex items-center justify-center flex-shrink-0"
+            style={{ width: size, height: size }}>
+            {entry.avatarUrl ? (
+                <Image src={entry.avatarUrl} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+            ) : (
+                <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
+                    {entry.username.substring(0, 2)}
+                </span>
+            )}
+        </div>
+    );
+}
+
+function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
+    const [entries, setEntries] = useState<PinLeaderboardEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/pinbook/leaderboard');
+                if (!res.ok) return;
+                const data = await res.json();
+                setEntries(data.leaderboard || []);
+            } catch {
+                // ignore
+            } finally {
+                setIsLoading(false);
+            }
+        })();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col gap-3 px-5 py-6">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 animate-pulse">
+                        <div className="w-7 h-4 bg-white/5 rounded" />
+                        <div className="w-9 h-9 rounded-full bg-white/5" />
+                        <div className="flex-1 h-4 bg-white/5 rounded" style={{ width: `${60 - i * 8}%` }} />
+                        <div className="w-20 h-4 bg-white/5 rounded" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (entries.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-white/30 text-center px-6">
+                <Trophy size={48} className="mb-4 opacity-20" />
+                <p className="font-bold uppercase tracking-widest text-sm">No collectors yet</p>
+                <p className="text-xs mt-2 text-white/20">Open capsules to start your collection!</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="px-3 py-2">
+            {entries.map((entry, i) => {
+                const rank = i + 1;
+                const isUser = entry.username.toLowerCase() === currentUsername?.toLowerCase();
+                const isTop3 = rank <= 3;
+                const medalColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+
+                return (
+                    <div
+                        key={entry.username}
+                        className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${
+                            isUser ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"
+                        }`}
+                    >
+                        {/* Rank */}
+                        <div className="flex-shrink-0 w-7 text-center font-bold text-sm"
+                            style={{ color: isTop3 ? medalColors[rank - 1] : "rgba(255,255,255,0.4)" }}>
+                            {rank}
+                        </div>
+
+                        {/* Avatar */}
+                        <PinLeaderboardAvatar entry={entry} size={36} />
+
+                        {/* Name + unique count */}
+                        <div className="flex-1 min-w-0">
+                            <div className="font-bold text-sm text-white/90 truncate">
+                                {isUser ? (
+                                    <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></>
+                                ) : entry.username}
+                            </div>
+                            <div className="text-[10px] text-white/30 font-bold mt-0.5">
+                                {entry.uniqueCount}/77 unique &middot; {entry.totalPins} total
+                            </div>
+                        </div>
+
+                        {/* % Complete — primary stat */}
+                        <div className="flex-shrink-0 text-right">
+                            <div className="font-display font-extrabold text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                                style={{ color: entry.percentComplete === 100 ? "#FFD700" : "#B366FF" }}>
+                                {entry.percentComplete}%
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// --- Main PinBook Component ---
+
 export default function PinBook({
     isOpen,
     onClose,
     onOpenCapsule,
     pins,
     unopenedCapsules,
+    currentUsername,
 }: PinBookProps) {
+    const [tab, setTab] = useState<"collection" | "leaderboard">("collection");
+
     const ownedCount = useMemo(
         () => Object.keys(pins).length,
         [pins]
@@ -195,10 +320,31 @@ export default function PinBook({
                                     />
                                 </div>
                             </div>
+
+                            {/* Tab Bar */}
+                            <div className="flex bg-white/5 p-1 rounded-xl w-full mt-3">
+                                {(["collection", "leaderboard"] as const).map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setTab(t)}
+                                        className={`flex-1 py-2 text-center text-xs font-bold uppercase transition-all rounded-lg ${
+                                            tab === t
+                                                ? "bg-white text-black shadow-sm"
+                                                : "text-white/40 hover:text-white/80"
+                                        }`}
+                                    >
+                                        {t === "collection" ? "My Collection" : "Leaderboard"}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* ── Scrollable Content ── */}
-                        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {tab === "leaderboard" ? (
+                            <PinLeaderboard currentUsername={currentUsername} />
+                        ) : (
+                        <div className="px-5 sm:px-6 py-5 space-y-6">
                             {TIER_ORDER.map((tier, tierIdx) => {
                                 const badges = groupedBadges[tier];
                                 if (badges.length === 0) return null;
@@ -387,6 +533,8 @@ export default function PinBook({
 
                             {/* Bottom Padding for scroll comfort */}
                             <div className="h-2" />
+                        </div>
+                        )}
                         </div>
 
                         {/* ── Footer ── */}

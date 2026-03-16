@@ -393,6 +393,7 @@ export default function Home() {
         }}
         pins={pinBook.state.pins}
         unopenedCapsules={pinBook.state.capsules}
+        currentUsername={userProfile?.username}
       />
 
       {/* Vibe Capsule Opening Animation */}
