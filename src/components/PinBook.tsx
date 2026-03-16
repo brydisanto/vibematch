@@ -126,7 +126,7 @@ function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
 
                         {/* Name + unique count */}
                         <div className="flex-1 min-w-0">
-                            <div className="font-bold text-sm text-white/90 truncate">
+                            <div className="font-display font-extrabold text-base tracking-[0.03em] text-white/90 truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                                 {isUser ? (
                                     <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></>
                                 ) : entry.username}
