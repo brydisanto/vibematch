@@ -2,15 +2,22 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-// Fix #1: JWT_SECRET is mandatory — throw at startup if missing.
-const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret) {
-    throw new Error(
-        "JWT_SECRET environment variable is not set. " +
-        "Set a strong, random secret before starting the server."
-    );
+// Lazy init: resolve JWT_SECRET at first use, not at module load.
+// This prevents Next.js build from failing when env vars aren't available.
+let _key: Uint8Array | null = null;
+function getKey(): Uint8Array {
+    if (!_key) {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error(
+                "JWT_SECRET environment variable is not set. " +
+                "Set a strong, random secret before starting the server."
+            );
+        }
+        _key = new TextEncoder().encode(jwtSecret);
+    }
+    return _key;
 }
-const key = new TextEncoder().encode(jwtSecret);
 
 export const SESSION_COOKIE_NAME = "vibematch_session";
 
@@ -19,11 +26,11 @@ export async function encrypt(payload: any) {
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
         .setExpirationTime("7d")
-        .sign(key);
+        .sign(getKey());
 }
 
 export async function decrypt(input: string): Promise<any> {
-    const { payload } = await jwtVerify(input, key, {
+    const { payload } = await jwtVerify(input, getKey(), {
         algorithms: ["HS256"],
     });
     return payload;
