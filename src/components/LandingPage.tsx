@@ -349,22 +349,22 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 <div className="relative bg-[rgba(17,17,17,0.9)] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
                                     <div className="relative flex items-center justify-between z-10 w-full">
                                         <div className="flex flex-col items-start justify-center">
-                                            <h2 className="font-display text-xl sm:text-2xl font-black text-[#B366FF] mb-0.5 uppercase">
-                                                THE DAILY CHALLENGE
-                                            </h2>
-                                            <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mb-0.5">
-                                                Resets in {dailyCountdown}
-                                            </p>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-white/60 text-xs sm:text-sm font-mundial leading-relaxed text-left">
-                                                    Same board for everyone. 1 shot to stoke it to the max!
-                                                </p>
+                                            <div className="flex items-center mb-0.5">
+                                                <h2 className="font-display text-xl sm:text-2xl font-black text-[#B366FF] uppercase">
+                                                    THE DAILY CHALLENGE
+                                                </h2>
                                                 {streak > 0 && (
-                                                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#B366FF]/15 border border-[#B366FF]/40 text-[#B366FF] text-[11px] font-black font-mundial">
-                                                        {streak} day streak
+                                                    <span className="shrink-0 ml-2 px-1.5 py-0.5 rounded-md bg-[#FF7832]/12 border border-[#FF7832]/25 text-[#FF7832] text-[11px] font-black font-mundial flex items-center gap-1">
+                                                        🔥 {streak}
                                                     </span>
                                                 )}
                                             </div>
+                                            <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mb-0.5">
+                                                Resets in {dailyCountdown}
+                                            </p>
+                                            <p className="text-white/60 text-xs sm:text-sm font-mundial leading-relaxed text-left">
+                                                Same board for everyone. 1 shot to stoke it to the max!
+                                            </p>
                                         </div>
                                         <div className="w-10 h-10 shrink-0 rounded-full bg-[#B366FF]/10 flex items-center justify-center border border-[#B366FF]/30 group-hover:bg-[#B366FF]/20 transition-colors">
                                             <ChevronRight size={18} className="text-[#B366FF]/70 group-hover:text-[#B366FF] transition-colors" />
