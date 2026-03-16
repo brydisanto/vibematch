@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streak Display Options — VibeMatch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 32px;
+  }
+
+  .option-group {
+    max-width: 420px;
+    margin: 0 auto 40px;
+  }
+
+  .option-label {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .option-desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 16px;
+    padding-left: 4px;
+    line-height: 1.5;
+  }
+
+  /* Shared card base */
+  .card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(17,17,17,0.9);
+    padding: 14px 20px;
+  }
+  .card-daily {
+    border: 3px solid rgba(179,102,255,0.4);
+    box-shadow: 0 4px 20px rgba(179,102,255,0.2), 0 8px 25px rgba(0,0,0,0.4);
+  }
+
+  .card-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-title {
+    font-size: 22px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .title-purple { color: #B366FF; }
+
+  .card-subtitle {
+    font-size: 10px;
+    color: rgba(179,102,255,0.5);
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.5;
+  }
+
+  .chevron-circle {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(179,102,255,0.3);
+    background: rgba(179,102,255,0.1);
+  }
+  .chevron-circle svg { color: rgba(179,102,255,0.7); }
+
+  /* Current streak badge */
+  .streak-badge-current {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(179,102,255,0.15);
+    border: 1px solid rgba(179,102,255,0.4);
+    color: #B366FF;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  /* ── Option A: Inline after title ── */
+  .streak-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(255,120,50,0.12);
+    border: 1px solid rgba(255,120,50,0.25);
+    font-size: 11px;
+    font-weight: 900;
+    color: #FF7832;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+
+  /* ── Option B: Superscript badge ── */
+  .streak-super {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #FF7832;
+    vertical-align: super;
+    text-shadow: 0 0 10px rgba(255,120,50,0.4);
+    position: relative;
+    top: -4px;
+  }
+
+  /* ── Option C: Dot separator in subtitle ── */
+  .streak-subtle {
+    color: rgba(255,120,50,0.7);
+    font-weight: 900;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+  .dot-sep {
+    color: rgba(255,255,255,0.15);
+    margin: 0 5px;
+  }
+
+  /* ── Option D: Right-aligned mini column ── */
+  .streak-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-right: 12px;
+  }
+  .streak-right-num {
+    font-size: 20px;
+    font-weight: 900;
+    color: #FF7832;
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(255,120,50,0.5);
+  }
+  .streak-right-label {
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,120,50,0.5);
+  }
+  .streak-right-icon {
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  /* ── Option E: Flame icon integrated in subtitle row ── */
+  .streak-micro {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 900;
+    color: #FF7832;
+    letter-spacing: 0.05em;
+  }
+
+  /* Divider */
+  .divider {
+    max-width: 420px;
+    margin: 0 auto 40px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+
+  /* Current label */
+  .current-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.3);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Streak Display Options</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CURRENT DESIGN -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Current Design <span class="current-tag">Live</span></div>
+  <div class="option-desc">Full pill badge inline with description text. Takes up visual space and wraps awkwardly on narrow screens.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content">
+        <div class="card-title title-purple">THE DAILY CHALLENGE</div>
+        <div class="card-subtitle">Resets in 14h 23m</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="card-desc">Same board for everyone. 1 shot to stoke it to the max!</span>
+          <span class="streak-badge-current">7 day streak</span>
+        </div>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OPTION A: Inline badge after title -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option A — Inline Title Badge</div>
+  <div class="option-desc">Compact pill tucked right after the title. Orange/fire color differentiates it from the purple card theme. Frees up the description line.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content">
+        <div class="card-title title-purple" style="display:flex;align-items:center;">
+          THE DAILY CHALLENGE
+          <span class="streak-inline">🔥 7</span>
+        </div>
+        <div class="card-subtitle">Resets in 14h 23m</div>
+        <span class="card-desc">Same board for everyone. 1 shot to stoke it to the max!</span>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OPTION B: Superscript next to title -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option B — Superscript Flame</div>
+  <div class="option-desc">Minimal footprint. Flame + number floats as a superscript next to the title — no background, no border. Feels like a natural extension of the heading.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content">
+        <div class="card-title title-purple">
+          THE DAILY CHALLENGE<span class="streak-super">🔥7</span>
+        </div>
+        <div class="card-subtitle">Resets in 14h 23m</div>
+        <span class="card-desc">Same board for everyone. 1 shot to stoke it to the max!</span>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OPTION C: Integrated in subtitle row -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option C — Subtitle Integration</div>
+  <div class="option-desc">Streak lives in the same line as the countdown timer, separated by a dot. Most compact — zero additional vertical space. Uses the existing metadata row.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content">
+        <div class="card-title title-purple">THE DAILY CHALLENGE</div>
+        <div class="card-subtitle">
+          Resets in 14h 23m<span class="dot-sep">·</span><span class="streak-subtle">🔥 7 day streak</span>
+        </div>
+        <span class="card-desc">Same board for everyone. 1 shot to stoke it to the max!</span>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OPTION D: Right-aligned number column -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option D — Right Column Counter</div>
+  <div class="option-desc">Streak number anchored to the right side, between content and chevron. Gives the streak its own dedicated space without disrupting the text flow. Bold number creates visual hierarchy.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content" style="flex:1;">
+        <div class="card-title title-purple">THE DAILY CHALLENGE</div>
+        <div class="card-subtitle">Resets in 14h 23m</div>
+        <span class="card-desc">Same board for everyone. 1 shot to stoke it to the max!</span>
+      </div>
+      <div class="streak-right-col">
+        <div class="streak-right-icon">🔥</div>
+        <div class="streak-right-num">7</div>
+        <div class="streak-right-label">Streak</div>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OPTION E: Micro flame in desc row -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option E — Description Row Micro</div>
+  <div class="option-desc">Tiny flame + number appended to the end of the description text with a dot separator. Ultra-subtle — streak info is present but doesn't compete with any element.</div>
+  <div class="card card-daily">
+    <div class="card-inner">
+      <div class="card-content">
+        <div class="card-title title-purple">THE DAILY CHALLENGE</div>
+        <div class="card-subtitle">Resets in 14h 23m</div>
+        <span class="card-desc">
+          Same board for everyone. 1 shot to stoke it to the max!
+          <span class="dot-sep">·</span><span class="streak-micro">🔥 7</span>
+        </span>
+      </div>
+      <div class="chevron-circle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
