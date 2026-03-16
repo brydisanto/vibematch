@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { X, Upload, Save } from "lucide-react";
+import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight } from "lucide-react";
+import { isMuted, toggleMute, BGM_TRACK_NAMES, getCurrentTrackIndex, selectBGMTrack, startBGM } from "@/lib/sounds";
 
 interface ProfileModalProps {
     currentUsername: string;
@@ -15,7 +16,14 @@ interface ProfileModalProps {
 export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave, onClose }: ProfileModalProps) {
     const [username, setUsername] = useState(currentUsername);
     const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
+    const [soundEnabled, setSoundEnabled] = useState(!isMuted);
+    const [trackIndex, setTrackIndex] = useState(getCurrentTrackIndex());
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setSoundEnabled(!isMuted);
+        setTrackIndex(getCurrentTrackIndex());
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -25,6 +33,26 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                 setAvatarUrl(reader.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSoundToggle = () => {
+        const newEnabled = !soundEnabled;
+        setSoundEnabled(newEnabled);
+        toggleMute(!newEnabled);
+        if (newEnabled) {
+            startBGM();
+        }
+    };
+
+    const handleTrackChange = (direction: -1 | 1) => {
+        const newIndex = (trackIndex + direction + BGM_TRACK_NAMES.length) % BGM_TRACK_NAMES.length;
+        setTrackIndex(newIndex);
+        selectBGMTrack(newIndex);
+        if (!soundEnabled) {
+            setSoundEnabled(true);
+            toggleMute(false);
+            startBGM();
         }
     };
 
@@ -79,7 +107,7 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                     </div>
 
                     {/* Username Input */}
-                    <div className="w-full mb-8">
+                    <div className="w-full mb-6">
                         <label className="block text-white/50 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
                             Username
                         </label>
@@ -91,6 +119,62 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             maxLength={20}
                             className="w-full bg-[#1A1525] border border-[#3A3344] rounded-xl px-4 py-3 text-white font-bold placeholder:text-white/20 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] text-center text-lg"
                         />
+                    </div>
+
+                    {/* Music Settings */}
+                    <div className="w-full mb-6 bg-[#1A1525] rounded-xl border border-[#3A3344] p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Music size={14} className="text-[#B366FF]" />
+                            <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Music</span>
+                        </div>
+
+                        {/* Sound Toggle */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                {soundEnabled ? (
+                                    <Volume2 size={16} className="text-[#B366FF]" />
+                                ) : (
+                                    <VolumeX size={16} className="text-white/30" />
+                                )}
+                                <span className="text-white/70 text-sm font-bold font-mundial">
+                                    {soundEnabled ? "On" : "Off"}
+                                </span>
+                            </div>
+                            <button
+                                onClick={handleSoundToggle}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none ${soundEnabled ? "bg-[#B366FF]" : "bg-white/20"}`}
+                            >
+                                <motion.div
+                                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md"
+                                    animate={{ left: soundEnabled ? "calc(100% - 22px)" : "2px" }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Track Selector */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleTrackChange(-1)}
+                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+                            >
+                                <ChevronLeft size={14} className="text-white/50" />
+                            </button>
+                            <div className="flex-1 text-center min-w-0">
+                                <div className="text-white/80 text-sm font-black font-mundial truncate">
+                                    {BGM_TRACK_NAMES[trackIndex]}
+                                </div>
+                                <div className="text-white/25 text-[9px] font-bold font-mundial uppercase tracking-wider">
+                                    Track {trackIndex + 1} / {BGM_TRACK_NAMES.length}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => handleTrackChange(1)}
+                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+                            >
+                                <ChevronRight size={14} className="text-white/50" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Save Button Enamel Pin */}

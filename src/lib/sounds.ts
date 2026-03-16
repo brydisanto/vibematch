@@ -165,6 +165,21 @@ function startMP3() {
     }
 }
 
+export function getCurrentTrackIndex(): number {
+    return currentBGMTrack;
+}
+
+export function selectBGMTrack(index: number): string {
+    currentBGMTrack = index % BGM_TRACK_NAMES.length;
+    if (bgmAudio) {
+        stopMP3();
+    }
+    if (bgmShouldPlay) {
+        startMP3();
+    }
+    return BGM_TRACK_NAMES[currentBGMTrack];
+}
+
 export function switchBGMTrack(): string {
     currentBGMTrack = (currentBGMTrack + 1) % BGM_TRACK_NAMES.length;
 
