@@ -25,18 +25,23 @@ export interface Match {
 
 export type GameMode = "classic" | "daily";
 
+export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
+
 export interface GameState {
     board: Cell[][];
     score: number;
     movesLeft: number;
     combo: number;
     maxCombo: number;
+    comboCarry: number;
     selectedTile: Position | null;
     gameBadges: Badge[];
     gameMode: GameMode;
     gamePhase: "playing" | "animating" | "gameover";
     matchCount: number;
+    totalCascades: number;
     dailySeed?: number;
+    gameOverReason: GameOverReason;
 }
 
 const BOARD_SIZE = 8;
@@ -49,9 +54,10 @@ function nextCellId(): string {
 
 // ===== BOARD CREATION =====
 
-export function createInitialState(mode: GameMode): GameState {
+export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): GameState {
     const seed = mode === "daily" ? getDailySeed() : undefined;
-    const gameBadges = selectGameBadges(6, seed);
+    const gameBadges = draftedBadges ?? selectGameBadges(6, seed);
+
     const board = createBoard(gameBadges, seed);
 
     return {
@@ -60,12 +66,15 @@ export function createInitialState(mode: GameMode): GameState {
         movesLeft: CLASSIC_MOVES,
         combo: 0,
         maxCombo: 0,
+        comboCarry: 0,
         selectedTile: null,
         gameBadges,
         gameMode: mode,
         gamePhase: "playing",
         matchCount: 0,
+        totalCascades: 0,
         dailySeed: seed,
+        gameOverReason: null,
     };
 }
 
@@ -212,12 +221,106 @@ export function findAllMatches(board: Cell[][]): Match[] {
     return matches;
 }
 
+// ===== SHAPE DETECTION =====
+
+export type ShapeBonus = { type: 'L' | 'T' | 'cross' | 'square'; multiplier: number } | null;
+
+export function detectShapes(matches: Match[]): ShapeBonus {
+    const horizontal = matches.filter(m => m.isHorizontal);
+    const vertical = matches.filter(m => !m.isHorizontal);
+
+    let bestShape: ShapeBonus = null;
+
+    // Check for 2x2 square: any 4 matched positions of the same badge forming a block
+    const allMatchedByBadge = new Map<string, Set<string>>();
+    for (const m of matches) {
+        const key = m.badge.id;
+        if (!allMatchedByBadge.has(key)) allMatchedByBadge.set(key, new Set());
+        const posSet = allMatchedByBadge.get(key)!;
+        for (const p of m.positions) {
+            posSet.add(`${p.row},${p.col}`);
+        }
+    }
+    for (const posSet of allMatchedByBadge.values()) {
+        for (const pos of posSet) {
+            const [r, c] = pos.split(",").map(Number);
+            // Check if (r,c), (r,c+1), (r+1,c), (r+1,c+1) are all matched
+            if (posSet.has(`${r},${c + 1}`) && posSet.has(`${r + 1},${c}`) && posSet.has(`${r + 1},${c + 1}`)) {
+                if (!bestShape || 2 > bestShape.multiplier) {
+                    bestShape = { type: 'square', multiplier: 2 };
+                }
+            }
+        }
+    }
+
+    for (const h of horizontal) {
+        for (const v of vertical) {
+            // Must be the same badge type
+            if (h.badge.id !== v.badge.id) continue;
+
+            // Find shared positions
+            const shared: Position[] = [];
+            for (const hp of h.positions) {
+                for (const vp of v.positions) {
+                    if (hp.row === vp.row && hp.col === vp.col) {
+                        shared.push(hp);
+                    }
+                }
+            }
+
+            if (shared.length !== 1) continue;
+
+            const sp = shared[0];
+
+            // Determine if the shared tile is at an end or middle of each run
+            const hPositions = h.positions;
+            const vPositions = v.positions;
+
+            const hFirst = hPositions[0];
+            const hLast = hPositions[hPositions.length - 1];
+            const vFirst = vPositions[0];
+            const vLast = vPositions[vPositions.length - 1];
+
+            const isHEnd = (sp.row === hFirst.row && sp.col === hFirst.col) ||
+                           (sp.row === hLast.row && sp.col === hLast.col);
+            const isVEnd = (sp.row === vFirst.row && sp.col === vFirst.col) ||
+                           (sp.row === vLast.row && sp.col === vLast.col);
+
+            const isHMiddle = !isHEnd;
+            const isVMiddle = !isVEnd;
+
+            let detected: ShapeBonus = null;
+
+            if (isHMiddle && isVMiddle) {
+                // Cross: shared tile is in the middle of BOTH runs
+                detected = { type: 'cross', multiplier: 4 };
+            } else if (isHMiddle || isVMiddle) {
+                // T-shape: shared tile is in the middle of exactly one run
+                detected = { type: 'T', multiplier: 2.5 };
+            } else {
+                // L-shape: shared tile is at the end of both runs
+                detected = { type: 'L', multiplier: 1.5 };
+            }
+
+            // Keep highest-tier shape (cross > T > L > square)
+            if (detected) {
+                if (!bestShape || detected.multiplier > bestShape.multiplier) {
+                    bestShape = detected;
+                }
+            }
+        }
+    }
+
+    return bestShape;
+}
+
 // ===== SPECIAL TILES =====
 
 export function getSpecialTileForMatch(match: Match): SpecialTileType | null {
     const len = match.positions.length;
     if (len === 4) return "bomb";
-    if (len >= 5) return "cosmic_blast";
+    if (len === 5) return "vibestreak";
+    if (len >= 6) return "cosmic_blast";
     return null;
 }
 
@@ -270,6 +373,19 @@ export function applySpecialTile(
     }
 
     return affected;
+}
+
+// ===== SPECIAL TILE SCORING =====
+
+export function calculateSpecialTileScore(type: SpecialTileType, tilesCleared: number): number {
+    switch (type) {
+        case "bomb":
+            return 500 + (tilesCleared * 50);
+        case "cosmic_blast":
+            return 1000 + (tilesCleared * 75);
+        case "vibestreak":
+            return 750 + (tilesCleared * 60);
+    }
 }
 
 // ===== GRAVITY & FILL =====
@@ -358,6 +474,38 @@ export function hasValidMoves(board: Cell[][]): boolean {
     return false;
 }
 
+// ===== HINT =====
+
+export interface HintResult {
+    pos1: Position;
+    pos2: Position;
+}
+
+export function findBestHint(board: Cell[][]): HintResult | null {
+    let bestHint: HintResult | null = null;
+    let bestScore = 0;
+
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const trySwap = (pos2: Position) => {
+                const testBoard = swapTiles(board, { row, col }, pos2);
+                const matches = findAllMatches(testBoard);
+                if (matches.length > 0) {
+                    const score = matches.reduce((s, m) => s + m.positions.length, 0);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestHint = { pos1: { row, col }, pos2 };
+                    }
+                }
+            };
+            if (col < BOARD_SIZE - 1) trySwap({ row, col: col + 1 });
+            if (row < BOARD_SIZE - 1) trySwap({ row: row + 1, col });
+        }
+    }
+
+    return bestHint;
+}
+
 // ===== PROCESS TURN =====
 
 export interface TurnResult {
@@ -365,15 +513,18 @@ export interface TurnResult {
     scoreGained: number;
     matchesFound: Match[];
     combo: number;
+    comboCarry: number;
     specialTilesCreated: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
+    shapeBonus: ShapeBonus;
 }
 
 export function processTurn(
     board: Cell[][],
     pos1: Position,
     pos2: Position,
-    gameBadges: Badge[]
+    gameBadges: Badge[],
+    comboCarryIn: number = 0
 ): TurnResult | null {
     // Swap tiles
     let currentBoard = swapTiles(board, pos1, pos2);
@@ -385,10 +536,14 @@ export function processTurn(
     }
 
     let totalScore = 0;
-    let combo = 0;
+    // Start combo from carried-over value (cross-turn momentum)
+    let combo = comboCarryIn;
     let totalMatches: Match[] = [];
     const specialTilesCreated: { pos: Position; type: SpecialTileType }[] = [];
     let cascadeCount = 0;
+
+    // Detect geometric shapes from initial matches
+    const shapeBonus = detectShapes(initialMatches);
 
     // Process cascades
     let matches = initialMatches;
@@ -427,7 +582,8 @@ export function processTurn(
                 for (const aPos of affected) {
                     matchedPositions.add(`${aPos.row},${aPos.col}`);
                 }
-                totalScore += 200; // Bonus for special activation
+                // Bonus for special activation, scaled by type
+                totalScore += calculateSpecialTileScore(cell.isSpecial, affected.length);
             }
         }
 
@@ -460,13 +616,23 @@ export function processTurn(
         if (matches.length > 0) cascadeCount++;
     }
 
+    // Apply shape bonus multiplier to total score
+    if (shapeBonus) {
+        totalScore = Math.floor(totalScore * shapeBonus.multiplier);
+    }
+
+    // Combo decay: carry over up to 2 for next turn (rewards big cascades without snowballing)
+    const comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
+
     return {
         board: currentBoard,
         scoreGained: totalScore,
         matchesFound: totalMatches,
         combo,
+        comboCarry: comboCarryOut,
         specialTilesCreated,
         cascadeCount,
+        shapeBonus,
     };
 }
 
@@ -494,11 +660,14 @@ export function triggerSpecialTile(
     // Also clear the special tile itself
     matchedPositions.add(`${pos.row},${pos.col}`);
 
-    // Check if any affected tiles are also special — chain them
+    // Chain: any special tile caught in the blast also activates
+    const chainedSpecials = new Set<string>([`${pos.row},${pos.col}`]);
     for (const posKey of matchedPositions) {
         const [r, c] = posKey.split(",").map(Number);
         const affectedCell = currentBoard[r][c];
-        if (affectedCell.isSpecial && !(r === pos.row && c === pos.col)) {
+        const key = `${r},${c}`;
+        if (affectedCell.isSpecial && !chainedSpecials.has(key)) {
+            chainedSpecials.add(key);
             const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, affectedCell.isSpecial);
             for (const chainPos of chainAffected) {
                 matchedPositions.add(`${chainPos.row},${chainPos.col}`);
@@ -506,8 +675,17 @@ export function triggerSpecialTile(
         }
     }
 
-    // Score the special activation
-    let totalScore = 200 + (affected.length * 25);
+    // Score: initial special + all chained specials
+    let totalScore = calculateSpecialTileScore(specialType, affected.length);
+    for (const key of chainedSpecials) {
+        if (key === `${pos.row},${pos.col}`) continue; // already scored above
+        const [r, c] = key.split(",").map(Number);
+        const chainedCell = currentBoard[r][c];
+        if (chainedCell.isSpecial) {
+            const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, chainedCell.isSpecial);
+            totalScore += calculateSpecialTileScore(chainedCell.isSpecial, chainAffected.length);
+        }
+    }
     let combo = 1;
     let cascadeCount = 0;
 
@@ -545,7 +723,7 @@ export function triggerSpecialTile(
                 for (const chainPos of chainAffected) {
                     cascadeMatched.add(`${chainPos.row},${chainPos.col}`);
                 }
-                totalScore += 200;
+                totalScore += calculateSpecialTileScore(currentBoard[r][c].isSpecial!, chainAffected.length);
             }
         }
 
@@ -560,19 +738,28 @@ export function triggerSpecialTile(
         matches = findAllMatches(currentBoard);
     }
 
-    // Build a synthetic match for effects
+    // Build a synthetic match for effects — include all cleared positions
+    const allAffected = Array.from(matchedPositions).map(k => {
+        const [r, c] = k.split(",").map(Number);
+        return { row: r, col: c };
+    });
     const syntheticMatch: Match = {
-        positions: affected,
+        positions: allAffected,
         badge: cell.badge,
         isHorizontal: true,
     };
+
+    // Combo decay: carry over up to 2 for next turn (rewards big cascades without snowballing)
+    const comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
 
     return {
         board: currentBoard,
         scoreGained: totalScore,
         matchesFound: [syntheticMatch],
         combo,
+        comboCarry: comboCarryOut,
         specialTilesCreated: [],
         cascadeCount,
+        shapeBonus: null,
     };
 }

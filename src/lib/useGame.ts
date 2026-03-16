@@ -6,12 +6,15 @@ import {
     GameMode,
     Position,
     TurnResult,
+    Cell,
     createInitialState,
     isAdjacentSwap,
     processTurn,
     triggerSpecialTile,
     hasValidMoves,
+    findBestHint,
 } from "./gameEngine";
+import { Badge } from "./badges";
 import {
     playSelectSound,
     playDeselectSound,
@@ -19,8 +22,14 @@ import {
     playMatchSound,
     playBombSound,
     playCosmicBlastSound,
+    playVibestreakSound,
     playGameOverSound,
     playCascadeSound,
+    playShapeBonusSound,
+    playHintSound,
+    playFinalMoveWarning,
+    playGameStartSound,
+    playTileLandSound,
 } from "./sounds";
 
 export interface ScorePopup {
@@ -28,6 +37,7 @@ export interface ScorePopup {
     value: number;
     x: number;
     y: number;
+    combo: number;
 }
 
 // Intensity level for match effects — drives animations + haptics
@@ -40,6 +50,9 @@ export interface MatchEffect {
     maxMatchSize: number;
     positions: { row: number; col: number }[];
     timestamp: number;
+    cascadeCount: number;
+    shapeBonusType?: 'L' | 'T' | 'cross' | 'square' | null;
+    matchedBadgeName?: string;
 }
 
 export interface UseGameReturn {
@@ -48,8 +61,14 @@ export interface UseGameReturn {
     lastTurnResult: TurnResult | null;
     matchEffect: MatchEffect | null;
     isAnimating: boolean;
+    hintCells: Set<string>;
+    hintMessage: string | null;
+    invalidSwapCells: { row: number; col: number }[] | null;
+    swapAnim: { pos1: Position; pos2: Position } | null;
     selectTile: (pos: Position) => void;
+    swipeTiles: (from: Position, to: Position) => void;
     startGame: (mode: GameMode) => void;
+    startGameWithBadges: (mode: GameMode, badges: Badge[]) => void;
     resetGame: () => void;
 }
 
@@ -66,23 +85,79 @@ export function useGame(): UseGameReturn {
     const [lastTurnResult, setLastTurnResult] = useState<TurnResult | null>(null);
     const [matchEffect, setMatchEffect] = useState<MatchEffect | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [hintCells, setHintCells] = useState<Set<string>>(new Set());
+    const [invalidSwapCells, setInvalidSwapCells] = useState<{ row: number; col: number }[] | null>(null);
+    const [swapAnim, setSwapAnim] = useState<{ pos1: Position; pos2: Position } | null>(null);
+    const [hintMessage, setHintMessage] = useState<string | null>(null);
+    const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hintMessageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hintShownThisGame = useRef(false);
     const popupCounter = useRef(0);
 
-    const startGame = useCallback((mode: GameMode) => {
-        setState(createInitialState(mode));
-        setScorePopups([]);
-        setLastTurnResult(null);
-        setMatchEffect(null);
-        setIsAnimating(false);
+    const resetHintTimer = useCallback((board: Cell[][]) => {
+        if (hintTimer.current) clearTimeout(hintTimer.current);
+        if (hintMessageTimer.current) clearTimeout(hintMessageTimer.current);
+        setHintCells(new Set());
+        setHintMessage(null);
+
+        // Only show hint once per game
+        if (hintShownThisGame.current) return;
+
+        // Hint highlight at 8 seconds of idle
+        hintTimer.current = setTimeout(() => {
+            const hint = findBestHint(board);
+            if (hint) {
+                setHintCells(new Set([
+                    `${hint.pos1.row},${hint.pos1.col}`,
+                    `${hint.pos2.row},${hint.pos2.col}`,
+                ]));
+                playHintSound();
+                hintShownThisGame.current = true;
+            }
+        }, 8000);
     }, []);
 
-    const resetGame = useCallback(() => {
-        setState((prev) => prev ? createInitialState(prev.gameMode) : null);
+    const startGame = useCallback((mode: GameMode) => {
+        const initialState = createInitialState(mode);
+        setState(initialState);
         setScorePopups([]);
         setLastTurnResult(null);
         setMatchEffect(null);
         setIsAnimating(false);
-    }, []);
+        setHintMessage(null);
+        hintShownThisGame.current = false;
+        resetHintTimer(initialState.board);
+        playGameStartSound();
+    }, [resetHintTimer]);
+
+    const startGameWithBadges = useCallback((mode: GameMode, badges: Badge[]) => {
+        const initialState = createInitialState(mode, badges);
+        setState(initialState);
+        setScorePopups([]);
+        setLastTurnResult(null);
+        setMatchEffect(null);
+        setIsAnimating(false);
+        setHintMessage(null);
+        hintShownThisGame.current = false;
+        resetHintTimer(initialState.board);
+        playGameStartSound();
+    }, [resetHintTimer]);
+
+    const resetGame = useCallback(() => {
+        const newState = createInitialState("classic");
+        hintShownThisGame.current = false;
+        setState((prev) => {
+            const s = prev ? createInitialState(prev.gameMode) : newState;
+            resetHintTimer(s.board);
+            return s;
+        });
+        setScorePopups([]);
+        setLastTurnResult(null);
+        setMatchEffect(null);
+        setIsAnimating(false);
+        setHintMessage(null);
+        playGameStartSound();
+    }, [resetHintTimer]);
 
     // Shared helper: apply a TurnResult to game state with effects
     const applyResult = useCallback((
@@ -105,19 +180,55 @@ export function useGame(): UseGameReturn {
         for (const special of result.specialTilesCreated) {
             setTimeout(() => {
                 if (special.type === "bomb") playBombSound();
-                if (special.type === "cosmic_blast") playCosmicBlastSound();
+                else if (special.type === "cosmic_blast") playCosmicBlastSound();
+                else if (special.type === "vibestreak") playVibestreakSound();
             }, 200);
         }
 
-        // Play cascade sounds
+        // Play cascade sounds + tile land sounds
         if (result.cascadeCount > 0) {
             for (let i = 0; i < result.cascadeCount; i++) {
                 setTimeout(() => playCascadeSound(i + 1), 250 + i * 150);
             }
+            // Staggered tile land sounds after final cascade settles
+            const landBase = 250 + result.cascadeCount * 150 + 200;
+            for (let col = 0; col < 8; col++) {
+                setTimeout(() => playTileLandSound(col), landBase + col * 35);
+            }
+        }
+
+        // Play shape bonus sound
+        if (result.shapeBonus?.type) {
+            setTimeout(() => playShapeBonusSound(result.shapeBonus!.type), 150);
+        }
+
+        // Final move warning sound
+        if (costMove && newMovesLeft >= 1 && newMovesLeft <= 3) {
+            setTimeout(() => playFinalMoveWarning(newMovesLeft), 600);
         }
 
         // Calculate match intensity for visual effects
         const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
+
+        // Find the most common badge name across all matches for the flash effect
+        const badgeCounts = new Map<string, { count: number; name: string }>();
+        for (const match of result.matchesFound) {
+            const key = match.badge.id;
+            const existing = badgeCounts.get(key);
+            if (existing) {
+                existing.count += match.positions.length;
+            } else {
+                badgeCounts.set(key, { count: match.positions.length, name: match.badge.name });
+            }
+        }
+        let matchedBadgeName: string | undefined;
+        let highestCount = 0;
+        for (const [, entry] of badgeCounts) {
+            if (entry.count > highestCount) {
+                highestCount = entry.count;
+                matchedBadgeName = entry.name;
+            }
+        }
 
         // Set match effect for board to consume
         setMatchEffect({
@@ -127,6 +238,9 @@ export function useGame(): UseGameReturn {
             maxMatchSize,
             positions: allPositions,
             timestamp: Date.now(),
+            cascadeCount: result.cascadeCount,
+            shapeBonusType: result.shapeBonus?.type ?? null,
+            matchedBadgeName,
         });
 
         // Haptic feedback on mobile
@@ -140,7 +254,7 @@ export function useGame(): UseGameReturn {
         }
 
         // Clear match effect after animation
-        setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 1800 : intensity === "mega" ? 1200 : 800);
+        setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 2400 : intensity === "mega" ? 1800 : 1200);
 
         // Add score popup
         const popupId = `popup_${popupCounter.current++}`;
@@ -151,27 +265,41 @@ export function useGame(): UseGameReturn {
                 value: result.scoreGained,
                 x: effectPos.col,
                 y: effectPos.row,
+                combo: result.combo,
             },
         ]);
 
         // Remove popup after animation
         setTimeout(() => {
             setScorePopups((pops) => pops.filter((p) => p.id !== popupId));
-        }, 2000);
+        }, 2600);
 
         setLastTurnResult(result);
 
+        // Check game over
+        const noMovesLeft = newMovesLeft <= 0;
+        const noValidMoves = !noMovesLeft && !hasValidMoves(result.board);
+        const gameOver = noMovesLeft || noValidMoves;
+
         // Start animation sequence
         setIsAnimating(true);
-        setTimeout(() => {
-            setIsAnimating(false);
-        }, 500);
-
-        // Check game over
-        const gameOver = newMovesLeft <= 0 || !hasValidMoves(result.board);
 
         if (gameOver) {
-            setTimeout(() => playGameOverSound(), 600);
+            // Wind-down delay: keep isAnimating true to block input,
+            // then transition to gameover after effects play out
+            setTimeout(() => {
+                playGameOverSound();
+                setState(prev2 => prev2 ? {
+                    ...prev2,
+                    gamePhase: "gameover",
+                    gameOverReason: noValidMoves ? "no_valid_moves" : "moves_exhausted",
+                } : prev2);
+                setIsAnimating(false);
+            }, 1800);
+        } else {
+            setTimeout(() => {
+                setIsAnimating(false);
+            }, 500);
         }
 
         return {
@@ -180,73 +308,128 @@ export function useGame(): UseGameReturn {
             score: newScore,
             movesLeft: newMovesLeft,
             combo: result.combo,
+            comboCarry: result.comboCarry,
             maxCombo: newMaxCombo,
             selectedTile: null,
-            gamePhase: gameOver ? "gameover" : "playing",
+            gamePhase: "playing", // stays "playing" during wind-down; setTimeout sets "gameover"
+            gameOverReason: prev.gameOverReason,
             matchCount: newMatchCount,
+            totalCascades: prev.totalCascades + result.cascadeCount,
         };
     }, []);
 
     const selectTile = useCallback(
         (pos: Position) => {
             if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            setHintCells(new Set());
+            setHintMessage(null);
 
-            setState((prev) => {
-                if (!prev) return prev;
-
-                // Check if clicked tile is a special tile — activate it immediately
-                const clickedCell = prev.board[pos.row]?.[pos.col];
-                if (clickedCell?.isSpecial) {
-                    const result = triggerSpecialTile(prev.board, pos, prev.gameBadges);
-                    if (result) {
-                        // Play the appropriate special tile sound
-                        if (clickedCell.isSpecial === "bomb") playBombSound();
-                        else if (clickedCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
-                        else playBombSound(); // vibestreak uses bomb-like sound
-
-                        return applyResult(prev, result, pos, true);
-                    }
+            // Check if clicked tile is a special tile — activate it immediately
+            const clickedCell = state.board[pos.row]?.[pos.col];
+            if (clickedCell?.isSpecial) {
+                const result = triggerSpecialTile(state.board, pos, state.gameBadges);
+                if (result) {
+                    if (clickedCell.isSpecial === "bomb") playBombSound();
+                    else if (clickedCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
+                    else if (clickedCell.isSpecial === "vibestreak") playVibestreakSound();
+                    else playBombSound();
+                    setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
+                    return;
                 }
+            }
 
-                // No tile selected yet — select this one
-                if (!prev.selectedTile) {
-                    playSelectSound();
-                    return { ...prev, selectedTile: pos };
-                }
+            // No tile selected yet — select this one
+            if (!state.selectedTile) {
+                playSelectSound();
+                setState({ ...state, selectedTile: pos });
+                return;
+            }
 
-                // Clicking same tile — deselect
-                if (
-                    prev.selectedTile.row === pos.row &&
-                    prev.selectedTile.col === pos.col
-                ) {
-                    playDeselectSound();
-                    return { ...prev, selectedTile: null };
-                }
+            // Clicking same tile — deselect
+            if (state.selectedTile.row === pos.row && state.selectedTile.col === pos.col) {
+                playDeselectSound();
+                setState({ ...state, selectedTile: null });
+                return;
+            }
 
-                // Not adjacent — reselect new tile
-                if (!isAdjacentSwap(prev.selectedTile, pos)) {
-                    playSelectSound();
-                    return { ...prev, selectedTile: pos };
-                }
+            // Not adjacent — reselect new tile
+            if (!isAdjacentSwap(state.selectedTile, pos)) {
+                playSelectSound();
+                setState({ ...state, selectedTile: pos });
+                return;
+            }
 
-                // Adjacent tile — attempt swap
-                const result = processTurn(
-                    prev.board,
-                    prev.selectedTile,
-                    pos,
-                    prev.gameBadges
-                );
+            // Adjacent tile — attempt swap
+            const result = processTurn(state.board, state.selectedTile, pos, state.gameBadges, state.comboCarry);
 
-                if (!result) {
-                    // Invalid swap — no match. Deselect
-                    playInvalidSwapSound();
-                    return { ...prev, selectedTile: null };
-                }
+            if (!result) {
+                // Invalid swap — no match. Animate bounce then deselect
+                playInvalidSwapSound();
+                resetHintTimer(state.board);
+                setInvalidSwapCells([state.selectedTile, pos]);
+                setTimeout(() => setInvalidSwapCells(null), 400);
+                setState({ ...state, selectedTile: null });
+                return;
+            }
 
-                return applyResult(prev, result, pos, true);
-            });
+            // Valid swap — show slide animation first, then apply turn result
+            const swapPos1 = state.selectedTile;
+            const swapPos2 = pos;
+            resetHintTimer(result.board);
+            setSwapAnim({ pos1: swapPos1, pos2: swapPos2 });
+            setState({ ...state, selectedTile: null });
+            setIsAnimating(true);
+            setTimeout(() => {
+                setSwapAnim(null);
+                setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
+            }, 300);
         },
-        [state, isAnimating, applyResult]
+        [state, isAnimating, applyResult, resetHintTimer]
+    );
+
+    const swipeTiles = useCallback(
+        (from: Position, to: Position) => {
+            if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            if (!isAdjacentSwap(from, to)) return;
+            setHintCells(new Set());
+            setHintMessage(null);
+
+            // Check if source is a special tile — activate it
+            const fromCell = state.board[from.row]?.[from.col];
+            if (fromCell?.isSpecial) {
+                const result = triggerSpecialTile(state.board, from, state.gameBadges);
+                if (result) {
+                    if (fromCell.isSpecial === "bomb") playBombSound();
+                    else if (fromCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
+                    else if (fromCell.isSpecial === "vibestreak") playVibestreakSound();
+                    else playBombSound();
+                    setState(prev => prev ? applyResult(prev, result, from, true) : prev);
+                    return;
+                }
+            }
+
+            // Attempt swap
+            const result = processTurn(state.board, from, to, state.gameBadges, state.comboCarry);
+
+            if (!result) {
+                playInvalidSwapSound();
+                resetHintTimer(state.board);
+                setInvalidSwapCells([from, to]);
+                setTimeout(() => setInvalidSwapCells(null), 400);
+                return;
+            }
+
+            // Valid swap — animate then apply
+            resetHintTimer(result.board);
+            setSwapAnim({ pos1: from, pos2: to });
+            setState({ ...state, selectedTile: null });
+            setIsAnimating(true);
+            setTimeout(() => {
+                setSwapAnim(null);
+                setState(prev => prev ? applyResult(prev, result, to, true) : prev);
+            }, 300);
+        },
+        [state, isAnimating, applyResult, resetHintTimer]
     );
 
     return {
@@ -255,8 +438,14 @@ export function useGame(): UseGameReturn {
         lastTurnResult,
         matchEffect,
         isAnimating,
+        hintCells,
+        hintMessage,
+        invalidSwapCells,
+        swapAnim,
         selectTile,
+        swipeTiles,
         startGame,
+        startGameWithBadges,
         resetGame,
     };
 }

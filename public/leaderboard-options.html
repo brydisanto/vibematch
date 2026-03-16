@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard Redesign Options</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #050505;
+            color: white;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+            padding: 4rem;
+            justify-content: center;
+        }
+
+        .modal-base {
+            width: 100%;
+            max-width: 380px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #4A3B52 0%, #1A1525 100%);
+            padding: 3px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-inner {
+            background: #110D17;
+            border-radius: 21px;
+            padding: 24px;
+            border: 1px solid #3A3344;
+        }
+
+        .font-display {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Option 1: Segmented Control -->
+    <div class="flex flex-col items-center">
+        <h3 class="text-white/50 mb-4 font-bold tracking-widest uppercase text-sm">Option 1: Segmented Control</h3>
+        <p class="text-white/30 text-xs mb-4 text-center max-w-[300px]">Clean, high-contrast iOS style. Removes the
+            heavy gradients, relies on shape and monochrome active state.</p>
+        <div class="modal-base">
+            <div class="modal-inner">
+                <h2 class="font-display text-3xl font-black text-white mb-6 text-center">Leaderboards</h2>
+
+                <div class="flex bg-white/5 p-1 rounded-xl mb-6">
+                    <div
+                        class="flex-1 py-2.5 text-center text-xs font-bold uppercase bg-white text-black rounded-lg shadow-sm">
+                        All Time</div>
+                    <div
+                        class="flex-1 py-2.5 text-center text-xs font-bold uppercase text-white/40 hover:text-white/80 transition-colors cursor-pointer">
+                        Weekly</div>
+                    <div
+                        class="flex-1 py-2.5 text-center text-xs font-bold uppercase text-white/40 hover:text-white/80 transition-colors cursor-pointer">
+                        Daily</div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center bg-white/5 border border-[#FFD700]/30 rounded-xl p-3">
+                        <div class="w-6 text-xl font-black text-[#FFD700] text-center">1</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 shadow-md overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bry"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-lg">Bry</div>
+                        <div class="font-black text-[#FFD700] text-xl">20,275</div>
+                    </div>
+                    <div class="flex items-center bg-white/5 border border-white/5 rounded-xl p-3">
+                        <div class="w-6 text-xl font-black text-white/30 text-center">2</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-white/80 text-lg">Alex</div>
+                        <div class="font-black text-white/80 text-xl">18,450</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Option 2: Clean Line / Minimalist -->
+    <div class="flex flex-col items-center">
+        <h3 class="text-white/50 mb-4 font-bold tracking-widest uppercase text-sm">Option 2: Minimalist Line</h3>
+        <p class="text-white/30 text-xs mb-4 text-center max-w-[300px]">Esports style focus. Underlined active state,
+            borderless lists, heavily relies on negative space.</p>
+        <div class="modal-base">
+            <div class="modal-inner">
+                <h2 class="font-display text-3xl font-black text-white mb-6 text-center">Leaderboards</h2>
+
+                <div class="flex border-b border-white/10 mb-6">
+                    <div
+                        class="flex-1 pb-3 text-center text-xs font-bold uppercase text-[#FFD700] border-b-2 border-[#FFD700] relative top-[1px]">
+                        All Time</div>
+                    <div
+                        class="flex-1 pb-3 text-center text-xs font-bold uppercase text-white/40 hover:text-white/80 transition-colors cursor-pointer">
+                        Weekly</div>
+                    <div
+                        class="flex-1 pb-3 text-center text-xs font-bold uppercase text-white/40 hover:text-white/80 transition-colors cursor-pointer">
+                        Daily</div>
+                </div>
+
+                <div class="flex flex-col">
+                    <div class="flex items-center border-b border-white/5 py-4">
+                        <div class="w-6 text-xl font-black text-[#FFD700] text-center">1</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 shadow-md overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bry"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-lg">Bry</div>
+                        <div class="font-black text-[#FFD700] text-xl">20,275</div>
+                    </div>
+                    <div class="flex items-center border-b border-white/5 py-4">
+                        <div class="w-6 text-xl font-black text-white/30 text-center">2</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-white/80 text-lg">Alex</div>
+                        <div class="font-black text-white/80 text-xl">18,450</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Option 3: Modern Pills -->
+    <div class="flex flex-col items-center">
+        <h3 class="text-white/50 mb-4 font-bold tracking-widest uppercase text-sm">Option 3: Modern Pills</h3>
+        <p class="text-white/30 text-xs mb-4 text-center max-w-[300px]">More playful & bright. Completely separates tabs
+            into floating pill shapes with soft background glows.</p>
+        <div class="modal-base">
+            <div class="modal-inner">
+                <h2 class="font-display text-3xl font-black text-white mb-6 text-center">Leaderboards</h2>
+
+                <div class="flex gap-2 mb-8">
+                    <div
+                        class="flex-1 py-2.5 text-center text-[10px] font-bold uppercase bg-gradient-to-r from-[#FFD700] to-[#FF8C00] text-black rounded-full shadow-[0_4px_12px_rgba(255,215,0,0.3)]">
+                        All Time</div>
+                    <div
+                        class="flex-1 py-2.5 text-center text-[10px] font-bold uppercase text-white/40 border border-white/10 rounded-full hover:bg-white/5 transition-colors cursor-pointer">
+                        Weekly</div>
+                    <div
+                        class="flex-1 py-2.5 text-center text-[10px] font-bold uppercase text-white/40 border border-white/10 rounded-full hover:bg-white/5 transition-colors cursor-pointer">
+                        Daily</div>
+                </div>
+
+                <div class="space-y-3">
+                    <div
+                        class="flex items-center bg-[#1A1525] border border-[#FFD700]/20 rounded-2xl p-3 shadow-[0_2px_15px_rgba(255,215,0,0.05)]">
+                        <div
+                            class="w-7 h-7 flex items-center justify-center rounded-full bg-[#FFD700] text-black font-black text-sm">
+                            1</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 shadow-md overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Bry"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-lg">Bry</div>
+                        <div class="font-black text-white text-xl">20,275</div>
+                    </div>
+                    <div class="flex items-center bg-[#1A1525] border border-white/5 rounded-2xl p-3">
+                        <div
+                            class="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 text-white/50 font-black text-sm">
+                            2</div>
+                        <div class="w-10 h-10 rounded-full bg-gray-600 mx-3 overflow-hidden"><img
+                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
+                                class="w-full h-full object-cover" /></div>
+                        <div class="flex-1 font-bold text-white/80 text-lg">Alex</div>
+                        <div class="font-black text-white/80 text-xl">18,450</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

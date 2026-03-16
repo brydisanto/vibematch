@@ -8,6 +8,24 @@ function getMonday() {
     return new Date(d.setDate(diff)).toISOString().split('T')[0];
 }
 
+// --- In-memory cache (15s TTL) ---
+const cache = new Map<string, { data: any; expires: number }>();
+const CACHE_TTL = 15_000;
+
+function getCached(key: string): any | null {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expires) {
+        cache.delete(key);
+        return null;
+    }
+    return entry.data;
+}
+
+function setCached(key: string, data: any) {
+    cache.set(key, { data, expires: Date.now() + CACHE_TTL });
+}
+
 export async function POST(req: Request) {
     try {
         const { username, mode, score } = await req.json();
@@ -20,33 +38,43 @@ export async function POST(req: Request) {
         const profileKey = `user:${username.toLowerCase()}`;
         const profile = await kv.get(profileKey) as any;
         const canonicalUsername = profile?.username || username;
+        const hasCaseVariant = canonicalUsername !== username;
 
         let isNewBest = false;
 
         if (mode === 'classic') {
-            const currentScore1 = await kv.zscore('classic_leaderboard', canonicalUsername);
-            const currentScore2 = (canonicalUsername !== username) ? await kv.zscore('classic_leaderboard', username) : null;
+            const weeklyKey = `classic_weekly:${getMonday()}`;
+
+            // Pipeline: fetch current scores in a single round trip
+            const readPipe = kv.pipeline();
+            readPipe.zscore('classic_leaderboard', canonicalUsername);
+            if (hasCaseVariant) readPipe.zscore('classic_leaderboard', username);
+            if (hasCaseVariant) readPipe.zscore(weeklyKey, username);
+            const readResults = await readPipe.exec();
+
+            let ri = 0;
+            const currentScore1 = readResults[ri++] as number | null;
+            const currentScore2 = hasCaseVariant ? readResults[ri++] as number | null : null;
+            const currentWeekly2 = hasCaseVariant ? readResults[ri++] as number | null : null;
 
             const maxCurrent = Math.max(Number(currentScore1 || 0), Number(currentScore2 || 0));
             isNewBest = maxCurrent === 0 || score > maxCurrent;
 
-            // Vercel KV zadd will update the score even if lower, so always save the max known score
-            const scoreToSave = Math.max(maxCurrent, score);
-            await kv.zadd('classic_leaderboard', { score: scoreToSave, member: canonicalUsername });
-
-            // Also save to weekly leaderboard
-            const weeklyKey = `classic_weekly:${getMonday()}`;
-            const currentWeekly1 = await kv.zscore(weeklyKey, canonicalUsername);
-            const currentWeekly2 = (canonicalUsername !== username) ? await kv.zscore(weeklyKey, username) : null;
-            const maxWeeklyCurrent = Math.max(Number(currentWeekly1 || 0), Number(currentWeekly2 || 0));
-            if (maxWeeklyCurrent === 0 || score > maxWeeklyCurrent) {
-                await kv.zadd(weeklyKey, { score, member: canonicalUsername });
+            // Pipeline: write scores + cleanup in a single round trip
+            const writePipe = kv.pipeline();
+            writePipe.zadd('classic_leaderboard', { gt: true } as any, { score, member: canonicalUsername });
+            writePipe.zadd(weeklyKey, { gt: true } as any, { score, member: canonicalUsername });
+            if (hasCaseVariant && currentScore2 !== null) {
+                writePipe.zrem('classic_leaderboard', username);
             }
+            if (hasCaseVariant && currentWeekly2 !== null) {
+                writePipe.zrem(weeklyKey, username);
+            }
+            await writePipe.exec();
 
-            // Clean up the split variant if it exists
-            if (canonicalUsername !== username && currentScore2 !== null) {
-                await kv.zrem('classic_leaderboard', username);
-                if (currentWeekly2 !== null) await kv.zrem(weeklyKey, username);
+            // Invalidate GET cache for affected leaderboards
+            for (const [key] of cache) {
+                if (key.startsWith('leaderboard:')) cache.delete(key);
             }
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
@@ -59,10 +87,17 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Already played today' }, { status: 403 });
             }
 
-            // Mark as played and add score
-            await kv.set(playedKey, 'true');
-            await kv.zadd(`daily_leaderboard:${today}`, { score, member: canonicalUsername });
-            isNewBest = true; // Daily is effectively always a new personal best for that day
+            // Pipeline: mark played + add score in one round trip
+            const dailyPipe = kv.pipeline();
+            dailyPipe.set(playedKey, 'true');
+            dailyPipe.zadd(`daily_leaderboard:${today}`, { score, member: canonicalUsername });
+            await dailyPipe.exec();
+            isNewBest = true;
+
+            // Invalidate GET cache
+            for (const [key] of cache) {
+                if (key.startsWith('leaderboard:')) cache.delete(key);
+            }
         }
 
         return NextResponse.json({ success: true, isNewBest });
@@ -79,6 +114,15 @@ export async function GET(req: Request) {
     const skipAvatars = searchParams.get('skip_avatars') === 'true';
 
     try {
+        // Check in-memory cache first
+        const cacheKey = `leaderboard:${mode}:${username || ''}:${skipAvatars}`;
+        const cached = getCached(cacheKey);
+        if (cached) {
+            return NextResponse.json(cached, {
+                headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' }
+            });
+        }
+
         let leaderboard: any = [];
         let leaderboardKey = '';
         const today = new Date().toISOString().split('T')[0];
@@ -93,7 +137,19 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
         }
 
-        leaderboard = await kv.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
+        // Resolve canonical username in parallel with leaderboard fetch
+        let canonicalUsername: string | null = null;
+        const leaderboardPromise = kv.zrange(leaderboardKey, 0, 49, { rev: true, withScores: true });
+        const profilePromise = username
+            ? kv.get(`user:${username.toLowerCase()}`)
+            : Promise.resolve(null);
+
+        const [rawLeaderboard, userProfile] = await Promise.all([leaderboardPromise, profilePromise]);
+        leaderboard = rawLeaderboard;
+
+        if (username) {
+            canonicalUsername = (userProfile as any)?.username || username;
+        }
 
         // Normalize format
         let formatted: { member: string, score: number }[] = [];
@@ -120,24 +176,58 @@ export async function GET(req: Request) {
             }
         }
 
-        // Convert back to array, sort descending, and take top 10
+        // Convert back to array, sort descending, and take top 50
         let uniqueFormatted = Array.from(uniqueEntriesMap.values());
         uniqueFormatted.sort((a, b) => b.score - a.score);
-        formatted = uniqueFormatted.slice(0, 10);
+        formatted = uniqueFormatted.slice(0, 50);
 
-        // Fetch personal best if username provided
+        // Check if the current user is already in the top 50
         let personalBest: number | null = null;
-        if (username) {
-            // Robust lookup: ensure we use the canonical casing from the profile for the leaderboard
-            const profileKey = `user:${username.toLowerCase()}`;
-            const profile = await kv.get(profileKey) as any;
-            const canonicalUsername = profile?.username || username;
+        let userRank: number | null = null;
+        let userInTop = false;
+        let nextPlayer: { username: string; score: number } | null = null;
 
-            const score1 = await kv.zscore(leaderboardKey, canonicalUsername);
-            const score2 = (canonicalUsername.toLowerCase() !== username.toLowerCase() || canonicalUsername !== username) ? await kv.zscore(leaderboardKey, username) : null;
+        if (canonicalUsername) {
+            const lowerCanonical = canonicalUsername.toLowerCase();
+            const topIndex = formatted.findIndex(e => e.member.toLowerCase() === lowerCanonical);
+            if (topIndex !== -1) {
+                userInTop = true;
+                personalBest = formatted[topIndex].score;
+                userRank = topIndex + 1;
+                // Next player to beat is the one above in the list
+                if (topIndex > 0) {
+                    nextPlayer = { username: formatted[topIndex - 1].member, score: formatted[topIndex - 1].score };
+                }
+            } else {
+                // User not in top 50 — pipeline their score + rank in a single round trip
+                const pipe = kv.pipeline();
+                pipe.zscore(leaderboardKey, canonicalUsername);
+                if (canonicalUsername !== username) {
+                    pipe.zscore(leaderboardKey, username!);
+                }
+                pipe.zrevrank(leaderboardKey, canonicalUsername);
+                const pipeResults = await pipe.exec();
 
-            if (score1 !== null || score2 !== null) {
-                personalBest = Math.max(Number(score1 || 0), Number(score2 || 0));
+                let resultIdx = 0;
+                const score1 = pipeResults[resultIdx++] as number | null;
+                const score2 = (canonicalUsername !== username) ? pipeResults[resultIdx++] as number | null : null;
+                const revRank = pipeResults[resultIdx++] as number | null;
+                if (score1 !== null || score2 !== null) {
+                    personalBest = Math.max(Number(score1 || 0), Number(score2 || 0));
+                }
+                if (revRank !== null) {
+                    userRank = revRank + 1;
+                    // Fetch the player one rank above (revRank - 1 in 0-indexed zrevrange)
+                    if (revRank > 0) {
+                        const above = await kv.zrange(leaderboardKey, revRank - 1, revRank - 1, { rev: true, withScores: true });
+                        if (above && above.length > 0) {
+                            const entry = above[0] as any;
+                            if (typeof entry === 'object' && entry !== null) {
+                                nextPlayer = { username: entry.member || entry.value, score: Number(entry.score) };
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -147,30 +237,46 @@ export async function GET(req: Request) {
                 username: entry.member || entry.value,
                 score: Number(entry.score)
             }));
+            const responseData = { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, nextPlayer };
+            setCached(cacheKey, responseData);
             return NextResponse.json(
-                { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0 },
+                responseData,
                 { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
             );
         }
 
-        // Enrich with avatars
+        // Enrich with avatars — single batch mget for all users
         let enriched: any[] = [];
-        if (formatted.length > 0) {
-            const pKeys = formatted.map((entry: any) => `user:${(entry.member || entry.value).toLowerCase()}`);
+        // Collect all usernames that need profiles (top 50 + possibly the current user)
+        const allEntries = [...formatted];
+        if (canonicalUsername && !userInTop && personalBest !== null) {
+            allEntries.push({ member: canonicalUsername, score: personalBest });
+        }
+
+        if (allEntries.length > 0) {
+            const pKeys = allEntries.map(entry => `user:${entry.member.toLowerCase()}`);
             const profiles = await kv.mget(...pKeys);
 
-            enriched = formatted.map((entry: any, index: number) => {
+            enriched = allEntries.map((entry, index) => {
                 const profile = profiles[index] as any;
                 return {
-                    username: entry.member || entry.value,
+                    username: entry.member,
                     score: Number(entry.score),
                     avatarUrl: profile?.avatarUrl || ''
                 };
             });
         }
 
+        // Split out user entry if they're outside the top 50
+        const top50 = enriched.slice(0, formatted.length);
+        const userEntry = (!userInTop && canonicalUsername && personalBest !== null)
+            ? enriched[enriched.length - 1]
+            : null;
+
+        const responseData = { leaderboard: top50, personalBest: personalBest ? Number(personalBest) : 0, userRank, userEntry, nextPlayer };
+        setCached(cacheKey, responseData);
         return NextResponse.json(
-            { leaderboard: enriched, personalBest: personalBest ? Number(personalBest) : 0 },
+            responseData,
             { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
         );
     } catch (error) {

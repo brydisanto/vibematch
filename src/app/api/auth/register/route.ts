@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
         // Log them in immediately
         const session = await encrypt({ username });
-        const res = NextResponse.json({ success: true, user: { username } });
+        const res = NextResponse.json({ success: true, user: { username, avatarUrl: "" } });
 
         res.cookies.set({
             name: SESSION_COOKIE_NAME,

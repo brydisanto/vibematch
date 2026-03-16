@@ -39,10 +39,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
 
             if (res.ok) {
                 toast.success(mode === "login" ? "Logged in!" : "Account created!");
-                // Fetch profile to get avatarUrl if it was a login
-                const profileRes = await fetch(`/api/profiles?username=${username}`);
-                const profileData = await profileRes.json();
-                onSuccess(username, profileData.profile?.avatarUrl || "");
+                onSuccess(username, data.user?.avatarUrl || "");
                 onClose();
             } else {
                 toast.error(data.error || "Something went wrong");

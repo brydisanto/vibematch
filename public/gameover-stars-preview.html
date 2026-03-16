@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Game Over — 5 Star Rating Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0114;
+    font-family: 'Nunito', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .page-title { text-align: center; font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+  .page-subtitle { text-align: center; font-size: 13px; color: rgba(255,255,255,0.35); margin-bottom: 40px; font-family: system-ui, sans-serif; }
+  .section-title { text-align: center; font-size: 14px; color: rgba(255,255,255,0.25); font-family: system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 24px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .card { border-radius: 28px; padding: 2px; position: relative; }
+  .card-inner {
+    border-radius: 26px;
+    padding: 32px 28px;
+    text-align: center;
+    background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ═══════════════════════════════════════ */
+  /*  PREMIUM 3D STARS                       */
+  /* ═══════════════════════════════════════ */
+
+  .stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    position: relative;
+    perspective: 400px;
+  }
+
+  .star {
+    width: 40px;
+    height: 40px;
+    position: relative;
+    /* Staggered entrance animation */
+    opacity: 0;
+    transform: scale(0) rotateY(-90deg);
+    animation: starReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .star:nth-child(1) { animation-delay: 0.3s; }
+  .star:nth-child(2) { animation-delay: 0.5s; }
+  .star:nth-child(3) { animation-delay: 0.7s; }
+  .star:nth-child(4) { animation-delay: 0.9s; }
+  .star:nth-child(5) { animation-delay: 1.1s; }
+
+  @keyframes starReveal {
+    0% { opacity: 0; transform: scale(0) rotateY(-90deg); }
+    60% { opacity: 1; transform: scale(1.25) rotateY(10deg); }
+    80% { transform: scale(0.95) rotateY(-3deg); }
+    100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+  }
+
+  /* Impact burst on each star landing */
+  .star::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--star-glow) 0%, transparent 70%);
+    opacity: 0;
+    animation: starBurst 0.4s ease-out forwards;
+    pointer-events: none;
+  }
+  .star:nth-child(1)::after { animation-delay: 0.5s; }
+  .star:nth-child(2)::after { animation-delay: 0.7s; }
+  .star:nth-child(3)::after { animation-delay: 0.9s; }
+  .star:nth-child(4)::after { animation-delay: 1.1s; }
+  .star:nth-child(5)::after { animation-delay: 1.3s; }
+
+  @keyframes starBurst {
+    0% { opacity: 0.8; transform: scale(0.5); }
+    100% { opacity: 0; transform: scale(2); }
+  }
+
+  /* Empty star — subtle inset depth */
+  .star.empty svg {
+    filter: none;
+  }
+  .star.empty .star-body { fill: rgba(255,255,255,0.04); }
+  .star.empty .star-stroke { fill: none; stroke: rgba(255,255,255,0.10); stroke-width: 0.8; }
+  .star.empty .star-highlight { display: none; }
+  .star.empty .star-shadow { display: none; }
+  .star.empty::after { display: none; }
+
+  /* Filled star — layered 3D look */
+  .star.filled .star-shadow {
+    fill: rgba(0,0,0,0.5);
+    transform: translate(0.4px, 0.8px);
+  }
+  .star.filled .star-body {
+    fill: url(#star-grad);
+  }
+  .star.filled .star-highlight {
+    fill: url(#star-highlight);
+    mix-blend-mode: screen;
+  }
+  .star.filled .star-stroke {
+    fill: none;
+    stroke: var(--star-color);
+    stroke-width: 0.6;
+    stroke-opacity: 0.5;
+  }
+  .star.filled svg {
+    filter: drop-shadow(0 0 6px var(--star-glow)) drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+  }
+
+  /* Idle breathing glow on filled stars */
+  .star.filled {
+    animation: starReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               starBreathe 2.5s ease-in-out 1.8s infinite;
+  }
+  @keyframes starBreathe {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15); }
+  }
+
+  /* ═══ Glow behind stars for high tiers ═══ */
+  .stars-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px; height: 60px;
+    border-radius: 50%;
+    filter: blur(25px);
+    opacity: 0;
+    animation: glowFadeIn 0.6s ease-out 1.4s forwards;
+    pointer-events: none;
+  }
+  @keyframes glowFadeIn {
+    to { opacity: 0.35; }
+  }
+
+  /* ═══ Rank label ═══ */
+  .rank-label { font-size: 20px; font-weight: 900; letter-spacing: 0.15em; margin-bottom: 4px; opacity: 0; animation: fadeUp 0.4s ease-out 1.5s forwards; }
+  .score-value { font-size: 48px; font-weight: 900; margin-bottom: 4px; font-variant-numeric: tabular-nums; opacity: 0; animation: fadeUp 0.4s ease-out 1.7s forwards; }
+  .tier-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-bottom: 20px; font-family: system-ui, sans-serif; opacity: 0; animation: fadeUp 0.3s ease-out 2.0s forwards; }
+  .progress-wrap { max-width: 240px; margin: 0 auto 20px; opacity: 0; animation: fadeUp 0.3s ease-out 2.1s forwards; }
+
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .progress-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 6px; }
+  .progress-fill { height: 100%; border-radius: 3px; width: 0; transition: width 1s ease; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 9px; font-family: system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+
+  /* Card borders */
+  .card-wood { border: 1px solid rgba(160,82,45,0.4); box-shadow: 0 0 30px rgba(160,82,45,0.15); }
+  .card-bronze { border: 1px solid rgba(205,127,50,0.4); box-shadow: 0 0 30px rgba(205,127,50,0.2); }
+  .card-silver { border: 1px solid rgba(226,232,240,0.3); box-shadow: 0 0 30px rgba(226,232,240,0.15); }
+  .card-gold { border: 1px solid rgba(255,224,72,0.4); box-shadow: 0 0 40px rgba(255,224,72,0.2); }
+  .card-cosmic { border: 1px solid rgba(179,102,255,0.5); box-shadow: 0 0 50px rgba(179,102,255,0.25); }
+
+  /* Cosmic stars get hue-shifting pulse */
+  .card-cosmic .star.filled svg {
+    animation: cosmicStarPulse 2s ease-in-out infinite;
+  }
+  @keyframes cosmicStarPulse {
+    0%, 100% { filter: drop-shadow(0 0 8px var(--star-glow)) drop-shadow(0 2px 3px rgba(0,0,0,0.4)) hue-rotate(0deg); }
+    50% { filter: drop-shadow(0 0 16px var(--star-glow)) drop-shadow(0 2px 3px rgba(0,0,0,0.4)) hue-rotate(25deg) brightness(1.2); }
+  }
+
+  @keyframes cosmicBar {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+
+  /* Replay button */
+  .replay-bar {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    text-align: center;
+  }
+  .replay-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 28px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .replay-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG defs for star gradients -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Base star gradient — colored via CSS variable override per tier -->
+    <linearGradient id="star-grad-wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C8845A" />
+      <stop offset="45%" stop-color="#A0522D" />
+      <stop offset="100%" stop-color="#6B3518" />
+    </linearGradient>
+    <linearGradient id="star-grad-bronze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E5A04E" />
+      <stop offset="45%" stop-color="#CD7F32" />
+      <stop offset="100%" stop-color="#8B5A1E" />
+    </linearGradient>
+    <linearGradient id="star-grad-silver" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="45%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="star-grad-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF3A0" />
+      <stop offset="30%" stop-color="#FFE048" />
+      <stop offset="70%" stop-color="#E5B800" />
+      <stop offset="100%" stop-color="#B8860B" />
+    </linearGradient>
+    <linearGradient id="star-grad-cosmic" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D8A0FF" />
+      <stop offset="35%" stop-color="#B366FF" />
+      <stop offset="70%" stop-color="#8A2BE2" />
+      <stop offset="100%" stop-color="#6B1FC0" />
+    </linearGradient>
+    <!-- Specular highlight -->
+    <linearGradient id="star-specular" x1="0.3" y1="0" x2="0.7" y2="0.6">
+      <stop offset="0%" stop-color="white" stop-opacity="0.65" />
+      <stop offset="40%" stop-color="white" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="white" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="page-title">Game Over — Star Rating System</div>
+<div class="page-subtitle">Stars animate in one at a time with 3D depth, specular highlights, and impact bursts</div>
+
+<div class="section-title">Click "Replay" to see the animation again</div>
+
+<div class="grid">
+
+  <!-- ═══ WOOD — 1 star ═══ -->
+  <div class="card card-wood">
+    <div class="card-inner" style="--star-color: #A0522D; --star-glow: rgba(160,82,45,0.5);">
+      <div class="card-inner" style="background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%); border-radius: 26px; padding: 32px 28px;">
+        <div class="stars">
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-wood)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+        </div>
+        <div class="rank-label" style="color: #A0522D; text-shadow: 0 0 20px rgba(160,82,45,0.4);">WOOD</div>
+        <div class="score-value" style="color: #A0522D; text-shadow: 0 0 40px rgba(160,82,45,0.3);">2,340</div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" data-width="47" style="background: linear-gradient(90deg, #A0522D, #CD7F32);"></div></div>
+          <div class="progress-labels"><span style="color: #A0522D;">Wood</span><span style="color: rgba(255,255,255,0.3);">2,660 to Bronze</span><span style="color: #CD7F32;">Bronze</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BRONZE — 2 stars ═══ -->
+  <div class="card card-bronze">
+    <div class="card-inner" style="--star-color: #CD7F32; --star-glow: rgba(205,127,50,0.5);">
+      <div class="card-inner" style="background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%); border-radius: 26px; padding: 32px 28px;">
+        <div class="stars">
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-bronze)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-bronze)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+        </div>
+        <div class="rank-label" style="color: #CD7F32; text-shadow: 0 0 20px rgba(205,127,50,0.4);">BRONZE</div>
+        <div class="score-value" style="color: #CD7F32; text-shadow: 0 0 40px rgba(205,127,50,0.3);">7,820</div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" data-width="56" style="background: linear-gradient(90deg, #CD7F32, #E2E8F0);"></div></div>
+          <div class="progress-labels"><span style="color: #CD7F32;">Bronze</span><span style="color: rgba(255,255,255,0.3);">2,180 to Silver</span><span style="color: #E2E8F0;">Silver</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SILVER — 3 stars ═══ -->
+  <div class="card card-silver">
+    <div class="card-inner" style="--star-color: #E2E8F0; --star-glow: rgba(226,232,240,0.4);">
+      <div class="card-inner" style="background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%); border-radius: 26px; padding: 32px 28px;">
+        <div class="stars">
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-silver)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-silver)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-silver)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+        </div>
+        <div class="rank-label" style="color: #E2E8F0; text-shadow: 0 0 20px rgba(226,232,240,0.3);">SILVER</div>
+        <div class="score-value" style="color: #E2E8F0; text-shadow: 0 0 40px rgba(226,232,240,0.2);">12,450</div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" data-width="49" style="background: linear-gradient(90deg, #E2E8F0, #FFE048);"></div></div>
+          <div class="progress-labels"><span style="color: #E2E8F0;">Silver</span><span style="color: rgba(255,255,255,0.3);">2,550 to Gold</span><span style="color: #FFE048;">Gold</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GOLD — 4 stars ═══ -->
+  <div class="card card-gold">
+    <div class="card-inner" style="--star-color: #FFE048; --star-glow: rgba(255,224,72,0.5);">
+      <div class="card-inner" style="background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%); border-radius: 26px; padding: 32px 28px;">
+        <div class="stars">
+          <div class="stars-glow" style="background: rgba(255,224,72,0.5);"></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-gold)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-gold)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-gold)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-gold)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star empty"><svg viewBox="0 0 24 24"><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+        </div>
+        <div class="rank-label" style="color: #FFE048; text-shadow: 0 0 24px rgba(255,224,72,0.5);">GOLD</div>
+        <div class="score-value" style="color: #FFE048; text-shadow: 0 0 40px rgba(255,224,72,0.4);">17,200</div>
+        <div class="tier-tag" style="background: rgba(255,224,72,0.12); color: #FFE048; border: 1px solid rgba(255,224,72,0.25);">Capsule Earned!</div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" data-width="44" style="background: linear-gradient(90deg, #FFE048, #B366FF);"></div></div>
+          <div class="progress-labels"><span style="color: #FFE048;">Gold</span><span style="color: rgba(255,255,255,0.3);">2,800 to Cosmic</span><span style="color: #B366FF;">Cosmic</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COSMIC — 5 stars ═══ -->
+  <div class="card card-cosmic">
+    <div class="card-inner" style="--star-color: #B366FF; --star-glow: rgba(179,102,255,0.6);">
+      <div class="card-inner" style="background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%); border-radius: 26px; padding: 32px 28px;">
+        <div class="stars">
+          <div class="stars-glow" style="background: rgba(179,102,255,0.6);"></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-cosmic)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-cosmic)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-cosmic)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-cosmic)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+          <div class="star filled"><svg viewBox="0 0 24 24"><path class="star-shadow" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/><path class="star-body" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-grad-cosmic)"/><path class="star-highlight" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#star-specular)"/><path class="star-stroke" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg></div>
+        </div>
+        <div class="rank-label" style="color: #B366FF; text-shadow: 0 0 24px rgba(179,102,255,0.5);">COSMIC</div>
+        <div class="score-value" style="color: #B366FF; text-shadow: 0 0 40px rgba(179,102,255,0.4);">24,800</div>
+        <div class="tier-tag" style="background: rgba(179,102,255,0.12); color: #B366FF; border: 1px solid rgba(179,102,255,0.25);">Max Rank</div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" data-width="100" style="background: linear-gradient(90deg, #B366FF, #FF66B2, #B366FF); background-size: 200% 100%; animation: cosmicBar 2s linear infinite;"></div></div>
+          <div class="progress-labels"><span style="color: #B366FF;">Cosmic</span><span style="color: #B366FF; font-weight: 700;">MAX RANK</span><span style="color: #B366FF;">&#10024;</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="replay-bar">
+  <button class="replay-btn" onclick="replayAnimations()">Replay Animations</button>
+</div>
+
+<script>
+  // Animate progress bars after stars finish
+  setTimeout(() => {
+    document.querySelectorAll('.progress-fill[data-width]').forEach(el => {
+      el.style.width = el.dataset.width + '%';
+    });
+  }, 2200);
+
+  function replayAnimations() {
+    // Reset all animations by cloning cards
+    document.querySelectorAll('.card').forEach(card => {
+      const clone = card.cloneNode(true);
+      card.parentNode.replaceChild(clone, card);
+    });
+    // Re-trigger progress bars
+    setTimeout(() => {
+      document.querySelectorAll('.progress-fill[data-width]').forEach(el => {
+        el.style.width = el.dataset.width + '%';
+      });
+    }, 2200);
+  }
+</script>
+
+</body>
+</html>

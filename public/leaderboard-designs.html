@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeMatch Leaderboard — Design Options</title>
+<style>
+/* ========================================
+   RESET & GLOBAL
+   ======================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  background: #0A0710;
+  color: #E8E0F0;
+  min-height: 100vh;
+  padding: 24px 16px 60px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #FFD700, #B366FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.page-header p {
+  font-size: 14px;
+  color: #8878A0;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.design-label {
+  text-align: center;
+  margin: 56px 0 20px;
+  position: relative;
+}
+.design-label h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #B366FF;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.design-label span {
+  display: block;
+  font-size: 13px;
+  color: #6B5A80;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.design-label::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #B366FF, transparent);
+  margin: 12px auto 0;
+}
+
+/* ========================================
+   SHARED PANEL FRAME
+   ======================================== */
+.lb-panel {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  background: #110D17;
+  border-radius: 20px;
+  border: 1px solid #2A2333;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Close button */
+.lb-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #8878A0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.lb-close:hover {
+  background: rgba(255,255,255,0.12);
+  color: #E8E0F0;
+}
+
+/* Panel title */
+.lb-title {
+  text-align: center;
+  padding: 20px 20px 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* ========================================
+   TABS (shared)
+   ======================================== */
+.lb-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 16px 20px;
+  justify-content: center;
+}
+.lb-tab {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6B5A80;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.3px;
+}
+.lb-tab:hover {
+  color: #B366FF;
+  background: rgba(179, 102, 255, 0.06);
+}
+.lb-tab.active {
+  color: #E8E0F0;
+  background: rgba(179, 102, 255, 0.15);
+  border-color: rgba(179, 102, 255, 0.3);
+}
+
+/* ========================================
+   AVATAR
+   ======================================== */
+.avatar {
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2A2333, #3A3050);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #B366FF;
+}
+
+/* ========================================
+   YOUR RANK SEPARATOR
+   ======================================== */
+.your-rank-sep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  margin: 4px 0;
+}
+.your-rank-sep::before,
+.your-rank-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2A2333, transparent);
+}
+.your-rank-sep span {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B5A80;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ========================================
+   OPTION A — PODIUM + LIST
+   ======================================== */
+
+/* Podium area */
+.podium-area {
+  padding: 8px 20px 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+.podium-area::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.podium-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.podium-player .avatar {
+  position: relative;
+  z-index: 2;
+}
+
+/* 1st place */
+.podium-player.rank-1 .avatar {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+  border: 3px solid #FFD700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), 0 0 40px rgba(255, 215, 0, 0.1);
+  animation: goldGlow 2s ease-in-out infinite;
+}
+.podium-player.rank-1 .podium-medal {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+.podium-player.rank-1 .podium-pedestal {
+  height: 72px;
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.03));
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-bottom: none;
+}
+
+/* 2nd place */
+.podium-player.rank-2 .avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+  border: 2px solid #C0C0C0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.2);
+}
+.podium-player.rank-2 .podium-medal {
+  background: linear-gradient(135deg, #E8E8E8, #A0A0A0);
+}
+.podium-player.rank-2 .podium-pedestal {
+  height: 52px;
+  background: linear-gradient(180deg, rgba(192, 192, 192, 0.1), rgba(192, 192, 192, 0.02));
+  border: 1px solid rgba(192, 192, 192, 0.15);
+  border-bottom: none;
+}
+
+/* 3rd place */
+.podium-player.rank-3 .avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+  border: 2px solid #CD7F32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.2);
+}
+.podium-player.rank-3 .podium-medal {
+  background: linear-gradient(135deg, #CD7F32, #A0522D);
+}
+.podium-player.rank-3 .podium-pedestal {
+  height: 40px;
+  background: linear-gradient(180deg, rgba(205, 127, 50, 0.1), rgba(205, 127, 50, 0.02));
+  border: 1px solid rgba(205, 127, 50, 0.15);
+  border-bottom: none;
+}
+
+.podium-medal {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #110D17;
+  margin-top: -10px;
+  position: relative;
+  z-index: 3;
+}
+
+.podium-name {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 6px;
+  color: #E8E0F0;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.podium-score {
+  font-size: 14px;
+  font-weight: 800;
+  color: #FFD700;
+  margin-top: 2px;
+}
+
+.podium-pedestal {
+  width: 100px;
+  border-radius: 8px 8px 0 0;
+  margin-top: 8px;
+}
+
+@keyframes goldGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), 0 0 40px rgba(255, 215, 0, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5), 0 0 50px rgba(255, 215, 0, 0.15); }
+}
+
+/* Podium list */
+.podium-list {
+  padding: 8px 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.podium-list::-webkit-scrollbar { width: 4px; }
+.podium-list::-webkit-scrollbar-track { background: transparent; }
+.podium-list::-webkit-scrollbar-thumb { background: #2A2333; border-radius: 2px; }
+
+.podium-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+.podium-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.podium-row .rank {
+  width: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6B5A80;
+  text-align: center;
+  flex-shrink: 0;
+}
+.podium-row .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+.podium-row .name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.podium-row .score {
+  font-size: 14px;
+  font-weight: 800;
+  color: #FFD700;
+}
+
+/* Pinned row */
+.pinned-row-a {
+  margin: 0 12px 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(179, 102, 255, 0.08);
+  border: 1px solid rgba(179, 102, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pinned-row-a .rank { width: 28px; font-size: 14px; font-weight: 700; color: #B366FF; text-align: center; }
+.pinned-row-a .avatar { width: 36px; height: 36px; font-size: 13px; border: 2px solid #B366FF; }
+.pinned-row-a .name { flex: 1; font-size: 14px; font-weight: 700; color: #B366FF; }
+.pinned-row-a .score { font-size: 14px; font-weight: 800; color: #FFD700; }
+
+
+/* ========================================
+   OPTION B — TIER CARDS
+   ======================================== */
+
+.tier-section {
+  margin: 0 12px;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px 8px;
+}
+.tier-icon {
+  font-size: 16px;
+}
+.tier-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Crown tier */
+.tier-crown .tier-label { color: #FFD700; }
+.tier-crown .tier-card {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 215, 0, 0.02));
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.05);
+}
+
+/* Diamond tier */
+.tier-diamond .tier-label { color: #B366FF; }
+.tier-diamond .tier-card {
+  background: rgba(179, 102, 255, 0.04);
+  border: 1px solid rgba(179, 102, 255, 0.1);
+}
+
+/* Standard tier */
+.tier-standard .tier-label { color: #6B5A80; }
+
+.tier-card {
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.tier-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+.tier-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50px;
+  right: 14px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.tier-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tier-rank {
+  width: 24px;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  flex-shrink: 0;
+}
+.tier-crown .tier-rank { color: #FFD700; }
+.tier-diamond .tier-rank { color: #B366FF; }
+.tier-standard .tier-rank { color: #4A3F5C; }
+
+.tier-row .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+.tier-crown .tier-row .avatar {
+  border: 2px solid rgba(255, 215, 0, 0.4);
+}
+.tier-diamond .tier-row .avatar {
+  border: 1px solid rgba(179, 102, 255, 0.3);
+}
+
+.tier-row .name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tier-row .score {
+  font-size: 14px;
+  font-weight: 800;
+  color: #FFD700;
+}
+
+/* Crown tier top-3 larger */
+.tier-crown .tier-row .avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 15px;
+}
+.tier-crown .tier-row .name {
+  font-weight: 700;
+}
+.tier-crown .tier-row .score {
+  font-size: 15px;
+}
+
+/* User highlight row */
+.tier-row.is-you {
+  background: rgba(179, 102, 255, 0.08);
+  animation: youPulse 2.5s ease-in-out infinite;
+}
+.tier-row.is-you::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  border: 1px solid rgba(179, 102, 255, 0.3);
+  animation: youBorderPulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes youPulse {
+  0%, 100% { background: rgba(179, 102, 255, 0.08); }
+  50% { background: rgba(179, 102, 255, 0.14); }
+}
+@keyframes youBorderPulse {
+  0%, 100% { border-color: rgba(179, 102, 255, 0.2); }
+  50% { border-color: rgba(179, 102, 255, 0.45); }
+}
+
+.tier-you-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: #B366FF;
+  background: rgba(179, 102, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.tier-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+.tier-scroll::-webkit-scrollbar { width: 4px; }
+.tier-scroll::-webkit-scrollbar-track { background: transparent; }
+.tier-scroll::-webkit-scrollbar-thumb { background: #2A2333; border-radius: 2px; }
+
+/* Pinned row B */
+.pinned-row-b {
+  margin: 0 12px 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(179, 102, 255, 0.08);
+  border: 1px solid rgba(179, 102, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: youPulse 2.5s ease-in-out infinite;
+}
+.pinned-row-b .tier-rank { color: #B366FF; width: 24px; }
+.pinned-row-b .avatar { width: 36px; height: 36px; font-size: 13px; border: 2px solid #B366FF; }
+.pinned-row-b .name { flex: 1; font-size: 14px; font-weight: 700; color: #E8E0F0; }
+.pinned-row-b .score { font-size: 14px; font-weight: 800; color: #FFD700; }
+
+
+/* ========================================
+   OPTION C — COMPACT RACING
+   ======================================== */
+
+.racing-list {
+  padding: 0 12px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+.racing-list::-webkit-scrollbar { width: 4px; }
+.racing-list::-webkit-scrollbar-track { background: transparent; }
+.racing-list::-webkit-scrollbar-thumb { background: #2A2333; border-radius: 2px; }
+
+.racing-row {
+  display: grid;
+  grid-template-columns: 30px 32px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  align-items: center;
+  transition: background 0.2s ease;
+  position: relative;
+}
+.racing-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.racing-badge {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.racing-badge.gold {
+  background: linear-gradient(135deg, #FFD700, #CC9900);
+  color: #110D17;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+.racing-badge.silver {
+  background: linear-gradient(135deg, #E0E0E0, #A0A0A0);
+  color: #110D17;
+}
+.racing-badge.bronze {
+  background: linear-gradient(135deg, #CD7F32, #8B5A2B);
+  color: #110D17;
+}
+.racing-badge.normal {
+  background: rgba(255, 255, 255, 0.05);
+  color: #4A3F5C;
+  font-size: 11px;
+}
+
+.racing-row .avatar {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+
+.racing-top {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.racing-name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.racing-you-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: #110D17;
+  background: #B366FF;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.racing-score {
+  grid-column: 4;
+  grid-row: 1 / 3;
+  font-size: 14px;
+  font-weight: 800;
+  color: #FFD700;
+  text-align: right;
+}
+
+.racing-bar-track {
+  grid-column: 3;
+  grid-row: 2;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.racing-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.racing-bar-fill.bar-gold {
+  background: linear-gradient(90deg, #FFD700, #FFA500);
+}
+.racing-bar-fill.bar-purple {
+  background: linear-gradient(90deg, #B366FF, #8A3FCC);
+}
+.racing-bar-fill.bar-dim {
+  background: linear-gradient(90deg, #3A3050, #2A2333);
+}
+
+/* Racing user highlight */
+.racing-row.is-you {
+  background: rgba(179, 102, 255, 0.1);
+  border: 1px solid rgba(179, 102, 255, 0.25);
+}
+
+/* Pinned row C */
+.pinned-row-c {
+  margin: 0 12px 12px;
+  display: grid;
+  grid-template-columns: 30px 32px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(179, 102, 255, 0.1);
+  border: 1px solid rgba(179, 102, 255, 0.25);
+  align-items: center;
+}
+.pinned-row-c .racing-badge { grid-row: 1/3; grid-column: 1; }
+.pinned-row-c .avatar { grid-row: 1/3; grid-column: 2; width: 32px; height: 32px; font-size: 11px; border: 2px solid #B366FF; }
+.pinned-row-c .racing-top { grid-column: 3; grid-row: 1; }
+.pinned-row-c .racing-bar-track { grid-column: 3; grid-row: 2; margin-top: 3px; }
+.pinned-row-c .racing-score { grid-column: 4; grid-row: 1/3; }
+
+/* ========================================
+   UTILITIES
+   ======================================== */
+.sep-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2A2333, transparent);
+  margin: 0 20px;
+}
+
+/* Entry animation */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lb-panel {
+  animation: fadeSlideIn 0.4s ease;
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>VibeMatch Leaderboard Designs</h1>
+  <p>Three alternative layout options for the match-3 puzzle game leaderboard. Each is mobile-first at 400px max-width with dark theme, gold scores, and purple branding.</p>
+</div>
+
+<!-- ==========================================
+     OPTION A — PODIUM + LIST
+     ========================================== -->
+<div class="design-label">
+  <h2>Option A</h2>
+  <span>Podium + List &mdash; Medal ceremony top 3 with clean scrolling list</span>
+</div>
+
+<div class="lb-panel" id="optionA">
+  <div class="lb-close">&times;</div>
+  <div class="lb-title">Leaderboard</div>
+
+  <div class="lb-tabs">
+    <button class="lb-tab active">All Time</button>
+    <button class="lb-tab">Weekly</button>
+    <button class="lb-tab">Daily</button>
+  </div>
+
+  <!-- Podium -->
+  <div class="podium-area">
+    <!-- 2nd place (left) -->
+    <div class="podium-player rank-2">
+      <div class="avatar">KZ</div>
+      <div class="podium-medal">2</div>
+      <div class="podium-name">KryptoZen</div>
+      <div class="podium-score">281,400</div>
+      <div class="podium-pedestal"></div>
+    </div>
+    <!-- 1st place (center) -->
+    <div class="podium-player rank-1">
+      <div class="avatar">NV</div>
+      <div class="podium-medal">1</div>
+      <div class="podium-name">NovaStar</div>
+      <div class="podium-score">312,750</div>
+      <div class="podium-pedestal"></div>
+    </div>
+    <!-- 3rd place (right) -->
+    <div class="podium-player rank-3">
+      <div class="avatar">PX</div>
+      <div class="podium-medal">3</div>
+      <div class="podium-name">PixelQueen</div>
+      <div class="podium-score">264,890</div>
+      <div class="podium-pedestal"></div>
+    </div>
+  </div>
+
+  <div class="sep-line" style="margin-top:16px;"></div>
+
+  <!-- List 4-50 -->
+  <div class="podium-list" id="podiumListA"></div>
+
+  <div class="your-rank-sep"><span>Your Rank</span></div>
+
+  <div class="pinned-row-a">
+    <div class="rank">#73</div>
+    <div class="avatar">YO</div>
+    <div class="name">You</div>
+    <div class="score">42,310</div>
+  </div>
+</div>
+
+
+<!-- ==========================================
+     OPTION B — TIER CARDS
+     ========================================== -->
+<div class="design-label">
+  <h2>Option B</h2>
+  <span>Tier Cards &mdash; Crown, Diamond, and Standard tiers with grouped cards</span>
+</div>
+
+<div class="lb-panel" id="optionB">
+  <div class="lb-close">&times;</div>
+  <div class="lb-title">Leaderboard</div>
+
+  <div class="lb-tabs">
+    <button class="lb-tab active">All Time</button>
+    <button class="lb-tab">Weekly</button>
+    <button class="lb-tab">Daily</button>
+  </div>
+
+  <div class="tier-scroll" id="tierScrollB"></div>
+
+  <div class="your-rank-sep"><span>Your Rank</span></div>
+
+  <div class="pinned-row-b">
+    <div class="tier-rank">#73</div>
+    <div class="avatar">YO</div>
+    <div class="name">You</div>
+    <div class="tier-you-tag">YOU</div>
+    <div class="score">42,310</div>
+  </div>
+</div>
+
+
+<!-- ==========================================
+     OPTION C — COMPACT RACING
+     ========================================== -->
+<div class="design-label">
+  <h2>Option C</h2>
+  <span>Compact Racing &mdash; Progress bars, rank badges, information-dense</span>
+</div>
+
+<div class="lb-panel" id="optionC">
+  <div class="lb-close">&times;</div>
+  <div class="lb-title">Leaderboard</div>
+
+  <div class="lb-tabs">
+    <button class="lb-tab active">All Time</button>
+    <button class="lb-tab">Weekly</button>
+    <button class="lb-tab">Daily</button>
+  </div>
+
+  <div class="racing-list" id="racingListC"></div>
+
+  <div class="your-rank-sep"><span>Your Rank</span></div>
+
+  <div class="pinned-row-c">
+    <div class="racing-badge normal">#73</div>
+    <div class="avatar">YO</div>
+    <div class="racing-top">
+      <span class="racing-name">You</span>
+      <span class="racing-you-tag">YOU</span>
+    </div>
+    <div class="racing-bar-track"><div class="racing-bar-fill bar-purple" style="width:13.5%"></div></div>
+    <div class="racing-score">42,310</div>
+  </div>
+</div>
+
+<script>
+// ========================================
+// DUMMY DATA — 50 players
+// ========================================
+const players = [
+  { name: "NovaStar", score: 312750 },
+  { name: "KryptoZen", score: 281400 },
+  { name: "PixelQueen", score: 264890 },
+  { name: "BlazeMint", score: 248320 },
+  { name: "ShadowVault", score: 231670 },
+  { name: "LunarDrift", score: 219450 },
+  { name: "CyberNova", score: 208310 },
+  { name: "GlitchRider", score: 197640 },
+  { name: "NebulaKing", score: 189200 },
+  { name: "AstroVibes", score: 181730 },
+  { name: "VortexFlux", score: 174560 },
+  { name: "QuantumAce", score: 168420 },
+  { name: "PhotonWolf", score: 162100 },
+  { name: "EchoStrike", score: 156780 },
+  { name: "RiftRunner", score: 151340 },
+  { name: "CosmicDust", score: 146200 },
+  { name: "NeonPulse", score: 141560 },
+  { name: "ZeroGrav", score: 137100 },
+  { name: "HyperBloom", score: 132890 },
+  { name: "SolarFlare", score: 128640 },
+  { name: "TurboMyst", score: 124560 },
+  { name: "IronWave", score: 120780 },
+  { name: "FrostByte", score: 117200 },
+  { name: "ThunderCap", score: 113890 },
+  { name: "MidnightAI", score: 110640 },
+  { name: "CrystalPaw", score: 107500 },
+  { name: "SteelVibe", score: 104420 },
+  { name: "DarkPixel", score: 101380 },
+  { name: "WaveRider", score: 98560 },
+  { name: "FluxBunny", score: 95840 },
+  { name: "OmegaBit", score: 93200 },
+  { name: "NightShift", score: 90650 },
+  { name: "CryptoFox", score: 88120 },
+  { name: "LaserMint", score: 85740 },
+  { name: "BoltStorm", score: 83400 },
+  { name: "ArcticJay", score: 81100 },
+  { name: "ProtonX", score: 78890 },
+  { name: "SparkLine", score: 76700 },
+  { name: "GhostNode", score: 74560 },
+  { name: "TitanSoul", score: 72480 },
+  { name: "MagmaCore", score: 70420 },
+  { name: "PulseWave", score: 68400 },
+  { name: "VoidHuntr", score: 66420 },
+  { name: "SkyForge", score: 64500 },
+  { name: "CoralBit", score: 62610 },
+  { name: "InfraRed", score: 60780 },
+  { name: "ZenithArc", score: 58970 },
+  { name: "ByteWitch", score: 57200 },
+  { name: "NovaLynx", score: 55470 },
+  { name: "AtomPunk", score: 53800 },
+];
+
+const maxScore = players[0].score;
+const initials = n => n.charAt(0).toUpperCase() + (n.match(/[A-Z]/g)?.[1] || n.charAt(1).toUpperCase());
+const fmtScore = s => s.toLocaleString();
+
+// ========================================
+// OPTION A — Populate list rows 4-50
+// ========================================
+(function() {
+  const container = document.getElementById('podiumListA');
+  let html = '';
+  for (let i = 3; i < players.length; i++) {
+    const p = players[i];
+    html += `<div class="podium-row">
+      <div class="rank">#${i+1}</div>
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="name">${p.name}</div>
+      <div class="score">${fmtScore(p.score)}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+})();
+
+// ========================================
+// OPTION B — Populate tier cards
+// ========================================
+(function() {
+  const container = document.getElementById('tierScrollB');
+  let html = '';
+
+  // Crown tier (1-3)
+  html += `<div class="tier-section tier-crown">
+    <div class="tier-header"><span class="tier-icon">&clubs;</span><span class="tier-label">Crown Tier</span></div>
+    <div class="tier-card">`;
+  for (let i = 0; i < 3; i++) {
+    const p = players[i];
+    html += `<div class="tier-row">
+      <div class="tier-rank">${i+1}</div>
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="name">${p.name}</div>
+      <div class="score">${fmtScore(p.score)}</div>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Diamond tier (4-10)
+  html += `<div class="tier-section tier-diamond">
+    <div class="tier-header"><span class="tier-icon">&diams;</span><span class="tier-label">Diamond Tier</span></div>
+    <div class="tier-card">`;
+  for (let i = 3; i < 10; i++) {
+    const p = players[i];
+    const isYou = i === 7; // simulate user at rank 8 for demo
+    html += `<div class="tier-row${isYou ? ' is-you' : ''}">
+      <div class="tier-rank">${i+1}</div>
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="name">${p.name}</div>
+      ${isYou ? '<span class="tier-you-tag">YOU</span>' : ''}
+      <div class="score">${fmtScore(p.score)}</div>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Standard tier (11-50)
+  html += `<div class="tier-section tier-standard">
+    <div class="tier-header"><span class="tier-icon">&bull;</span><span class="tier-label">Standard</span></div>
+    <div class="tier-card">`;
+  for (let i = 10; i < players.length; i++) {
+    const p = players[i];
+    html += `<div class="tier-row">
+      <div class="tier-rank">${i+1}</div>
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="name">${p.name}</div>
+      <div class="score">${fmtScore(p.score)}</div>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  container.innerHTML = html;
+})();
+
+// ========================================
+// OPTION C — Populate racing rows
+// ========================================
+(function() {
+  const container = document.getElementById('racingListC');
+  let html = '';
+
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const pct = ((p.score / maxScore) * 100).toFixed(1);
+    const rank = i + 1;
+    let badgeClass = 'normal';
+    let badgeLabel = `#${rank}`;
+    if (rank === 1) { badgeClass = 'gold'; badgeLabel = '1'; }
+    else if (rank === 2) { badgeClass = 'silver'; badgeLabel = '2'; }
+    else if (rank === 3) { badgeClass = 'bronze'; badgeLabel = '3'; }
+
+    let barClass = 'bar-dim';
+    if (rank <= 3) barClass = 'bar-gold';
+    else if (rank <= 10) barClass = 'bar-purple';
+
+    const isYou = rank === 25;
+
+    html += `<div class="racing-row${isYou ? ' is-you' : ''}">
+      <div class="racing-badge ${badgeClass}">${badgeLabel}</div>
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="racing-top">
+        <span class="racing-name">${p.name}</span>
+        ${isYou ? '<span class="racing-you-tag">YOU</span>' : ''}
+      </div>
+      <div class="racing-bar-track"><div class="racing-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+      <div class="racing-score">${fmtScore(p.score)}</div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

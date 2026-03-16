@@ -2,8 +2,15 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-const secretKey = "vibe-match-secret-key-change-me-in-prod";
-const key = new TextEncoder().encode(process.env.JWT_SECRET || secretKey);
+// Fix #1: JWT_SECRET is mandatory — throw at startup if missing.
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+    throw new Error(
+        "JWT_SECRET environment variable is not set. " +
+        "Set a strong, random secret before starting the server."
+    );
+}
+const key = new TextEncoder().encode(jwtSecret);
 
 export const SESSION_COOKIE_NAME = "vibematch_session";
 
@@ -22,12 +29,98 @@ export async function decrypt(input: string): Promise<any> {
     return payload;
 }
 
+// Fix #2: PBKDF2 password hashing via SubtleCrypto (Edge Runtime compatible).
+// Stored format: "pbkdf2:<salt_hex>:<hash_hex>"
+// Legacy format (plain SHA-256 hex string) is still recognised in verifyPassword.
+
 export async function hashPassword(password: string): Promise<string> {
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const saltHex = Array.from(saltBytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
     const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(password),
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
+    );
+
+    const hashBuffer = await crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt: saltBytes,
+            iterations: 200_000,
+            hash: "SHA-256",
+        },
+        keyMaterial,
+        256
+    );
+
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+    return `pbkdf2:${saltHex}:${hashHex}`;
+}
+
+// Verify a password against a stored hash.
+// Supports both:
+//   - New format: "pbkdf2:<salt_hex>:<hash_hex>"
+//   - Legacy format: plain SHA-256 hex (backward compatibility for existing users)
+export async function verifyPassword(
+    password: string,
+    storedHash: string
+): Promise<boolean> {
+    if (storedHash.startsWith("pbkdf2:")) {
+        // New PBKDF2 format
+        const parts = storedHash.split(":");
+        if (parts.length !== 3) return false;
+        const saltHex = parts[1];
+        const expectedHashHex = parts[2];
+
+        const saltBytes = new Uint8Array(
+            saltHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16))
+        );
+
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw",
+            encoder.encode(password),
+            { name: "PBKDF2" },
+            false,
+            ["deriveBits"]
+        );
+
+        const hashBuffer = await crypto.subtle.deriveBits(
+            {
+                name: "PBKDF2",
+                salt: saltBytes,
+                iterations: 200_000,
+                hash: "SHA-256",
+            },
+            keyMaterial,
+            256
+        );
+
+        const hashHex = Array.from(new Uint8Array(hashBuffer))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+        return hashHex === expectedHashHex;
+    } else {
+        // Legacy: plain SHA-256 hex — check for backward compatibility
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const legacyHash = hashArray
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        return legacyHash === storedHash;
+    }
 }
 
 export async function getSession() {

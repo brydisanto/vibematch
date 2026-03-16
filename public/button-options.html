@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeMatch — Button Options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0114;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      padding: 40px 20px 80px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 48px;
+    }
+
+    .option-section {
+      max-width: 700px;
+      margin: 0 auto 56px;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(179,102,255,0.50);
+      margin-bottom: 8px;
+    }
+
+    .option-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: rgba(255,255,255,0.90);
+    }
+
+    .state-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+
+    .phone-frame {
+      width: 390px;
+      margin: 0 auto;
+      background: #110321;
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin: 48px auto;
+      max-width: 700px;
+    }
+
+    /* ========== OPTION 1: Unified Glass Panel ========== */
+    .glass-panel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .glass-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      border-radius: 11px;
+    }
+
+    .glass-btn:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .glass-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .glass-btn .btn-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.70);
+      font-weight: 500;
+    }
+
+    .glass-btn.disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .glass-btn.disabled svg {
+      opacity: 1;
+      color: rgba(255,255,255,0.25);
+    }
+
+    .glass-btn.disabled .btn-label {
+      color: rgba(255,255,255,0.25);
+    }
+
+    /* ========== OPTION 2: Monochrome Purple Pills ========== */
+    .pills-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .pill-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px 6px;
+      background: linear-gradient(to bottom, #2D0B4E, #1A0633);
+      border: 1px solid rgba(179,102,255,0.20);
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 2px 4px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn:hover {
+      border-color: rgba(179,102,255,0.45);
+    }
+
+    .pill-btn:hover svg {
+      color: #B366FF;
+      opacity: 1;
+    }
+
+    .pill-btn:hover .btn-label {
+      color: #B366FF;
+    }
+
+    .pill-btn svg {
+      width: 20px;
+      height: 20px;
+      color: rgba(179,102,255,0.85);
+    }
+
+    .pill-btn .btn-label {
+      font-size: 11px;
+      color: rgba(179,102,255,0.85);
+      font-weight: 500;
+    }
+
+    .pill-btn.disabled {
+      border-color: rgba(179,102,255,0.08);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .pill-btn.disabled svg {
+      color: rgba(179,102,255,0.25);
+    }
+
+    .pill-btn.disabled .btn-label {
+      color: rgba(179,102,255,0.25);
+    }
+
+    /* ========== OPTION 3: Icon-Forward Dark Cards ========== */
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .card-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px 6px;
+      background: #1A0835;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-bottom: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .card-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 0 0 10px 10px;
+    }
+
+    .card-btn svg {
+      width: 22px;
+      height: 22px;
+      color: rgba(255,255,255,0.70);
+      transition: all 0.2s ease;
+    }
+
+    .card-btn .btn-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.50);
+      font-weight: 500;
+    }
+
+    .card-btn:hover svg {
+      color: rgba(255,255,255,1.0);
+    }
+
+    .card-btn.card-profile::after {
+      background: #4A9EFF;
+    }
+    .card-btn.card-profile {
+      box-shadow: 0 4px 12px rgba(74,158,255,0.12);
+    }
+    .card-btn.card-profile:hover {
+      box-shadow: 0 4px 16px rgba(74,158,255,0.25);
+    }
+
+    .card-btn.card-pins::after {
+      background: #B366FF;
+    }
+    .card-btn.card-pins {
+      box-shadow: 0 4px 12px rgba(179,102,255,0.12);
+    }
+    .card-btn.card-pins:hover {
+      box-shadow: 0 4px 16px rgba(179,102,255,0.25);
+    }
+
+    .card-btn.card-rules::after {
+      background: #FFE048;
+    }
+    .card-btn.card-rules {
+      box-shadow: 0 4px 12px rgba(255,224,72,0.10);
+    }
+    .card-btn.card-rules:hover {
+      box-shadow: 0 4px 16px rgba(255,224,72,0.25);
+    }
+
+    .card-btn.card-leaderboards::after {
+      background: #FF5F1F;
+    }
+    .card-btn.card-leaderboards {
+      box-shadow: 0 4px 12px rgba(255,95,31,0.10);
+    }
+    .card-btn.card-leaderboards:hover {
+      box-shadow: 0 4px 16px rgba(255,95,31,0.25);
+    }
+
+    /* Disabled card */
+    .card-btn.disabled {
+      cursor: default;
+      pointer-events: none;
+      box-shadow: none;
+    }
+    .card-btn.disabled::after {
+      background: rgba(255,255,255,0.08);
+    }
+    .card-btn.disabled svg {
+      opacity: 0.25;
+    }
+    .card-btn.disabled .btn-label {
+      opacity: 0.25;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>VibeMatch — Button Options</h1>
+  <p class="page-subtitle">Design review: game landing page button section / 3 layout options</p>
+
+  <!-- ============================================================ -->
+  <!-- OPTION 1 -->
+  <!-- ============================================================ -->
+  <div class="option-section">
+    <div class="option-label">Option 1</div>
+    <div class="option-title">Unified Glass Panel Row</div>
+
+    <div class="state-label">Logged Out (Pins disabled)</div>
+    <div class="phone-frame">
+      <div class="glass-panel">
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="btn-label">Profile</span>
+        </div>
+        <div class="glass-btn disabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="btn-label">Pins</span>
+        </div>
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFE048" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Rules</span>
+        </div>
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4l3 12h14l3-12-5.5 4L12 2 7.5 8z"/>
+            <path d="M5 16H19"/>
+            <path d="M7.5 20h9"/>
+          </svg>
+          <span class="btn-label">Leaderboards</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-label">Logged In (Pins enabled)</div>
+    <div class="phone-frame">
+      <div class="glass-panel">
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="btn-label">Profile</span>
+        </div>
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#B366FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="btn-label">Pins</span>
+        </div>
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFE048" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Rules</span>
+        </div>
+        <div class="glass-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4l3 12h14l3-12-5.5 4L12 2 7.5 8z"/>
+            <path d="M5 16H19"/>
+            <path d="M7.5 20h9"/>
+          </svg>
+          <span class="btn-label">Leaderboards</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================================ -->
+  <!-- OPTION 2 -->
+  <!-- ============================================================ -->
+  <div class="option-section">
+    <div class="option-label">Option 2</div>
+    <div class="option-title">Monochrome Purple Pills</div>
+
+    <div class="state-label">Logged Out (Pins disabled)</div>
+    <div class="phone-frame">
+      <div class="pills-row">
+        <div class="pill-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="btn-label">Profile</span>
+        </div>
+        <div class="pill-btn disabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="btn-label">Pins</span>
+        </div>
+        <div class="pill-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Rules</span>
+        </div>
+        <div class="pill-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4l3 12h14l3-12-5.5 4L12 2 7.5 8z"/>
+            <path d="M5 16H19"/>
+            <path d="M7.5 20h9"/>
+          </svg>
+          <span class="btn-label">Leaderboards</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================================ -->
+  <!-- OPTION 3 -->
+  <!-- ============================================================ -->
+  <div class="option-section">
+    <div class="option-label">Option 3</div>
+    <div class="option-title">Icon-Forward Dark Cards with Accent Glow</div>
+
+    <div class="state-label">Logged Out (Pins disabled)</div>
+    <div class="phone-frame">
+      <div class="cards-row">
+        <div class="card-btn card-profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="btn-label">Profile</span>
+        </div>
+        <div class="card-btn disabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="btn-label">Pins</span>
+        </div>
+        <div class="card-btn card-rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Rules</span>
+        </div>
+        <div class="card-btn card-leaderboards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4l3 12h14l3-12-5.5 4L12 2 7.5 8z"/>
+            <path d="M5 16H19"/>
+            <path d="M7.5 20h9"/>
+          </svg>
+          <span class="btn-label">Leaderboards</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-label">Logged In (Pins enabled)</div>
+    <div class="phone-frame">
+      <div class="cards-row">
+        <div class="card-btn card-profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="btn-label">Profile</span>
+        </div>
+        <div class="card-btn card-pins">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="btn-label">Pins</span>
+        </div>
+        <div class="card-btn card-rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Rules</span>
+        </div>
+        <div class="card-btn card-leaderboards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4l3 12h14l3-12-5.5 4L12 2 7.5 8z"/>
+            <path d="M5 16H19"/>
+            <path d="M7.5 20h9"/>
+          </svg>
+          <span class="btn-label">Leaderboards</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

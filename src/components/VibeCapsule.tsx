@@ -1,0 +1,1461 @@
+"use client";
+
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import Image from "next/image";
+import { Badge, BadgeTier, TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
+import {
+    playCapsuleAppearSound,
+    playCapsuleAnticipateSound,
+    playCapsuleCrackSound,
+    playCapsuleRevealSound,
+    playCapsuleCollectSound,
+} from "@/lib/sounds";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface VibeCapsuleProps {
+    isOpen: boolean;
+    badge: Badge | null;
+    tier: BadgeTier;
+    isDuplicate: boolean;
+    duplicateCount: number;
+    quickOpen: boolean;
+    onComplete: () => void;
+}
+
+type Phase = "idle" | "appear" | "anticipate" | "crack" | "reveal" | "collect";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const CAPSULE_SIZE = 160;
+
+const CAPSULE_COLORS: Record<
+    BadgeTier,
+    { shell: string; shellDark: string; shellDeep: string; glow: string; accent: string; rim: string; specularIntensity: number }
+> = {
+    blue: { shell: "#6C5CE7", shellDark: "#5541D4", shellDeep: "#3D2CA6", glow: "#6C5CE7", accent: "#8B7FF0", rim: "#A594FF", specularIntensity: 0.78 },
+    silver: { shell: "#6C5CE7", shellDark: "#5541D4", shellDeep: "#3D2CA6", glow: "#2ECC71", accent: "#54D98C", rim: "#7BE8A8", specularIntensity: 0.82 },
+    gold: { shell: "#7B5AE0", shellDark: "#5E3FBF", shellDeep: "#432B99", glow: "#FFE048", accent: "#FFE048", rim: "#FFD700", specularIntensity: 0.88 },
+    cosmic: { shell: "#B366FF", shellDark: "#8A3DE0", shellDeep: "#6B1FC0", glow: "#B366FF", accent: "#FF66B2", rim: "#E0AAFF", specularIntensity: 0.92 },
+};
+
+const TIER_INTENSITY: Record<BadgeTier, number> = {
+    blue: 1,
+    silver: 1.3,
+    gold: 1.7,
+    cosmic: 2.2,
+};
+
+const PHASE_DURATION: Record<string, number> = {
+    appear: 500,
+    anticipate: 2800,
+    crack: 800,
+    reveal: 900,
+};
+
+// Haptic feedback helper — safe no-op on unsupported devices
+function triggerHaptic(pattern: number | number[]) {
+    try { navigator?.vibrate?.(pattern); } catch { /* unsupported */ }
+}
+
+const QUICK_DURATIONS: Record<string, number> = {
+    crack: 300,
+    reveal: 400,
+};
+
+// ---------------------------------------------------------------------------
+// Particle generation helpers
+// ---------------------------------------------------------------------------
+
+interface Particle {
+    id: number;
+    x: number;
+    y: number;
+    size: number;
+    angle: number;
+    distance: number;
+    duration: number;
+    delay: number;
+    color: string;
+    shape: "circle" | "diamond" | "streak" | "star";
+}
+
+function generateOrbitParticles(tier: BadgeTier, count: number): Particle[] {
+    const colors = CAPSULE_COLORS[tier];
+    return Array.from({ length: count }, (_, i) => ({
+        id: i,
+        x: 0,
+        y: 0,
+        size: 3 + Math.random() * 4,
+        angle: (i / count) * 360,
+        distance: 50 + Math.random() * 30,
+        duration: 1.5 + Math.random() * 1,
+        delay: (i / count) * 0.8,
+        color: i % 2 === 0 ? colors.glow : colors.accent,
+        shape: "circle" as const,
+    }));
+}
+
+function generateBurstParticles(tier: BadgeTier, count: number): Particle[] {
+    const colors = CAPSULE_COLORS[tier];
+    const isCosmic = tier === "cosmic";
+    const cosmicColors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#B366FF"];
+    const shapes: Particle["shape"][] = ["circle", "diamond", "streak", "star"];
+
+    return Array.from({ length: count }, (_, i) => {
+        const angle = (i / count) * 360 + (Math.random() - 0.5) * 30;
+        const rad = (angle * Math.PI) / 180;
+        const dist = 120 + Math.random() * 180 * TIER_INTENSITY[tier];
+        return {
+            id: i,
+            x: Math.cos(rad) * dist,
+            y: Math.sin(rad) * dist + 40,
+            size: 3 + Math.random() * 6,
+            angle,
+            distance: dist,
+            duration: 0.6 + Math.random() * 0.3,
+            delay: Math.random() * 0.15,
+            color: isCosmic
+                ? cosmicColors[i % cosmicColors.length]
+                : i % 3 === 0 ? colors.shell : i % 3 === 1 ? colors.glow : colors.accent,
+            shape: shapes[i % shapes.length],
+        };
+    });
+}
+
+function generateRevealParticles(tier: BadgeTier, count: number): Particle[] {
+    const colors = CAPSULE_COLORS[tier];
+    return Array.from({ length: count }, (_, i) => {
+        const angle = (i / count) * 360;
+        const rad = (angle * Math.PI) / 180;
+        const dist = 100 + Math.random() * 120;
+        return {
+            id: i,
+            x: Math.cos(rad) * dist,
+            y: Math.sin(rad) * dist,
+            size: 2 + Math.random() * 4,
+            angle,
+            distance: dist,
+            duration: 0.8 + Math.random() * 0.4,
+            delay: Math.random() * 0.2,
+            color: i % 2 === 0 ? colors.glow : TIER_COLORS[tier],
+            shape: "circle" as const,
+        };
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Particle shape styles
+// ---------------------------------------------------------------------------
+
+function getParticleStyle(shape: Particle["shape"], size: number, color: string): React.CSSProperties {
+    const base = { background: color, boxShadow: `0 0 ${size * 2}px ${color}`, position: "absolute" as const };
+    switch (shape) {
+        case "diamond":
+            return { ...base, width: size, height: size, borderRadius: 2, transform: "rotate(45deg)" };
+        case "streak":
+            return { ...base, width: size * 0.4, height: size * 2, borderRadius: 2 };
+        case "star":
+            return { ...base, width: size * 1.2, height: size * 1.2, clipPath: "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)" };
+        default:
+            return { ...base, width: size, height: size, borderRadius: "50%" };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function OrbitParticles({ tier, active }: { tier: BadgeTier; active: boolean }) {
+    const particles = useMemo(() => generateOrbitParticles(tier, tier === "cosmic" ? 16 : 10), [tier]);
+    if (!active) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none">
+            {particles.map((p) => (
+                <div
+                    key={p.id}
+                    className="capsule-orbit-particle"
+                    style={{
+                        "--orbit-angle": `${p.angle}deg`,
+                        "--orbit-distance": `${p.distance}px`,
+                        "--orbit-size": `${p.size}px`,
+                        "--orbit-duration": `${p.duration}s`,
+                        "--orbit-delay": `${p.delay}s`,
+                        "--orbit-color": p.color,
+                    } as React.CSSProperties}
+                />
+            ))}
+        </div>
+    );
+}
+
+function BurstParticles({ tier, active }: { tier: BadgeTier; active: boolean }) {
+    const particles = useMemo(
+        () => generateBurstParticles(tier, tier === "cosmic" ? 50 : tier === "gold" ? 30 : 20),
+        [tier]
+    );
+    if (!active) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none" style={{ left: "50%", top: "50%" }}>
+            {particles.map((p) => (
+                <motion.div
+                    key={p.id}
+                    style={{
+                        ...getParticleStyle(p.shape, p.size, p.color),
+                        marginLeft: -p.size / 2,
+                        marginTop: -p.size / 2,
+                    }}
+                    initial={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
+                    animate={{
+                        x: p.x,
+                        y: p.y,
+                        opacity: [1, 0.8, 0],
+                        scale: [1, 1.3, 0],
+                        rotate: Math.random() * 360 * (Math.random() > 0.5 ? 1 : -1),
+                    }}
+                    transition={{
+                        duration: p.duration,
+                        delay: p.delay,
+                        ease: [0.22, 1, 0.36, 1],
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
+function RevealParticles({ tier, active }: { tier: BadgeTier; active: boolean }) {
+    const particles = useMemo(
+        () => generateRevealParticles(tier, tier === "cosmic" ? 24 : 14),
+        [tier]
+    );
+    if (!active) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none" style={{ left: "50%", top: "50%" }}>
+            {particles.map((p) => (
+                <motion.div
+                    key={p.id}
+                    className="absolute rounded-full"
+                    style={{
+                        width: p.size,
+                        height: p.size,
+                        background: p.color,
+                        boxShadow: `0 0 ${p.size * 3}px ${p.color}80`,
+                        marginLeft: -p.size / 2,
+                        marginTop: -p.size / 2,
+                    }}
+                    initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+                    animate={{
+                        x: p.x,
+                        y: p.y,
+                        opacity: [0, 1, 0],
+                        scale: [0, 1, 0.3],
+                    }}
+                    transition={{
+                        duration: p.duration,
+                        delay: 0.15 + p.delay,
+                        ease: "easeOut",
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
+/** Animated crack lines SVG */
+function CrackLines({ active, color }: { active: boolean; color: string }) {
+    if (!active) return null;
+    return (
+        <motion.svg
+            viewBox="0 0 160 160"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            fill="none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.08 }}
+            style={{ zIndex: 10 }}
+        >
+            <motion.path d="M80 80 L75 60 L82 45 L78 30 L85 18" stroke={color} strokeWidth="2.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 6px ${color})` }} />
+            <motion.path d="M80 80 L86 100 L78 115 L83 130 L76 142" stroke={color} strokeWidth="2.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.2, delay: 0.04, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 6px ${color})` }} />
+            <motion.path d="M75 60 L58 52 L48 40" stroke={color} strokeWidth="1.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.08, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+            <motion.path d="M82 45 L100 38 L115 30" stroke={color} strokeWidth="1.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.1, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+            <motion.path d="M86 100 L102 108 L118 115" stroke={color} strokeWidth="1.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.12, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+            <motion.path d="M78 115 L60 122 L45 128" stroke={color} strokeWidth="1.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.14, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+            <motion.path d="M80 80 L55 78 L35 82" stroke={color} strokeWidth="2" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.06, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+            <motion.path d="M80 80 L108 82 L128 78" stroke={color} strokeWidth="2" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.15, delay: 0.08, ease: "easeOut" }}
+                style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+        </motion.svg>
+    );
+}
+
+/** Shockwave ring on crack */
+function ShockwaveRings({ active, color }: { active: boolean; color: string }) {
+    if (!active) return null;
+    return (
+        <>
+            <motion.div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                    width: 100, height: 100,
+                    border: `3px solid ${color}`,
+                    top: "50%", left: "50%",
+                    marginTop: -50, marginLeft: -50,
+                }}
+                initial={{ scale: 0.1, opacity: 0.9 }}
+                animate={{ scale: [0.1, 3, 5], opacity: [0.9, 0.4, 0] }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            />
+            <motion.div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                    width: 100, height: 100,
+                    border: `2px solid ${color}88`,
+                    top: "50%", left: "50%",
+                    marginTop: -50, marginLeft: -50,
+                }}
+                initial={{ scale: 0.1, opacity: 0.7 }}
+                animate={{ scale: [0.1, 3, 5], opacity: [0.7, 0.3, 0] }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+            />
+        </>
+    );
+}
+
+/** Light beam shooting upward from crack */
+function LightBeam({ active, tier }: { active: boolean; tier: BadgeTier }) {
+    if (!active || (tier !== "gold" && tier !== "cosmic")) return null;
+    const colors = CAPSULE_COLORS[tier];
+    return (
+        <motion.div
+            className="absolute pointer-events-none"
+            style={{
+                width: 60, height: 400,
+                background: `linear-gradient(to top, ${colors.glow}, transparent)`,
+                borderRadius: "50%",
+                filter: "blur(8px)",
+                bottom: "50%", left: "50%",
+                marginLeft: -30,
+                transformOrigin: "center bottom",
+            }}
+            initial={{ scaleY: 0, scaleX: 1, opacity: 0 }}
+            animate={{ scaleY: [0, 1.5, 1.2], scaleX: [1, 0.6, 0.3], opacity: [0, 0.9, 0] }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
+    );
+}
+
+/** Screen flash overlay on crack */
+function CrackFlash({ active, tier }: { active: boolean; tier: BadgeTier }) {
+    if (!active) return null;
+    const colors = CAPSULE_COLORS[tier];
+    const isCosmic = tier === "cosmic";
+
+    return (
+        <motion.div
+            className="fixed inset-0 pointer-events-none"
+            style={{ zIndex: 200 }}
+            initial={{ opacity: 0 }}
+            animate={{
+                opacity: [0, 1, 0.8, 0],
+                background: isCosmic
+                    ? [
+                        "linear-gradient(45deg, #A855F7, #EC4899)",
+                        "linear-gradient(90deg, #EC4899, #F59E0B, #10B981)",
+                        "linear-gradient(135deg, #3B82F6, #A855F7)",
+                        "transparent",
+                    ]
+                    : undefined,
+                backgroundColor: isCosmic ? undefined : [
+                    `${colors.glow}99`,
+                    "#FFFFFF",
+                    `${colors.glow}66`,
+                    "transparent",
+                ],
+            }}
+            transition={{
+                duration: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.05, 0.15, 1],
+            }}
+        />
+    );
+}
+
+/** Confetti shower for gold/cosmic reveal */
+function ConfettiShower({ active, tier }: { active: boolean; tier: BadgeTier }) {
+    if (!active || (tier !== "gold" && tier !== "cosmic")) return null;
+    const confettiColors = ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#F7DC6F", "#BB8FCE", "#85C1E9", "#F1948A"];
+    const count = tier === "cosmic" ? 40 : 24;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ left: "50%", top: "50%", marginLeft: -200, marginTop: -200, width: 400, height: 400 }}>
+            {Array.from({ length: count }, (_, i) => {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                return (
+                    <motion.div
+                        key={i}
+                        className="absolute"
+                        style={{
+                            width: 4 + Math.random() * 6,
+                            height: 8 + Math.random() * 12,
+                            backgroundColor: confettiColors[i % confettiColors.length],
+                            borderRadius: Math.random() > 0.5 ? "50%" : 2,
+                            left: 200, top: 200,
+                        }}
+                        initial={{ x: 0, y: -20, rotate: 0, opacity: 1 }}
+                        animate={{
+                            x: side * (50 + Math.random() * 150),
+                            y: 200 + Math.random() * 200,
+                            rotate: Math.random() * 720 - 360,
+                            opacity: [1, 1, 0.8, 0],
+                        }}
+                        transition={{
+                            duration: 1.5 + Math.random() * 1,
+                            ease: [0.22, 0, 0.36, 1],
+                            delay: Math.random() * 0.3,
+                        }}
+                    />
+                );
+            })}
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Premium 3D Sphere
+// ---------------------------------------------------------------------------
+
+function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; onTap: () => void }) {
+    const colors = CAPSULE_COLORS[tier];
+    const isCosmic = tier === "cosmic";
+    const isGold = tier === "gold";
+    const capsuleControls = useAnimation();
+    const intensity = TIER_INTENSITY[tier];
+
+    // Escalating wobble during anticipation — 2.8s with micro-pauses
+    // Structure: slow build → pause → medium build → pause → frantic finale
+    useEffect(() => {
+        if (phase === "anticipate") {
+            capsuleControls.start({
+                // Micro-pauses at 0.32 and 0.60 (rotateZ holds at 0 briefly)
+                rotateZ: [
+                    0, 0.3, -0.3, 0.5, -0.7, 1, -1, 1.5, -1.5,
+                    0, 0, // ← micro-pause 1
+                    2, -2.5, 3, -3.5, 4.5, -5, 6, -7,
+                    0, 0, // ← micro-pause 2
+                    8, -9, 10, -11, 12, -13, 14, -14, 0,
+                ],
+                rotateX: [
+                    0, 0, 0, 0.3, -0.3, 0.5, -0.8, 1, -1,
+                    0, 0,
+                    1.5, -2, 2.5, -3, 3.5, -4, 4.5, -5,
+                    0, 0,
+                    5.5, -6, 6.5, -7, 7, -7, 7, -7, 0,
+                ],
+                rotateY: [
+                    0, 0, 0.2, -0.2, 0.3, -0.5, 0.7, -0.8, 1,
+                    0, 0,
+                    1.5, -1.8, 2.2, -2.5, 3, -3.5, 4, -4,
+                    0, 0,
+                    4.5, -5, 5, -5, 5, -5, 5, -5, 0,
+                ],
+                scale: [
+                    1, 1, 1.003, 1, 1.005, 1.005, 1.008, 1.01, 1.01,
+                    1.02, 1.02, // ← pause swells slightly
+                    1.02, 1.025, 1.03, 1.03, 1.04, 1.04, 1.05, 1.06,
+                    1.07, 1.07, // ← pause swells more
+                    1.08, 1.08, 1.09, 1.1, 1.1, 1.11, 1.12, 1.13, 1.15,
+                ],
+                transition: {
+                    duration: 2.8,
+                    ease: "linear",
+                    times: [
+                        0, 0.03, 0.06, 0.09, 0.12, 0.16, 0.2, 0.24, 0.28,
+                        0.32, 0.36, // micro-pause 1
+                        0.39, 0.42, 0.46, 0.5, 0.53, 0.56, 0.58, 0.6,
+                        0.62, 0.66, // micro-pause 2
+                        0.7, 0.74, 0.78, 0.82, 0.86, 0.9, 0.93, 0.97, 1.0,
+                    ],
+                },
+            });
+            // Haptic pulses that accelerate with the wobble
+            triggerHaptic(15);
+            setTimeout(() => triggerHaptic(15), 700);
+            setTimeout(() => triggerHaptic(20), 1300);
+            setTimeout(() => triggerHaptic(25), 1800);
+            setTimeout(() => triggerHaptic(30), 2100);
+            setTimeout(() => triggerHaptic(35), 2400);
+            setTimeout(() => triggerHaptic([20, 30, 40]), 2600);
+        }
+    }, [phase, capsuleControls]);
+
+    const isCracking = phase === "crack";
+
+    // Premium multi-layer gradients
+    const topHalfBg = isCosmic
+        ? undefined
+        : `radial-gradient(ellipse 120% 100% at 50% 110%, ${colors.accent}55 0%, ${colors.shell} 40%, ${colors.shellDark} 70%, ${colors.shellDeep} 100%)`;
+
+    const bottomHalfBg = isCosmic
+        ? undefined
+        : `radial-gradient(ellipse 120% 100% at 50% -10%, ${colors.shell}cc 0%, ${colors.shellDark} 50%, ${colors.shellDeep} 100%)`;
+
+    const seamColor = isGold ? colors.accent : colors.glow;
+
+    return (
+        <motion.div
+            className="relative cursor-pointer select-none"
+            style={{ width: CAPSULE_SIZE, height: CAPSULE_SIZE, perspective: 600 }}
+            animate={capsuleControls}
+            onClick={phase === "anticipate" || phase === "appear" ? onTap : undefined}
+            whileTap={phase === "anticipate" || phase === "appear" ? { scale: 0.95, transition: { duration: 0.05 } } : undefined}
+            role="button"
+            tabIndex={0}
+            aria-label="Open capsule"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { if (phase === "anticipate" || phase === "appear") onTap(); } }}
+        >
+            {/* Pulsing outer glow — intensifies during anticipation */}
+            <motion.div
+                className="absolute pointer-events-none rounded-full"
+                style={{ inset: "-30%", background: `radial-gradient(circle, ${colors.glow}30 0%, transparent 70%)` }}
+                animate={phase === "anticipate" ? {
+                    boxShadow: [
+                        `0 0 15px 5px ${colors.glow}15`,
+                        `0 0 20px 8px ${colors.glow}22`,
+                        `0 0 30px 12px ${colors.glow}33`,
+                        `0 0 30px 12px ${colors.glow}44`, // pause hold
+                        `0 0 45px 20px ${colors.glow}55`,
+                        `0 0 55px 25px ${colors.glow}77`,
+                        `0 0 65px 30px ${colors.glow}88`,
+                        `0 0 65px 30px ${colors.glow}99`, // pause hold
+                        `0 0 80px 38px ${colors.glow}BB`,
+                        `0 0 100px 50px ${colors.glow}EE`,
+                    ],
+                    scale: [1, 1.02, 1.05, 1.06, 1.1, 1.14, 1.18, 1.2, 1.28, 1.38],
+                } : {}}
+                transition={phase === "anticipate" ? { duration: 2.8, ease: "easeIn" } : {}}
+            />
+
+            {/* Contact shadow */}
+            <div
+                className="absolute pointer-events-none"
+                style={{
+                    bottom: -6, left: "28%", width: "44%", height: 8,
+                    borderRadius: "50%",
+                    background: `radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%)`,
+                }}
+            />
+            {/* Ambient shadow */}
+            <div
+                className="absolute pointer-events-none"
+                style={{
+                    bottom: -12, left: "15%", width: "70%", height: 18,
+                    borderRadius: "50%",
+                    background: `radial-gradient(ellipse, ${colors.glow}25 0%, transparent 70%)`,
+                    filter: "blur(3px)",
+                }}
+            />
+
+            {/* 3D Sphere container */}
+            <div
+                className="capsule-float"
+                style={{
+                    width: CAPSULE_SIZE, height: CAPSULE_SIZE,
+                    transformStyle: "preserve-3d",
+                    position: "relative",
+                    filter: `drop-shadow(0 0 20px ${colors.glow}60)`,
+                }}
+            >
+                {/* ──── Top half ──── */}
+                <motion.div
+                    className={isCosmic ? "capsule-cosmic-top" : ""}
+                    style={{
+                        position: "absolute", top: 0, left: 0,
+                        width: CAPSULE_SIZE, height: CAPSULE_SIZE / 2,
+                        borderRadius: `${CAPSULE_SIZE / 2}px ${CAPSULE_SIZE / 2}px 0 0`,
+                        background: topHalfBg,
+                        overflow: "hidden",
+                        transformOrigin: "center bottom",
+                        backfaceVisibility: "hidden",
+                        boxShadow: "inset 0 -4px 12px -2px rgba(0,0,0,0.3)",
+                    }}
+                    animate={isCracking ? {
+                        y: -150 * intensity,
+                        x: 30 * intensity,
+                        rotateZ: 25 * intensity,
+                        rotateX: -40 * intensity,
+                        scale: 0.3,
+                        opacity: [1, 1, 0.8, 0],
+                    } : {}}
+                    transition={isCracking ? {
+                        duration: 0.6,
+                        ease: [0.32, 0, 0.67, 0],
+                        opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] },
+                    } : {}}
+                >
+                    {/* Diffuse color wash */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `radial-gradient(ellipse at 35% 15%, ${colors.accent}55 0%, transparent 55%)`,
+                    }} />
+                    {/* Environment reflection — subtle horizon line */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `linear-gradient(180deg, transparent 30%, ${colors.shell}15 48%, rgba(255,255,255,0.06) 50%, ${colors.shellDeep}20 52%, transparent 70%)`,
+                    }} />
+                    {/* Rim light (right edge) — fresnel effect */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}55 0%, ${colors.rim}22 40%, transparent 70%)`,
+                    }} />
+                    {/* Left rim fill light */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}18 0%, transparent 70%)`,
+                    }} />
+                    {/* Secondary diffuse highlight */}
+                    <div className="absolute pointer-events-none" style={{
+                        top: 4, left: 10, width: 85, height: 52,
+                        borderRadius: "50%",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)",
+                        mixBlendMode: "screen",
+                    }} />
+                    {/* Primary specular highlight — sharper, more defined */}
+                    <div className="absolute pointer-events-none" style={{
+                        top: 10, left: 26, width: 48, height: 30,
+                        borderRadius: "50%",
+                        background: `radial-gradient(ellipse at center, rgba(255,255,255,${Math.min(colors.specularIntensity + 0.05, 0.98)}) 0%, rgba(255,255,255,${colors.specularIntensity * 0.5}) 40%, transparent 70%)`,
+                        transform: "rotate(-15deg)",
+                        mixBlendMode: "screen",
+                    }} />
+                    {/* Pinpoint gloss — hard specular catch */}
+                    <div className="absolute pointer-events-none" style={{
+                        top: 16, left: 36, width: 14, height: 9,
+                        borderRadius: "50%",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 30%, transparent 70%)",
+                        filter: "blur(0.5px)",
+                        mixBlendMode: "screen",
+                    }} />
+                    {/* Secondary specular catch — smaller, offset */}
+                    <div className="absolute pointer-events-none" style={{
+                        top: 22, left: 50, width: 6, height: 4,
+                        borderRadius: "50%",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, transparent 70%)",
+                        mixBlendMode: "screen",
+                    }} />
+                    {/* Bottom hemisphere ambient occlusion */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.12) 80%, rgba(0,0,0,0.2) 100%)",
+                    }} />
+                    {/* Light sweep animation overlay */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div className="capsule-light-sweep" style={{
+                            position: "absolute", top: 0, left: 0,
+                            width: "40px", height: "200%",
+                            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                            transform: "rotate(25deg)",
+                        }} />
+                    </div>
+                </motion.div>
+
+                {/* ──── Bottom half ──── */}
+                <motion.div
+                    className={isCosmic ? "capsule-cosmic-bottom" : ""}
+                    style={{
+                        position: "absolute", top: CAPSULE_SIZE / 2, left: 0,
+                        width: CAPSULE_SIZE, height: CAPSULE_SIZE / 2,
+                        borderRadius: `0 0 ${CAPSULE_SIZE / 2}px ${CAPSULE_SIZE / 2}px`,
+                        background: bottomHalfBg,
+                        overflow: "hidden",
+                        transformOrigin: "center top",
+                        backfaceVisibility: "hidden",
+                        boxShadow: "inset 0 4px 10px -2px rgba(0,0,0,0.35), inset 0 -8px 20px -4px rgba(0,0,0,0.25)",
+                    }}
+                    animate={isCracking ? {
+                        y: 120 * intensity,
+                        x: -25 * intensity,
+                        rotateZ: -20 * intensity,
+                        rotateX: 30 * intensity,
+                        scale: 0.3,
+                        opacity: [1, 1, 0.8, 0],
+                    } : {}}
+                    transition={isCracking ? {
+                        duration: 0.6,
+                        ease: [0.32, 0, 0.67, 0],
+                        opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] },
+                    } : {}}
+                >
+                    {/* Rim light bottom — fresnel */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}44 0%, ${colors.rim}15 40%, transparent 70%)`,
+                    }} />
+                    {/* Left fill bottom */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}12 0%, transparent 70%)`,
+                    }} />
+                    {/* Bottom ambient occlusion */}
+                    <div className="absolute inset-0 pointer-events-none" style={{
+                        background: "linear-gradient(180deg, transparent 20%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.25) 100%)",
+                    }} />
+                    {/* Subtle reflected light from ground */}
+                    <div className="absolute pointer-events-none" style={{
+                        bottom: 8, left: "25%", width: "50%", height: 20,
+                        borderRadius: "50%",
+                        background: `radial-gradient(ellipse at center, ${colors.glow}12 0%, transparent 70%)`,
+                        mixBlendMode: "screen",
+                    }} />
+                </motion.div>
+
+                {/* ──── Equator seam — machined metal band ──── */}
+                <motion.div
+                    style={{
+                        position: "absolute",
+                        top: CAPSULE_SIZE / 2 - 4,
+                        left: 0, width: CAPSULE_SIZE, height: 8,
+                        background: isGold
+                            ? `linear-gradient(180deg, rgba(0,0,0,0.3) 0%, ${colors.accent}aa 15%, ${colors.accent}dd 30%, rgba(255,255,255,0.7) 50%, ${colors.accent}dd 70%, ${colors.accent}aa 85%, rgba(0,0,0,0.3) 100%)`
+                            : `linear-gradient(180deg, rgba(0,0,0,0.25) 0%, ${seamColor}66 15%, ${seamColor}99 30%, rgba(255,255,255,0.4) 50%, ${seamColor}99 70%, ${seamColor}66 85%, rgba(0,0,0,0.25) 100%)`,
+                        borderRadius: 3,
+                        boxShadow: isGold
+                            ? `inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3), 0 0 12px ${colors.accent}60, 0 0 24px ${colors.accent}30`
+                            : `inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 8px ${colors.glow}40`,
+                        zIndex: 5,
+                    }}
+                    animate={isCracking ? { opacity: [1, 0], scaleX: [1, 1.5] } : {}}
+                    transition={isCracking ? { duration: 0.12, ease: "easeOut" } : {}}
+                >
+                    {/* Shimmer overlay on seam */}
+                    <div className="absolute inset-0 rounded-sm overflow-hidden pointer-events-none">
+                        <div style={{
+                            position: "absolute", inset: 0,
+                            background: "linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.15) 30%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.15) 70%, transparent 90%)",
+                        }} />
+                    </div>
+                </motion.div>
+
+                {/* ──── GVC Shaka badge logo overlay ──── */}
+                <div style={{
+                    position: "absolute", top: "50%", left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: CAPSULE_SIZE * 0.55, height: CAPSULE_SIZE * 0.55,
+                    zIndex: 4, pointerEvents: "none",
+                    opacity: isCracking ? 0 : 0.85,
+                    transition: "opacity 0.15s ease",
+                }}>
+                    <Image
+                        src="/badges/any_gvc_1759173799963.webp"
+                        alt="GVC Shaka"
+                        width={Math.round(CAPSULE_SIZE * 0.55)}
+                        height={Math.round(CAPSULE_SIZE * 0.55)}
+                        className="w-full h-full object-contain"
+                        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))", borderRadius: "50%" }}
+                        priority
+                    />
+                </div>
+            </div>
+
+            {/* Inner energy glow during anticipation — light leaking through seams */}
+            {phase === "anticipate" && (
+                <motion.div
+                    className="absolute pointer-events-none rounded-full"
+                    style={{
+                        inset: "15%",
+                        background: `radial-gradient(circle, ${colors.glow}00 30%, ${colors.glow}40 60%, ${colors.glow}00 80%)`,
+                        mixBlendMode: "screen",
+                    }}
+                    animate={{
+                        opacity: [0, 0.15, 0.25, 0.25, 0.4, 0.55, 0.65, 0.65, 0.8, 1],
+                        scale: [0.8, 0.83, 0.86, 0.86, 0.9, 0.94, 0.97, 0.97, 1.02, 1.08],
+                    }}
+                    transition={{ duration: 2.8, ease: "easeIn" }}
+                />
+            )}
+
+            {/* Tier-specific anticipation tells */}
+            {/* Gold: seam glows bright gold during late anticipation */}
+            {isGold && phase === "anticipate" && (
+                <motion.div
+                    className="absolute pointer-events-none"
+                    style={{
+                        top: CAPSULE_SIZE / 2 - 6,
+                        left: -4, width: CAPSULE_SIZE + 8, height: 12,
+                        borderRadius: 6,
+                        background: `linear-gradient(90deg, transparent, ${colors.accent}88, ${colors.accent}CC, ${colors.accent}88, transparent)`,
+                        filter: "blur(2px)",
+                    }}
+                    initial={{ opacity: 0, scaleX: 0.7 }}
+                    animate={{ opacity: [0, 0, 0, 0.3, 0.6, 0.8, 1], scaleX: [0.7, 0.7, 0.7, 0.8, 0.9, 1, 1.05] }}
+                    transition={{ duration: 2.8, ease: "easeIn" }}
+                />
+            )}
+
+            {/* Cosmic: counter-rotating particle ring + purple aura */}
+            {isCosmic && phase === "anticipate" && (
+                <>
+                    {/* Purple aura bloom */}
+                    <motion.div
+                        className="absolute pointer-events-none rounded-full"
+                        style={{
+                            inset: "-50%",
+                            background: `radial-gradient(circle, ${colors.accent}00 30%, ${colors.accent}20 50%, #6B1FC020 70%, transparent 85%)`,
+                        }}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: [0, 0, 0.3, 0.5, 0.7, 1], scale: [0.5, 0.5, 0.7, 0.85, 1, 1.2] }}
+                        transition={{ duration: 2.8, ease: "easeIn" }}
+                    />
+                    {/* Counter-rotating orbit ring */}
+                    <motion.div
+                        className="absolute pointer-events-none"
+                        style={{
+                            inset: "-20%",
+                            borderRadius: "50%",
+                            border: `1.5px solid ${colors.accent}40`,
+                            boxShadow: `0 0 15px ${colors.accent}20`,
+                        }}
+                        initial={{ opacity: 0, rotate: 0 }}
+                        animate={{ opacity: [0, 0, 0.4, 0.7, 1], rotate: -360 }}
+                        transition={{ opacity: { duration: 2.8, ease: "easeIn" }, rotate: { duration: 2.8, ease: "linear" } }}
+                    />
+                    {/* Cosmic color flashes — "is this cosmic?" tell */}
+                    {[0, 1, 2].map(i => (
+                        <motion.div
+                            key={`cosmic-flash-${i}`}
+                            className="absolute pointer-events-none rounded-full"
+                            style={{
+                                inset: "5%",
+                                background: ["#FF6B6B", "#4ECDC4", "#45B7D1"][i],
+                                mixBlendMode: "overlay",
+                            }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 0, 0, 0, 0, 0.15, 0, 0.2, 0, 0.25, 0] }}
+                            transition={{ duration: 2.8, delay: i * 0.15, ease: "linear" }}
+                        />
+                    ))}
+                </>
+            )}
+
+            {/* Silver: green flash hint at 70% mark */}
+            {tier === "silver" && phase === "anticipate" && (
+                <motion.div
+                    className="absolute pointer-events-none rounded-full"
+                    style={{
+                        inset: "10%",
+                        background: `radial-gradient(circle, ${colors.glow}60 0%, transparent 60%)`,
+                        mixBlendMode: "screen",
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 0.4, 0, 0.5, 0] }}
+                    transition={{ duration: 2.8, ease: "linear" }}
+                />
+            )}
+
+            {/* Crack overlay */}
+            <CrackLines active={phase === "crack"} color={colors.glow} />
+
+            {/* Gold particle trail */}
+            {isGold && (phase === "appear" || phase === "anticipate") && (
+                <div className="absolute inset-0 pointer-events-none overflow-visible">
+                    {Array.from({ length: 8 }, (_, i) => (
+                        <div
+                            key={i}
+                            className="capsule-gold-trail"
+                            style={{
+                                "--trail-delay": `${i * 0.2}s`,
+                                "--trail-x": `${20 + Math.random() * 120}px`,
+                                "--trail-start-y": `${20 + Math.random() * 120}px`,
+                            } as React.CSSProperties}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Cosmic shimmer overlay */}
+            {isCosmic && (
+                <div
+                    className="absolute inset-0 rounded-full pointer-events-none mix-blend-overlay"
+                    style={{
+                        background: "linear-gradient(135deg, rgba(255,107,107,0.2), rgba(78,205,196,0.2), rgba(69,183,209,0.2), rgba(179,102,255,0.2))",
+                        animation: "cosmicShimmer 1.5s ease-in-out infinite",
+                    }}
+                />
+            )}
+        </motion.div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+export default function VibeCapsule({
+    isOpen,
+    badge,
+    tier,
+    isDuplicate,
+    duplicateCount,
+    quickOpen,
+    onComplete,
+}: VibeCapsuleProps) {
+    const [phase, setPhase] = useState<Phase>("idle");
+    const [showBurst, setShowBurst] = useState(false);
+    const [showRevealParticles, setShowRevealParticles] = useState(false);
+    const [showFlash, setShowFlash] = useState(false);
+    const [showShockwave, setShowShockwave] = useState(false);
+    const [showLightBeam, setShowLightBeam] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const isCosmic = tier === "cosmic";
+    const isGold = tier === "gold";
+    const colors = CAPSULE_COLORS[tier];
+    const intensity = TIER_INTENSITY[tier];
+
+    useEffect(() => {
+        return () => { timeoutRefs.current.forEach(clearTimeout); };
+    }, []);
+
+    const addTimeout = useCallback((fn: () => void, ms: number) => {
+        const id = setTimeout(fn, ms);
+        timeoutRefs.current.push(id);
+        return id;
+    }, []);
+
+    // Reset when closed
+    useEffect(() => {
+        if (!isOpen) {
+            setPhase("idle");
+            setShowBurst(false);
+            setShowRevealParticles(false);
+            setShowFlash(false);
+            setShowShockwave(false);
+            setShowLightBeam(false);
+            setShowConfetti(false);
+            timeoutRefs.current.forEach(clearTimeout);
+            timeoutRefs.current = [];
+        }
+    }, [isOpen]);
+
+    // Start sequence
+    useEffect(() => {
+        if (!isOpen) return;
+
+        if (quickOpen) {
+            setPhase("crack");
+            setShowBurst(true);
+            setShowFlash(true);
+            setShowShockwave(true);
+            playCapsuleCrackSound(tier);
+            triggerHaptic(50);
+            addTimeout(() => { setShowFlash(false); }, 400);
+            addTimeout(() => {
+                setPhase("reveal");
+                setShowBurst(false);
+                setShowShockwave(false);
+                setShowRevealParticles(true);
+                if (isGold || isCosmic) setShowConfetti(true);
+                playCapsuleRevealSound(tier);
+            }, QUICK_DURATIONS.crack);
+            addTimeout(() => { setShowRevealParticles(false); }, QUICK_DURATIONS.crack + QUICK_DURATIONS.reveal);
+        } else {
+            setPhase("appear");
+            // Play thud + haptic when capsule lands (after spring animation)
+            addTimeout(() => {
+                playCapsuleAppearSound();
+                triggerHaptic(30);
+            }, 350);
+            addTimeout(() => {
+                setPhase("anticipate");
+                playCapsuleAnticipateSound();
+            }, PHASE_DURATION.appear);
+        }
+    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic]);
+
+    // Handle tap to crack
+    const handleCapsuleTap = useCallback(() => {
+        if (phase !== "anticipate" && phase !== "appear") return;
+
+        setPhase("crack");
+        setShowBurst(true);
+        setShowFlash(true);
+        setShowShockwave(true);
+        if (tier === "gold" || tier === "cosmic") setShowLightBeam(true);
+        playCapsuleCrackSound(tier);
+        // Heavy haptic impact on crack
+        triggerHaptic(tier === "cosmic" ? [50, 30, 80] : tier === "gold" ? [40, 20, 60] : 50);
+
+        addTimeout(() => { setShowFlash(false); }, 400);
+
+        addTimeout(() => {
+            setPhase("reveal");
+            setShowBurst(false);
+            setShowShockwave(false);
+            setShowLightBeam(false);
+            setShowRevealParticles(true);
+            if (tier === "gold" || tier === "cosmic") setShowConfetti(true);
+            playCapsuleRevealSound(tier);
+            triggerHaptic(20);
+        }, PHASE_DURATION.crack * 0.5);
+
+        addTimeout(() => {
+            setShowRevealParticles(false);
+        }, PHASE_DURATION.crack * 0.5 + PHASE_DURATION.reveal);
+    }, [phase, addTimeout, tier]);
+
+    // Handle collect tap
+    const handleCollect = useCallback(() => {
+        if (phase !== "reveal") return;
+        setPhase("collect");
+        playCapsuleCollectSound();
+        triggerHaptic(15);
+        addTimeout(() => { onComplete(); }, 500);
+    }, [phase, onComplete, addTimeout]);
+
+    // Screen shake values
+    const shakeAmount = tier === "cosmic" ? 8 : tier === "gold" ? 4 : tier === "silver" ? 2 : 0;
+
+    return (
+        <>
+            <AnimatePresence>
+                {isOpen && phase !== "idle" && (
+                    <motion.div
+                        className="fixed inset-0 z-[100] flex items-center justify-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {/* Background overlay */}
+                        <motion.div
+                            className="absolute inset-0"
+                            style={{ background: "#0a0a1a" }}
+                            initial={{ opacity: 0 }}
+                            animate={{
+                                opacity: phase === "anticipate" ? 0.95
+                                    : phase === "crack" || phase === "reveal" ? 0.97
+                                    : 0.9,
+                            }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        />
+
+                        {/* Vignette that tightens during anticipation — spotlight effect */}
+                        {phase === "anticipate" && (
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{ zIndex: 1 }}
+                                initial={{
+                                    background: "radial-gradient(circle, transparent 60%, rgba(0,0,0,0.3) 100%)",
+                                }}
+                                animate={{
+                                    background: [
+                                        "radial-gradient(circle, transparent 60%, rgba(0,0,0,0.3) 100%)",
+                                        "radial-gradient(circle, transparent 50%, rgba(0,0,0,0.45) 100%)",
+                                        "radial-gradient(circle, transparent 40%, rgba(0,0,0,0.55) 100%)",
+                                        "radial-gradient(circle, transparent 30%, rgba(0,0,0,0.65) 100%)",
+                                    ],
+                                }}
+                                transition={{ duration: 2.8, ease: "easeIn" }}
+                            />
+                        )}
+
+                        {/* Cosmic: purple background tint during anticipation */}
+                        {isCosmic && phase === "anticipate" && (
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{ background: "linear-gradient(180deg, #2D1B69 0%, #1a0a2e 50%, #0a0a1a 100%)" }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: [0, 0, 0, 0.15, 0.3, 0.5] }}
+                                transition={{ duration: 2.8, ease: "easeIn" }}
+                            />
+                        )}
+
+                        {/* Screen flash overlay */}
+                        <CrackFlash active={showFlash} tier={tier} />
+
+                        {/* Screen shake + zoom wrapper */}
+                        <motion.div
+                            className="relative flex flex-col items-center justify-center w-full h-full"
+                            animate={
+                                phase === "crack" && shakeAmount > 0
+                                    ? {
+                                        x: [0, -shakeAmount, shakeAmount, -shakeAmount * 0.7, shakeAmount * 0.7, -shakeAmount * 0.4, shakeAmount * 0.4, 0],
+                                        y: [0, shakeAmount * 0.5, -shakeAmount * 0.5, shakeAmount * 0.3, -shakeAmount * 0.3, shakeAmount * 0.15, 0, 0],
+                                    }
+                                    : phase === "anticipate"
+                                    ? { scale: [1, 1.02, 1.06] }
+                                    : {}
+                            }
+                            transition={
+                                phase === "crack" && shakeAmount > 0
+                                    ? { duration: 0.5, ease: "linear", times: [0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.8, 1] }
+                                    : phase === "anticipate"
+                                    ? { duration: 2.8, ease: "easeIn" }
+                                    : {}
+                            }
+                        >
+                            {/* ======================== */}
+                            {/* CAPSULE (appear + anticipate + crack) */}
+                            {/* ======================== */}
+                            <AnimatePresence>
+                                {(phase === "appear" || phase === "anticipate" || phase === "crack") && (
+                                    <motion.div
+                                        className="relative"
+                                        initial={quickOpen
+                                            ? { y: 0, scale: 1, opacity: 1 }
+                                            : { y: -500, scale: 0.3, opacity: 0, rotateZ: -8 }
+                                        }
+                                        animate={
+                                            phase === "crack"
+                                                ? {
+                                                    scale: [1, 1.12, 1.12],
+                                                    opacity: [1, 1, 1],
+                                                    transition: { duration: quickOpen ? 0.15 : 0.2, ease: "easeOut" },
+                                                }
+                                                : {
+                                                    y: 0,
+                                                    scale: 1,
+                                                    opacity: 1,
+                                                    rotateZ: 0,
+                                                    transition: {
+                                                        y: { type: "spring", stiffness: 300, damping: 20, mass: 2.5 },
+                                                        scale: { type: "spring", stiffness: 300, damping: 18, mass: 1.5, delay: 0.05 },
+                                                        opacity: { duration: 0.12, ease: "easeOut" },
+                                                        rotateZ: { type: "spring", stiffness: 200, damping: 15, delay: 0.1 },
+                                                    },
+                                                }
+                                        }
+                                        exit={{ scale: 0, opacity: 0, transition: { duration: 0.2 } }}
+                                    >
+                                        {/* Landing squash-stretch */}
+                                        <motion.div
+                                            animate={phase === "appear" ? {
+                                                scaleX: [1, 1.12, 0.95, 1.03, 1],
+                                                scaleY: [1, 0.88, 1.06, 0.98, 1],
+                                            } : {}}
+                                            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }}
+                                        >
+                                            <CapsuleShape tier={tier} phase={phase} onTap={handleCapsuleTap} />
+                                        </motion.div>
+
+                                        <OrbitParticles tier={tier} active={phase === "anticipate"} />
+                                        <BurstParticles tier={tier} active={showBurst} />
+                                        <ShockwaveRings active={showShockwave} color={colors.glow} />
+                                        <LightBeam active={showLightBeam} tier={tier} />
+
+                                        {/* Tap hint */}
+                                        {(phase === "appear" || phase === "anticipate") && (
+                                            <motion.div
+                                                className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40 text-xs font-mundial tracking-widest uppercase"
+                                                initial={{ opacity: 0, y: 5 }}
+                                                animate={{ opacity: [0, 0.6, 0.3, 0.6], y: [5, 0, 2, 0] }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                            >
+                                                TAP TO OPEN
+                                            </motion.div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* ======================== */}
+                            {/* REVEAL (badge image + info) */}
+                            {/* ======================== */}
+                            <AnimatePresence>
+                                {(phase === "reveal" || phase === "collect") && badge && (
+                                    <motion.div
+                                        className="relative flex flex-col items-center cursor-pointer"
+                                        onClick={handleCollect}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`Collect ${badge.name}`}
+                                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCollect(); }}
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={
+                                            phase === "collect"
+                                                ? {
+                                                    scale: [1, 1.1, 0.15],
+                                                    y: [0, -15, 400],
+                                                    opacity: [1, 1, 0],
+                                                    transition: { duration: 0.5, ease: [0.55, 0, 1, 0.45], times: [0, 0.2, 1] },
+                                                }
+                                                : {
+                                                    scale: [0, 1.3 * (intensity * 0.6), 0.9, 1.05, 1],
+                                                    opacity: [0, 1, 1, 1, 1],
+                                                    filter: ["brightness(3)", "brightness(1.5)", "brightness(1.1)", "brightness(1)", "brightness(1)"],
+                                                    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], times: [0, 0.35, 0.55, 0.75, 1] },
+                                                }
+                                        }
+                                        exit={{ scale: 0, y: 400, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }}
+                                    >
+                                        {/* Pulsing glow rings */}
+                                        {[0, 1, 2].map((ringIdx) => (
+                                            <motion.div
+                                                key={ringIdx}
+                                                className="absolute rounded-full pointer-events-none"
+                                                style={{
+                                                    width: 120 + ringIdx * 50,
+                                                    height: 120 + ringIdx * 50,
+                                                    top: "50%", left: "50%",
+                                                    marginTop: -(120 + ringIdx * 50) / 2,
+                                                    marginLeft: -(120 + ringIdx * 50) / 2,
+                                                    border: `2px solid ${colors.glow}`,
+                                                    boxShadow: `0 0 20px 5px ${colors.glow}44`,
+                                                }}
+                                                initial={{ scale: 0.5, opacity: 0 }}
+                                                animate={{
+                                                    scale: [0.5, 1 + ringIdx * 0.3, 0.9 + ringIdx * 0.25],
+                                                    opacity: [0, 0.5 - ringIdx * 0.1, 0.3 - ringIdx * 0.08],
+                                                }}
+                                                transition={{
+                                                    duration: 1.5, ease: "easeOut",
+                                                    delay: 0.1 + ringIdx * 0.08,
+                                                    repeat: Infinity, repeatType: "reverse", repeatDelay: 0.2,
+                                                }}
+                                            />
+                                        ))}
+
+                                        {/* Cosmic rotating halo */}
+                                        {isCosmic && (
+                                            <motion.div
+                                                className="absolute rounded-full pointer-events-none"
+                                                style={{
+                                                    width: 240, height: 240,
+                                                    top: "50%", left: "50%",
+                                                    marginTop: -120, marginLeft: -120,
+                                                    background: "conic-gradient(from 0deg, #FF6B6B20, #4ECDC420, #45B7D120, #B366FF20, #FF6B6B20)",
+                                                    filter: "blur(10px)",
+                                                }}
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                            />
+                                        )}
+
+                                        {/* Badge image */}
+                                        <div
+                                            className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden z-10"
+                                            style={{
+                                                boxShadow: `0 0 0 3px ${TIER_COLORS[tier]}, 0 0 30px ${colors.glow}50, 0 0 60px ${colors.glow}20`,
+                                            }}
+                                        >
+                                            <Image
+                                                src={badge.image}
+                                                alt={badge.name}
+                                                width={144}
+                                                height={144}
+                                                className="w-full h-full object-cover"
+                                                priority
+                                            />
+                                            {/* Gold shimmer sweep */}
+                                            {isGold && (
+                                                <motion.div
+                                                    className="absolute inset-0 pointer-events-none"
+                                                    initial={{ x: "-100%" }}
+                                                    animate={{ x: "200%" }}
+                                                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.5, repeat: 1, repeatDelay: 1.5 }}
+                                                    style={{
+                                                        width: "50%", height: "100%",
+                                                        background: "linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent)",
+                                                        transform: "skewX(-20deg)",
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Badge name */}
+                                        <motion.h2
+                                            className="mt-5 text-xl sm:text-2xl font-display font-black text-white text-center z-10"
+                                            style={{ textShadow: `0 0 20px ${colors.glow}60` }}
+                                            initial={{ y: 15, opacity: 0, scale: 0.9 }}
+                                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 25, mass: 0.8, delay: 0.25 }}
+                                        >
+                                            {badge.name}
+                                        </motion.h2>
+
+                                        {/* Tier label */}
+                                        <motion.div
+                                            className="mt-2 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-mundial font-bold uppercase tracking-[0.2em] z-10"
+                                            style={{
+                                                background: `${TIER_COLORS[tier]}20`,
+                                                color: TIER_COLORS[tier],
+                                                border: `1px solid ${TIER_COLORS[tier]}30`,
+                                                boxShadow: `0 0 12px ${TIER_COLORS[tier]}15`,
+                                            }}
+                                            initial={{ y: 20, opacity: 0, scale: 0.8 }}
+                                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 25, mass: 0.8, delay: 0.35 }}
+                                        >
+                                            {TIER_DISPLAY_NAMES[tier]}
+                                        </motion.div>
+
+                                        {/* Duplicate label */}
+                                        {isDuplicate && (
+                                            <motion.div
+                                                className="mt-2 text-[11px] sm:text-xs font-mundial text-white/40 tracking-wider z-10"
+                                                initial={{ y: 8, opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                                transition={{ delay: 0.4, duration: 0.3 }}
+                                            >
+                                                Already Owned
+                                                <span className="ml-1.5 text-white/25">x{duplicateCount}</span>
+                                            </motion.div>
+                                        )}
+
+                                        {/* Tap to collect hint */}
+                                        {phase === "reveal" && (
+                                            <motion.div
+                                                className="mt-6 text-white/30 text-xs font-mundial tracking-widest uppercase z-10"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: [0, 0.5, 0.25, 0.5] }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                                            >
+                                                TAP TO COLLECT
+                                            </motion.div>
+                                        )}
+
+                                        <RevealParticles tier={tier} active={showRevealParticles} />
+                                        <ConfettiShower active={showConfetti} tier={tier} />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ======================== */}
+            {/* KEYFRAME ANIMATIONS */}
+            {/* ======================== */}
+            <style jsx global>{`
+                /* Subtle idle float */
+                .capsule-float {
+                    animation: capsuleFloat 3s ease-in-out infinite;
+                }
+
+                @keyframes capsuleFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-4px); }
+                }
+
+                /* Light sweep across sphere surface */
+                .capsule-light-sweep {
+                    animation: capsuleLightSweep 4s ease-in-out 1s infinite;
+                }
+
+                @keyframes capsuleLightSweep {
+                    0% { transform: translateX(-120%) rotate(25deg); }
+                    100% { transform: translateX(500%) rotate(25deg); }
+                }
+
+                /* Orbiting particles */
+                .capsule-orbit-particle {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    width: var(--orbit-size);
+                    height: var(--orbit-size);
+                    margin-left: calc(var(--orbit-size) / -2);
+                    margin-top: calc(var(--orbit-size) / -2);
+                    border-radius: 50%;
+                    background: var(--orbit-color);
+                    box-shadow: 0 0 8px var(--orbit-color);
+                    animation: capsuleOrbit var(--orbit-duration) linear var(--orbit-delay) infinite;
+                    pointer-events: none;
+                }
+
+                @keyframes capsuleOrbit {
+                    0% {
+                        transform: rotate(var(--orbit-angle))
+                            translateX(var(--orbit-distance)) rotate(calc(-1 * var(--orbit-angle)));
+                        opacity: 0.3;
+                    }
+                    50% { opacity: 1; }
+                    100% {
+                        transform: rotate(calc(var(--orbit-angle) + 360deg))
+                            translateX(var(--orbit-distance))
+                            rotate(calc(-1 * (var(--orbit-angle) + 360deg)));
+                        opacity: 0.3;
+                    }
+                }
+
+                /* Gold tier particle trail */
+                .capsule-gold-trail {
+                    position: absolute;
+                    width: 4px;
+                    height: 4px;
+                    border-radius: 50%;
+                    background: #ffe048;
+                    box-shadow: 0 0 8px #ffe048, 0 0 16px #ffe04880;
+                    left: var(--trail-x);
+                    top: var(--trail-start-y);
+                    animation: goldTrail 1.5s ease-in-out var(--trail-delay) infinite;
+                    pointer-events: none;
+                }
+
+                @keyframes goldTrail {
+                    0% { opacity: 0; transform: translateY(0) scale(0); }
+                    20% { opacity: 1; transform: translateY(-10px) scale(1); }
+                    100% { opacity: 0; transform: translateY(-60px) scale(0); }
+                }
+
+                /* Cosmic shimmer overlay */
+                @keyframes cosmicShimmer {
+                    0% { opacity: 0.3; filter: hue-rotate(0deg); }
+                    50% { opacity: 0.6; filter: hue-rotate(90deg); }
+                    100% { opacity: 0.3; filter: hue-rotate(0deg); }
+                }
+
+                /* Cosmic holographic sphere halves */
+                .capsule-cosmic-top {
+                    background: linear-gradient(
+                        180deg,
+                        #FF6B6B 0%,
+                        #4ECDC4 40%,
+                        #45B7D1 70%,
+                        #B366FF 100%
+                    ) !important;
+                    background-size: 200% 200% !important;
+                    animation: cosmicHoloShift 6s linear infinite !important;
+                }
+
+                .capsule-cosmic-bottom {
+                    background: linear-gradient(
+                        180deg,
+                        #B366FF 0%,
+                        #45B7D1 30%,
+                        #4ECDC4 60%,
+                        #FF66B2 100%
+                    ) !important;
+                    background-size: 200% 200% !important;
+                    animation: cosmicHoloShift 6s linear infinite reverse !important;
+                }
+
+                @keyframes cosmicHoloShift {
+                    0% { background-position: 0% 0%; filter: brightness(1) hue-rotate(0deg); }
+                    25% { filter: brightness(1.15) hue-rotate(90deg); }
+                    50% { background-position: 100% 100%; filter: brightness(1) hue-rotate(180deg); }
+                    75% { filter: brightness(1.1) hue-rotate(270deg); }
+                    100% { background-position: 0% 0%; filter: brightness(1) hue-rotate(360deg); }
+                }
+            `}</style>
+        </>
+    );
+}

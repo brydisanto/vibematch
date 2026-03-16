@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 
@@ -69,6 +68,21 @@ function HudCard({
     );
 }
 
+/* ===== FINAL MOVE! pulsing indicator ===== */
+function FinalMoveBanner() {
+    return (
+        <div
+            className="font-display font-black text-sm sm:text-base tracking-widest uppercase select-none text-center mt-1 hud-final-move-pulse"
+            style={{
+                color: "#FFE048",
+                textShadow: "0 0 12px rgba(255,224,72,0.8), 0 0 24px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.8)",
+            }}
+        >
+            FINAL MOVE!
+        </div>
+    );
+}
+
 export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false }: GameHUDProps) {
     const { score, movesLeft, combo, gameMode } = state;
 
@@ -76,6 +90,16 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [globalBest, setGlobalBest] = useState<number>(0);
     const [globalBestUser, setGlobalBestUser] = useState<string>("");
+    const [streak, setStreak] = useState<number>(0);
+
+    useEffect(() => {
+        const effectiveUsername = username || localStorage.getItem('vibematch_username');
+        if (!effectiveUsername) return;
+        fetch(`/api/streak?username=${effectiveUsername}`)
+            .then(res => res.json())
+            .then(data => { if (data.streak > 0) setStreak(data.streak); })
+            .catch(() => { });
+    }, [username]);
 
     useEffect(() => {
         // Only fetch at the start of a game or when explicitly requested
@@ -103,6 +127,71 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             })
             .catch(() => { });
     }, [gameMode, username, score]);
+
+    // Feature 3: Personal Best banner state
+    const [showPBBanner, setShowPBBanner] = useState(false);
+    const prevScoreRef = useRef(score);
+    const pbAlreadyCelebrated = useRef(false);
+
+    useEffect(() => {
+        const prev = prevScoreRef.current;
+        prevScoreRef.current = score;
+
+        if (
+            personalBest > 0 &&
+            !pbAlreadyCelebrated.current &&
+            prev < personalBest &&
+            score >= personalBest
+        ) {
+            pbAlreadyCelebrated.current = true;
+            setShowPBBanner(true);
+            setTimeout(() => setShowPBBanner(false), 2800);
+        }
+    }, [score, personalBest]);
+
+    useEffect(() => {
+        if (score === 0) {
+            pbAlreadyCelebrated.current = false;
+            setShowPBBanner(false);
+        }
+    }, [score]);
+
+    // Track score changes for bump animation
+    const [scoreBumping, setScoreBumping] = useState(false);
+    const prevScoreBumpRef = useRef(score);
+    useEffect(() => {
+        if (score !== prevScoreBumpRef.current && score > 0) {
+            setScoreBumping(true);
+            const timer = setTimeout(() => setScoreBumping(false), 300);
+            prevScoreBumpRef.current = score;
+            return () => clearTimeout(timer);
+        }
+        prevScoreBumpRef.current = score;
+    }, [score]);
+
+    // Track moves changes for bump animation
+    const [movesBumping, setMovesBumping] = useState(false);
+    const prevMovesRef = useRef(movesLeft);
+    useEffect(() => {
+        if (movesLeft !== prevMovesRef.current) {
+            setMovesBumping(true);
+            const timer = setTimeout(() => setMovesBumping(false), 350);
+            prevMovesRef.current = movesLeft;
+            return () => clearTimeout(timer);
+        }
+    }, [movesLeft]);
+
+    // Track combo changes for animation
+    const [comboBumping, setComboBumping] = useState(false);
+    const prevComboRef = useRef(combo);
+    useEffect(() => {
+        if (combo !== prevComboRef.current) {
+            setComboBumping(true);
+            const timer = setTimeout(() => setComboBumping(false), 350);
+            prevComboRef.current = combo;
+            return () => clearTimeout(timer);
+        }
+    }, [combo]);
 
     // Moves ring color for the border
     const movesProgress = movesLeft / TOTAL_MOVES;
@@ -139,36 +228,84 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     }
 
     return (
-        <div className="flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full">
+        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full">
+
+            {/* Feature 3: Personal Best banner */}
+            {showPBBanner && (
+                <div
+                    className="absolute left-0 right-0 top-0 z-50 flex justify-center pointer-events-none hud-pb-banner-enter"
+                >
+                    <div
+                        className="font-display font-black text-lg sm:text-xl tracking-wider uppercase select-none px-4 py-2 rounded-xl"
+                        style={{
+                            color: "#FFE048",
+                            background: "linear-gradient(135deg, rgba(42,8,69,0.95) 0%, rgba(26,4,45,0.95) 100%)",
+                            border: "2px solid rgba(255,224,72,0.6)",
+                            boxShadow: "0 0 20px rgba(255,224,72,0.4), 0 4px 20px rgba(0,0,0,0.8)",
+                            WebkitTextStroke: "0.5px #8b6b15",
+                            textShadow: "0 0 15px rgba(255,224,72,0.8), 0 2px 4px rgba(0,0,0,0.8)",
+                            paintOrder: "stroke fill",
+                        }}
+                    >
+                        ⭐ NEW PERSONAL BEST! ⭐
+                    </div>
+                </div>
+            )}
 
             {/* Mobile metrics row (top HUD on mobile) */}
             {hideHighScores && (
-                <div className="flex gap-1.5 w-full -mt-2 px-1">
+                <div className="flex gap-1.5 w-full -mt-1 px-1">
                     {/* Score */}
-                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[85px] sm:min-h-[100px] px-1 sm:p-2">
+                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
-                        <motion.div className="font-display text-3xl font-black leading-none text-center" key={score} style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}>
-                            {score.toLocaleString()}
-                        </motion.div>
+                        <div
+                            className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
+                            style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
+                        >
+                            <span
+                                className={scoreBumping ? "hud-score-flash" : ""}
+                                style={{ display: "inline-block" }}
+                            >
+                                {score.toLocaleString()}
+                            </span>
+                        </div>
                     </HudCard>
                     {/* Moves */}
-                    <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="flex-1 flex flex-col items-center justify-center min-h-[85px] sm:min-h-[100px] px-1 sm:p-2">
-                        <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
-                        <AnimatePresence mode="popLayout">
-                            <motion.div key={movesLeft} className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"}`} style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}>
+                    <div className="relative flex-1">
+                        {movesLeft <= 3 && (
+                            <div className="absolute inset-0 rounded-2xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full">
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
+                            <div
+                                className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                style={movesLeft <= 3 ? {
+                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+                            >
                                 {movesLeft}
-                            </motion.div>
-                        </AnimatePresence>
-                    </HudCard>
+                            </div>
+                            {movesLeft === 1 && <FinalMoveBanner />}
+                        </HudCard>
+                    </div>
                     {/* Combo */}
-                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[85px] sm:min-h-[100px] px-1 sm:p-2">
+                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">COMBO</div>
-                        <AnimatePresence mode="popLayout">
-                            <motion.div key={combo} className={`font-display text-4xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"}`}>
-                                {combo > 0 ? combo : "—"}
-                            </motion.div>
-                        </AnimatePresence>
+                        <div
+                            className={`font-display text-4xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"} ${comboBumping ? "hud-combo-pop" : ""}`}
+                        >
+                            {combo > 0 ? combo : "—"}
+                        </div>
                     </HudCard>
+                    {/* Streak */}
+                    {streak > 0 && (
+                        <HudCard borderColor="rgba(255,120,50,0.8)" glowColor="rgba(255,120,50,0.2)" className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">STREAK</div>
+                            <div className="font-display text-3xl font-black leading-none text-[#FF7832]" style={{ textShadow: "0 0 12px rgba(255,120,50,0.5)" }}>
+                                🔥{streak}
+                            </div>
+                        </HudCard>
+                    )}
                 </div>
             )}
 
@@ -180,61 +317,68 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                         <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
                             SCORE
                         </div>
-                        <motion.div
-                            className="font-display text-4xl sm:text-5xl font-black leading-none text-center"
-                            key={score}
-                            initial={{ scale: 1.2 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                        <div
+                            className={`font-display text-4xl sm:text-5xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
                             style={{
                                 color: "#FFE048",
                                 WebkitTextStroke: "1px #c9a84c",
                                 textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
                             }}
                         >
-                            {formatScoreWithCommas(score)}
-                        </motion.div>
+                            <span
+                                className={scoreBumping ? "hud-score-flash" : ""}
+                                style={{ display: "inline-block" }}
+                            >
+                                {formatScoreWithCommas(score)}
+                            </span>
+                        </div>
                     </HudCard>
 
                     {/* Moves Card — border acts as radial indicator */}
-                    <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-3">
-                        <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
-                            MOVES
-                        </div>
-                        <AnimatePresence mode="popLayout">
-                            <motion.div
-                                key={movesLeft}
-                                className={`font-display text-5xl sm:text-6xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"}`}
-                                style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
-                                initial={{ scale: 1.4, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.6, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                    <div className="relative flex-1 min-h-0">
+                        {movesLeft <= 3 && (
+                            <div className="absolute inset-0 rounded-2xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-3 w-full h-full">
+                            <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                                MOVES
+                            </div>
+                            <div
+                                className={`font-display text-5xl sm:text-6xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                style={movesLeft <= 3 ? {
+                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
                             >
                                 {movesLeft}
-                            </motion.div>
-                        </AnimatePresence>
-                    </HudCard>
+                            </div>
+                            {movesLeft === 1 && <FinalMoveBanner />}
+                        </HudCard>
+                    </div>
 
                     {/* Combo Card */}
                     <HudCard className="flex-[0.8] min-h-0 py-3">
                         <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
                             COMBO
                         </div>
-                        <AnimatePresence mode="popLayout">
-                            <motion.div
-                                key={combo}
-                                className={`font-display text-4xl sm:text-5xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"}`}
-                                style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
-                                initial={{ scale: 2, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.5, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                            >
-                                {combo > 0 ? `×${combo}` : "—"}
-                            </motion.div>
-                        </AnimatePresence>
+                        <div
+                            className={`font-display text-4xl sm:text-5xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"} ${comboBumping ? "hud-combo-pop" : ""}`}
+                            style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                        >
+                            {combo > 0 ? `×${combo}` : "—"}
+                        </div>
                     </HudCard>
+
+                    {/* Streak Card */}
+                    {streak > 0 && (
+                        <HudCard borderColor="rgba(255,120,50,0.8)" glowColor="rgba(255,120,50,0.2)" className="flex-[0.7] min-h-0 py-3">
+                            <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                                STREAK
+                            </div>
+                            <div className="font-display text-3xl sm:text-4xl font-black leading-none text-[#FF7832]" style={{ textShadow: "0 0 16px rgba(255,120,50,0.6)" }}>
+                                🔥{streak}
+                            </div>
+                        </HudCard>
+                    )}
 
                     {/* High Scores Card */}
                     <HudCard className="flex-1 min-h-0 py-3">

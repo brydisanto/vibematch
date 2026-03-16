@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
-import { RotateCcw, Home, Target, Flame, Award } from "lucide-react";
+import { RotateCcw, Home, Target, Flame, Zap } from "lucide-react";
 import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
+import { playNewHighScoreSound } from "@/lib/sounds";
 import toast from "react-hot-toast";
 
 interface GameOverProps {
@@ -14,133 +15,246 @@ interface GameOverProps {
     onPlayAgain: () => void;
     onGoHome: () => void;
     onRequestLogin?: () => void;
+    capsuleEarned?: boolean;
+    onOpenPinBook?: () => void;
 }
 
-/* ===== FLOATING RANK PARTICLES ===== */
-function RankParticles({ color }: { color: string }) {
-    const particles = Array.from({ length: 12 }, (_, i) => {
-        const angle = (i / 12) * Math.PI * 2;
-        const distance = 60 + Math.random() * 30;
-        return {
-            id: i,
-            x: Math.cos(angle) * distance,
-            y: Math.sin(angle) * distance,
-            size: 3 + Math.random() * 4,
-            delay: i * 0.04,
-        };
-    });
+/* ===== STAR SVG GRADIENTS (rendered once) ===== */
+const STAR_GRADIENTS: Record<string, [string, string, string]> = {
+    WOOD:   ["#C8845A", "#A0522D", "#6B3518"],
+    BRONZE: ["#E5A04E", "#CD7F32", "#8B5A1E"],
+    SILVER: ["#F8FAFC", "#E2E8F0", "#94A3B8"],
+    GOLD:   ["#FFF3A0", "#FFE048", "#B8860B"],
+    COSMIC: ["#D8A0FF", "#B366FF", "#6B1FC0"],
+};
 
+function StarGradientDefs() {
     return (
-        <div className="absolute inset-0 pointer-events-none">
-            {particles.map((p) => (
-                <motion.div
-                    key={p.id}
-                    className="absolute left-1/2 top-1/2 rounded-full"
-                    style={{
-                        width: p.size,
-                        height: p.size,
-                        background: color,
-                        boxShadow: `0 0 8px ${color}`,
-                        marginLeft: -p.size / 2,
-                        marginTop: -p.size / 2,
-                    }}
-                    initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
-                    animate={{
-                        x: p.x,
-                        y: p.y,
-                        opacity: [0, 1, 0],
-                        scale: [0, 1.2, 0],
-                    }}
-                    transition={{
-                        duration: 0.8,
-                        delay: 0.4 + p.delay,
-                        ease: "easeOut",
-                    }}
-                />
-            ))}
-        </div>
+        <svg width="0" height="0" style={{ position: "absolute" }}>
+            <defs>
+                {Object.entries(STAR_GRADIENTS).map(([key, [top, mid, bot]]) => (
+                    <linearGradient key={key} id={`star-grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={top} />
+                        <stop offset="45%" stopColor={mid} />
+                        <stop offset="100%" stopColor={bot} />
+                    </linearGradient>
+                ))}
+                <linearGradient id="star-specular" x1="0.3" y1="0" x2="0.7" y2="0.6">
+                    <stop offset="0%" stopColor="white" stopOpacity="0.65" />
+                    <stop offset="40%" stopColor="white" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="white" stopOpacity="0" />
+                </linearGradient>
+            </defs>
+        </svg>
     );
 }
 
-/* ===== ANIMATED RANK MEDALLION ===== */
-function RankMedallion({ color, accentColor, label }: { color: string; accentColor: string; label: string }) {
-    return (
-        <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto -mb-2">
-            {/* Particle burst on reveal */}
-            <RankParticles color={color} />
+const STAR_PATH = "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z";
 
-            {/* Outer glow halo — breathing */}
+/* ===== CONSTELLATION BURST — SINGLE STAR ===== */
+function Star({ filled, color, glowColor, gradientId, index }: {
+    filled: boolean;
+    color: string;
+    glowColor: string;
+    gradientId: string;
+    index: number;
+}) {
+    if (!filled) {
+        return (
             <motion.div
-                className="absolute inset-[-25%] rounded-full"
+                className="w-9 h-9 sm:w-11 sm:h-11 relative"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + index * 0.15, duration: 0.3 }}
+            >
+                <svg viewBox="0 0 24 24" className="w-full h-full">
+                    <path d={STAR_PATH} fill="rgba(255,255,255,0.04)" />
+                    <path d={STAR_PATH} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="0.8" />
+                </svg>
+            </motion.div>
+        );
+    }
+
+    return (
+        <motion.div
+            className="w-9 h-9 sm:w-11 sm:h-11 relative"
+            initial={{ opacity: 0.15, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+                delay: 0.3 + index * 0.2,
+                duration: 0.6,
+                ease: [0.34, 1.56, 0.64, 1],
+            }}
+        >
+            {/* Ignite flash */}
+            <motion.div
+                className="absolute inset-[-12px] rounded-full pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle, ${color}25 0%, transparent 65%)`,
+                    background: `radial-gradient(circle, white 0%, ${glowColor} 40%, transparent 70%)`,
+                }}
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={{ opacity: [0, 1, 0], scale: [0.3, 1.5, 2] }}
+                transition={{ delay: 0.4 + index * 0.2, duration: 0.5 }}
+            />
+
+            {/* Orbiting particles */}
+            {[0, 1, 2, 3].map((p) => (
+                <div
+                    key={p}
+                    className="constellation-particle absolute top-1/2 left-1/2 rounded-full pointer-events-none"
+                    style={{
+                        width: p % 2 === 0 ? 3 : 2,
+                        height: p % 2 === 0 ? 3 : 2,
+                        background: p % 2 === 0 ? color : '#fff',
+                        opacity: 0.6 - p * 0.1,
+                        animationDelay: `${1.2 + index * 0.3 + p * 0.7}s`,
+                        '--orbit-r': `${20 + p * 4}px`,
+                        animationDuration: `${2.4 + p * 0.6}s`,
+                        animationDirection: p % 2 === 0 ? 'normal' : 'reverse',
+                        boxShadow: `0 0 4px ${color}`,
+                    } as React.CSSProperties}
+                />
+            ))}
+
+            {/* Star SVG with 4-layer bloom */}
+            <motion.svg
+                viewBox="0 0 24 24"
+                className="w-full h-full relative z-10"
+                style={{
+                    filter: `drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 16px ${glowColor}) drop-shadow(0 0 30px ${glowColor.replace(')', ',0.25)').replace('rgba', 'rgba')})`,
                 }}
                 animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.4, 0.7, 0.4],
+                    filter: [
+                        `drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 16px ${glowColor}) drop-shadow(0 0 30px ${glowColor.replace(/[\d.]+\)$/, '0.25)')})`,
+                        `drop-shadow(0 0 3px rgba(255,255,255,1)) drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor}) drop-shadow(0 0 36px ${glowColor.replace(/[\d.]+\)$/, '0.35)')})`,
+                        `drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 16px ${glowColor}) drop-shadow(0 0 30px ${glowColor.replace(/[\d.]+\)$/, '0.25)')})`,
+                    ],
                 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 1.2 + index * 0.3 }}
+            >
+                {/* Shadow layer */}
+                <path d={STAR_PATH} fill="rgba(0,0,0,0.5)" transform="translate(0.4, 0.8)" />
+                {/* Body gradient */}
+                <path d={STAR_PATH} fill={`url(#star-grad-${gradientId})`} />
+                {/* Specular highlight */}
+                <path d={STAR_PATH} fill="url(#star-specular)" style={{ mixBlendMode: "screen" }} />
+                {/* Stroke */}
+                <path d={STAR_PATH} fill="none" stroke={color} strokeWidth="0.6" strokeOpacity="0.5" />
+            </motion.svg>
+        </motion.div>
+    );
+}
 
-            {/* Conic light sweep */}
-            <motion.div
-                className="absolute inset-[-15%] rounded-full"
-                style={{
-                    background: `conic-gradient(from 0deg, transparent, ${color}18, transparent, ${color}12, transparent, ${color}18, transparent)`,
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            />
+/* ===== CONSTELLATION BURST — 5-STAR RATING ===== */
+function RankStars({ filledCount, color, glowColor, label }: {
+    filledCount: number;
+    color: string;
+    glowColor: string;
+    label: string;
+}) {
+    return (
+        <div className="relative flex flex-col items-center mx-auto mb-2">
+            {/* Container for rays, bloom, and stars */}
+            <div className="relative flex justify-center items-center" style={{ width: 320, height: 90 }}>
+                {/* Rotating light rays (conic gradient) */}
+                {filledCount >= 3 && (
+                    <motion.div
+                        className="constellation-rays absolute pointer-events-none"
+                        style={{
+                            width: 260,
+                            height: 260,
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            borderRadius: '50%',
+                            background: `conic-gradient(
+                                from 0deg,
+                                transparent 0deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 5deg, transparent 15deg,
+                                transparent 30deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 35deg, transparent 45deg,
+                                transparent 60deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 65deg, transparent 75deg,
+                                transparent 90deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 95deg, transparent 105deg,
+                                transparent 120deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 125deg, transparent 135deg,
+                                transparent 150deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 155deg, transparent 165deg,
+                                transparent 180deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 185deg, transparent 195deg,
+                                transparent 210deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 215deg, transparent 225deg,
+                                transparent 240deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 245deg, transparent 255deg,
+                                transparent 270deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 275deg, transparent 285deg,
+                                transparent 300deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 305deg, transparent 315deg,
+                                transparent 330deg, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 335deg, transparent 345deg,
+                                transparent 360deg
+                            )`,
+                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.0, duration: 0.8 }}
+                    />
+                )}
 
-            {/* Outer ring — dashed, spinning */}
-            <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full" fill="none">
-                <circle cx="60" cy="60" r="56" stroke={color} strokeWidth="2" strokeOpacity="0.2" />
-                <circle cx="60" cy="60" r="56" stroke={`url(#ring-grad-${label})`} strokeWidth="2.5" strokeDasharray="10 5" strokeLinecap="round">
-                    <animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="15s" repeatCount="indefinite" />
-                </circle>
-                <defs>
-                    <linearGradient id={`ring-grad-${label}`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor={color} />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.15" />
-                    </linearGradient>
-                </defs>
-            </svg>
+                {/* Radial bloom */}
+                {filledCount >= 2 && (
+                    <motion.div
+                        className="absolute pointer-events-none"
+                        style={{
+                            width: 220,
+                            height: 220,
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            background: `radial-gradient(circle, ${glowColor.replace(/[\d.]+\)$/, '0.2)')} 0%, ${glowColor.replace(/[\d.]+\)$/, '0.08)')} 40%, transparent 70%)`,
+                            borderRadius: '50%',
+                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8, duration: 0.6 }}
+                    />
+                )}
 
-            {/* Shield body */}
-            <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full" fill="none">
-                <path
-                    d="M60 16 L96 30 L96 68 C96 88 78 102 60 112 C42 102 24 88 24 68 L24 30 Z"
-                    fill={`url(#shield-fill-${label})`}
-                    stroke={color}
-                    strokeWidth="2"
-                />
-                <path
-                    d="M60 26 L86 37 L86 65 C86 81 72 92 60 100 C48 92 34 81 34 65 L34 37 Z"
-                    fill="rgba(0,0,0,0.35)"
-                    stroke={color}
-                    strokeWidth="1"
-                    strokeOpacity="0.25"
-                />
-                {/* Star emblem with pulse */}
-                <path
-                    d="M60 40 L65 54 L80 54 L68 63 L73 77 L60 68 L47 77 L52 63 L40 54 L55 54 Z"
-                    fill={color}
-                    fillOpacity="0.95"
-                >
-                    <animate attributeName="fillOpacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
-                </path>
-                {/* Inner glow */}
-                <circle cx="60" cy="60" r="22" fill={color} fillOpacity="0.06">
-                    <animate attributeName="r" values="22;27;22" dur="2.5s" repeatCount="indefinite" />
-                    <animate attributeName="fillOpacity" values="0.06;0.15;0.06" dur="2.5s" repeatCount="indefinite" />
-                </circle>
-                <defs>
-                    <linearGradient id={`shield-fill-${label}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={accentColor} />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.25" />
-                    </linearGradient>
-                </defs>
-            </svg>
+                {/* Constellation connecting line */}
+                {filledCount >= 2 && (
+                    <motion.svg
+                        className="absolute inset-0 z-[1] pointer-events-none"
+                        viewBox="0 0 320 90"
+                        preserveAspectRatio="xMidYMid meet"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.6 }}
+                        transition={{ delay: 1.2, duration: 0.5 }}
+                    >
+                        <defs>
+                            <linearGradient id="constellation-line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+                                <stop offset="50%" stopColor={color} stopOpacity="0.7" />
+                                <stop offset="100%" stopColor={color} stopOpacity="0.2" />
+                            </linearGradient>
+                        </defs>
+                        <polyline
+                            points={Array.from({ length: filledCount }, (_, i) => {
+                                const totalWidth = (filledCount - 1) * 52;
+                                const startX = 160 - totalWidth / 2;
+                                return `${startX + i * 52},45`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke="url(#constellation-line-grad)"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            className="constellation-draw-line"
+                        />
+                    </motion.svg>
+                )}
+
+                {/* Stars row */}
+                <div className="relative z-[2] flex items-center justify-center gap-3 sm:gap-3.5">
+                    {Array.from({ length: 5 }, (_, i) => (
+                        <Star
+                            key={i}
+                            filled={i < filledCount}
+                            color={color}
+                            glowColor={glowColor}
+                            gradientId={label}
+                            index={i}
+                        />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
@@ -224,11 +338,11 @@ function XIcon({ size = 16 }: { size?: number }) {
 }
 
 const RANK_CONFIG = [
-    { threshold: 20000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", icon: "🌌" },
-    { threshold: 15000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", icon: "🥇" },
-    { threshold: 10000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", icon: "🥈" },
-    { threshold: 5000, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", icon: "🥉" },
-    { threshold: 0, label: "WOOD", color: "#A0522D", accent: "#2a1205", icon: "🪵" },
+    { threshold: 20000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", glow: "rgba(179,102,255,0.6)", stars: 5, icon: "🌌" },
+    { threshold: 15000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", glow: "rgba(255,224,72,0.5)", stars: 4, icon: "🥇" },
+    { threshold: 10000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", glow: "rgba(226,232,240,0.4)", stars: 3, icon: "🥈" },
+    { threshold: 5000, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", glow: "rgba(205,127,50,0.5)", stars: 2, icon: "🥉" },
+    { threshold: 0, label: "WOOD", color: "#A0522D", accent: "#2a1205", glow: "rgba(160,82,45,0.5)", stars: 1, icon: "🪵" },
 ];
 
 function getRank(score: number) {
@@ -272,7 +386,8 @@ function StatCard({
             {/* Subtle top highlight */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-            <div className="flex items-center justify-center gap-1.5 mb-1.5">
+            <div className="flex flex-col items-center gap-1 mb-1.5">
+                <Icon size={14} className={`${color} opacity-50`} />
                 <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider">
                     {label}
                 </div>
@@ -383,8 +498,60 @@ function BadgeCard({
     );
 }
 
-export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin }: GameOverProps) {
-    const { score, matchCount, maxCombo, gameMode, gameBadges } = state;
+/* ===== RANK PROGRESS BAR ===== */
+function RankProgressBar({ score, rank }: { score: number; rank: typeof RANK_CONFIG[0] }) {
+    // Find the next rank above current
+    const currentIdx = RANK_CONFIG.indexOf(rank);
+    const nextRank = currentIdx > 0 ? RANK_CONFIG[currentIdx - 1] : null;
+
+    if (!nextRank) {
+        // Already at max rank — show nothing
+        return null;
+    }
+
+    const prevThreshold = rank.threshold;
+    const needed = nextRank.threshold - prevThreshold;
+    const progress = Math.min((score - prevThreshold) / needed, 1);
+    const remaining = nextRank.threshold - score;
+
+    return (
+        <motion.div
+            className="mt-1 mb-4 w-full max-w-[280px] mx-auto"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.5, duration: 0.4 }}
+        >
+            {/* Bar */}
+            <div className="relative h-2 rounded-full overflow-hidden bg-white/[0.08]">
+                <motion.div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{
+                        background: `linear-gradient(90deg, ${rank.color}, ${nextRank.color})`,
+                        boxShadow: `0 0 8px ${nextRank.color}40`,
+                    }}
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${progress * 100}%` }}
+                    transition={{ delay: 2.7, duration: 1, ease: "easeOut" }}
+                />
+            </div>
+            {/* Label */}
+            <div className="flex justify-between items-center mt-1.5">
+                <span className="text-[9px] font-mundial font-bold uppercase tracking-wider" style={{ color: rank.color }}>
+                    {rank.label}
+                </span>
+                <span className="text-[9px] font-mundial text-white/40 tracking-wider">
+                    {remaining.toLocaleString()} to {nextRank.label}
+                </span>
+                <span className="text-[9px] font-mundial font-bold uppercase tracking-wider" style={{ color: nextRank.color }}>
+                    {nextRank.label}
+                </span>
+            </div>
+        </motion.div>
+    );
+}
+
+export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin, capsuleEarned, onOpenPinBook }: GameOverProps) {
+    const { score, matchCount, maxCombo, totalCascades, gameMode, gameBadges, gameOverReason } = state;
     const rank = getRank(score);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
 
@@ -404,6 +571,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                 .then(data => {
                     if (data.isNewBest) {
                         setIsNewHighScore(true);
+                        playNewHighScoreSound();
                     }
                 })
                 .catch(e => console.error("Failed to post score", e));
@@ -479,19 +647,16 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                         {/* Top decorative line */}
                         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-                        {/* ===== RANK MEDALLION — with slam entrance ===== */}
-                        <motion.div
-                            initial={{ scale: 0, rotate: -15 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 250,
-                                damping: 16,
-                                delay: 0.3,
-                            }}
-                        >
-                            <RankMedallion color={rank.color} accentColor={rank.accent} label={rank.label} />
-                        </motion.div>
+                        {/* ===== STAR GRADIENT DEFS ===== */}
+                        <StarGradientDefs />
+
+                        {/* ===== 5-STAR RATING — staggered reveal ===== */}
+                        <RankStars
+                            filledCount={rank.stars}
+                            color={rank.color}
+                            glowColor={rank.glow}
+                            label={rank.label}
+                        />
 
                         {/* ===== RANK LABEL — with scale pop ===== */}
                         <motion.div
@@ -512,6 +677,17 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             {rank.label}
                         </motion.div>
 
+                        {/* No valid moves explanation */}
+                        {gameOverReason === "no_valid_moves" && (
+                            <motion.div
+                                className="text-white/40 text-[10px] sm:text-xs font-mundial tracking-wider uppercase mb-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.7 }}
+                            >
+                                No valid moves remaining
+                            </motion.div>
+                        )}
 
                         {/* ===== ANIMATED SCORE — with glow pulse & NEW BEST decal ===== */}
                         <motion.div
@@ -542,23 +718,77 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             </AnimatePresence>
                         </motion.div>
 
+                        {/* ===== RANK PROGRESS ===== */}
+                        <RankProgressBar score={score} rank={rank} />
+
                         {/* ===== STATS ROW ===== */}
-                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-6">
+                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">
                             <StatCard
-                                label="MATCHES MADE"
+                                label="MATCHES"
                                 value={matchCount}
                                 color="text-white"
                                 icon={Target}
                                 delay={0.9}
                             />
                             <StatCard
-                                label="Best Combo"
+                                label="BEST COMBO"
                                 value={`×${maxCombo}`}
                                 color="text-[#FF5F1F]"
                                 icon={Flame}
                                 delay={1.0}
                             />
+                            <StatCard
+                                label="CASCADES"
+                                value={totalCascades}
+                                color="text-[#4A9EFF]"
+                                icon={Zap}
+                                delay={1.1}
+                            />
                         </div>
+
+                        {/* ===== CAPSULE EARNED NOTIFICATION ===== */}
+                        {capsuleEarned && onOpenPinBook && (
+                            <motion.button
+                                onClick={onOpenPinBook}
+                                className="w-full mb-5 py-3.5 px-4 rounded-2xl border relative overflow-hidden group"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(108,92,231,0.15), rgba(179,102,255,0.1))",
+                                    borderColor: "rgba(108,92,231,0.4)",
+                                    boxShadow: "0 0 25px rgba(108,92,231,0.2)",
+                                }}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 1.8, type: "spring", stiffness: 300, damping: 20 }}
+                                whileHover={{ scale: 1.02, borderColor: "rgba(108,92,231,0.7)" }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#6C5CE7]/0 via-[#6C5CE7]/10 to-[#6C5CE7]/0 group-hover:via-[#6C5CE7]/20 transition-all" />
+                                <div className="relative flex items-center justify-center gap-3">
+                                    <motion.span
+                                        className="text-2xl"
+                                        animate={{ rotate: [0, -10, 10, -5, 0], scale: [1, 1.1, 1] }}
+                                        transition={{ duration: 1.5, delay: 2.2, repeat: 2 }}
+                                    >
+                                        🫧
+                                    </motion.span>
+                                    <div className="text-left">
+                                        <div className="text-white font-display font-black text-sm tracking-wide">
+                                            Pin Capsule Earned!
+                                        </div>
+                                        <div className="text-white/50 text-[10px] font-mundial">
+                                            Tap to open your Pin Capsule
+                                        </div>
+                                    </div>
+                                    <motion.div
+                                        className="text-[#6C5CE7] text-lg"
+                                        animate={{ x: [0, 4, 0] }}
+                                        transition={{ duration: 1, repeat: Infinity }}
+                                    >
+                                        →
+                                    </motion.div>
+                                </div>
+                            </motion.button>
+                        )}
 
                         {/* ===== BADGES PLAYED — Trophy Showcase ===== */}
                         <motion.div
@@ -576,9 +806,14 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                             </div>
 
-                            {/* Badge grid — 3 columns for 6 badges */}
+                            {/* Badge grid — 3 columns for 6 badges, sorted by tier */}
                             <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                                {gameBadges.slice(0, 6).map((badge, i) => (
+                                {[...gameBadges.slice(0, 6)]
+                                    .sort((a, b) => {
+                                        const order = { cosmic: 0, gold: 1, silver: 2, blue: 3 };
+                                        return (order[a.tier] ?? 4) - (order[b.tier] ?? 4);
+                                    })
+                                    .map((badge, i) => (
                                     <BadgeCard
                                         key={badge.id}
                                         badge={badge}

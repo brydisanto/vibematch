@@ -1,6 +1,6 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
-import { hashPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { verifyPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
 
 export async function POST(req: Request) {
     try {
@@ -17,14 +17,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
-        const hashedPassword = await hashPassword(password);
-        if (user.password !== hashedPassword) {
+        const passwordValid = await verifyPassword(password, user.password);
+        if (!passwordValid) {
             return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
-        // Log them in
-        const session = await encrypt({ username: user.username });
-        const res = NextResponse.json({ success: true, user: { username: user.username } });
+        // Fetch profile in parallel with JWT generation so login returns everything
+        const [session, profile] = await Promise.all([
+            encrypt({ username: user.username }),
+            kv.get(`user:${user.username.toLowerCase()}`),
+        ]);
+        const avatarUrl = (profile as any)?.avatarUrl || "";
+        const res = NextResponse.json({ success: true, user: { username: user.username, avatarUrl } });
 
         res.cookies.set({
             name: SESSION_COOKIE_NAME,

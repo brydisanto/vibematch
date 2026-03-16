@@ -1,10 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { BADGES } from "@/lib/badges";
-import { Zap, Trophy, HelpCircle, ChevronRight, User, Crown } from "lucide-react";
+import { Zap, Trophy, HelpCircle, ChevronRight, User, Crown, BookOpen } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import { toast } from "react-hot-toast";
@@ -14,6 +14,9 @@ interface LandingPageProps {
     onStartGame: (mode: GameMode, username?: string, avatarUrl?: string) => void;
     onShowInstructions?: () => void;
     onLogout?: () => void;
+    onOpenPinBook?: () => void;
+    capsuleCount?: number;
+    userProfile?: { username: string; avatarUrl: string } | null;
 }
 
 /* ===== FLOATING BADGES (UPWARD STREAM) ===== */
@@ -118,41 +121,58 @@ function FloatingBadges() {
 import AuthModal from "./AuthModal";
 import { LogOut } from "lucide-react";
 
-export default function LandingPage({ onStartGame, onShowInstructions, onLogout }: LandingPageProps) {
+/* ===== DAILY COUNTDOWN HOOK ===== */
+function formatCountdown() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setUTCHours(24, 0, 0, 0);
+    const diff = midnight.getTime() - now.getTime();
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return `${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`;
+}
+
+function useDailyCountdown() {
+    const [countdown, setCountdown] = useState(formatCountdown);
+    useEffect(() => {
+        const timer = setInterval(() => setCountdown(formatCountdown()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    return countdown;
+}
+
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, capsuleCount = 0, userProfile }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState("");
-    const [avatarUrl, setAvatarUrl] = useState("");
+    const [isLoggedIn, setIsLoggedIn] = useState(!!userProfile);
+    const [username, setUsername] = useState(userProfile?.username || "");
+    const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatarUrl || "");
+    const [streak, setStreak] = useState<number>(0);
+    const dailyCountdown = useDailyCountdown();
+    const notifyRef = useRef(false);
 
+    // Sync with parent's userProfile prop (no duplicate session fetch)
     useEffect(() => {
-        // Check session instead of just localStorage
-        fetch('/api/auth/session')
-            .then(res => res.json())
-            .then(data => {
-                if (data.authenticated) {
-                    setIsLoggedIn(true);
-                    setUsername(data.user.username);
-                    setAvatarUrl(data.user.avatarUrl);
-                    localStorage.setItem('vibematch_username', data.user.username);
-                } else {
-                    setIsLoggedIn(false);
-                    // Legacy fallback for guests if they have a local username
-                    const savedUsername = localStorage.getItem('vibematch_username');
-                    if (savedUsername) {
-                        setUsername(savedUsername);
-                        fetch(`/api/profiles?username=${savedUsername}`)
-                            .then(res => res.json())
-                            .then(d => {
-                                if (d.profile) setAvatarUrl(d.profile.avatarUrl);
-                            })
-                            .catch(err => console.error("Could not fetch legacy profile"));
-                    }
-                }
-            })
-            .catch(err => console.error("Session check error:", err));
-    }, []);
+        if (userProfile) {
+            setIsLoggedIn(true);
+            setUsername(userProfile.username);
+            setAvatarUrl(userProfile.avatarUrl);
+            // Fetch streak in background (lightweight)
+            fetch(`/api/streak?username=${userProfile.username}`)
+                .then(r => r.json())
+                .then(s => { if (s.streak > 0) setStreak(s.streak); })
+                .catch(() => { });
+        } else {
+            setIsLoggedIn(false);
+            // Legacy fallback for guests
+            const savedUsername = localStorage.getItem('vibematch_username');
+            if (savedUsername) {
+                setUsername(savedUsername);
+            }
+        }
+    }, [userProfile]);
 
     // SILENT PRELOADER: aggressively fetch all game piece images into browser cache 
     // while the user is sitting on the landing page so the board loads instantly!
@@ -210,6 +230,16 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout 
         }
     };
 
+    const handleNotifyMe = () => {
+        if (notifyRef.current || localStorage.getItem('vibematch_rush_notify')) {
+            toast("You're already on the list!", { icon: "✅" });
+            return;
+        }
+        notifyRef.current = true;
+        localStorage.setItem('vibematch_rush_notify', 'true');
+        toast.success("We'll let you know when $VIBESTR RUSH drops!");
+    };
+
     const handleStartDaily = async () => {
         if (!isLoggedIn) {
             toast.error("Login to play Daily Challenge!");
@@ -230,103 +260,161 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout 
     };
 
     return (
-        <div className="relative min-h-screen flex flex-col items-center justify-start px-4 pt-[8vh] pb-6">
+        <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-6">
             <FloatingBadges />
 
             <div className="relative z-10 w-full max-w-lg text-center">
-                {/* Logo Lockup */}
+                {/* Logo Lockup — gentle bob */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.6 }}
                 >
                     <div className="flex items-center justify-center">
-                        <Image
-                            src="/assets/logo-v2.png"
-                            alt="VIBE MATCH Logo"
-                            width={320}
-                            height={160}
-                            className="drop-shadow-[0_10px_30px_rgba(255,224,72,0.3)] hover:scale-105 transition-transform duration-300 w-[240px] sm:w-[320px] h-auto max-w-full"
-                            priority
-                        />
+                        <motion.div
+                            animate={{ y: [0, -7, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                        >
+                            <Image
+                                src="/assets/logo-v2.png"
+                                alt="VIBE MATCH Logo"
+                                width={320}
+                                height={160}
+                                className="drop-shadow-[0_10px_30px_rgba(255,224,72,0.3)] hover:scale-105 transition-transform duration-300 w-[240px] sm:w-[320px] h-auto max-w-full"
+                                priority
+                            />
+                        </motion.div>
                     </div>
                 </motion.div>
 
-                {/* Mode Cards — each with distinct personality */}
-                <motion.div
-                    className="flex flex-col gap-3 -mt-6"
-                    initial={{ y: 30, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                    {/* Classic Mode */}
-                    <button
-                        onClick={() => onStartGame("classic", username, avatarUrl)}
-                        className="group w-full text-left outline-none"
-                    >
-                        <div
-                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#B0DFF0] shadow-[0_4px_20px_rgba(168,219,232,0.5),0_8px_25px_rgba(0,0,0,0.15)]"
+                {/* Welcome back greeting */}
+                <AnimatePresence>
+                    {isLoggedIn && username && (
+                        <motion.p
+                            key="greeting"
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ delay: 0.25, duration: 0.4 }}
+                            className="text-white/50 text-xs font-mundial tracking-[0.15em] uppercase mb-1 -mt-4"
                         >
-                            <div className="relative bg-gradient-to-b from-[#E8F4F8] to-[#D5EDF5] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                <div className="relative flex items-center justify-between z-10 w-full">
-                                    <div className="flex flex-col items-start justify-center">
-                                        <h2 className="font-display text-xl sm:text-2xl font-black text-[#2A5F6F] mb-1 uppercase">
-                                            Classic VibeMatch
-                                        </h2>
-                                        <p className="text-[#6B7B82] text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                            30 moves to score as high as you can.
-                                        </p>
-                                    </div>
-                                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#C5E4ED]/60 flex items-center justify-center border border-[#A8DBE8] group-hover:bg-[#C5E4ED] transition-colors">
-                                        <ChevronRight size={18} className="text-[#5A9AAA] group-hover:text-[#2A5F6F] transition-colors" />
+                            Welcome back, <span className="text-[#FFE048] font-black">{username}</span>
+                        </motion.p>
+                    )}
+                </AnimatePresence>
+
+                {/* Mode Cards — staggered entrance */}
+                <div className="flex flex-col gap-3 -mt-6">
+                    {/* Classic Mode */}
+                    <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.35, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
+                    >
+                        <button
+                            onClick={() => onStartGame("classic", username, avatarUrl)}
+                            className="group w-full text-left outline-none"
+                        >
+                            <div className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#c9a84c]/40 shadow-[0_4px_20px_rgba(201,168,76,0.2),0_8px_25px_rgba(0,0,0,0.4)]">
+                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                                    <div className="relative flex items-center justify-between z-10 w-full">
+                                        <div className="flex flex-col items-start justify-center">
+                                            <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] mb-0.5 uppercase">
+                                                Classic VibeMatch
+                                            </h2>
+                                            <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
+                                                30 moves to score as high as you can.
+                                            </p>
+                                        </div>
+                                        <div className="w-10 h-10 shrink-0 rounded-full bg-[#c9a84c]/10 flex items-center justify-center border border-[#c9a84c]/30 group-hover:bg-[#c9a84c]/20 transition-colors">
+                                            <ChevronRight size={18} className="text-[#c9a84c]/70 group-hover:text-[#FFE048] transition-colors" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </button>
+                        </button>
+                    </motion.div>
 
                     {/* Daily Challenge */}
-                    <button
-                        onClick={handleStartDaily}
-                        className="group w-full text-left outline-none"
+                    <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
                     >
-                        <div
-                            className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#D8B8F0] shadow-[0_4px_20px_rgba(212,176,232,0.5),0_8px_25px_rgba(0,0,0,0.15)]"
+                        <button
+                            onClick={handleStartDaily}
+                            className="group w-full text-left outline-none"
                         >
-                            <div className="relative bg-gradient-to-b from-[#F3E8F9] to-[#E8D5F3] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                <div className="relative flex items-center justify-between z-10 w-full">
-                                    <div className="flex flex-col items-start justify-center">
-                                        <h2 className="font-display text-xl sm:text-2xl font-black text-[#5B2D6E] mb-1 uppercase">
-                                            THE DAILY CHALLENGE
-                                        </h2>
-                                        <p className="text-[#7B6B88] text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                            Same board for everyone. 1 shot to stoke it to the max!
-                                        </p>
-                                    </div>
-                                    <div className="w-10 h-10 shrink-0 rounded-full bg-[#E8D0F0]/60 flex items-center justify-center border border-[#D4B0E8] group-hover:bg-[#E8D0F0] transition-colors">
-                                        <ChevronRight size={18} className="text-[#9A6BAA] group-hover:text-[#5B2D6E] transition-colors" />
+                            <div className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#B366FF]/40 shadow-[0_4px_20px_rgba(179,102,255,0.2),0_8px_25px_rgba(0,0,0,0.4)]">
+                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                                    <div className="relative flex items-center justify-between z-10 w-full">
+                                        <div className="flex flex-col items-start justify-center">
+                                            <h2 className="font-display text-xl sm:text-2xl font-black text-[#B366FF] mb-0.5 uppercase">
+                                                THE DAILY CHALLENGE
+                                            </h2>
+                                            <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mb-0.5">
+                                                Resets in {dailyCountdown}
+                                            </p>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="text-white/60 text-xs sm:text-sm font-mundial leading-relaxed text-left">
+                                                    Same board for everyone. 1 shot to stoke it to the max!
+                                                </p>
+                                                {streak > 0 && (
+                                                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#B366FF]/15 border border-[#B366FF]/40 text-[#B366FF] text-[11px] font-black font-mundial">
+                                                        {streak} day streak
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="w-10 h-10 shrink-0 rounded-full bg-[#B366FF]/10 flex items-center justify-center border border-[#B366FF]/30 group-hover:bg-[#B366FF]/20 transition-colors">
+                                            <ChevronRight size={18} className="text-[#B366FF]/70 group-hover:text-[#B366FF] transition-colors" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </button>
+                        </button>
+                    </motion.div>
 
-                    {/* $VIBESTR RUSH — Coming Soon */}
-                    <div className="group w-full text-left outline-none cursor-not-allowed">
-                        <div className="relative overflow-hidden rounded-2xl">
-                            <div className="relative bg-[#9B6AAE]/50 backdrop-blur-sm rounded-2xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                <div className="relative flex items-center justify-between z-10 w-full">
-                                    <h2 className="font-display text-xl sm:text-2xl font-black text-white/50 uppercase">
-                                        <em>$VIBESTR RUSH</em>
-                                    </h2>
-                                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/50 text-[10px] font-bold uppercase tracking-wider font-mundial">
-                                        Coming Soon
-                                    </span>
+                    {/* $VIBESTR RUSH — Coming Soon (shimmer + Notify Me) */}
+                    <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.65, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
+                    >
+                        <button
+                            onClick={handleNotifyMe}
+                            className="group w-full text-left outline-none"
+                        >
+                            <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+                                {/* Shimmer sweep */}
+                                <motion.div
+                                    className="absolute inset-0 z-10 pointer-events-none"
+                                    animate={{ x: ["-100%", "150%"] }}
+                                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.5 }}
+                                    style={{
+                                        background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%)",
+                                        transform: "skewX(-15deg)",
+                                    }}
+                                />
+                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-2xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                                    <div className="relative flex items-center justify-between z-10 w-full">
+                                        <div className="flex flex-col items-start gap-0.5">
+                                            <h2 className="font-display text-xl sm:text-2xl font-black text-white/50 uppercase">
+                                                <em>$VIBESTR RUSH</em>
+                                            </h2>
+                                            <p className="text-white/35 text-[10px] font-mundial tracking-wider group-hover:text-white/50 transition-colors">
+                                                Tap to get notified at launch
+                                            </p>
+                                        </div>
+                                        <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/50 text-[10px] font-bold uppercase tracking-wider font-mundial group-hover:bg-white/20 transition-colors">
+                                            Coming Soon
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </motion.div>
+                        </button>
+                    </motion.div>
+                </div>
 
                 {/* Bottom Action Row */}
                 <motion.div
@@ -335,50 +423,78 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout 
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6, duration: 0.5 }}
                 >
-                    <div className="flex gap-3 w-full">
-                        {/* Profile/Login Button — Enamel Pin Style (Silver/Blue) */}
-                        <button
-                            onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
-                            className="flex-1 group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#8E9EAA] to-[#5C6B77] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
-                        >
-                            <div className="relative h-full bg-[#B0BCC5] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#5C6B77]/50">
-                                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/50 to-transparent mix-blend-overlay pointer-events-none" />
-
-                                <User size={18} className="relative z-10 text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
-                                <span className="relative z-10 text-[13px] sm:text-[15px] font-black tracking-widest text-[#3A4A57] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
+                    {/* Monochrome Purple Unified Bar */}
+                    <div
+                        className="rounded-2xl overflow-hidden"
+                        style={{
+                            background: "linear-gradient(180deg, #2D0B4E 0%, #1A0633 100%)",
+                            border: "1px solid rgba(179,102,255,0.20)",
+                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)",
+                        }}
+                    >
+                        <div className="grid grid-cols-4">
+                            {/* Profile / Login */}
+                            <button
+                                onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
+                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                            >
+                                <User size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
                                     {isLoggedIn ? "Profile" : "Login"}
                                 </span>
-                            </div>
-                        </button>
+                            </button>
 
-                        {/* How to Play — Enamel Pin Style (Gold) */}
-                        <button
-                            onClick={onShowInstructions}
-                            className="flex-1 group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#E5C941] to-[#D4B32A] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
-                        >
-                            <div className="relative h-full bg-[#FFE048] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#D4B32A]/50">
-                                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent mix-blend-overlay pointer-events-none" />
-                                <HelpCircle size={18} className="relative z-10 text-[#5C4D0A] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
-                                <span className="relative z-10 text-[13px] sm:text-[15px] font-black tracking-widest text-[#5C4D0A] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
+                            {/* Pins */}
+                            <button
+                                onClick={isLoggedIn ? onOpenPinBook : undefined}
+                                disabled={!isLoggedIn}
+                                className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
+                                <div className="relative">
+                                    <BookOpen size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
+                                    {capsuleCount > 0 && (
+                                        <span
+                                            className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
+                                            style={{
+                                                background: "#FF5F1F",
+                                                boxShadow: "0 0 8px rgba(255,95,31,0.6)",
+                                            }}
+                                        >
+                                            {capsuleCount}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
+                                    Pins
+                                </span>
+                            </button>
+
+                            {/* Rules */}
+                            <button
+                                onClick={onShowInstructions}
+                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                            >
+                                <HelpCircle size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
                                     Rules
                                 </span>
-                            </div>
-                        </button>
-                    </div>
+                            </button>
 
-                    {/* Leaderboards */}
-                    <button
-                        onClick={() => setIsLeaderboardOpen(true)}
-                        className="group relative w-full overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-[20px] bg-gradient-to-b from-[#B366FF] to-[#8A2BE2] p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
-                    >
-                        <div className="relative bg-[#9C4EEB] rounded-[17px] py-4 shadow-[inset_0_2px_6px_rgba(0,0,0,0.3),inset_0_-2px_6px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 overflow-hidden border border-[#8A2BE2]/50">
-                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent mix-blend-overlay pointer-events-none" />
-                            <Crown size={18} className="relative z-10 text-white drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-[#FFD700] transition-colors" />
-                            <span className="relative z-10 text-[15px] font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
-                                Leaderboards
-                            </span>
+                            {/* Leaderboards */}
+                            <button
+                                onClick={() => setIsLeaderboardOpen(true)}
+                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                            >
+                                <Crown size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase sm:hidden" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                    Boards
+                                </span>
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase hidden sm:inline" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                    Leaderboards
+                                </span>
+                            </button>
                         </div>
-                    </button>
+                    </div>
 
                     {/* Logout Button (Hidden if guest) */}
                     {isLoggedIn && (
