@@ -140,10 +140,10 @@ function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
                         <div className="flex-shrink-0 text-right">
                             <div className="font-display font-extrabold text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                                 style={{ color: entry.percentComplete === 100 ? "#FFD700" : "#B366FF" }}>
-                                {entry.percentComplete}%
+                                {entry.percentComplete}% <span className="text-[10px] font-bold text-white/40">Completed</span>
                             </div>
                             <div className="text-[10px] text-white/30 font-bold mt-0.5">
-                                {entry.pinScore} pts
+                                {entry.pinScore} pin points
                             </div>
                         </div>
                     </div>
