@@ -554,7 +554,7 @@ export const BADGES: Badge[] = [
     },
 ];
 
-// Select N random badges for a game session, ensuring tier diversity
+// Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
 
@@ -566,11 +566,13 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     };
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
+    // Select in order, tracking used conflict groups across all tiers
+    const usedGroups = new Set<number>();
     const selected: Badge[] = [
-        ...byTier.blue.slice(0, 3),
-        ...byTier.silver.slice(0, 1),
-        ...byTier.gold.slice(0, 1),
-        ...byTier.cosmic.slice(0, 1),
+        ...selectFromTier(byTier.blue, 3, usedGroups),
+        ...selectFromTier(byTier.silver, 1, usedGroups),
+        ...selectFromTier(byTier.gold, 1, usedGroups),
+        ...selectFromTier(byTier.cosmic, 1, usedGroups),
     ];
 
     return shuffle(selected, rng);
@@ -587,11 +589,12 @@ export function selectDraftPool(seed?: number): Badge[] {
         cosmic: shuffle(BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
 
+    const usedGroups = new Set<number>();
     const pool: Badge[] = [
-        ...byTier.blue.slice(0, 5),
-        ...byTier.silver.slice(0, 2),
-        ...byTier.gold.slice(0, 2),
-        ...byTier.cosmic.slice(0, 1),
+        ...selectFromTier(byTier.blue, 5, usedGroups),
+        ...selectFromTier(byTier.silver, 2, usedGroups),
+        ...selectFromTier(byTier.gold, 2, usedGroups),
+        ...selectFromTier(byTier.cosmic, 1, usedGroups),
     ];
 
     return shuffle(pool, rng);
@@ -628,6 +631,109 @@ export function getDailySeed(date?: string): number {
         hash = ((hash << 5) - hash + char) | 0;
     }
     return Math.abs(hash);
+}
+
+// Conflict groups: badges in the same group should never appear together in a game (color contrast)
+// Badges not in any group (robot_lover, straw_man, surfer, captain, shower, anchorman) have no conflicts.
+export const CONFLICT_GROUPS: Record<string, number> = {
+    // #1
+    any_gvc: 1,
+    seas_the_day: 1,
+    // #2
+    chris_favorite_badge: 2,
+    super_rare: 2,
+    grayscale_seeker: 2,
+    checkmate: 2,
+    poker_face: 2,
+    rack_em_up: 2,
+    sir_vibes_a_lot: 2,
+    // #3
+    one_of_one: 3,
+    visooor_enjoyooor: 3,
+    suited_up: 3,
+    party_in_the_back: 3,
+    flow_state: 3,
+    highkeymoments_1: 3,
+    gradient_lover: 3,
+    power_duo: 3,
+    // #4
+    full_send_maverick: 4,
+    tanks_a_lot: 4,
+    patch_powerhouse: 4,
+    the_completionist: 4,
+    varsity_vibes: 4,
+    mountain_goat: 4,
+    electric_rings: 4,
+    stone: 4,
+    shadow_funk_division: 4,
+    // #5
+    pothead: 5,
+    funky_fresh: 5,
+    vibetown_social_club: 5,
+    vibefoot_fan_club: 5,
+    ladies_night: 5,
+    full_throttle: 5,
+    sugar_rush: 5,
+    astro_bean: 5,
+    plastic_lover: 5,
+    homerun: 5,
+    // #6
+    pepe: 6,
+    plants: 6,
+    science_goggles: 6,
+    // #7
+    king: 7,
+    nounish_vibes: 7,
+    lamp: 7,
+    kinky: 7,
+    hail_mary_heroes: 7,
+    gud_meat: 7,
+    toy_bricks: 7,
+    ranger: 7,
+    trait_maxi: 7,
+    // #8
+    rainbow_bubble_goggles: 8,
+    astro_balls: 8,
+    hue_too_fresh: 8,
+    rainbow_citizen: 8,
+    yin_n_yang: 8,
+    elite_rainbow_ranger: 8,
+    rainbow_visor: 8,
+    // #9
+    zoom_in_vibe_out: 9,
+    fur_the_win: 9,
+    doge: 9,
+    great_stacheby: 9,
+    showtime: 9,
+    vibetown_baller: 9,
+    no_face_no_problem: 9,
+    gold_member: 9,
+    tatted_up: 9,
+    // #10
+    necks_level: 10,
+    gamer: 10,
+    cosmic_guardian: 10,
+    hoodie_up_society: 10,
+    rainbow_boombox: 10,
+    multi_type_master: 10,
+    high_noon_hustler: 10,
+};
+
+// Select badges from a shuffled tier pool while respecting conflict groups
+function selectFromTier(
+    pool: Badge[],
+    count: number,
+    usedGroups: Set<number>,
+): Badge[] {
+    const selected: Badge[] = [];
+    for (const badge of pool) {
+        if (selected.length >= count) break;
+        const group = CONFLICT_GROUPS[badge.id];
+        if (group !== undefined && usedGroups.has(group)) continue;
+        selected.push(badge);
+        if (group !== undefined) usedGroups.add(group);
+    }
+    return selected;
 }
 
 // Tier color map
