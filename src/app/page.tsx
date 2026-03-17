@@ -404,7 +404,7 @@ export default function Home() {
           tier={pinBook.pendingReveal.tier}
           isDuplicate={pinBook.pendingReveal.isDuplicate}
           duplicateCount={pinBook.pendingReveal.duplicateCount}
-          quickOpen={pinBook.state.totalOpened > 10}
+          quickOpen={false}
           onComplete={async () => {
             await pinBook.collectReveal();
             setShowCapsule(false);
