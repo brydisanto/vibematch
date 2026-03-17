@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Best Overlay Options — VibeMatch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: 24px 16px 60px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 32px;
+  }
+
+  .option-group { max-width: 380px; margin: 0 auto 48px; }
+
+  .option-label {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+  .option-desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.18);
+    margin-bottom: 16px;
+    padding-left: 4px;
+    line-height: 1.5;
+  }
+
+  .current-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.3);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+
+  .divider {
+    max-width: 380px;
+    margin: 0 auto 48px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+
+  /* Card shell */
+  .card {
+    border-radius: 28px;
+    padding: 3px;
+    background: linear-gradient(180deg, rgba(255,224,72,0.25), rgba(255,224,72,0.08));
+  }
+  .card-inner {
+    border-radius: 26px;
+    padding: 28px 24px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #151515 0%, #0d0d0d 100%);
+  }
+
+  /* Purple card for cosmic rank */
+  .card-cosmic {
+    background: linear-gradient(180deg, rgba(179,102,255,0.25), rgba(179,102,255,0.08));
+  }
+
+  /* Subtle radial glow */
+  .card-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 15%, rgba(255,224,72,0.04) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  /* Stars row */
+  .stars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .star {
+    font-size: 28px;
+    filter: drop-shadow(0 0 8px rgba(255,224,72,0.4));
+  }
+  .star-empty { opacity: 0.12; filter: none; }
+
+  /* Rank label */
+  .rank-label {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #FFE048;
+    text-shadow: 0 0 24px rgba(255,224,72,0.3);
+    margin-bottom: 4px;
+  }
+
+  /* Score */
+  .score {
+    font-size: 56px;
+    font-weight: 900;
+    color: #FFE048;
+    text-shadow: 0 0 40px rgba(255,224,72,0.4), 0 0 80px rgba(255,224,72,0.15);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    display: inline-block;
+  }
+
+  /* ═══ CURRENT: Absolute positioned pill ═══ */
+  .newbest-current {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(to right, #FF4500, #FF8C00);
+    color: white;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 4px 12px;
+    border-radius: 999px;
+    box-shadow: 0 0 15px rgba(255,140,0,0.6);
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  /* ═══ OPTION A: Inline suffix after score ═══ */
+  .newbest-a {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: super;
+    margin-left: 8px;
+    background: linear-gradient(135deg, #FF4500, #FF8C00);
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    box-shadow: 0 0 12px rgba(255,140,0,0.5);
+    position: relative;
+    top: -12px;
+  }
+
+  /* ═══ OPTION B: Subtle underline text ═══ */
+  .newbest-b {
+    display: block;
+    margin-top: 6px;
+    color: #FF8C00;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 12px rgba(255,140,0,0.4);
+  }
+
+  /* ═══ OPTION C: Banner ribbon above stars ═══ */
+  .newbest-c {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,140,0,0.1));
+    border: 1px solid rgba(255,140,0,0.3);
+    color: #FF8C00;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 5px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 20px rgba(255,140,0,0.15);
+  }
+  .newbest-c-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #FF8C00;
+    box-shadow: 0 0 8px #FF8C00;
+  }
+
+  /* ═══ OPTION D: Full-width streak bar below score ═══ */
+  .newbest-d-wrap {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .newbest-d {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,69,0,0.12), rgba(255,140,0,0.08));
+    border: 1px solid rgba(255,140,0,0.2);
+  }
+  .newbest-d-icon {
+    font-size: 16px;
+  }
+  .newbest-d-text {
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #FF8C00;
+    text-shadow: 0 0 8px rgba(255,140,0,0.3);
+  }
+  .newbest-d-sub {
+    font-size: 10px;
+    color: rgba(255,140,0,0.4);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* ═══ OPTION E: Crown icon replaces text ═══ */
+  .newbest-e {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    filter: drop-shadow(0 0 12px rgba(255,140,0,0.6)) drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+    z-index: 10;
+  }
+
+  /* Progress bar (shared) */
+  .progress-wrap {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 75%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #FFE048, #B366FF);
+    box-shadow: 0 0 8px rgba(179,102,255,0.4);
+  }
+  .progress-label {
+    font-size: 9px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 900;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">New Best Overlay Options</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- CURRENT -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Current Design <span class="current-tag">Live</span></div>
+  <div class="option-desc">Absolute-positioned pill overlaps the rank label. Feels like a sticker slapped on top. Gets cut off or covers "GOLD" text.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="position:relative; display:inline-block; margin-bottom:16px;">
+        <div class="newbest-current">New Best!</div>
+        <div class="score">16,420</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OPTION A: Inline suffix -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option A — Inline Score Suffix</div>
+  <div class="option-desc">Small badge tucked as a superscript after the score number. Doesn't overlap anything. Feels like part of the score reveal.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="margin-bottom:16px;">
+        <span class="score">16,420</span><span class="newbest-a">NEW BEST</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OPTION B: Subtitle text -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option B — Score Subtitle</div>
+  <div class="option-desc">Clean text below the score. No overlapping, no box. Most minimal — just glowing orange text that feels like part of the score readout.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="margin-bottom:16px;">
+        <div class="score">16,420</div>
+        <div class="newbest-b">&#9733; New Personal Best &#9733;</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OPTION C: Top banner -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option C — Top Banner Pill</div>
+  <div class="option-desc">Placed above the stars as the first thing you see. Integrated into the flow — not overlapping. Glowing dot adds a "live" feel.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div style="text-align:center; margin-bottom:4px;">
+        <div class="newbest-c">
+          <span class="newbest-c-dot"></span>
+          New Personal Best
+        </div>
+      </div>
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="margin-bottom:16px;">
+        <div class="score">16,420</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OPTION D: Full-width bar below score -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option D — Achievement Bar</div>
+  <div class="option-desc">Full-width card below the score with icon + text. Gives the achievement more presence without overlapping. Shows previous best for context.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="margin-bottom:0;">
+        <div class="score">16,420</div>
+      </div>
+      <div class="newbest-d-wrap">
+        <div class="newbest-d">
+          <span class="newbest-d-icon">&#127942;</span>
+          <div>
+            <div class="newbest-d-text">New Personal Best!</div>
+            <div class="newbest-d-sub">Previous: 14,800</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OPTION E: Crown icon -->
+<!-- ═══════════════════════════════════ -->
+<div class="option-group">
+  <div class="option-label">Option E — Crown + Subtitle</div>
+  <div class="option-desc">Crown emoji floating above the score as a visual trophy, paired with a subtle text line below. No text overlap — the icon communicates instantly.</div>
+  <div class="card">
+    <div class="card-inner">
+      <div class="stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+        <span class="star star-empty">&#9733;</span>
+      </div>
+      <div class="rank-label">GOLD</div>
+      <div style="margin-bottom:16px; position:relative; display:inline-block;">
+        <div class="newbest-e">&#128081;</div>
+        <div class="score">16,420</div>
+        <div class="newbest-b" style="margin-top:4px;">New Personal Best</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="progress-label">3,580 to COSMIC</div>
+      </div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-value" style="color:white">47</div></div>
+        <div class="stat-card"><div class="stat-label">Best Combo</div><div class="stat-value" style="color:#FF5F1F">&times;6</div></div>
+        <div class="stat-card"><div class="stat-label">Cascades</div><div class="stat-value" style="color:#4A9EFF">12</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
