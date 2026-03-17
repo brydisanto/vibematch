@@ -647,7 +647,7 @@ export const CONFLICT_GROUPS: Record<string, number> = {
     poker_face: 2,
     rack_em_up: 2,
     sir_vibes_a_lot: 2,
-    // #3
+    // #3 (includes former #6)
     one_of_one: 3,
     visooor_enjoyooor: 3,
     suited_up: 3,
@@ -656,6 +656,9 @@ export const CONFLICT_GROUPS: Record<string, number> = {
     highkeymoments_1: 3,
     gradient_lover: 3,
     power_duo: 3,
+    pepe: 3,
+    plants: 3,
+    science_goggles: 3,
     // #4
     full_send_maverick: 4,
     tanks_a_lot: 4,
@@ -677,10 +680,6 @@ export const CONFLICT_GROUPS: Record<string, number> = {
     astro_bean: 5,
     plastic_lover: 5,
     homerun: 5,
-    // #6
-    pepe: 6,
-    plants: 6,
-    science_goggles: 6,
     // #7
     king: 7,
     nounish_vibes: 7,

@@ -404,6 +404,34 @@ function CrackFlash({ active, tier }: { active: boolean; tier: BadgeTier }) {
     );
 }
 
+/** Center bloom — light erupts from center before badge materializes */
+function CenterBloom({ active, color }: { active: boolean; color: string }) {
+    if (!active) return null;
+    return (
+        <motion.div
+            className="absolute pointer-events-none"
+            style={{
+                width: 20, height: 20,
+                borderRadius: "50%",
+                top: "50%", left: "50%",
+                marginTop: -10, marginLeft: -10,
+                background: "white",
+                zIndex: 20,
+            }}
+            initial={{ scale: 0, opacity: 1 }}
+            animate={{
+                scale: [0, 0.5, 15],
+                opacity: [1, 1, 0],
+                background: ["#FFFFFF", "#FFFFFF", color],
+            }}
+            transition={{
+                duration: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+            }}
+        />
+    );
+}
+
 /** Confetti shower for gold/cosmic reveal */
 function ConfettiShower({ active, tier }: { active: boolean; tier: BadgeTier }) {
     if (!active || (tier !== "gold" && tier !== "cosmic")) return null;
@@ -457,37 +485,53 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
 
     // Escalating wobble during anticipation — 2.8s with micro-pauses
     // Structure: slow build → pause → medium build → pause → frantic finale
+    // Asymmetric values + translational jitter + exponential scale for physical weight
     useEffect(() => {
         if (phase === "anticipate") {
             capsuleControls.start({
-                // Micro-pauses at 0.32 and 0.60 (rotateZ holds at 0 briefly)
                 rotateZ: [
-                    0, 0.3, -0.3, 0.5, -0.7, 1, -1, 1.5, -1.5,
+                    0, 0.3, -0.4, 0.6, -0.8, 1.1, -1.2, 1.6, -1.7,
                     0, 0, // ← micro-pause 1
-                    2, -2.5, 3, -3.5, 4.5, -5, 6, -7,
+                    2.3, -2.8, 3.4, -3.9, 4.8, -5.3, 6.4, -7.2,
                     0, 0, // ← micro-pause 2
-                    8, -9, 10, -11, 12, -13, 14, -14, 0,
+                    7.2, -9.8, 11.3, -10.1, 12.6, -13.4, 14.2, -14.7, 0,
                 ],
                 rotateX: [
-                    0, 0, 0, 0.3, -0.3, 0.5, -0.8, 1, -1,
+                    0, 0, 0, 0.3, -0.4, 0.6, -0.9, 1.1, -1.2,
                     0, 0,
-                    1.5, -2, 2.5, -3, 3.5, -4, 4.5, -5,
+                    1.7, -2.3, 2.8, -3.4, 3.9, -4.3, 4.8, -5.4,
                     0, 0,
-                    5.5, -6, 6.5, -7, 7, -7, 7, -7, 0,
+                    5.8, -6.3, 6.9, -7.2, 7.4, -7.2, 7.5, -7.3, 0,
                 ],
                 rotateY: [
-                    0, 0, 0.2, -0.2, 0.3, -0.5, 0.7, -0.8, 1,
+                    0, 0, 0.2, -0.3, 0.4, -0.6, 0.8, -0.9, 1.1,
                     0, 0,
-                    1.5, -1.8, 2.2, -2.5, 3, -3.5, 4, -4,
+                    1.6, -2.1, 2.5, -2.8, 3.2, -3.8, 4.2, -4.5,
                     0, 0,
-                    4.5, -5, 5, -5, 5, -5, 5, -5, 0,
+                    4.8, -5.3, 5.2, -5.6, 5.4, -5.3, 5.5, -5.4, 0,
                 ],
+                // Translational jitter — small shifts on contact point sell physical weight
+                x: [
+                    0, 0, 0, 0, 0, 0.3, -0.3, 0.5, -0.5,
+                    0, 0,
+                    0.8, -1, 1.2, -1.5, 1.8, -2, 2.3, -2.5,
+                    0, 0,
+                    2.8, -3.2, 3.5, -3.2, 3.6, -3.4, 3.2, -3.5, 0,
+                ],
+                y: [
+                    0, 0, 0, 0, 0, -0.2, 0.2, -0.3, 0.3,
+                    0, 0,
+                    -0.5, 0.6, -0.8, 1, -1.2, 1.3, -1.5, 1.6,
+                    0, 0,
+                    -1.8, 2, -2.2, 2, -2.3, 2.1, -2, 2.2, 0,
+                ],
+                // Exponential scale — slow at first, rapid at the end
                 scale: [
-                    1, 1, 1.003, 1, 1.005, 1.005, 1.008, 1.01, 1.01,
-                    1.02, 1.02, // ← pause swells slightly
-                    1.02, 1.025, 1.03, 1.03, 1.04, 1.04, 1.05, 1.06,
-                    1.07, 1.07, // ← pause swells more
-                    1.08, 1.08, 1.09, 1.1, 1.1, 1.11, 1.12, 1.13, 1.15,
+                    1, 1, 1.001, 1, 1.003, 1.005, 1.008, 1.01, 1.012,
+                    1.025, 1.025, // ← pause swell 1
+                    1.025, 1.03, 1.035, 1.04, 1.05, 1.055, 1.065, 1.075,
+                    1.085, 1.085, // ← pause swell 2
+                    1.09, 1.095, 1.1, 1.105, 1.11, 1.12, 1.13, 1.14, 1.16,
                 ],
                 transition: {
                     duration: 2.8,
@@ -528,7 +572,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
     return (
         <motion.div
             className="relative cursor-pointer select-none"
-            style={{ width: CAPSULE_SIZE, height: CAPSULE_SIZE, perspective: 600 }}
+            style={{ width: CAPSULE_SIZE, height: CAPSULE_SIZE, perspective: 400 }}
             animate={capsuleControls}
             onClick={phase === "anticipate" || phase === "appear" ? onTap : undefined}
             whileTap={phase === "anticipate" || phase === "appear" ? { scale: 0.95, transition: { duration: 0.05 } } : undefined}
@@ -559,14 +603,22 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                 transition={phase === "anticipate" ? { duration: 2.8, ease: "easeIn" } : {}}
             />
 
-            {/* Contact shadow */}
-            <div
+            {/* Contact shadow — responds to wobble */}
+            <motion.div
                 className="absolute pointer-events-none"
                 style={{
                     bottom: -6, left: "28%", width: "44%", height: 8,
                     borderRadius: "50%",
                     background: `radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%)`,
                 }}
+                animate={phase === "anticipate" ? {
+                    x: [0, 0.5, -0.5, 0.8, -1, 1.2, -1.5, 1.8, -2, 0, 0, 2.2, -2.5, 2.8, -3, 3.2, -3.5, 3.2, -3.5, 0, 0, 3.5, -3.8, 4, -3.8, 4, -4, 3.8, -4, 0],
+                    scaleX: [1, 1, 1, 1.01, 0.99, 1.02, 0.98, 1.03, 0.97, 1.04, 1.04, 1.04, 1.05, 1.06, 0.94, 1.07, 0.93, 1.08, 0.92, 1.09, 1.09, 1.09, 1.1, 1.11, 0.9, 1.12, 0.88, 1.12, 0.88, 1],
+                } : {}}
+                transition={phase === "anticipate" ? {
+                    duration: 2.8, ease: "linear",
+                    times: [0, 0.03, 0.06, 0.09, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.39, 0.42, 0.46, 0.5, 0.53, 0.56, 0.58, 0.6, 0.62, 0.66, 0.7, 0.74, 0.78, 0.82, 0.86, 0.9, 0.93, 0.97, 1.0],
+                } : {}}
             />
             {/* Ambient shadow */}
             <div
@@ -587,8 +639,36 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     transformStyle: "preserve-3d",
                     position: "relative",
                     filter: `drop-shadow(0 0 20px ${colors.glow}60)`,
+                    willChange: "transform",
                 }}
             >
+                {/* Fake environment reflection — rotates independently to sell 3D */}
+                <div
+                    className="capsule-env-reflect absolute inset-0 rounded-full pointer-events-none overflow-hidden"
+                    style={{ zIndex: 7, mixBlendMode: "screen" }}
+                >
+                    <div
+                        style={{
+                            position: "absolute", inset: 0,
+                            background: `conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.03) 15%, transparent 30%, rgba(255,255,255,0.05) 45%, transparent 60%, rgba(255,255,255,0.02) 80%, transparent 100%)`,
+                            animation: "envMapRotate 8s linear infinite",
+                        }}
+                    />
+                </div>
+
+                {/* Subsurface scattering at seam — light leaking through thin plastic */}
+                <motion.div
+                    className="absolute pointer-events-none"
+                    style={{
+                        top: CAPSULE_SIZE / 2 - 8, left: "5%", width: "90%", height: 16,
+                        background: `radial-gradient(ellipse at center, ${colors.glow}40 0%, transparent 70%)`,
+                        filter: "blur(4px)",
+                        mixBlendMode: "screen",
+                        zIndex: 4,
+                    }}
+                    animate={phase === "anticipate" ? { opacity: [0, 0, 0, 0.2, 0.4, 0.6, 0.8] } : { opacity: 0.08 }}
+                    transition={phase === "anticipate" ? { duration: 2.8, ease: "easeIn" } : {}}
+                />
                 {/* ──── Top half ──── */}
                 <motion.div
                     className={isCosmic ? "capsule-cosmic-top" : ""}
@@ -605,15 +685,18 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     animate={isCracking ? {
                         y: -150 * intensity,
                         x: 30 * intensity,
+                        z: [0, 80, 40],
                         rotateZ: 25 * intensity,
                         rotateX: -40 * intensity,
-                        scale: 0.3,
-                        opacity: [1, 1, 0.8, 0],
+                        rotateY: [0, 15 * intensity, 35 * intensity],
+                        scale: [1, 1.05, 0.6, 0.2],
+                        opacity: [1, 1, 0.7, 0],
                     } : {}}
                     transition={isCracking ? {
-                        duration: 0.6,
-                        ease: [0.32, 0, 0.67, 0],
-                        opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] },
+                        duration: 0.7,
+                        ease: [0.16, 1, 0.3, 1],
+                        scale: { duration: 0.7, times: [0, 0.1, 0.5, 1] },
+                        opacity: { duration: 0.7, times: [0, 0.2, 0.6, 1] },
                     } : {}}
                 >
                     {/* Diffuse color wash */}
@@ -670,8 +753,8 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         <div className="capsule-light-sweep" style={{
                             position: "absolute", top: 0, left: 0,
-                            width: "40px", height: "200%",
-                            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                            width: "60px", height: "200%",
+                            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.03) 15%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, rgba(255,255,255,0.03) 85%, transparent)",
                             transform: "rotate(25deg)",
                         }} />
                     </div>
@@ -693,15 +776,18 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     animate={isCracking ? {
                         y: 120 * intensity,
                         x: -25 * intensity,
+                        z: [0, -60, -120],
                         rotateZ: -20 * intensity,
                         rotateX: 30 * intensity,
-                        scale: 0.3,
-                        opacity: [1, 1, 0.8, 0],
+                        rotateY: [0, -20 * intensity, -40 * intensity],
+                        scale: [1, 1.05, 0.55, 0.15],
+                        opacity: [1, 1, 0.7, 0],
                     } : {}}
                     transition={isCracking ? {
-                        duration: 0.6,
-                        ease: [0.32, 0, 0.67, 0],
-                        opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] },
+                        duration: 0.65,
+                        ease: [0.55, 0, 1, 0.45],
+                        scale: { duration: 0.65, times: [0, 0.1, 0.5, 1] },
+                        opacity: { duration: 0.65, times: [0, 0.3, 0.7, 1] },
                     } : {}}
                 >
                     {/* Rim light bottom — fresnel */}
@@ -740,8 +826,13 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                             : `inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 8px ${colors.glow}40`,
                         zIndex: 5,
                     }}
-                    animate={isCracking ? { opacity: [1, 0], scaleX: [1, 1.5] } : {}}
-                    transition={isCracking ? { duration: 0.12, ease: "easeOut" } : {}}
+                    animate={isCracking ? {
+                        opacity: [1, 1, 0],
+                        scaleX: [1, 1.8, 3],
+                        scaleY: [1, 0.3, 0],
+                        filter: ["blur(0px)", "blur(1px)", "blur(4px)"],
+                    } : {}}
+                    transition={isCracking ? { duration: 0.2, ease: [0.22, 1, 0.36, 1], times: [0, 0.3, 1] } : {}}
                 >
                     {/* Shimmer overlay on seam */}
                     <div className="absolute inset-0 rounded-sm overflow-hidden pointer-events-none">
@@ -922,6 +1013,7 @@ export default function VibeCapsule({
     const [showShockwave, setShowShockwave] = useState(false);
     const [showLightBeam, setShowLightBeam] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [showBloom, setShowBloom] = useState(false);
     const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
     const isCosmic = tier === "cosmic";
     const isGold = tier === "gold";
@@ -948,6 +1040,7 @@ export default function VibeCapsule({
             setShowShockwave(false);
             setShowLightBeam(false);
             setShowConfetti(false);
+            setShowBloom(false);
             timeoutRefs.current.forEach(clearTimeout);
             timeoutRefs.current = [];
         }
@@ -1003,20 +1096,31 @@ export default function VibeCapsule({
 
         addTimeout(() => { setShowFlash(false); }, 400);
 
+        // Brief void — burst clears, creating a beat of "nothing" before reveal
         addTimeout(() => {
-            setPhase("reveal");
             setShowBurst(false);
             setShowShockwave(false);
             setShowLightBeam(false);
+        }, PHASE_DURATION.crack * 0.4);
+
+        // Center bloom fires just before reveal
+        addTimeout(() => {
+            setShowBloom(true);
+        }, PHASE_DURATION.crack * 0.55);
+
+        // Reveal — badge materializes from the bloom
+        addTimeout(() => {
+            setPhase("reveal");
             setShowRevealParticles(true);
             if (tier === "gold" || tier === "cosmic") setShowConfetti(true);
             playCapsuleRevealSound(tier);
             triggerHaptic(20);
-        }, PHASE_DURATION.crack * 0.5);
+        }, PHASE_DURATION.crack * 0.7);
 
         addTimeout(() => {
+            setShowBloom(false);
             setShowRevealParticles(false);
-        }, PHASE_DURATION.crack * 0.5 + PHASE_DURATION.reveal);
+        }, PHASE_DURATION.crack * 0.7 + PHASE_DURATION.reveal);
     }, [phase, addTimeout, tier]);
 
     // Handle collect tap
@@ -1120,7 +1224,7 @@ export default function VibeCapsule({
                                         className="relative"
                                         initial={quickOpen
                                             ? { y: 0, scale: 1, opacity: 1 }
-                                            : { y: -500, scale: 0.3, opacity: 0, rotateZ: -8 }
+                                            : { y: -500, scale: 0.3, opacity: 0, rotateZ: -8, filter: "blur(8px)" }
                                         }
                                         animate={
                                             phase === "crack"
@@ -1134,11 +1238,13 @@ export default function VibeCapsule({
                                                     scale: 1,
                                                     opacity: 1,
                                                     rotateZ: 0,
+                                                    filter: "blur(0px)",
                                                     transition: {
                                                         y: { type: "spring", stiffness: 300, damping: 20, mass: 2.5 },
                                                         scale: { type: "spring", stiffness: 300, damping: 18, mass: 1.5, delay: 0.05 },
                                                         opacity: { duration: 0.12, ease: "easeOut" },
                                                         rotateZ: { type: "spring", stiffness: 200, damping: 15, delay: 0.1 },
+                                                        filter: { duration: 0.25, ease: "easeOut" },
                                                     },
                                                 }
                                         }
@@ -1159,6 +1265,7 @@ export default function VibeCapsule({
                                         <BurstParticles tier={tier} active={showBurst} />
                                         <ShockwaveRings active={showShockwave} color={colors.glow} />
                                         <LightBeam active={showLightBeam} tier={tier} />
+                                        <CenterBloom active={showBloom} color={colors.glow} />
 
                                         {/* Tap hint */}
                                         {(phase === "appear" || phase === "anticipate") && (
@@ -1197,10 +1304,18 @@ export default function VibeCapsule({
                                                     transition: { duration: 0.5, ease: [0.55, 0, 1, 0.45], times: [0, 0.2, 1] },
                                                 }
                                                 : {
-                                                    scale: [0, 1.3 * (intensity * 0.6), 0.9, 1.05, 1],
-                                                    opacity: [0, 1, 1, 1, 1],
-                                                    filter: ["brightness(3)", "brightness(1.5)", "brightness(1.1)", "brightness(1)", "brightness(1)"],
-                                                    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], times: [0, 0.35, 0.55, 0.75, 1] },
+                                                    scale: [0, 0.1, 0.1, 1.2 * (intensity * 0.6), 0.92, 1.04, 1],
+                                                    opacity: [0, 0, 1, 1, 1, 1, 1],
+                                                    filter: [
+                                                        "brightness(5) blur(20px)",
+                                                        "brightness(4) blur(15px)",
+                                                        "brightness(3) blur(8px)",
+                                                        "brightness(1.3) blur(0px)",
+                                                        "brightness(1.1) blur(0px)",
+                                                        "brightness(1) blur(0px)",
+                                                        "brightness(1) blur(0px)",
+                                                    ],
+                                                    transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1], times: [0, 0.1, 0.2, 0.5, 0.65, 0.8, 1] },
                                                 }
                                         }
                                         exit={{ scale: 0, y: 400, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }}
@@ -1345,24 +1460,33 @@ export default function VibeCapsule({
             {/* KEYFRAME ANIMATIONS */}
             {/* ======================== */}
             <style jsx global>{`
-                /* Subtle idle float */
+                /* Multi-axis idle float — sells 3D via perspective foreshortening */
                 .capsule-float {
-                    animation: capsuleFloat 3s ease-in-out infinite;
+                    animation: capsuleFloat 3.4s ease-in-out infinite;
                 }
 
                 @keyframes capsuleFloat {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-4px); }
+                    0% { transform: translateY(0) rotateX(0deg) rotateY(0deg) scale(1); }
+                    25% { transform: translateY(-3px) rotateX(1.8deg) rotateY(-1.2deg) scale(1.003); }
+                    50% { transform: translateY(-5px) rotateX(0deg) rotateY(0.6deg) scale(1.005); }
+                    75% { transform: translateY(-2px) rotateX(-1.2deg) rotateY(-0.4deg) scale(1.002); }
+                    100% { transform: translateY(0) rotateX(0deg) rotateY(0deg) scale(1); }
                 }
 
-                /* Light sweep across sphere surface */
+                /* Light sweep — faster, accelerates across curved surface */
                 .capsule-light-sweep {
-                    animation: capsuleLightSweep 4s ease-in-out 1s infinite;
+                    animation: capsuleLightSweep 2.5s cubic-bezier(0.7, 0, 0.3, 1) 0.3s infinite;
                 }
 
                 @keyframes capsuleLightSweep {
                     0% { transform: translateX(-120%) rotate(25deg); }
                     100% { transform: translateX(500%) rotate(25deg); }
+                }
+
+                /* Slow-rotating environment reflection — sells "reflective 3D surface" */
+                @keyframes envMapRotate {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
 
                 /* Orbiting particles */
@@ -1384,15 +1508,34 @@ export default function VibeCapsule({
                 @keyframes capsuleOrbit {
                     0% {
                         transform: rotate(var(--orbit-angle))
-                            translateX(var(--orbit-distance)) rotate(calc(-1 * var(--orbit-angle)));
-                        opacity: 0.3;
+                            translateX(var(--orbit-distance)) rotate(calc(-1 * var(--orbit-angle))) scale(0.6);
+                        opacity: 0.25;
+                        filter: blur(1.5px);
                     }
-                    50% { opacity: 1; }
+                    25% {
+                        opacity: 0.5;
+                        filter: blur(0.8px);
+                        transform: rotate(calc(var(--orbit-angle) + 90deg))
+                            translateX(var(--orbit-distance)) rotate(calc(-1 * (var(--orbit-angle) + 90deg))) scale(0.8);
+                    }
+                    50% {
+                        opacity: 1;
+                        filter: blur(0px);
+                        transform: rotate(calc(var(--orbit-angle) + 180deg))
+                            translateX(var(--orbit-distance)) rotate(calc(-1 * (var(--orbit-angle) + 180deg))) scale(1.15);
+                    }
+                    75% {
+                        opacity: 0.5;
+                        filter: blur(0.8px);
+                        transform: rotate(calc(var(--orbit-angle) + 270deg))
+                            translateX(var(--orbit-distance)) rotate(calc(-1 * (var(--orbit-angle) + 270deg))) scale(0.8);
+                    }
                     100% {
                         transform: rotate(calc(var(--orbit-angle) + 360deg))
                             translateX(var(--orbit-distance))
-                            rotate(calc(-1 * (var(--orbit-angle) + 360deg)));
-                        opacity: 0.3;
+                            rotate(calc(-1 * (var(--orbit-angle) + 360deg))) scale(0.6);
+                        opacity: 0.25;
+                        filter: blur(1.5px);
                     }
                 }
 
