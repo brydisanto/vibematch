@@ -689,7 +689,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             </motion.div>
                         )}
 
-                        {/* ===== ANIMATED SCORE — with glow pulse & NEW BEST decal ===== */}
+                        {/* ===== ANIMATED SCORE ===== */}
                         <motion.div
                             className="mb-4 relative"
                             initial={{ scale: 0.5, opacity: 0 }}
@@ -702,24 +702,32 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             }}
                         >
                             <AnimatedScore target={score} color={rank.color} />
-
-                            {/* New High Score Decal */}
-                            <AnimatePresence>
-                                {isNewHighScore && (
-                                    <motion.div
-                                        className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#FF4500] to-[#FF8C00] text-white font-mundial font-black uppercase tracking-widest text-[9px] sm:text-[10px] px-3 py-1 rounded-full shadow-[0_0_15px_rgba(255,140,0,0.6)] z-10"
-                                        initial={{ opacity: 0, y: 10, scale: 0.5, rotate: -3 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-                                        transition={{ delay: 2.2, type: "spring", stiffness: 400, damping: 12 }}
-                                    >
-                                        New Best!
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                         </motion.div>
 
-                        {/* ===== RANK PROGRESS ===== */}
-                        <RankProgressBar score={score} rank={rank} />
+                        {/* ===== NEW PERSONAL BEST BANNER ===== */}
+                        <AnimatePresence>
+                            {isNewHighScore && (
+                                <motion.div
+                                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg mb-4 mx-auto"
+                                    style={{
+                                        background: "linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,140,0,0.1))",
+                                        border: "1px solid rgba(255,140,0,0.3)",
+                                        boxShadow: "0 0 20px rgba(255,140,0,0.15)",
+                                    }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ delay: 2.2, type: "spring", stiffness: 400, damping: 20 }}
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]" />
+                                    <span className="text-[#FF8C00] text-[10px] sm:text-[11px] font-mundial font-black uppercase tracking-[0.15em]">
+                                        New Personal Best
+                                    </span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* ===== RANK PROGRESS (hidden on new best) ===== */}
+                        {!isNewHighScore && <RankProgressBar score={score} rank={rank} />}
 
                         {/* ===== STATS ROW ===== */}
                         <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">
