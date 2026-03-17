@@ -781,13 +781,17 @@ export default function GameBoard({
                                         disabled={isAnimating}
                                     >
                                         {/* Badge image */}
-                                        <div className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden">
+                                        <div
+                                            className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden"
+                                            style={{ backgroundColor: `${tierColor}15` }}
+                                        >
                                             <Image
                                                 src={cell.badge.image}
                                                 alt={cell.badge.name}
                                                 fill
                                                 sizes="(max-width: 640px) 56px, 80px"
                                                 className="object-cover"
+                                                unoptimized
                                             />
                                         </div>
 

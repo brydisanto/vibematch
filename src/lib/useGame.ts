@@ -117,8 +117,19 @@ export function useGame(): UseGameReturn {
         }, 8000);
     }, []);
 
+    const preloadBadgeImages = useCallback((badges: Badge[]) => {
+        const seen = new Set<string>();
+        for (const badge of badges) {
+            if (seen.has(badge.image)) continue;
+            seen.add(badge.image);
+            const img = new window.Image();
+            img.src = badge.image;
+        }
+    }, []);
+
     const startGame = useCallback((mode: GameMode) => {
         const initialState = createInitialState(mode);
+        preloadBadgeImages(initialState.gameBadges);
         setState(initialState);
         setScorePopups([]);
         setLastTurnResult(null);
@@ -128,10 +139,11 @@ export function useGame(): UseGameReturn {
         hintShownThisGame.current = false;
         resetHintTimer(initialState.board);
         playGameStartSound();
-    }, [resetHintTimer]);
+    }, [resetHintTimer, preloadBadgeImages]);
 
     const startGameWithBadges = useCallback((mode: GameMode, badges: Badge[]) => {
         const initialState = createInitialState(mode, badges);
+        preloadBadgeImages(initialState.gameBadges);
         setState(initialState);
         setScorePopups([]);
         setLastTurnResult(null);
