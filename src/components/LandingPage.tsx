@@ -496,16 +496,18 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                         </div>
                     </div>
 
-                    {/* Logout Button (Hidden if guest) */}
-                    {isLoggedIn && (
-                        <button
-                            onClick={handleLogout}
-                            className="mt-4 text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all flex items-center justify-center gap-2 hover:gap-3"
-                        >
-                            <LogOut size={12} />
-                            <span>Sign Out of VibeMatch</span>
-                        </button>
-                    )}
+                    {/* Logout Button — reserve space so layout doesn't shift */}
+                    <div className="mt-4 h-5">
+                        {isLoggedIn && (
+                            <button
+                                onClick={handleLogout}
+                                className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all flex items-center justify-center gap-2 hover:gap-3 w-full"
+                            >
+                                <LogOut size={12} />
+                                <span>Sign Out of VibeMatch</span>
+                            </button>
+                        )}
+                    </div>
                 </motion.div>
             </div>
 
