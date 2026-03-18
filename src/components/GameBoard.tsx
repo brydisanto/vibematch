@@ -765,7 +765,7 @@ export default function GameBoard({
                                             ${isDealing ? "tile-deal" : ""}
                                             ${isHinted && !isSelected ? "ring-[3px] ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]" : ""}
                                             ${isInvalidSwap ? "game-tile--invalid-shake" : ""}
-                                            ${isDroppingTile ? "game-tile--dropping" : ""}
+                                            ${isDroppingTile && !isSwap1 && !isSwap2 ? "game-tile--dropping" : ""}
                                             ${(isSwap1 || isSwap2) ? "game-tile--swapping" : ""}
                                             ${isTileAnimating ? "game-tile--animating" : ""}
                                         `}

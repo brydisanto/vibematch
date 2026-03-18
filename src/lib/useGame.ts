@@ -322,6 +322,14 @@ export function useGame(): UseGameReturn {
         } else {
             setTimeout(() => {
                 setIsAnimating(false);
+                // Clear stale dropDistance so animation-fill-mode doesn't block future swap transitions
+                setState(prev2 => {
+                    if (!prev2) return prev2;
+                    const cleaned = prev2.board.map(row =>
+                        row.map(cell => cell.dropDistance ? { ...cell, dropDistance: 0, isNew: false } : cell)
+                    );
+                    return { ...prev2, board: cleaned };
+                });
             }, isMobile ? 120 : 300);
         }
 
