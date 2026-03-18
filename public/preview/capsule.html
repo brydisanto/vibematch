@@ -290,7 +290,7 @@ function buildAnimScene(containerId, buildCapsuleFn) {
     if (capsule.extras?.inner) capsule.extras.inner.visible = true;
     if (capsule.extras?.core) { capsule.extras.core.visible = true; capsule.extras.coreLight && (capsule.extras.coreLight.intensity = 0); }
     badgeMat.opacity = 0; badgeMesh.scale.setScalar(0.01);
-    badgeMesh.position.set(0,0,0); badgeMesh.rotation.set(0,0,0);
+    badgeMesh.position.set(0,0,0); badgeMesh.rotation.set(0,0,0); // reset for replay
     coreLight.intensity = 0;
     shockwave.visible = false; swMat.opacity = 0; shockwave.scale.setScalar(1);
     shockwave2.visible = false; sw2Mat.opacity = 0; shockwave2.scale.setScalar(1);
@@ -406,7 +406,7 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
       badgeMat.opacity = Math.min(p * 3, 1);
       badgeMesh.scale.setScalar(ep * 1.4);
-      badgeMesh.rotation.y = (1 - ep) * Math.PI * 0.6;
+      // No spin — badge faces forward
 
       if (p > 0.6) {
         const pp = (p - 0.6) / 0.4;
@@ -422,7 +422,7 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
     else if (phase === 'done') {
       badgeMesh.position.y = Math.sin(t * 1.5) * 0.06;
-      badgeMesh.rotation.y += 0.006;
+      // Badge floats without spinning
       coreLight.intensity = 1.2 + Math.sin(t * 2) * 0.6;
     }
 
