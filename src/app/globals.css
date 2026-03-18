@@ -984,7 +984,7 @@ body {
 }
 @media (max-width: 767px) {
     .game-tile--swapping {
-        animation-duration: 0.18s;
+        animation-duration: 0.26s;
     }
 }
 

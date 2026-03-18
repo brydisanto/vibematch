@@ -414,7 +414,7 @@ export function useGame(): UseGameReturn {
             setTimeout(() => {
                 setSwapAnim(null);
                 setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
-            }, isMobile ? 200 : 240);
+            }, isMobile ? 280 : 240);
         },
         [state, isAnimating, applyResult, resetHintTimer, isMobile]
     );
@@ -459,9 +459,9 @@ export function useGame(): UseGameReturn {
             setTimeout(() => {
                 setSwapAnim(null);
                 setState(prev => prev ? applyResult(prev, result, to, true) : prev);
-            }, 240);
+            }, isMobile ? 280 : 240);
         },
-        [state, isAnimating, applyResult, resetHintTimer]
+        [state, isAnimating, applyResult, resetHintTimer, isMobile]
     );
 
     return {
