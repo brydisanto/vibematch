@@ -337,28 +337,115 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bonus Capsule Flash */}
+            {/* Bonus Capsule Flash — BIG celebratory moment */}
             <AnimatePresence>
               {bonusCapsuleFlash && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.2 }}
-                  transition={{ duration: 0.4, ease: "backOut" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
                   className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
                 >
-                  <div className="text-center">
+                  {/* Screen flash */}
+                  <motion.div
+                    className="absolute inset-0"
+                    initial={{ backgroundColor: "rgba(255,224,72,0.6)" }}
+                    animate={{ backgroundColor: "rgba(255,224,72,0)" }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+
+                  {/* Expanding shockwave ring */}
+                  <motion.div
+                    className="absolute rounded-full border-[3px] border-[#FFE048]"
+                    style={{ width: 100, height: 100, boxShadow: "0 0 30px rgba(255,224,72,0.6), inset 0 0 30px rgba(255,224,72,0.3)" }}
+                    initial={{ scale: 0.2, opacity: 1 }}
+                    animate={{ scale: 6, opacity: 0 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  />
+
+                  {/* Second ring, delayed */}
+                  <motion.div
+                    className="absolute rounded-full border-2 border-[#B366FF]"
+                    style={{ width: 80, height: 80, boxShadow: "0 0 20px rgba(179,102,255,0.4)" }}
+                    initial={{ scale: 0.2, opacity: 0.8 }}
+                    animate={{ scale: 5, opacity: 0 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                  />
+
+                  {/* Radial burst particles */}
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const angle = (i / 16) * Math.PI * 2;
+                    const dist = 150 + Math.random() * 100;
+                    return (
+                      <motion.div
+                        key={`bonus-particle-${i}`}
+                        className="absolute rounded-full"
+                        style={{
+                          width: 4 + Math.random() * 4,
+                          height: 4 + Math.random() * 4,
+                          background: i % 3 === 0 ? "#FFE048" : i % 3 === 1 ? "#FF5F1F" : "#B366FF",
+                          boxShadow: `0 0 8px ${i % 3 === 0 ? "#FFE048" : i % 3 === 1 ? "#FF5F1F" : "#B366FF"}`,
+                        }}
+                        initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                        animate={{
+                          x: Math.cos(angle) * dist,
+                          y: Math.sin(angle) * dist,
+                          opacity: 0,
+                          scale: 0,
+                        }}
+                        transition={{ duration: 0.6 + Math.random() * 0.3, ease: [0.22, 1, 0.36, 1], delay: Math.random() * 0.1 }}
+                      />
+                    );
+                  })}
+
+                  {/* Capsule icon + text */}
+                  <div className="relative text-center">
+                    {/* Pulsing glow behind */}
                     <motion.div
-                      initial={{ y: 20 }}
-                      animate={{ y: -10 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,224,72,0.4) 0%, rgba(179,102,255,0.15) 50%, transparent 70%)" }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: [0, 1.5, 1.2], opacity: [0, 1, 0.6] }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    />
+
+                    <motion.div
+                      initial={{ scale: 0, y: 20 }}
+                      animate={{ scale: [0, 1.3, 1], y: -10 }}
+                      transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
                     >
-                      <div className="text-4xl sm:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#FFE048] via-[#FF5F1F] to-[#b366ff] drop-shadow-[0_0_30px_rgba(255,224,72,0.6)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)' }}>
+                      {/* Capsule emoji/icon */}
+                      <motion.div
+                        className="text-6xl sm:text-7xl mb-2"
+                        animate={{ rotate: [0, -10, 10, -5, 0] }}
+                        transition={{ duration: 0.5, delay: 0.3, ease: "easeInOut" }}
+                      >
+                        🎰
+                      </motion.div>
+                      <div
+                        className="text-4xl sm:text-5xl font-black tracking-wider font-display"
+                        style={{
+                          background: "linear-gradient(135deg, #FFE048, #FF5F1F, #B366FF, #FFE048)",
+                          backgroundSize: "200% 200%",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          animation: "ath-gradient-shift 1s ease-in-out infinite",
+                          filter: "drop-shadow(0 0 20px rgba(255,224,72,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
+                          WebkitTextStroke: "1px rgba(255,255,255,0.2)",
+                        }}
+                      >
                         BONUS CAPSULE!
                       </div>
-                      <div className="text-sm sm:text-base text-white/70 mt-1 font-display tracking-wide">
-                        T-shape bonus
-                      </div>
+                      <motion.div
+                        className="text-sm sm:text-base text-white/80 mt-2 font-display tracking-[0.2em] uppercase"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25, duration: 0.3 }}
+                        style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+                      >
+                        Shape match bonus
+                      </motion.div>
                     </motion.div>
                   </div>
                 </motion.div>

@@ -756,8 +756,8 @@ export default function GameBoard({
                                         className={`
                                             game-tile
                                             relative aspect-square rounded-lg sm:rounded-xl overflow-hidden
-                                            cursor-pointer transition-colors duration-150
-                                            border-2 hover:brightness-110
+                                            transition-colors duration-150
+                                            border-2
                                             ${tierClass}
                                             ${isSelected ? "tile-selected z-10" : ""}
                                             ${cell.isSpecial ? "special-glow" : ""}

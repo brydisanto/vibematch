@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import Image from "next/image";
 import { Badge, BadgeTier, TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
+
+const CapsuleSphere3D = lazy(() => import("./CapsuleSphere3D"));
 import {
     playCapsuleAppearSound,
     playCapsuleAnticipateSound,
@@ -1259,7 +1261,9 @@ export default function VibeCapsule({
                                             } : {}}
                                             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }}
                                         >
-                                            <CapsuleShape tier={tier} phase={phase} onTap={handleCapsuleTap} />
+                                            <Suspense fallback={<div style={{ width: 160, height: 160 }} />}>
+                                                <CapsuleSphere3D tier={tier} phase={phase} onTap={handleCapsuleTap} />
+                                            </Suspense>
                                         </motion.div>
 
                                         <OrbitParticles tier={tier} active={phase === "anticipate"} />
