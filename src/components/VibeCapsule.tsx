@@ -1261,7 +1261,7 @@ export default function VibeCapsule({
                                             } : {}}
                                             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }}
                                         >
-                                            <Suspense fallback={<div style={{ width: 500, height: 500 }} />}>
+                                            <Suspense fallback={<div style={{ width: 700, height: 700 }} />}>
                                                 <CapsuleSphere3D tier={tier} phase={phase} onTap={handleCapsuleTap} />
                                             </Suspense>
                                         </motion.div>

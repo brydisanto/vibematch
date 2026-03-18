@@ -318,9 +318,9 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
 
     mountedRef.current = true;
 
-    const W = 500;
-    const H = 500;
-    const dpr = window.devicePixelRatio || 1;
+    const W = 700;
+    const H = 700;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2× to keep GPU budget sane
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
@@ -329,10 +329,10 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.5;
 
-    // Scene + Camera
+    // Scene + Camera — FOV 60 gives ±2.4 units visible so particles fade before the edge
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0.15, 4.2);
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.set(0, 0.15, 3.5);
     camera.lookAt(0, 0, 0);
 
     // Tier colours
@@ -542,7 +542,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
       scene.add(pmesh);
       const a = (i / 40) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
       const elev = (Math.random() - 0.5) * Math.PI * 0.8;
-      const d = 1.8 + Math.random() * 3;
+      const d = 1.2 + Math.random() * 1.6;
       particles.push({
         mesh: pmesh,
         mat: pm,
@@ -778,11 +778,11 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     <canvas
       ref={canvasRef}
       onClick={handleClick}
-      width={500}
-      height={500}
+      width={700}
+      height={700}
       style={{
-        width: 500,
-        height: 500,
+        width: 700,
+        height: 700,
         pointerEvents: "auto",
         cursor: "pointer",
         visibility: hidden ? "hidden" : "visible",
