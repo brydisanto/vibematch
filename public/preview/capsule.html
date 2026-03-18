@@ -14,20 +14,29 @@
     min-height: 100vh;
     padding: 2rem 1.5rem 4rem;
   }
-  .page-header {
-    text-align: center; margin-bottom: 3rem;
-    padding-bottom: 1.5rem; border-bottom: 1px solid #1f0040;
+
+  /* Logo header */
+  .brand-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #1f0040;
   }
-  .page-header h1 {
-    font-size: 2rem; font-weight: 700;
+  .brand-header img {
+    width: 200px; height: auto;
+    margin-bottom: 0.75rem;
+    filter: drop-shadow(0 4px 20px rgba(179,102,255,0.3));
+  }
+  .brand-header h1 {
+    font-size: 1.5rem; font-weight: 700;
     background: linear-gradient(135deg, #B366FF, #FF66B2, #FFE048);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
   }
-  .page-header p { color: #8a7aaa; font-size: 0.95rem; max-width: 620px; margin: 0 auto; }
+  .brand-header p { color: #8a7aaa; font-size: 0.9rem; max-width: 620px; margin: 0 auto; }
 
   .option-section {
-    max-width: 1000px; margin: 0 auto 4rem;
+    max-width: 1060px; margin: 0 auto 4rem;
     background: #130025; border: 1px solid #1f0040;
     border-radius: 16px; padding: 2rem 1.5rem;
   }
@@ -55,15 +64,80 @@
     letter-spacing: 0.08em; text-transform: uppercase;
     color: #8a7aaa;
   }
+  .tier-label .tier-color {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
   canvas { display: block; border-radius: 12px; }
+
+  /* Brand context section — shows capsule in situ */
+  .context-section {
+    max-width: 1060px; margin: 0 auto 4rem;
+    background: linear-gradient(180deg, #1a042d 0%, #0d0018 100%);
+    border: 1px solid #1f0040;
+    border-radius: 16px; padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .context-section h2 {
+    font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;
+    color: #e0d6f0;
+  }
+  .context-section p {
+    color: #8a7aaa; font-size: 0.85rem; max-width: 500px; margin: 0 auto 2rem;
+  }
+  .context-row {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 3rem; flex-wrap: wrap;
+  }
+  .context-item {
+    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  }
+  .context-item span {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #8a7aaa;
+  }
+  .badge-preview {
+    width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  }
 </style>
 </head>
 <body>
 
-<header class="page-header">
-  <h1>VibeMatch — Pin Capsule Redesign</h1>
-  <p>Four real 3D sphere designs rendered with Three.js — proper lighting, reflections, materials, and depth. Each shows all four rarity tiers.</p>
+<!-- Brand header with logo -->
+<header class="brand-header">
+  <img src="/assets/logo-v2.png" alt="VibeMatch Logo">
+  <h1>Pin Capsule Redesign Options</h1>
+  <p>Four 3D capsule designs rendered with real-time lighting and materials. Each capsule contains collectible badge pins — shown here with all four rarity tiers.</p>
 </header>
+
+<!-- Brand context — show what's inside -->
+<section class="context-section">
+  <h2>What's Inside the Capsule</h2>
+  <p>Each capsule cracks open to reveal a collectible badge pin. Higher tier = rarer drop. Here are example badges by tier:</p>
+  <div class="context-row">
+    <div class="context-item">
+      <img class="badge-preview" src="/badges/rainbow_citizen_1759173791000.webp" alt="Common badge">
+      <span>Common</span>
+    </div>
+    <div class="context-item">
+      <img class="badge-preview" src="/badges/super_rare_1759173833292.webp" alt="Rare badge">
+      <span>Rare</span>
+    </div>
+    <div class="context-item">
+      <img class="badge-preview" src="/badges/gold_member_1759173793799.webp" alt="Legendary badge">
+      <span>Legendary</span>
+    </div>
+    <div class="context-item">
+      <img class="badge-preview" src="/badges/cosmic_guardian1759173818340.webp" alt="Cosmic badge">
+      <span>Cosmic</span>
+    </div>
+  </div>
+</section>
 
 <!-- OPTION A -->
 <section class="option-section">
@@ -87,7 +161,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--c">Option C</span> Holographic Orb</h2>
-    <p>Iridescent surface that shifts color as it rotates — like a soap bubble or holographic foil. Environment-mapped with a rainbow MatCap and animated rotation.</p>
+    <p>Iridescent surface that shifts color as it rotates — like holographic foil. Environment-mapped with animated iridescence and sheen.</p>
   </div>
   <div class="tier-row" id="row-c"></div>
 </section>
@@ -96,7 +170,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--d">Option D</span> Crystal Ball</h2>
-    <p>The premium option. A transparent glass outer shell with a glowing energy core inside. Volumetric inner light, Fresnel rim, and a bright animated core that pulses. Cosmic tier gets orbiting particle rings.</p>
+    <p>The premium option. Transparent glass outer shell with a glowing energy core inside. Volumetric inner light, Fresnel rim, and a bright animated core that pulses. Cosmic tier gets orbiting particle rings.</p>
   </div>
   <div class="tier-row" id="row-d"></div>
 </section>
@@ -114,44 +188,77 @@ import * as THREE from 'three';
 
 // ── Tier definitions ──
 const TIERS = [
-  { name: 'Common',    shell: 0x6C5CE7, glow: 0x8B7FF0, accent: 0xA594FF },
-  { name: 'Rare',      shell: 0x6C5CE7, glow: 0x2ECC71, accent: 0x54D98C },
-  { name: 'Legendary', shell: 0x7B5AE0, glow: 0xFFE048, accent: 0xFFD700 },
-  { name: 'Cosmic',    shell: 0xB366FF, glow: 0xB366FF, accent: 0xFF66B2 },
+  { name: 'Common',    shell: 0x6C5CE7, glow: 0x8B7FF0, accent: 0xA594FF, colorHex: '#8B7FF0' },
+  { name: 'Rare',      shell: 0x6C5CE7, glow: 0x2ECC71, accent: 0x54D98C, colorHex: '#2ECC71' },
+  { name: 'Legendary', shell: 0x7B5AE0, glow: 0xFFE048, accent: 0xFFD700, colorHex: '#FFE048' },
+  { name: 'Cosmic',    shell: 0xB366FF, glow: 0xB366FF, accent: 0xFF66B2, colorHex: '#B366FF' },
 ];
 
-// ── Shared environment map (procedural gradient cube) ──
-function makeEnvMap(renderer) {
-  const size = 256;
-  const rt = new THREE.WebGLCubeRenderTarget(size);
-  const scene = new THREE.Scene();
-  // Dark purple-to-black gradient environment
+// Badge images — one per tier for the texture on the capsule
+const BADGE_IMAGES = [
+  '/badges/rainbow_citizen_1759173791000.webp',      // Common
+  '/badges/super_rare_1759173833292.webp',            // Rare
+  '/badges/gold_member_1759173793799.webp',           // Legendary
+  '/badges/cosmic_guardian1759173818340.webp',         // Cosmic
+];
+
+// ── Environment map ──
+function makeEnvMap() {
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d');
+
+  // Dark purple environment with bright studio-style highlights
   const grad = ctx.createLinearGradient(0, 0, 0, size);
   grad.addColorStop(0, '#2a0845');
-  grad.addColorStop(0.3, '#1a042d');
-  grad.addColorStop(0.5, '#0d0018');
-  grad.addColorStop(0.7, '#1a042d');
+  grad.addColorStop(0.2, '#1a042d');
+  grad.addColorStop(0.45, '#0d0018');
+  grad.addColorStop(0.55, '#0d0018');
+  grad.addColorStop(0.8, '#1a042d');
   grad.addColorStop(1, '#2a0845');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-  // Add some bright spots for reflections
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.beginPath(); ctx.arc(size * 0.3, size * 0.25, 30, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath(); ctx.arc(size * 0.7, size * 0.6, 20, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(179,102,255,0.1)';
-  ctx.beginPath(); ctx.arc(size * 0.5, size * 0.8, 40, 0, Math.PI * 2); ctx.fill();
+
+  // Key light — large soft highlight top-left
+  const hl1 = ctx.createRadialGradient(size * 0.25, size * 0.2, 0, size * 0.25, size * 0.2, size * 0.2);
+  hl1.addColorStop(0, 'rgba(255,255,255,0.35)');
+  hl1.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+  hl1.addColorStop(1, 'transparent');
+  ctx.fillStyle = hl1;
+  ctx.fillRect(0, 0, size, size);
+
+  // Fill light — subtle right side
+  const hl2 = ctx.createRadialGradient(size * 0.8, size * 0.55, 0, size * 0.8, size * 0.55, size * 0.12);
+  hl2.addColorStop(0, 'rgba(255,255,255,0.12)');
+  hl2.addColorStop(1, 'transparent');
+  ctx.fillStyle = hl2;
+  ctx.fillRect(0, 0, size, size);
+
+  // Colored accent — purple bottom glow
+  const hl3 = ctx.createRadialGradient(size * 0.5, size * 0.85, 0, size * 0.5, size * 0.85, size * 0.25);
+  hl3.addColorStop(0, 'rgba(179,102,255,0.15)');
+  hl3.addColorStop(1, 'transparent');
+  ctx.fillStyle = hl3;
+  ctx.fillRect(0, 0, size, size);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.mapping = THREE.EquirectangularReflectionMapping;
   return tex;
 }
 
-// ── Create a single capsule scene + canvas ──
-function createCapsuleCanvas(width, height) {
+const envMap = makeEnvMap();
+
+// ── Load badge textures ──
+const textureLoader = new THREE.TextureLoader();
+const badgeTextures = BADGE_IMAGES.map(src => {
+  const tex = textureLoader.load(src);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+});
+
+// ── Create canvas + renderer ──
+function createCanvas(width, height) {
   const canvas = document.createElement('canvas');
   canvas.width = width * window.devicePixelRatio;
   canvas.height = height * window.devicePixelRatio;
@@ -162,49 +269,44 @@ function createCapsuleCanvas(width, height) {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(width, height);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.3;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 100);
-  camera.position.set(0, 0.15, 3.8);
+  const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
+  camera.position.set(0, 0.2, 4.2);
   camera.lookAt(0, 0, 0);
 
   return { canvas, renderer, scene, camera };
 }
 
-// ── Lighting rig ──
+// ── Shared lighting rig ──
 function addLights(scene, glowColor) {
-  // Key light — strong top-left
-  const key = new THREE.DirectionalLight(0xffffff, 3.0);
+  const key = new THREE.DirectionalLight(0xffffff, 3.5);
   key.position.set(-2, 3, 3);
   scene.add(key);
 
-  // Fill light — soft from right
-  const fill = new THREE.DirectionalLight(0x8888ff, 0.8);
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.6);
   fill.position.set(2, -1, 2);
   scene.add(fill);
 
-  // Rim light from behind
-  const rim = new THREE.DirectionalLight(new THREE.Color(glowColor), 1.5);
+  const rim = new THREE.DirectionalLight(new THREE.Color(glowColor), 1.8);
   rim.position.set(0, 0, -3);
   scene.add(rim);
 
-  // Ambient
-  scene.add(new THREE.AmbientLight(0x1a042d, 0.5));
+  scene.add(new THREE.AmbientLight(0x1a042d, 0.4));
 
-  // Point light for glow
-  const point = new THREE.PointLight(new THREE.Color(glowColor), 2, 6);
-  point.position.set(0, 0, 1.5);
+  const point = new THREE.PointLight(new THREE.Color(glowColor), 2.5, 6);
+  point.position.set(0, 0.5, 2);
   scene.add(point);
 }
 
-// ── Seam ring (torus at equator) ──
+// ── Equator seam torus ──
 function addSeam(scene, color) {
-  const geo = new THREE.TorusGeometry(1.005, 0.015, 8, 64);
+  const geo = new THREE.TorusGeometry(1.008, 0.018, 8, 64);
   const mat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     emissive: new THREE.Color(color),
-    emissiveIntensity: 2,
+    emissiveIntensity: 2.5,
     metalness: 0.8,
     roughness: 0.2,
   });
@@ -214,35 +316,76 @@ function addSeam(scene, color) {
   return mesh;
 }
 
-// ── Glow sprite behind sphere ──
-function addGlowSprite(scene, color) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
+// ── Background glow sprite ──
+function addGlow(scene, color) {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d');
+  const col = new THREE.Color(color);
   const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  const c = new THREE.Color(color);
-  grad.addColorStop(0, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.4)`);
-  grad.addColorStop(0.5, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.1)`);
+  grad.addColorStop(0, `rgba(${col.r*255|0},${col.g*255|0},${col.b*255|0},0.5)`);
+  grad.addColorStop(0.4, `rgba(${col.r*255|0},${col.g*255|0},${col.b*255|0},0.15)`);
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 128, 128);
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(c);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(4, 4, 1);
+  sprite.scale.set(4.5, 4.5, 1);
   sprite.position.z = -0.5;
   scene.add(sprite);
   return sprite;
 }
 
-const envMap = makeEnvMap(null);
+// ── Badge decal on sphere surface ──
+function addBadgeDecal(scene, texture, yOffset = 0) {
+  const geo = new THREE.PlaneGeometry(0.7, 0.7);
+  const mat = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    side: THREE.FrontSide,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  // Position on front surface of sphere
+  mesh.position.set(0, yOffset, 1.01);
+  return mesh;
+}
+
+// ── Logo stamp (small, on the top hemisphere) ──
+let logoTexture = null;
+const logoPromise = new Promise((resolve) => {
+  logoTexture = textureLoader.load('/assets/logo-cropped.png', resolve);
+  logoTexture.colorSpace = THREE.SRGBColorSpace;
+});
+
+function addLogoStamp(parent) {
+  if (!logoTexture) return null;
+  const geo = new THREE.PlaneGeometry(0.45, 0.22);
+  const mat = new THREE.MeshBasicMaterial({
+    map: logoTexture,
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  // Positioned at top-front of sphere
+  mesh.position.set(0, 0.6, 0.82);
+  mesh.rotation.x = -0.35;
+  parent.add(mesh);
+  return mesh;
+}
 
 // ════════════════════════════════════════════════
 // OPTION A — Glass Orb
 // ════════════════════════════════════════════════
-function buildOptionA(tier) {
-  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+function buildOptionA(tier, tierIdx) {
+  const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
+
+  const group = new THREE.Group();
+  scene.add(group);
 
   // Top hemisphere — glass
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
@@ -250,48 +393,51 @@ function buildOptionA(tier) {
     color: new THREE.Color(tier.shell),
     metalness: 0.05,
     roughness: 0.08,
-    transmission: 0.6,
-    thickness: 0.8,
+    transmission: 0.55,
+    thickness: 0.9,
     ior: 1.5,
     envMap,
-    envMapIntensity: 1.5,
+    envMapIntensity: 1.8,
     clearcoat: 1.0,
     clearcoatRoughness: 0.05,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.82,
   });
   const topMesh = new THREE.Mesh(topGeo, topMat);
-  scene.add(topMesh);
+  group.add(topMesh);
 
   // Bottom hemisphere
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = topMat.clone();
-  botMat.color = new THREE.Color(tier.shell).multiplyScalar(0.8);
-  const botMesh = new THREE.Mesh(botGeo, botMat);
-  scene.add(botMesh);
+  botMat.color = new THREE.Color(tier.shell).multiplyScalar(0.75);
+  group.add(new THREE.Mesh(botGeo, botMat));
 
-  // Inner glow sphere
+  // Inner glow
   const innerGeo = new THREE.SphereGeometry(0.5, 32, 16);
-  const innerMat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(tier.glow),
-    transparent: true,
-    opacity: 0.3,
-  });
-  scene.add(new THREE.Mesh(innerGeo, innerMat));
+  const innerMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.glow), transparent: true, opacity: 0.3 });
+  group.add(new THREE.Mesh(innerGeo, innerMat));
+
+  // Badge visible through glass
+  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  group.add(badge);
+
+  // Logo stamp
+  addLogoStamp(group);
 
   const seam = addSeam(scene, tier.accent);
-  const glow = addGlowSprite(scene, tier.glow);
+  group.add(seam);
+  // Fix seam - it was added to scene, remove and re-add to group
+  scene.remove(seam);
+  group.add(seam);
+
+  const glow = addGlow(scene, tier.glow);
 
   let t = Math.random() * 100;
   function animate() {
     t += 0.012;
-    topMesh.position.y = Math.sin(t) * 0.06;
-    botMesh.position.y = topMesh.position.y;
-    seam.position.y = topMesh.position.y;
-    topMesh.rotation.y += 0.004;
-    botMesh.rotation.y += 0.004;
-    seam.rotation.y = topMesh.rotation.y;
-    glow.position.y = topMesh.position.y;
+    group.position.y = Math.sin(t) * 0.07;
+    group.rotation.y += 0.005;
+    glow.position.y = group.position.y;
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
@@ -302,63 +448,75 @@ function buildOptionA(tier) {
 // ════════════════════════════════════════════════
 // OPTION B — Heavy Chrome
 // ════════════════════════════════════════════════
-function buildOptionB(tier) {
-  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+function buildOptionB(tier, tierIdx) {
+  const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
+
+  const group = new THREE.Group();
+  scene.add(group);
 
   // Top hemisphere — polished metal
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   const topMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(tier.shell),
     metalness: 0.95,
-    roughness: 0.1,
+    roughness: 0.08,
     envMap,
-    envMapIntensity: 2.5,
-    clearcoat: 0.8,
-    clearcoatRoughness: 0.08,
+    envMapIntensity: 2.8,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.05,
     reflectivity: 1.0,
   });
-  const topMesh = new THREE.Mesh(topGeo, topMat);
-  scene.add(topMesh);
+  group.add(new THREE.Mesh(topGeo, topMat));
 
   // Bottom hemisphere — slightly darker
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(tier.shell).multiplyScalar(0.7),
+    color: new THREE.Color(tier.shell).multiplyScalar(0.65),
     metalness: 0.95,
-    roughness: 0.15,
+    roughness: 0.12,
     envMap,
-    envMapIntensity: 2.0,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.1,
+    envMapIntensity: 2.2,
+    clearcoat: 0.7,
+    clearcoatRoughness: 0.08,
   });
-  const botMesh = new THREE.Mesh(botGeo, botMat);
-  scene.add(botMesh);
+  group.add(new THREE.Mesh(botGeo, botMat));
 
-  // Thick groove seam
-  const seamGeo = new THREE.TorusGeometry(1.01, 0.025, 12, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
-    color: 0x222222,
-    metalness: 0.9,
+  // Badge embossed on surface (on front face)
+  const badgePlane = new THREE.PlaneGeometry(0.65, 0.65);
+  const badgeMat = new THREE.MeshStandardMaterial({
+    map: badgeTextures[tierIdx],
+    transparent: true,
+    metalness: 0.7,
     roughness: 0.3,
-    emissive: new THREE.Color(tier.accent),
-    emissiveIntensity: 0.5,
+    envMap,
+    envMapIntensity: 1.0,
+  });
+  const badgeMesh = new THREE.Mesh(badgePlane, badgeMat);
+  badgeMesh.position.set(0, 0, 1.01);
+  group.add(badgeMesh);
+
+  // Logo
+  addLogoStamp(group);
+
+  // Groove seam
+  const seamGeo = new THREE.TorusGeometry(1.012, 0.028, 12, 64);
+  const seamMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    metalness: 0.9, roughness: 0.25,
+    emissive: new THREE.Color(tier.accent), emissiveIntensity: 0.4,
   });
   const seam = new THREE.Mesh(seamGeo, seamMat);
   seam.rotation.x = Math.PI / 2;
-  scene.add(seam);
+  group.add(seam);
 
-  addGlowSprite(scene, tier.glow);
+  addGlow(scene, tier.glow);
 
   let t = Math.random() * 100;
   function animate() {
     t += 0.01;
-    const y = Math.sin(t) * 0.06;
-    topMesh.position.y = y;
-    botMesh.position.y = y;
-    seam.position.y = y;
-    topMesh.rotation.y += 0.006;
-    botMesh.rotation.y += 0.006;
+    group.position.y = Math.sin(t) * 0.06;
+    group.rotation.y += 0.007;
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
@@ -369,20 +527,22 @@ function buildOptionB(tier) {
 // ════════════════════════════════════════════════
 // OPTION C — Holographic / Iridescent
 // ════════════════════════════════════════════════
-function buildOptionC(tier) {
-  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+function buildOptionC(tier, tierIdx) {
+  const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
 
-  // Iridescent sphere — uses iridescence properties
+  const group = new THREE.Group();
+  scene.add(group);
+
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   const topMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(tier.shell),
     metalness: 0.3,
-    roughness: 0.15,
+    roughness: 0.12,
     envMap,
-    envMapIntensity: 2.0,
+    envMapIntensity: 2.2,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
+    clearcoatRoughness: 0.04,
     iridescence: 1.0,
     iridescenceIOR: 1.8,
     iridescenceThicknessRange: [200, 600],
@@ -390,32 +550,39 @@ function buildOptionC(tier) {
     sheenRoughness: 0.2,
     sheenColor: new THREE.Color(tier.accent),
   });
-  const topMesh = new THREE.Mesh(topGeo, topMat);
-  scene.add(topMesh);
+  group.add(new THREE.Mesh(topGeo, topMat));
 
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = topMat.clone();
   botMat.iridescenceThicknessRange = [300, 700];
-  const botMesh = new THREE.Mesh(botGeo, botMat);
-  scene.add(botMesh);
+  group.add(new THREE.Mesh(botGeo, botMat));
 
-  const seam = addSeam(scene, tier.accent);
-  const glow = addGlowSprite(scene, tier.glow);
+  // Badge
+  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  group.add(badge);
+
+  // Logo
+  addLogoStamp(group);
+
+  // Seam
+  const seamGeo = new THREE.TorusGeometry(1.008, 0.016, 8, 64);
+  const seamMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: new THREE.Color(tier.accent), emissiveIntensity: 3,
+    metalness: 0.8, roughness: 0.2,
+  });
+  const seam = new THREE.Mesh(seamGeo, seamMat);
+  seam.rotation.x = Math.PI / 2;
+  group.add(seam);
+
+  addGlow(scene, tier.glow);
 
   let t = Math.random() * 100;
   function animate() {
     t += 0.015;
-    const y = Math.sin(t) * 0.06;
-    topMesh.position.y = y;
-    botMesh.position.y = y;
-    seam.position.y = y;
-    // Faster rotation to show off iridescence shift
-    topMesh.rotation.y += 0.01;
-    botMesh.rotation.y += 0.01;
-    seam.rotation.y = topMesh.rotation.y;
-    glow.position.y = y;
-    // Animate iridescence thickness for shimmer
-    const shift = Math.sin(t * 2) * 100;
+    group.position.y = Math.sin(t) * 0.07;
+    group.rotation.y += 0.012;
+    const shift = Math.sin(t * 2) * 120;
     topMat.iridescenceThicknessRange = [200 + shift, 600 + shift];
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
@@ -425,120 +592,119 @@ function buildOptionC(tier) {
 }
 
 // ════════════════════════════════════════════════
-// OPTION D — Crystal Ball with inner glow core
+// OPTION D — Crystal Ball with inner core
 // ════════════════════════════════════════════════
-function buildOptionD(tier, isCosmic) {
-  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+function buildOptionD(tier, tierIdx, isCosmic) {
+  const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
+
+  const group = new THREE.Group();
+  scene.add(group);
 
   // Outer shell — transparent glass
   const shellGeo = new THREE.SphereGeometry(1, 64, 32);
   const shellMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(tier.shell).multiplyScalar(0.5),
+    color: new THREE.Color(tier.shell).multiplyScalar(0.4),
     metalness: 0.0,
-    roughness: 0.05,
-    transmission: 0.85,
-    thickness: 1.2,
+    roughness: 0.04,
+    transmission: 0.88,
+    thickness: 1.3,
     ior: 1.45,
     envMap,
-    envMapIntensity: 1.8,
+    envMapIntensity: 2.0,
     clearcoat: 1.0,
     clearcoatRoughness: 0.02,
     transparent: true,
-    opacity: 0.6,
-    side: THREE.FrontSide,
+    opacity: 0.55,
   });
-  const shell = new THREE.Mesh(shellGeo, shellMat);
-  scene.add(shell);
+  group.add(new THREE.Mesh(shellGeo, shellMat));
 
-  // Inner core — glowing energy ball
-  const coreGeo = new THREE.SphereGeometry(0.35, 32, 16);
+  // Inner core — glowing energy
+  const coreGeo = new THREE.SphereGeometry(0.32, 32, 16);
   const coreMat = new THREE.MeshBasicMaterial({
     color: new THREE.Color(tier.glow),
     transparent: true,
     opacity: 0.9,
   });
   const core = new THREE.Mesh(coreGeo, coreMat);
-  scene.add(core);
+  group.add(core);
 
-  // Core glow (point light inside)
-  const coreLight = new THREE.PointLight(new THREE.Color(tier.glow), 3, 4);
-  coreLight.position.set(0, 0, 0);
-  scene.add(coreLight);
+  // Core point light
+  const coreLight = new THREE.PointLight(new THREE.Color(tier.glow), 4, 4);
+  group.add(coreLight);
 
-  // Mid volume — subtle colored fog layer
-  const midGeo = new THREE.SphereGeometry(0.65, 32, 16);
-  const midMat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(tier.accent),
-    transparent: true,
-    opacity: 0.15,
-  });
-  scene.add(new THREE.Mesh(midGeo, midMat));
+  // Mid volume
+  const midGeo = new THREE.SphereGeometry(0.6, 32, 16);
+  const midMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent), transparent: true, opacity: 0.12 });
+  group.add(new THREE.Mesh(midGeo, midMat));
+
+  // Badge visible inside
+  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  badge.position.z = 0.65;
+  badge.material.opacity = 0.7;
+  group.add(badge);
+
+  // Logo
+  addLogoStamp(group);
 
   // Seam
-  const seam = addSeam(scene, tier.accent);
+  const seamGeo = new THREE.TorusGeometry(1.01, 0.02, 8, 64);
+  const seamMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: new THREE.Color(tier.accent), emissiveIntensity: 2,
+    metalness: 0.8, roughness: 0.2,
+  });
+  const seam = new THREE.Mesh(seamGeo, seamMat);
+  seam.rotation.x = Math.PI / 2;
+  group.add(seam);
 
-  // Outer glow
-  addGlowSprite(scene, tier.glow);
+  addGlow(scene, tier.glow);
 
-  // Cosmic: orbiting ring
+  // Cosmic: orbiting rings
   let ring1, ring2;
   if (isCosmic) {
-    const ringGeo = new THREE.TorusGeometry(1.5, 0.012, 8, 80);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(tier.accent),
-      transparent: true,
-      opacity: 0.5,
-    });
-    ring1 = new THREE.Mesh(ringGeo, ringMat);
+    const ringGeo1 = new THREE.TorusGeometry(1.5, 0.012, 8, 80);
+    const ringMat1 = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent), transparent: true, opacity: 0.5 });
+    ring1 = new THREE.Mesh(ringGeo1, ringMat1);
     ring1.rotation.x = Math.PI / 2.5;
     ring1.rotation.z = 0.3;
-    scene.add(ring1);
+    group.add(ring1);
 
-    const ring2Geo = new THREE.TorusGeometry(1.35, 0.008, 8, 80);
-    const ring2Mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(tier.glow),
-      transparent: true,
-      opacity: 0.35,
-    });
-    ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-    ring2.rotation.x = Math.PI / 3.5;
-    ring2.rotation.z = -0.5;
-    scene.add(ring2);
-
-    // Orbiting particles on ring
+    // Particles on ring
     for (let i = 0; i < 3; i++) {
-      const dotGeo = new THREE.SphereGeometry(0.04, 8, 8);
-      const dotMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent) });
-      const dot = new THREE.Mesh(dotGeo, dotMat);
-      const angle = (i / 3) * Math.PI * 2;
-      dot.position.set(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
+      const dg = new THREE.SphereGeometry(0.04, 8, 8);
+      const dm = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent) });
+      const dot = new THREE.Mesh(dg, dm);
+      const a = (i / 3) * Math.PI * 2;
+      dot.position.set(Math.cos(a) * 1.5, 0, Math.sin(a) * 1.5);
       ring1.add(dot);
     }
+
+    const ringGeo2 = new THREE.TorusGeometry(1.35, 0.008, 8, 80);
+    const ringMat2 = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.glow), transparent: true, opacity: 0.35 });
+    ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+    ring2.rotation.x = Math.PI / 3.5;
+    ring2.rotation.z = -0.5;
+    group.add(ring2);
   }
 
   let t = Math.random() * 100;
   function animate() {
     t += 0.012;
-    const y = Math.sin(t) * 0.06;
-    shell.position.y = y;
-    core.position.y = y;
-    seam.position.y = y;
-
-    shell.rotation.y += 0.003;
+    group.position.y = Math.sin(t) * 0.07;
+    group.rotation.y += 0.004;
 
     // Pulsing core
-    const pulse = 1.0 + Math.sin(t * 3) * 0.15;
-    core.scale.setScalar(pulse * 0.35 / 0.35);
-    coreMat.opacity = 0.7 + Math.sin(t * 3) * 0.2;
-    coreLight.intensity = 2 + Math.sin(t * 3) * 1.5;
+    const pulse = 1.0 + Math.sin(t * 3) * 0.18;
+    core.scale.setScalar(pulse);
+    coreMat.opacity = 0.7 + Math.sin(t * 3) * 0.25;
+    coreLight.intensity = 2.5 + Math.sin(t * 3) * 2;
 
-    if (ring1) {
-      ring1.position.y = y;
-      ring1.rotation.z += 0.008;
-      ring2.position.y = y;
-      ring2.rotation.z -= 0.005;
-    }
+    // Pulsing seam
+    seamMat.emissiveIntensity = 1.5 + Math.sin(t * 2) * 1;
+
+    if (ring1) ring1.rotation.z += 0.008;
+    if (ring2) ring2.rotation.z -= 0.005;
 
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
@@ -553,21 +719,23 @@ function buildRow(containerId, buildFn) {
   TIERS.forEach((tier, i) => {
     const item = document.createElement('div');
     item.className = 'tier-item';
-    const canvas = buildFn(tier, i === 3); // i===3 is cosmic
+    const canvas = buildFn(tier, i, i === 3);
     item.appendChild(canvas);
     const label = document.createElement('span');
     label.className = 'tier-label';
-    label.textContent = tier.name;
+    label.innerHTML = `<span class="tier-color" style="background:${tier.colorHex}"></span>${tier.name}`;
     item.appendChild(label);
     row.appendChild(item);
   });
 }
 
-buildRow('row-a', (tier) => buildOptionA(tier));
-buildRow('row-b', (tier) => buildOptionB(tier));
-buildRow('row-c', (tier) => buildOptionC(tier));
-buildRow('row-d', (tier, isCosmic) => buildOptionD(tier, isCosmic));
-
+// Wait for logo to load, then build everything
+logoPromise.then(() => {
+  buildRow('row-a', (tier, idx) => buildOptionA(tier, idx));
+  buildRow('row-b', (tier, idx) => buildOptionB(tier, idx));
+  buildRow('row-c', (tier, idx) => buildOptionC(tier, idx));
+  buildRow('row-d', (tier, idx, isCosmic) => buildOptionD(tier, idx, isCosmic));
+});
 </script>
 </body>
 </html>
