@@ -193,6 +193,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         leaderboard: LeaderboardEntry[];
         userEntry: UserEntry | null;
         nextPlayer: NextPlayer | null;
+        totalPlayers: number;
     }>>({});
     const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -203,6 +204,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const leaderboard = cached?.leaderboard ?? [];
     const userEntry = cached?.userEntry ?? null;
     const nextPlayer = cached?.nextPlayer ?? null;
+    const totalPlayers = cached?.totalPlayers ?? 0;
 
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
@@ -248,7 +250,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         fetchedModes.current.add(targetMode);
         setCache(prev => ({
             ...prev,
-            [targetMode]: { leaderboard: phase1List, userEntry: ue, nextPlayer: np },
+            [targetMode]: { leaderboard: phase1List, userEntry: ue, nextPlayer: np, totalPlayers: data.totalPlayers || phase1List.length },
         }));
         setIsLoading(false);
 
@@ -283,7 +285,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
             setCache(prev => ({
                 ...prev,
-                [targetMode]: { leaderboard: phase2List, userEntry: ue2 ?? prev[targetMode]?.userEntry ?? null, nextPlayer: prev[targetMode]?.nextPlayer ?? null },
+                [targetMode]: { leaderboard: phase2List, userEntry: ue2 ?? prev[targetMode]?.userEntry ?? null, nextPlayer: prev[targetMode]?.nextPlayer ?? null, totalPlayers: avatarData.totalPlayers || prev[targetMode]?.totalPlayers || phase2List.length },
             }));
         } catch {
             // Avatar enrichment failed — scores already displayed, silently ignore
@@ -386,14 +388,17 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                 </button>
                             ))}
                         </div>
-                        {/* Reset countdown */}
-                        {countdown && (
-                            <div className="text-center mt-2">
+                        {/* Reset countdown + player count */}
+                        <div className="flex items-center justify-between mt-2 px-1">
+                            <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
+                                {totalPlayers > 0 ? `${totalPlayers.toLocaleString()} player${totalPlayers !== 1 ? "s" : ""} vibing` : "\u00A0"}
+                            </span>
+                            {countdown && (
                                 <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
                                     Resets in {countdown}
                                 </span>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     {/* Content */}

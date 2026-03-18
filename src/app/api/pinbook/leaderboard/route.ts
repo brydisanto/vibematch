@@ -68,8 +68,9 @@ export async function GET() {
             getSession(),
         ]);
 
+        const lb = leaderboard || [];
         return NextResponse.json(
-            { leaderboard: leaderboard || [], currentUsername: session?.username || null },
+            { leaderboard: lb, totalPlayers: lb.length, currentUsername: session?.username || null },
             { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
         );
     } catch (e) {

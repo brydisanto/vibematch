@@ -58,6 +58,7 @@ function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry
 
 function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: string; refreshKey?: number }) {
     const [entries, setEntries] = useState<PinLeaderboardEntry[]>([]);
+    const [totalPlayers, setTotalPlayers] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -68,6 +69,7 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
                 if (!res.ok) return;
                 const data = await res.json();
                 setEntries(data.leaderboard || []);
+                setTotalPlayers(data.totalPlayers || (data.leaderboard || []).length);
             } catch {
                 // ignore
             } finally {
@@ -103,6 +105,13 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
 
     return (
         <div className="px-3 py-2">
+            {totalPlayers > 0 && (
+                <div className="text-center py-2 mb-1">
+                    <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
+                        {totalPlayers.toLocaleString()} collector{totalPlayers !== 1 ? "s" : ""} vibing
+                    </span>
+                </div>
+            )}
             {entries.map((entry, i) => {
                 const rank = i + 1;
                 const isUser = entry.username.toLowerCase() === currentUsername?.toLowerCase();

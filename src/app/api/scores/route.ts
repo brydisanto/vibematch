@@ -149,14 +149,15 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
         }
 
-        // Resolve canonical username in parallel with leaderboard fetch
+        // Resolve canonical username in parallel with leaderboard fetch + total count
         let canonicalUsername: string | null = null;
         const leaderboardPromise = kv.zrange(leaderboardKey, 0, 49, { rev: true, withScores: true });
+        const totalPlayersPromise = kv.zcard(leaderboardKey);
         const profilePromise = username
             ? kv.get(`user:${username.toLowerCase()}`)
             : Promise.resolve(null);
 
-        const [rawLeaderboard, userProfile] = await Promise.all([leaderboardPromise, profilePromise]);
+        const [rawLeaderboard, totalPlayers, userProfile] = await Promise.all([leaderboardPromise, totalPlayersPromise, profilePromise]);
         leaderboard = rawLeaderboard;
 
         if (username) {
@@ -249,7 +250,7 @@ export async function GET(req: Request) {
                 username: entry.member || entry.value,
                 score: Number(entry.score)
             }));
-            const responseData = { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, nextPlayer };
+            const responseData = { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, nextPlayer, totalPlayers };
             setCached(cacheKey, responseData);
             return NextResponse.json(
                 responseData,
@@ -285,7 +286,7 @@ export async function GET(req: Request) {
             ? enriched[enriched.length - 1]
             : null;
 
-        const responseData = { leaderboard: top50, personalBest: personalBest ? Number(personalBest) : 0, userRank, userEntry, nextPlayer };
+        const responseData = { leaderboard: top50, personalBest: personalBest ? Number(personalBest) : 0, userRank, userEntry, nextPlayer, totalPlayers };
         setCached(cacheKey, responseData);
         return NextResponse.json(
             responseData,
