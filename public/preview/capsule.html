@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VibeMatch — Pin Capsule Opening Animations</title>
+<title>VibeMatch — Option B: All Tiers</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -43,10 +43,10 @@
     letter-spacing: 0.06em; text-transform: uppercase;
     padding: 3px 10px; border-radius: 100px; margin-right: 0.5rem;
   }
-  .tag--a { background: #6C5CE722; color: #8B7FF0; }
-  .tag--b { background: #FFE04822; color: #FFE048; }
-  .tag--c { background: #2ECC7122; color: #54D98C; }
-  .tag--d { background: #FF66B222; color: #FF66B2; }
+  .tag--common { background: #55555522; color: #999; }
+  .tag--rare { background: #A8B8C822; color: #C0D0E0; }
+  .tag--legendary { background: #FFD70022; color: #FFD700; }
+  .tag--cosmic { background: #B366FF22; color: #B366FF; }
 
   .canvas-wrap {
     display: flex; justify-content: center;
@@ -66,39 +66,39 @@
 
 <header class="brand-header">
   <img src="/assets/logo-v2.png" alt="VibeMatch Logo">
-  <h1>Pin Capsule — Opening Animations</h1>
-  <p>Full-size opening animation for each capsule style, shown in the Rare tier. Click to play. Click again to replay.</p>
+  <h1>Option B — Dark Chrome / All Tiers</h1>
+  <p>Dark liquid mercury / onyx chrome capsule across all four rarity tiers. Click to play the opening animation. Click again to replay.</p>
 </header>
 
-<!-- OPTION A -->
+<!-- COMMON -->
 <section class="anim-section">
-  <h2><span class="tag tag--a">A</span> Glass Orb</h2>
-  <p>Translucent glass with iridescent sheen. Halves separate to reveal the badge inside.</p>
-  <div class="canvas-wrap" id="anim-a"></div>
+  <h2><span class="tag tag--common">Common</span> Dark Chrome</h2>
+  <p>Matte onyx with subtle grey reflections. The everyday capsule.</p>
+  <div class="canvas-wrap" id="tier-common"></div>
   <div class="hint">Click to open</div>
 </section>
 
-<!-- OPTION B -->
+<!-- RARE -->
 <section class="anim-section">
-  <h2><span class="tag tag--b">B</span> Heavy Chrome</h2>
-  <p>Mirror-polished metallic with iridescent clearcoat. Chrome halves shatter apart.</p>
-  <div class="canvas-wrap" id="anim-b"></div>
+  <h2><span class="tag tag--rare">Rare</span> Dark Chrome</h2>
+  <p>Liquid silver mercury with cool steel reflections.</p>
+  <div class="canvas-wrap" id="tier-rare"></div>
   <div class="hint">Click to open</div>
 </section>
 
-<!-- OPTION C -->
+<!-- LEGENDARY -->
 <section class="anim-section">
-  <h2><span class="tag tag--c">C</span> Holographic Orb</h2>
-  <p>Full holographic iridescence with animated color shift. Rainbow shimmer as it cracks.</p>
-  <div class="canvas-wrap" id="anim-c"></div>
+  <h2><span class="tag tag--legendary">Legendary</span> Dark Chrome</h2>
+  <p>Molten gold chrome with warm amber reflections.</p>
+  <div class="canvas-wrap" id="tier-legendary"></div>
   <div class="hint">Click to open</div>
 </section>
 
-<!-- OPTION D -->
+<!-- COSMIC -->
 <section class="anim-section">
-  <h2><span class="tag tag--d">D</span> Crystal Ball</h2>
-  <p>Transparent glass shell with glowing energy core. Core explodes outward on crack.</p>
-  <div class="canvas-wrap" id="anim-d"></div>
+  <h2><span class="tag tag--cosmic">Cosmic</span> Dark Chrome</h2>
+  <p>Deep void purple with electric violet reflections and heightened iridescence.</p>
+  <div class="canvas-wrap" id="tier-cosmic"></div>
   <div class="hint">Click to open</div>
 </section>
 
@@ -113,15 +113,20 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ── Rare tier ──
-const RARE = { shell: 0xA8B8C8, glow: 0xC0D0E0, accent: 0xD8E8F8 };
+// ── Tier definitions ──
+const TIERS = {
+  common:    { shell: 0x2a2a30, glow: 0x555560, accent: 0x70707a, seam: 0x444450, iridescence: 0.1 },
+  rare:      { shell: 0x1a1a22, glow: 0xC0D0E0, accent: 0xD8E8F8, seam: 0x8899aa, iridescence: 0.25 },
+  legendary: { shell: 0x1a1508, glow: 0xFFD700, accent: 0xFFE878, seam: 0xCCA800, iridescence: 0.35 },
+  cosmic:    { shell: 0x12081e, glow: 0xB366FF, accent: 0xDD88FF, seam: 0x8833CC, iridescence: 0.6 },
+};
 
 // ── Badge ──
 const textureLoader = new THREE.TextureLoader();
 const badgeTexture = textureLoader.load('/badges/any_gvc_1759173799963.webp');
 badgeTexture.colorSpace = THREE.SRGBColorSpace;
 
-// ── Bright env map ──
+// ── Env map ──
 function makeEnvMap() {
   const S = 512, c = document.createElement('canvas');
   c.width = S; c.height = S;
@@ -131,20 +136,16 @@ function makeEnvMap() {
   g.addColorStop(0.45, '#0d0018'); g.addColorStop(0.55, '#0d0018');
   g.addColorStop(0.8, '#1a042d'); g.addColorStop(1, '#3a1060');
   x.fillStyle = g; x.fillRect(0, 0, S, S);
-  // Key light
   const h1 = x.createRadialGradient(S*.22, S*.18, 0, S*.22, S*.18, S*.25);
   h1.addColorStop(0, 'rgba(255,255,255,0.7)'); h1.addColorStop(0.3, 'rgba(255,255,255,0.3)');
   h1.addColorStop(0.7, 'rgba(255,255,255,0.08)'); h1.addColorStop(1, 'transparent');
   x.fillStyle = h1; x.fillRect(0, 0, S, S);
-  // Fill
   const h2 = x.createRadialGradient(S*.82, S*.5, 0, S*.82, S*.5, S*.15);
   h2.addColorStop(0, 'rgba(255,255,255,0.25)'); h2.addColorStop(1, 'transparent');
   x.fillStyle = h2; x.fillRect(0, 0, S, S);
-  // Bottom bounce
   const h3 = x.createRadialGradient(S*.4, S*.88, 0, S*.4, S*.88, S*.18);
   h3.addColorStop(0, 'rgba(200,180,255,0.2)'); h3.addColorStop(1, 'transparent');
   x.fillStyle = h3; x.fillRect(0, 0, S, S);
-  // Color strip
   const h4 = x.createLinearGradient(0, S*.35, S, S*.65);
   h4.addColorStop(0, 'rgba(255,100,180,0.08)'); h4.addColorStop(0.3, 'rgba(100,200,255,0.06)');
   h4.addColorStop(0.6, 'rgba(255,224,72,0.08)'); h4.addColorStop(1, 'rgba(179,102,255,0.06)');
@@ -171,13 +172,13 @@ function createCanvas(w, h) {
 }
 
 // ── Lights ──
-function addLights(scene, glow) {
+function addLights(scene, glowHex) {
   scene.add(new THREE.DirectionalLight(0xffffff, 4.5).translateX(-2).translateY(3).translateZ(3));
   const fill = new THREE.DirectionalLight(0xaaaaff, 1.0); fill.position.set(2, -1, 2); scene.add(fill);
-  const rim = new THREE.DirectionalLight(new THREE.Color(glow), 2.5); rim.position.set(0, 0, -3); scene.add(rim);
+  const rim = new THREE.DirectionalLight(new THREE.Color(glowHex), 2.5); rim.position.set(0, 0, -3); scene.add(rim);
   const top = new THREE.DirectionalLight(0xffffff, 2.0); top.position.set(0, 4, 1); scene.add(top);
   scene.add(new THREE.AmbientLight(0x2a1050, 0.6));
-  const pt = new THREE.PointLight(new THREE.Color(glow), 3, 6); pt.position.set(0, 0.5, 2); scene.add(pt);
+  const pt = new THREE.PointLight(new THREE.Color(glowHex), 3, 6); pt.position.set(0, 0.5, 2); scene.add(pt);
 }
 
 // ── Glow sprite ──
@@ -199,30 +200,62 @@ function addGlow(scene, color) {
 // ── Easing ──
 function easeOutBack(x) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x-1, 3) + c1 * Math.pow(x-1, 2); }
 function easeOutExpo(x) { return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); }
-function easeInQuad(x) { return x * x; }
 function easeInCubic(x) { return x * x * x; }
 
 // ════════════════════════════════════════════════════════
-// GENERIC ANIMATION BUILDER
-// Each option provides: buildCapsule(group, scene) → { topMesh, topMat, botMesh, botMat, seamMesh, seamMat, extras }
+// ANIMATION BUILDER — Option B Dark Chrome, parameterized by tier
 // ════════════════════════════════════════════════════════
-function buildAnimScene(containerId, buildCapsuleFn) {
+function buildTierScene(containerId, tier) {
   const W = 700, H = 500;
   const { canvas, renderer, scene, camera } = createCanvas(W, H);
-  addLights(scene, RARE.glow);
+  addLights(scene, tier.glow);
   canvas.style.cursor = 'pointer';
 
-  const shellColor = new THREE.Color(RARE.shell);
-  const glowColor = new THREE.Color(RARE.glow);
-  const accentColor = new THREE.Color(RARE.accent);
+  const shellColor = new THREE.Color(tier.shell);
+  const glowColor = new THREE.Color(tier.glow);
+  const accentColor = new THREE.Color(tier.accent);
 
   const group = new THREE.Group();
   scene.add(group);
 
-  // Build option-specific capsule
-  const capsule = buildCapsuleFn(group, scene);
+  // ── Build Option B capsule with tier colors ──
+  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
+  const topMat = new THREE.MeshPhysicalMaterial({
+    color: shellColor, metalness: 1.0, roughness: 0.01,
+    envMap, envMapIntensity: 4.5, clearcoat: 1.0, clearcoatRoughness: 0.005,
+    iridescence: tier.iridescence, iridescenceIOR: 1.8, iridescenceThicknessRange: [200, 600],
+    reflectivity: 1.0,
+  });
+  const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
 
-  // Badge (hidden, revealed after crack)
+  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
+  const botMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell).multiplyScalar(0.65), metalness: 1.0, roughness: 0.015,
+    envMap, envMapIntensity: 3.8, clearcoat: 1.0, clearcoatRoughness: 0.008,
+    iridescence: tier.iridescence * 0.8, iridescenceIOR: 1.8, iridescenceThicknessRange: [250, 700],
+    reflectivity: 1.0,
+  });
+  const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
+
+  // Seam — renders behind badge
+  const seamGeo = new THREE.TorusGeometry(1.012, 0.025, 12, 64);
+  const seamMat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(tier.seam).multiplyScalar(0.3), metalness: 1.0, roughness: 0.1,
+    emissive: accentColor, emissiveIntensity: 0.3,
+  });
+  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
+  seamMesh.renderOrder = 0; seamMesh.material.depthWrite = true;
+  group.add(seamMesh);
+
+  // Badge on front — renderOrder 1, on top of seam
+  const bGeo = new THREE.PlaneGeometry(0.7, 0.7);
+  const bMat = new THREE.MeshBasicMaterial({
+    map: badgeTexture, transparent: true, depthWrite: true,
+  });
+  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.025; badge.renderOrder = 1;
+  group.add(badge);
+
+  // Badge revealed after crack
   const badgeGeo = new THREE.PlaneGeometry(1.3, 1.3);
   const badgeMat = new THREE.MeshBasicMaterial({
     map: badgeTexture, transparent: true, opacity: 0,
@@ -236,7 +269,7 @@ function buildAnimScene(containerId, buildCapsuleFn) {
   scene.add(coreLight);
 
   // Glow
-  const bgGlow = addGlow(scene, RARE.glow);
+  addGlow(scene, tier.glow);
 
   // Particles
   const particles = [];
@@ -259,19 +292,14 @@ function buildAnimScene(containerId, buildCapsuleFn) {
     });
   }
 
-  // Shockwave
+  // Shockwaves
   const swGeo = new THREE.RingGeometry(0.1, 0.2, 64);
   const swMat = new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0, side: THREE.DoubleSide });
-  const shockwave = new THREE.Mesh(swGeo, swMat);
-  shockwave.visible = false;
-  scene.add(shockwave);
+  const shockwave = new THREE.Mesh(swGeo, swMat); shockwave.visible = false; scene.add(shockwave);
 
-  // Second shockwave (delayed)
   const sw2Geo = new THREE.RingGeometry(0.05, 0.12, 64);
   const sw2Mat = new THREE.MeshBasicMaterial({ color: glowColor, transparent: true, opacity: 0, side: THREE.DoubleSide });
-  const shockwave2 = new THREE.Mesh(sw2Geo, sw2Mat);
-  shockwave2.visible = false;
-  scene.add(shockwave2);
+  const shockwave2 = new THREE.Mesh(sw2Geo, sw2Mat); shockwave2.visible = false; scene.add(shockwave2);
 
   // State
   let phase = 'idle', phaseTime = 0, t = Math.random() * 100;
@@ -279,18 +307,16 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
   function reset() {
     phase = 'idle'; phaseTime = 0;
-    capsule.topMesh.position.set(0,0,0); capsule.topMesh.rotation.set(0,0,0);
-    capsule.topMesh.scale.setScalar(1); capsule.topMesh.visible = true;
-    capsule.topMat.opacity = 1; capsule.topMat.transparent = false;
-    capsule.botMesh.position.set(0,0,0); capsule.botMesh.rotation.set(0,0,0);
-    capsule.botMesh.scale.setScalar(1); capsule.botMesh.visible = true;
-    capsule.botMat.opacity = 1; capsule.botMat.transparent = false;
-    if (capsule.seamMesh) { capsule.seamMesh.visible = true; capsule.seamMesh.position.set(0,0,0); }
-    if (capsule.extras?.badge) capsule.extras.badge.visible = true;
-    if (capsule.extras?.inner) capsule.extras.inner.visible = true;
-    if (capsule.extras?.core) { capsule.extras.core.visible = true; capsule.extras.coreLight && (capsule.extras.coreLight.intensity = 0); }
+    topMesh.position.set(0,0,0); topMesh.rotation.set(0,0,0);
+    topMesh.scale.setScalar(1); topMesh.visible = true;
+    topMat.opacity = 1; topMat.transparent = false;
+    botMesh.position.set(0,0,0); botMesh.rotation.set(0,0,0);
+    botMesh.scale.setScalar(1); botMesh.visible = true;
+    botMat.opacity = 1; botMat.transparent = false;
+    seamMesh.visible = true; seamMesh.position.set(0,0,0);
+    badge.visible = true;
     badgeMat.opacity = 0; badgeMesh.scale.setScalar(0.01);
-    badgeMesh.position.set(0,0,0); badgeMesh.rotation.set(0,0,0); // reset for replay
+    badgeMesh.position.set(0,0,0); badgeMesh.rotation.set(0,0,0);
     coreLight.intensity = 0;
     shockwave.visible = false; swMat.opacity = 0; shockwave.scale.setScalar(1);
     shockwave2.visible = false; sw2Mat.opacity = 0; shockwave2.scale.setScalar(1);
@@ -308,9 +334,6 @@ function buildAnimScene(containerId, buildCapsuleFn) {
     const dt = clock.getDelta();
     t += 0.012; phaseTime += dt;
 
-    // Option-specific idle updates
-    if (capsule.onTick) capsule.onTick(t, phase);
-
     if (phase === 'idle') {
       group.position.y = Math.sin(t) * 0.08;
       group.rotation.y += 0.006;
@@ -322,25 +345,22 @@ function buildAnimScene(containerId, buildCapsuleFn) {
       const freq = 10 + p * 30;
       group.rotation.z = Math.sin(phaseTime * freq) * intensity * (Math.PI / 180);
       group.rotation.x = Math.cos(phaseTime * freq * 0.7) * intensity * 0.5 * (Math.PI / 180);
-      // Translational jitter in last 30%
       if (p > 0.7) {
         const jit = (p - 0.7) / 0.3;
         group.position.x = Math.sin(phaseTime * freq * 1.3) * jit * 0.04;
         group.position.z = Math.cos(phaseTime * freq * 0.9) * jit * 0.02;
       }
       group.scale.setScalar(1 + p * 0.18);
-      if (capsule.seamMat) capsule.seamMat.emissiveIntensity = 3 + p * 10;
+      seamMat.emissiveIntensity = 3 + p * 10;
       coreLight.intensity = p * 4;
       if (p >= 1) {
         phase = 'crack'; phaseTime = 0;
-        capsule.topMat.transparent = true;
-        capsule.botMat.transparent = true;
+        topMat.transparent = true;
+        botMat.transparent = true;
         shockwave.visible = true;
         setTimeout(() => { shockwave2.visible = true; }, 80);
         particles.forEach(p => { p.mesh.visible = true; });
-        if (capsule.extras?.badge) capsule.extras.badge.visible = false;
-        if (capsule.extras?.inner) capsule.extras.inner.visible = false;
-        if (capsule.extras?.core) capsule.extras.core.visible = false;
+        badge.visible = false;
       }
     }
 
@@ -348,24 +368,23 @@ function buildAnimScene(containerId, buildCapsuleFn) {
       const p = Math.min(phaseTime / CRACK, 1);
       const ep = easeOutExpo(p);
 
-      // Halves fly apart with tumble
-      capsule.topMesh.position.y = ep * 2.5;
-      capsule.topMesh.position.x = ep * 1.0;
-      capsule.topMesh.position.z = ep * 0.6;
-      capsule.topMesh.rotation.z = ep * 0.7;
-      capsule.topMesh.rotation.x = -ep * 0.9;
-      capsule.topMesh.rotation.y = ep * 0.4;
-      capsule.topMat.opacity = Math.max(0, 1 - ep * 1.3);
+      topMesh.position.y = ep * 2.5;
+      topMesh.position.x = ep * 1.0;
+      topMesh.position.z = ep * 0.6;
+      topMesh.rotation.z = ep * 0.7;
+      topMesh.rotation.x = -ep * 0.9;
+      topMesh.rotation.y = ep * 0.4;
+      topMat.opacity = Math.max(0, 1 - ep * 1.3);
 
-      capsule.botMesh.position.y = -ep * 2.3;
-      capsule.botMesh.position.x = -ep * 0.8;
-      capsule.botMesh.position.z = ep * 0.4;
-      capsule.botMesh.rotation.z = -ep * 0.6;
-      capsule.botMesh.rotation.x = ep * 0.7;
-      capsule.botMesh.rotation.y = -ep * 0.3;
-      capsule.botMat.opacity = Math.max(0, 1 - ep * 1.3);
+      botMesh.position.y = -ep * 2.3;
+      botMesh.position.x = -ep * 0.8;
+      botMesh.position.z = ep * 0.4;
+      botMesh.rotation.z = -ep * 0.6;
+      botMesh.rotation.x = ep * 0.7;
+      botMesh.rotation.y = -ep * 0.3;
+      botMat.opacity = Math.max(0, 1 - ep * 1.3);
 
-      if (capsule.seamMesh) capsule.seamMesh.visible = p < 0.15;
+      seamMesh.visible = p < 0.15;
 
       group.scale.setScalar(1 + 0.18 * (1 - ep));
       group.rotation.z *= 0.9;
@@ -373,7 +392,6 @@ function buildAnimScene(containerId, buildCapsuleFn) {
       group.position.x *= 0.9;
       group.position.z *= 0.9;
 
-      // Shockwaves
       shockwave.scale.setScalar(1 + ep * 18);
       swMat.opacity = Math.max(0, (1 - ep) * 0.9);
       if (phaseTime > 0.08) {
@@ -392,9 +410,9 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
       if (p >= 1) {
         phase = 'reveal'; phaseTime = 0;
-        capsule.topMesh.visible = false;
-        capsule.botMesh.visible = false;
-        if (capsule.seamMesh) capsule.seamMesh.visible = false;
+        topMesh.visible = false;
+        botMesh.visible = false;
+        seamMesh.visible = false;
         shockwave.visible = false; shockwave2.visible = false;
         particles.forEach(p => { p.mesh.visible = false; });
       }
@@ -406,7 +424,6 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
       badgeMat.opacity = Math.min(p * 3, 1);
       badgeMesh.scale.setScalar(ep * 1.4);
-      // No spin — badge faces forward
 
       if (p > 0.6) {
         const pp = (p - 0.6) / 0.4;
@@ -422,7 +439,6 @@ function buildAnimScene(containerId, buildCapsuleFn) {
 
     else if (phase === 'done') {
       badgeMesh.position.y = Math.sin(t * 1.5) * 0.06;
-      // Badge floats without spinning
       coreLight.intensity = 1.2 + Math.sin(t * 2) * 0.6;
     }
 
@@ -434,207 +450,11 @@ function buildAnimScene(containerId, buildCapsuleFn) {
   document.getElementById(containerId).appendChild(canvas);
 }
 
-// ════════════════════════════════════════════════
-// OPTION A — Glass Orb
-// ════════════════════════════════════════════════
-buildAnimScene('anim-a', (group) => {
-  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
-  const topMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(RARE.shell), metalness: 0.1, roughness: 0.04,
-    transmission: 0.5, thickness: 0.9, ior: 1.6, envMap, envMapIntensity: 2.5,
-    clearcoat: 1.0, clearcoatRoughness: 0.02,
-    iridescence: 0.6, iridescenceIOR: 1.5, iridescenceThicknessRange: [100, 400],
-    sheen: 0.5, sheenRoughness: 0.15, sheenColor: new THREE.Color(RARE.accent),
-    transparent: true, opacity: 0.85,
-  });
-  const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
-
-  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
-  const botMat = topMat.clone(); botMat.color = new THREE.Color(RARE.shell).multiplyScalar(0.7);
-  const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
-
-  // Inner glow
-  const innerGeo = new THREE.SphereGeometry(0.5, 32, 16);
-  const innerMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(RARE.glow), transparent: true, opacity: 0.3 });
-  const inner = new THREE.Mesh(innerGeo, innerMat); group.add(inner);
-
-  // Seam
-  const seamGeo = new THREE.TorusGeometry(1.008, 0.018, 8, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, emissive: new THREE.Color(RARE.accent), emissiveIntensity: 2.5,
-    metalness: 0.8, roughness: 0.2,
-  });
-  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; group.add(seamMesh);
-
-  // Badge on front
-  const bGeo = new THREE.PlaneGeometry(0.75, 0.75);
-  const bMat = new THREE.MeshBasicMaterial({ map: badgeTexture, transparent: true, opacity: 0.92, depthWrite: true });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.02; badge.renderOrder = 1;
-  group.add(badge);
-
-  return {
-    topMesh, topMat, botMesh, botMat, seamMesh, seamMat,
-    extras: { inner, badge },
-    onTick: (t) => {
-      const s = Math.sin(t * 2) * 100;
-      topMat.iridescenceThicknessRange = [100 + s, 400 + s];
-    }
-  };
-});
-
-// ════════════════════════════════════════════════
-// OPTION B — Heavy Chrome
-// ════════════════════════════════════════════════
-buildAnimScene('anim-b', (group) => {
-  // Dark liquid mercury / onyx chrome — very dark base, mirror-perfect reflections
-  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
-  const topMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(0x1a1a22), metalness: 1.0, roughness: 0.01,
-    envMap, envMapIntensity: 4.5, clearcoat: 1.0, clearcoatRoughness: 0.005,
-    iridescence: 0.25, iridescenceIOR: 1.8, iridescenceThicknessRange: [200, 600],
-    reflectivity: 1.0,
-  });
-  const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
-
-  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
-  const botMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(0x0e0e14), metalness: 1.0, roughness: 0.015,
-    envMap, envMapIntensity: 3.8, clearcoat: 1.0, clearcoatRoughness: 0.008,
-    iridescence: 0.2, iridescenceIOR: 1.8, iridescenceThicknessRange: [250, 700],
-    reflectivity: 1.0,
-  });
-  const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
-
-  // Dark groove seam — renders behind badge
-  const seamGeo = new THREE.TorusGeometry(1.012, 0.025, 12, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
-    color: 0x050508, metalness: 1.0, roughness: 0.1,
-    emissive: new THREE.Color(RARE.accent), emissiveIntensity: 0.3,
-  });
-  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; seamMesh.material.depthWrite = true;
-  group.add(seamMesh);
-
-  // Badge — renderOrder 1 so it draws on top of seam
-  const bGeo = new THREE.PlaneGeometry(0.7, 0.7);
-  const bMat = new THREE.MeshBasicMaterial({
-    map: badgeTexture, transparent: true, depthWrite: true,
-  });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.025; badge.renderOrder = 1;
-  group.add(badge);
-
-  return {
-    topMesh, topMat, botMesh, botMat, seamMesh, seamMat,
-    extras: { badge },
-    onTick: () => {}
-  };
-});
-
-// ════════════════════════════════════════════════
-// OPTION C — Holographic
-// ════════════════════════════════════════════════
-buildAnimScene('anim-c', (group) => {
-  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
-  const topMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(RARE.shell), metalness: 0.5, roughness: 0.05,
-    envMap, envMapIntensity: 3.0, clearcoat: 1.0, clearcoatRoughness: 0.02,
-    iridescence: 1.0, iridescenceIOR: 2.0, iridescenceThicknessRange: [100, 800],
-    sheen: 1.0, sheenRoughness: 0.1, sheenColor: new THREE.Color(RARE.accent),
-  });
-  const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
-
-  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
-  const botMat = topMat.clone(); botMat.iridescenceThicknessRange = [200, 900];
-  const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
-
-  // Seam
-  const seamGeo = new THREE.TorusGeometry(1.008, 0.016, 8, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, emissive: new THREE.Color(RARE.accent), emissiveIntensity: 3,
-    metalness: 0.8, roughness: 0.2,
-  });
-  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; group.add(seamMesh);
-
-  // Badge
-  const bGeo = new THREE.PlaneGeometry(0.75, 0.75);
-  const bMat = new THREE.MeshBasicMaterial({ map: badgeTexture, transparent: true, opacity: 0.92, depthWrite: true });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.02; badge.renderOrder = 1;
-  group.add(badge);
-
-  return {
-    topMesh, topMat, botMesh, botMat, seamMesh, seamMat,
-    extras: { badge },
-    onTick: (t) => {
-      const s = Math.sin(t * 2) * 150;
-      topMat.iridescenceThicknessRange = [100 + s, 800 + s];
-    }
-  };
-});
-
-// ════════════════════════════════════════════════
-// OPTION D — Crystal Ball
-// ════════════════════════════════════════════════
-buildAnimScene('anim-d', (group, scene) => {
-  // Outer glass shell (full sphere, split into halves for cracking)
-  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
-  const topMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(RARE.shell).multiplyScalar(0.35), metalness: 0.05, roughness: 0.02,
-    transmission: 0.82, thickness: 1.3, ior: 1.5, envMap, envMapIntensity: 2.5,
-    clearcoat: 1.0, clearcoatRoughness: 0.01,
-    iridescence: 0.7, iridescenceIOR: 1.6, iridescenceThicknessRange: [100, 500],
-    transparent: true, opacity: 0.5,
-  });
-  const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
-
-  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
-  const botMat = topMat.clone();
-  const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
-
-  // Inner core
-  const coreGeo = new THREE.SphereGeometry(0.32, 32, 16);
-  const coreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(RARE.glow), transparent: true, opacity: 0.9 });
-  const core = new THREE.Mesh(coreGeo, coreMat); group.add(core);
-
-  const cl = new THREE.PointLight(new THREE.Color(RARE.glow), 2, 4); group.add(cl);
-
-  // Mid volume
-  const midGeo = new THREE.SphereGeometry(0.6, 32, 16);
-  const midMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(RARE.accent), transparent: true, opacity: 0.12 });
-  const inner = new THREE.Mesh(midGeo, midMat); group.add(inner);
-
-  // Seam
-  const seamGeo = new THREE.TorusGeometry(1.01, 0.02, 8, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, emissive: new THREE.Color(RARE.accent), emissiveIntensity: 2,
-    metalness: 0.8, roughness: 0.2,
-  });
-  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; group.add(seamMesh);
-
-  // Badge on surface
-  const bGeo = new THREE.PlaneGeometry(0.75, 0.75);
-  const bMat = new THREE.MeshBasicMaterial({ map: badgeTexture, transparent: true, opacity: 0.8, depthWrite: true });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.02; badge.renderOrder = 1;
-  group.add(badge);
-
-  return {
-    topMesh, topMat, botMesh, botMat, seamMesh, seamMat,
-    extras: { badge, inner, core, coreLight: cl },
-    onTick: (t, phase) => {
-      if (phase === 'idle' || phase === 'wobble') {
-        const pulse = 1 + Math.sin(t * 3) * 0.18;
-        core.scale.setScalar(pulse);
-        coreMat.opacity = 0.7 + Math.sin(t * 3) * 0.25;
-        cl.intensity = 2 + Math.sin(t * 3) * 1.5;
-        seamMat.emissiveIntensity = 1.5 + Math.sin(t * 2) * 1;
-        const s = Math.sin(t * 1.5) * 100;
-        topMat.iridescenceThicknessRange = [100 + s, 500 + s];
-      }
-    }
-  };
-});
+// ── Build all four tiers ──
+buildTierScene('tier-common', TIERS.common);
+buildTierScene('tier-rare', TIERS.rare);
+buildTierScene('tier-legendary', TIERS.legendary);
+buildTierScene('tier-cosmic', TIERS.cosmic);
 
 </script>
 </body>
