@@ -785,14 +785,14 @@ export default function GameBoard({
                                         {/* Badge image */}
                                         <div
                                             className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden"
-                                            style={{ backgroundColor: `${tierColor}15` }}
+                                            style={{ backgroundColor: `${tierColor}40` }}
                                         >
                                             <Image
                                                 src={cell.badge.image}
                                                 alt={cell.badge.name}
                                                 fill
                                                 sizes="(max-width: 640px) 56px, 80px"
-                                                className="object-cover"
+                                                className="object-cover transition-opacity duration-200"
                                                 loading="eager"
                                                 unoptimized
                                             />
