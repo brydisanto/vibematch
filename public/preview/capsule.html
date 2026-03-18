@@ -487,39 +487,41 @@ buildAnimScene('anim-a', (group) => {
 // OPTION B — Heavy Chrome
 // ════════════════════════════════════════════════
 buildAnimScene('anim-b', (group) => {
+  // Dark liquid mercury / onyx chrome — very dark base, mirror-perfect reflections
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, 0, Math.PI/2);
   const topMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(RARE.shell), metalness: 1.0, roughness: 0.03,
-    envMap, envMapIntensity: 3.5, clearcoat: 1.0, clearcoatRoughness: 0.02,
-    iridescence: 0.4, iridescenceIOR: 1.6, iridescenceThicknessRange: [150, 500],
+    color: new THREE.Color(0x1a1a22), metalness: 1.0, roughness: 0.01,
+    envMap, envMapIntensity: 4.5, clearcoat: 1.0, clearcoatRoughness: 0.005,
+    iridescence: 0.25, iridescenceIOR: 1.8, iridescenceThicknessRange: [200, 600],
     reflectivity: 1.0,
   });
   const topMesh = new THREE.Mesh(topGeo, topMat); group.add(topMesh);
 
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI*2, Math.PI/2, Math.PI/2);
   const botMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(RARE.shell).multiplyScalar(0.6), metalness: 1.0, roughness: 0.06,
-    envMap, envMapIntensity: 2.8, clearcoat: 0.8, clearcoatRoughness: 0.04,
-    iridescence: 0.3, iridescenceIOR: 1.6, iridescenceThicknessRange: [200, 600],
+    color: new THREE.Color(0x0e0e14), metalness: 1.0, roughness: 0.015,
+    envMap, envMapIntensity: 3.8, clearcoat: 1.0, clearcoatRoughness: 0.008,
+    iridescence: 0.2, iridescenceIOR: 1.8, iridescenceThicknessRange: [250, 700],
+    reflectivity: 1.0,
   });
   const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
 
-  // Groove seam
-  const seamGeo = new THREE.TorusGeometry(1.012, 0.028, 12, 64);
+  // Dark groove seam — renders behind badge
+  const seamGeo = new THREE.TorusGeometry(1.012, 0.025, 12, 64);
   const seamMat = new THREE.MeshStandardMaterial({
-    color: 0x111111, metalness: 0.95, roughness: 0.2,
-    emissive: new THREE.Color(RARE.accent), emissiveIntensity: 0.5,
+    color: 0x050508, metalness: 1.0, roughness: 0.1,
+    emissive: new THREE.Color(RARE.accent), emissiveIntensity: 0.3,
   });
   const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; group.add(seamMesh);
+  seamMesh.renderOrder = 0; seamMesh.material.depthWrite = true;
+  group.add(seamMesh);
 
-  // Badge
+  // Badge — renderOrder 1 so it draws on top of seam
   const bGeo = new THREE.PlaneGeometry(0.7, 0.7);
-  const bMat = new THREE.MeshStandardMaterial({
-    map: badgeTexture, transparent: true, metalness: 0.8, roughness: 0.2,
-    envMap, envMapIntensity: 1.5, depthWrite: true,
+  const bMat = new THREE.MeshBasicMaterial({
+    map: badgeTexture, transparent: true, depthWrite: true,
   });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.02; badge.renderOrder = 1;
+  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.025; badge.renderOrder = 1;
   group.add(badge);
 
   return {
