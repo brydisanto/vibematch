@@ -237,22 +237,42 @@ function buildTierScene(containerId, tier) {
   });
   const botMesh = new THREE.Mesh(botGeo, botMat); group.add(botMesh);
 
-  // Seam — renders behind badge
-  const seamGeo = new THREE.TorusGeometry(1.012, 0.025, 12, 64);
-  const seamMat = new THREE.MeshStandardMaterial({
+  // Seam — gap in front where badge sits (skip ~50° arc centered on front)
+  const gapHalf = Math.PI * 0.14; // half the gap angle
+  const seamMatDef = {
     color: new THREE.Color(tier.seam).multiplyScalar(0.3), metalness: 1.0, roughness: 0.1,
     emissive: accentColor, emissiveIntensity: 0.3,
-  });
-  const seamMesh = new THREE.Mesh(seamGeo, seamMat); seamMesh.rotation.x = Math.PI/2;
-  seamMesh.renderOrder = 0; seamMesh.material.depthWrite = true;
+  };
+  // Left arc: from gapHalf to 2*PI - gapHalf (skips the front-facing segment)
+  const seamGeo = new THREE.TorusGeometry(1.012, 0.025, 12, 48, Math.PI * 2 - gapHalf * 2);
+  const seamMat = new THREE.MeshStandardMaterial(seamMatDef);
+  const seamMesh = new THREE.Mesh(seamGeo, seamMat);
+  seamMesh.rotation.x = Math.PI / 2;
+  seamMesh.rotation.z = gapHalf; // rotate so gap faces camera (z+ direction)
   group.add(seamMesh);
 
-  // Badge on front — renderOrder 1, on top of seam
-  const bGeo = new THREE.PlaneGeometry(0.7, 0.7);
+  // Badge decal — mapped onto sphere surface using a spherical patch
+  const badgeAngularSize = 0.38; // radians — size of badge on sphere
+  const bdGeo = new THREE.SphereGeometry(
+    1.008, 32, 32,
+    -badgeAngularSize, badgeAngularSize * 2, // phi: centered on front
+    Math.PI / 2 - badgeAngularSize, badgeAngularSize * 2  // theta: centered on equator
+  );
+  // Remap UVs to [0,1] range for the badge texture
+  const uvAttr = bdGeo.attributes.uv;
+  const posAttr = bdGeo.attributes.position;
+  for (let i = 0; i < uvAttr.count; i++) {
+    const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+    const u = (Math.atan2(x, z) + badgeAngularSize) / (badgeAngularSize * 2);
+    const v = 1 - (Math.acos(Math.min(1, Math.max(-1, y / 1.008))) - (Math.PI / 2 - badgeAngularSize)) / (badgeAngularSize * 2);
+    uvAttr.setXY(i, u, v);
+  }
+  uvAttr.needsUpdate = true;
   const bMat = new THREE.MeshBasicMaterial({
     map: badgeTexture, transparent: true, depthWrite: true,
   });
-  const badge = new THREE.Mesh(bGeo, bMat); badge.position.z = 1.025; badge.renderOrder = 1;
+  const badge = new THREE.Mesh(bdGeo, bMat);
+  badge.renderOrder = 1;
   group.add(badge);
 
   // Badge revealed after crack
