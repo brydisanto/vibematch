@@ -38,10 +38,11 @@ const CAPSULE_COLORS: Record<
     BadgeTier,
     { shell: string; shellDark: string; shellDeep: string; glow: string; accent: string; rim: string; specularIntensity: number }
 > = {
-    blue: { shell: "#6C5CE7", shellDark: "#5541D4", shellDeep: "#3D2CA6", glow: "#6C5CE7", accent: "#8B7FF0", rim: "#A594FF", specularIntensity: 0.78 },
-    silver: { shell: "#6C5CE7", shellDark: "#5541D4", shellDeep: "#3D2CA6", glow: "#2ECC71", accent: "#54D98C", rim: "#7BE8A8", specularIntensity: 0.82 },
-    gold: { shell: "#7B5AE0", shellDark: "#5E3FBF", shellDeep: "#432B99", glow: "#FFE048", accent: "#FFE048", rim: "#FFD700", specularIntensity: 0.88 },
-    cosmic: { shell: "#B366FF", shellDark: "#8A3DE0", shellDeep: "#6B1FC0", glow: "#B366FF", accent: "#FF66B2", rim: "#E0AAFF", specularIntensity: 0.92 },
+    // Dark chrome / onyx / liquid mercury palette
+    blue:   { shell: "#2a2a30", shellDark: "#1a1a20", shellDeep: "#0e0e14", glow: "#555560", accent: "#70707a", rim: "#888890", specularIntensity: 0.7 },
+    silver: { shell: "#1a1a22", shellDark: "#121218", shellDeep: "#0a0a10", glow: "#C0D0E0", accent: "#D8E8F8", rim: "#E8F0FF", specularIntensity: 0.85 },
+    gold:   { shell: "#1a1508", shellDark: "#12100a", shellDeep: "#0a0806", glow: "#FFD700", accent: "#FFE878", rim: "#FFF0A0", specularIntensity: 0.9 },
+    cosmic: { shell: "#12081e", shellDark: "#0d0616", shellDeep: "#08030e", glow: "#B366FF", accent: "#DD88FF", rim: "#E0AAFF", specularIntensity: 0.92 },
 };
 
 const TIER_INTENSITY: Record<BadgeTier, number> = {
@@ -558,14 +559,14 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
 
     const isCracking = phase === "crack";
 
-    // Premium multi-layer gradients
+    // Dark chrome multi-layer gradients — metallic with strong highlights
     const topHalfBg = isCosmic
         ? undefined
-        : `radial-gradient(ellipse 120% 100% at 50% 110%, ${colors.accent}55 0%, ${colors.shell} 40%, ${colors.shellDark} 70%, ${colors.shellDeep} 100%)`;
+        : `radial-gradient(ellipse 120% 100% at 50% 110%, ${colors.accent}22 0%, ${colors.shell} 35%, ${colors.shellDark} 60%, ${colors.shellDeep} 100%)`;
 
     const bottomHalfBg = isCosmic
         ? undefined
-        : `radial-gradient(ellipse 120% 100% at 50% -10%, ${colors.shell}cc 0%, ${colors.shellDark} 50%, ${colors.shellDeep} 100%)`;
+        : `radial-gradient(ellipse 120% 100% at 50% -10%, ${colors.shell}bb 0%, ${colors.shellDark} 45%, ${colors.shellDeep} 100%)`;
 
     const seamColor = isGold ? colors.accent : colors.glow;
 
@@ -638,7 +639,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     width: CAPSULE_SIZE, height: CAPSULE_SIZE,
                     transformStyle: "preserve-3d",
                     position: "relative",
-                    filter: `drop-shadow(0 0 20px ${colors.glow}60)`,
+                    filter: `drop-shadow(0 0 25px ${colors.glow}50) drop-shadow(0 0 8px ${colors.shellDeep}80)`,
                     willChange: "transform",
                 }}
             >
@@ -650,7 +651,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     <div
                         style={{
                             position: "absolute", inset: 0,
-                            background: `conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.03) 15%, transparent 30%, rgba(255,255,255,0.05) 45%, transparent 60%, rgba(255,255,255,0.02) 80%, transparent 100%)`,
+                            background: `conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.06) 15%, transparent 30%, rgba(255,255,255,0.1) 45%, transparent 60%, rgba(255,255,255,0.04) 80%, transparent 100%)`,
                             animation: "envMapRotate 8s linear infinite",
                         }}
                     />
@@ -699,34 +700,34 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                         opacity: { duration: 0.7, times: [0, 0.2, 0.6, 1] },
                     } : {}}
                 >
-                    {/* Diffuse color wash */}
+                    {/* Diffuse color wash — subtle on dark chrome */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `radial-gradient(ellipse at 35% 15%, ${colors.accent}55 0%, transparent 55%)`,
+                        background: `radial-gradient(ellipse at 35% 15%, ${colors.accent}30 0%, transparent 55%)`,
                     }} />
-                    {/* Environment reflection — subtle horizon line */}
+                    {/* Environment reflection — stronger on dark surface */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `linear-gradient(180deg, transparent 30%, ${colors.shell}15 48%, rgba(255,255,255,0.06) 50%, ${colors.shellDeep}20 52%, transparent 70%)`,
+                        background: `linear-gradient(180deg, transparent 25%, ${colors.glow}12 45%, rgba(255,255,255,0.08) 50%, ${colors.shellDeep}30 55%, transparent 75%)`,
                     }} />
-                    {/* Rim light (right edge) — fresnel effect */}
+                    {/* Rim light (right edge) — bright fresnel on dark chrome */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}55 0%, ${colors.rim}22 40%, transparent 70%)`,
+                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}66 0%, ${colors.rim}30 40%, transparent 70%)`,
                     }} />
                     {/* Left rim fill light */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}18 0%, transparent 70%)`,
+                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}22 0%, transparent 70%)`,
                     }} />
-                    {/* Secondary diffuse highlight */}
+                    {/* Secondary diffuse highlight — more visible on dark */}
                     <div className="absolute pointer-events-none" style={{
                         top: 4, left: 10, width: 85, height: 52,
                         borderRadius: "50%",
-                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.12) 40%, transparent 70%)",
                         mixBlendMode: "screen",
                     }} />
-                    {/* Primary specular highlight — sharper, more defined */}
+                    {/* Primary specular highlight — crisp on dark chrome */}
                     <div className="absolute pointer-events-none" style={{
                         top: 10, left: 26, width: 48, height: 30,
                         borderRadius: "50%",
-                        background: `radial-gradient(ellipse at center, rgba(255,255,255,${Math.min(colors.specularIntensity + 0.05, 0.98)}) 0%, rgba(255,255,255,${colors.specularIntensity * 0.5}) 40%, transparent 70%)`,
+                        background: `radial-gradient(ellipse at center, rgba(255,255,255,${Math.min(colors.specularIntensity + 0.08, 0.99)}) 0%, rgba(255,255,255,${colors.specularIntensity * 0.55}) 40%, transparent 70%)`,
                         transform: "rotate(-15deg)",
                         mixBlendMode: "screen",
                     }} />
@@ -734,7 +735,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     <div className="absolute pointer-events-none" style={{
                         top: 16, left: 36, width: 14, height: 9,
                         borderRadius: "50%",
-                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 30%, transparent 70%)",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.75) 30%, transparent 70%)",
                         filter: "blur(0.5px)",
                         mixBlendMode: "screen",
                     }} />
@@ -742,7 +743,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                     <div className="absolute pointer-events-none" style={{
                         top: 22, left: 50, width: 6, height: 4,
                         borderRadius: "50%",
-                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, transparent 70%)",
+                        background: "radial-gradient(ellipse at center, rgba(255,255,255,0.8) 0%, transparent 70%)",
                         mixBlendMode: "screen",
                     }} />
                     {/* Bottom hemisphere ambient occlusion */}
@@ -754,7 +755,7 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                         <div className="capsule-light-sweep" style={{
                             position: "absolute", top: 0, left: 0,
                             width: "60px", height: "200%",
-                            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.03) 15%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, rgba(255,255,255,0.03) 85%, transparent)",
+                            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.05) 15%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.2) 60%, rgba(255,255,255,0.05) 85%, transparent)",
                             transform: "rotate(25deg)",
                         }} />
                     </div>
@@ -790,13 +791,13 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                         opacity: { duration: 0.65, times: [0, 0.3, 0.7, 1] },
                     } : {}}
                 >
-                    {/* Rim light bottom — fresnel */}
+                    {/* Rim light bottom — bright fresnel on dark chrome */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}44 0%, ${colors.rim}15 40%, transparent 70%)`,
+                        background: `radial-gradient(ellipse 25% 85% at 97% 50%, ${colors.rim}55 0%, ${colors.rim}22 40%, transparent 70%)`,
                     }} />
                     {/* Left fill bottom */}
                     <div className="absolute inset-0 pointer-events-none" style={{
-                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}12 0%, transparent 70%)`,
+                        background: `radial-gradient(ellipse 20% 70% at 3% 50%, ${colors.accent}18 0%, transparent 70%)`,
                     }} />
                     {/* Bottom ambient occlusion */}
                     <div className="absolute inset-0 pointer-events-none" style={{
@@ -818,12 +819,12 @@ function CapsuleShape({ tier, phase, onTap }: { tier: BadgeTier; phase: Phase; o
                         top: CAPSULE_SIZE / 2 - 4,
                         left: 0, width: CAPSULE_SIZE, height: 8,
                         background: isGold
-                            ? `linear-gradient(180deg, rgba(0,0,0,0.3) 0%, ${colors.accent}aa 15%, ${colors.accent}dd 30%, rgba(255,255,255,0.7) 50%, ${colors.accent}dd 70%, ${colors.accent}aa 85%, rgba(0,0,0,0.3) 100%)`
-                            : `linear-gradient(180deg, rgba(0,0,0,0.25) 0%, ${seamColor}66 15%, ${seamColor}99 30%, rgba(255,255,255,0.4) 50%, ${seamColor}99 70%, ${seamColor}66 85%, rgba(0,0,0,0.25) 100%)`,
+                            ? `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, ${colors.accent}88 15%, ${colors.accent}bb 30%, rgba(255,255,255,0.5) 50%, ${colors.accent}bb 70%, ${colors.accent}88 85%, rgba(0,0,0,0.5) 100%)`
+                            : `linear-gradient(180deg, rgba(0,0,0,0.4) 0%, ${seamColor}44 15%, ${seamColor}66 30%, rgba(255,255,255,0.25) 50%, ${seamColor}66 70%, ${seamColor}44 85%, rgba(0,0,0,0.4) 100%)`,
                         borderRadius: 3,
                         boxShadow: isGold
-                            ? `inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3), 0 0 12px ${colors.accent}60, 0 0 24px ${colors.accent}30`
-                            : `inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 8px ${colors.glow}40`,
+                            ? `inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4), 0 0 10px ${colors.accent}50, 0 0 20px ${colors.accent}25`
+                            : `inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.3), 0 0 6px ${colors.glow}30`,
                         zIndex: 5,
                     }}
                     animate={isCracking ? {
