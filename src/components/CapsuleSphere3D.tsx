@@ -336,7 +336,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     // Scene + Camera — FOV 60 gives ±2.4 units visible so particles fade before the edge
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-    camera.position.set(0, 0.15, 4.2);
+    camera.position.set(0, 0.15, 5.0);
     camera.lookAt(0, 0, 0);
 
     // Tier colours
