@@ -61,30 +61,9 @@
 
 <header class="brand-header">
   <img src="/assets/logo-v2.png" alt="VibeMatch Logo">
-  <h1>Option B — Dark Chrome / All Tiers</h1>
-  <p>Dark liquid mercury / onyx chrome capsule across all four rarity tiers. Click to play the opening animation.</p>
+  <h1>Cosmic — Dark Chrome</h1>
+  <p>Deep void purple with electric violet reflections and heightened iridescence. Click to play the opening animation.</p>
 </header>
-
-<section class="anim-section">
-  <h2><span class="tag tag--common">Common</span> Dark Chrome</h2>
-  <p>Matte onyx with subtle grey reflections. The everyday capsule.</p>
-  <div class="canvas-wrap" id="tier-common"></div>
-  <div class="hint">Click to open</div>
-</section>
-
-<section class="anim-section">
-  <h2><span class="tag tag--rare">Rare</span> Dark Chrome</h2>
-  <p>Liquid silver mercury with cool steel reflections.</p>
-  <div class="canvas-wrap" id="tier-rare"></div>
-  <div class="hint">Click to open</div>
-</section>
-
-<section class="anim-section">
-  <h2><span class="tag tag--legendary">Legendary</span> Dark Chrome</h2>
-  <p>Molten gold chrome with warm amber reflections.</p>
-  <div class="canvas-wrap" id="tier-legendary"></div>
-  <div class="hint">Click to open</div>
-</section>
 
 <section class="anim-section">
   <h2><span class="tag tag--cosmic">Cosmic</span> Dark Chrome</h2>
@@ -492,9 +471,6 @@ function buildTierScene(containerId, tier) {
   document.getElementById(containerId).appendChild(canvas);
 }
 
-buildTierScene('tier-common', TIERS.common);
-buildTierScene('tier-rare', TIERS.rare);
-buildTierScene('tier-legendary', TIERS.legendary);
 buildTierScene('tier-cosmic', TIERS.cosmic);
 
 </script>
