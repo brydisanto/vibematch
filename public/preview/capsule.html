@@ -115,26 +115,14 @@
   <p>Four 3D capsule designs rendered with real-time lighting and materials. Each capsule contains collectible badge pins — shown here with all four rarity tiers.</p>
 </header>
 
-<!-- Brand context — show what's inside -->
+<!-- Brand context — the badge shown on all capsules -->
 <section class="context-section">
-  <h2>What's Inside the Capsule</h2>
-  <p>Each capsule cracks open to reveal a collectible badge pin. Higher tier = rarer drop. Here are example badges by tier:</p>
+  <h2>Badge on Capsule</h2>
+  <p>The Citizen of Vibetown shaka badge is shown on the front of every capsule. Capsule shell colors match tier rarity: grey, silver, gold, cosmic purple.</p>
   <div class="context-row">
     <div class="context-item">
-      <img class="badge-preview" src="/badges/rainbow_citizen_1759173791000.webp" alt="Common badge">
-      <span>Common</span>
-    </div>
-    <div class="context-item">
-      <img class="badge-preview" src="/badges/super_rare_1759173833292.webp" alt="Rare badge">
-      <span>Rare</span>
-    </div>
-    <div class="context-item">
-      <img class="badge-preview" src="/badges/gold_member_1759173793799.webp" alt="Legendary badge">
-      <span>Legendary</span>
-    </div>
-    <div class="context-item">
-      <img class="badge-preview" src="/badges/cosmic_guardian1759173818340.webp" alt="Cosmic badge">
-      <span>Cosmic</span>
+      <img class="badge-preview" src="/badges/any_gvc_1759173799963.webp" alt="Shaka badge" style="width:100px;height:100px;">
+      <span>Citizen of Vibetown</span>
     </div>
   </div>
 </section>
@@ -186,21 +174,16 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ── Tier definitions ──
+// ── Tier definitions — grey / silver / gold / cosmic purple ──
 const TIERS = [
-  { name: 'Common',    shell: 0x6C5CE7, glow: 0x8B7FF0, accent: 0xA594FF, colorHex: '#8B7FF0' },
-  { name: 'Rare',      shell: 0x6C5CE7, glow: 0x2ECC71, accent: 0x54D98C, colorHex: '#2ECC71' },
-  { name: 'Legendary', shell: 0x7B5AE0, glow: 0xFFE048, accent: 0xFFD700, colorHex: '#FFE048' },
+  { name: 'Common',    shell: 0x888888, glow: 0xAAAAAA, accent: 0xCCCCCC, colorHex: '#AAAAAA' },
+  { name: 'Rare',      shell: 0xA8B8C8, glow: 0xC0D0E0, accent: 0xD8E8F8, colorHex: '#C0D0E0' },
+  { name: 'Legendary', shell: 0xC8A832, glow: 0xFFE048, accent: 0xFFD700, colorHex: '#FFE048' },
   { name: 'Cosmic',    shell: 0xB366FF, glow: 0xB366FF, accent: 0xFF66B2, colorHex: '#B366FF' },
 ];
 
-// Badge images — one per tier for the texture on the capsule
-const BADGE_IMAGES = [
-  '/badges/rainbow_citizen_1759173791000.webp',      // Common
-  '/badges/super_rare_1759173833292.webp',            // Rare
-  '/badges/gold_member_1759173793799.webp',           // Legendary
-  '/badges/cosmic_guardian1759173818340.webp',         // Cosmic
-];
+// Single badge for all capsules — the shaka / Citizen of Vibetown
+const BADGE_IMAGE = '/badges/any_gvc_1759173799963.webp';
 
 // ── Environment map ──
 function makeEnvMap() {
@@ -249,13 +232,10 @@ function makeEnvMap() {
 
 const envMap = makeEnvMap();
 
-// ── Load badge textures ──
+// ── Load badge texture (single shaka badge for all) ──
 const textureLoader = new THREE.TextureLoader();
-const badgeTextures = BADGE_IMAGES.map(src => {
-  const tex = textureLoader.load(src);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-});
+const badgeTexture = textureLoader.load(BADGE_IMAGE);
+badgeTexture.colorSpace = THREE.SRGBColorSpace;
 
 // ── Create canvas + renderer ──
 function createCanvas(width, height) {
@@ -418,7 +398,7 @@ function buildOptionA(tier, tierIdx) {
   group.add(new THREE.Mesh(innerGeo, innerMat));
 
   // Badge visible through glass
-  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  const badge = addBadgeDecal(scene, badgeTexture);
   group.add(badge);
 
   // Logo stamp
@@ -485,7 +465,7 @@ function buildOptionB(tier, tierIdx) {
   // Badge embossed on surface (on front face)
   const badgePlane = new THREE.PlaneGeometry(0.65, 0.65);
   const badgeMat = new THREE.MeshStandardMaterial({
-    map: badgeTextures[tierIdx],
+    map: badgeTexture,
     transparent: true,
     metalness: 0.7,
     roughness: 0.3,
@@ -558,7 +538,7 @@ function buildOptionC(tier, tierIdx) {
   group.add(new THREE.Mesh(botGeo, botMat));
 
   // Badge
-  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  const badge = addBadgeDecal(scene, badgeTexture);
   group.add(badge);
 
   // Logo
@@ -639,7 +619,7 @@ function buildOptionD(tier, tierIdx, isCosmic) {
   group.add(new THREE.Mesh(midGeo, midMat));
 
   // Badge visible inside
-  const badge = addBadgeDecal(scene, badgeTextures[tierIdx]);
+  const badge = addBadgeDecal(scene, badgeTexture);
   badge.position.z = 0.65;
   badge.material.opacity = 0.7;
   group.add(badge);
