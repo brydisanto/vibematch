@@ -252,26 +252,18 @@ function buildTierScene(containerId, tier) {
   group.add(seamMesh);
 
   // Badge decal — mapped onto sphere surface using a spherical patch
-  const badgeAngularSize = 0.38; // radians — size of badge on sphere
+  // SphereGeometry doesn't accept negative phiStart, so we start at 0 and rotate to center
+  const badgeAng = 0.38; // radians — half-angular size of badge on sphere
   const bdGeo = new THREE.SphereGeometry(
     1.008, 32, 32,
-    -badgeAngularSize, badgeAngularSize * 2, // phi: centered on front
-    Math.PI / 2 - badgeAngularSize, badgeAngularSize * 2  // theta: centered on equator
+    0, badgeAng * 2,                           // phi: sweep from 0
+    Math.PI / 2 - badgeAng, badgeAng * 2       // theta: centered on equator
   );
-  // Remap UVs to [0,1] range for the badge texture
-  const uvAttr = bdGeo.attributes.uv;
-  const posAttr = bdGeo.attributes.position;
-  for (let i = 0; i < uvAttr.count; i++) {
-    const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
-    const u = (Math.atan2(x, z) + badgeAngularSize) / (badgeAngularSize * 2);
-    const v = 1 - (Math.acos(Math.min(1, Math.max(-1, y / 1.008))) - (Math.PI / 2 - badgeAngularSize)) / (badgeAngularSize * 2);
-    uvAttr.setXY(i, u, v);
-  }
-  uvAttr.needsUpdate = true;
   const bMat = new THREE.MeshBasicMaterial({
     map: badgeTexture, transparent: true, depthWrite: true,
   });
   const badge = new THREE.Mesh(bdGeo, bMat);
+  badge.rotation.y = -badgeAng; // rotate so patch is centered on z+ (front)
   badge.renderOrder = 1;
   group.add(badge);
 
