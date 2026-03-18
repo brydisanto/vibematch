@@ -960,22 +960,18 @@ body {
 .game-tile {
     contain: layout style paint;
     transform: translateZ(0);
-    transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
-    cursor: grab;
+    transition: transform 0.12s ease;
+    cursor: default;
 }
 .game-tile--animating {
     will-change: transform, opacity;
 }
 .game-tile:hover {
-    transform: scale(1.08);
+    transform: scale(1.06);
     z-index: 5;
-    filter: brightness(1.15);
-    box-shadow: 0 0 12px rgba(255, 224, 72, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .game-tile:active {
     transform: scale(0.93);
-    cursor: grabbing;
-    filter: brightness(1.25);
 }
 
 /* === Swap animation: spring-like overshoot with "click into place" hang === */

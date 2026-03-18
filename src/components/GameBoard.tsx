@@ -755,6 +755,7 @@ export default function GameBoard({
                                         key={cell.id}
                                         className={`
                                             game-tile
+                                            cursor-pointer hover:brightness-110
                                             relative aspect-square rounded-lg sm:rounded-xl overflow-hidden
                                             transition-colors duration-150
                                             border-2

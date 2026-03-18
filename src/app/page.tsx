@@ -415,14 +415,6 @@ export default function Home() {
                       animate={{ scale: [0, 1.3, 1], y: -10 }}
                       transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
                     >
-                      {/* Capsule emoji/icon */}
-                      <motion.div
-                        className="text-6xl sm:text-7xl mb-2"
-                        animate={{ rotate: [0, -10, 10, -5, 0] }}
-                        transition={{ duration: 0.5, delay: 0.3, ease: "easeInOut" }}
-                      >
-                        🎰
-                      </motion.div>
                       <div
                         className="text-4xl sm:text-5xl font-black tracking-wider font-display"
                         style={{

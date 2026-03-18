@@ -318,8 +318,8 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
 
     mountedRef.current = true;
 
-    const W = 160;
-    const H = 160;
+    const W = 280;
+    const H = 280;
     const dpr = window.devicePixelRatio || 1;
 
     // Renderer
@@ -332,7 +332,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     // Scene + Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    camera.position.set(0, 0.15, 5);
+    camera.position.set(0, 0.15, 4.2);
     camera.lookAt(0, 0, 0);
 
     // Tier colours
@@ -778,11 +778,11 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     <canvas
       ref={canvasRef}
       onClick={handleClick}
-      width={160}
-      height={160}
+      width={280}
+      height={280}
       style={{
-        width: 160,
-        height: 160,
+        width: 280,
+        height: 280,
         pointerEvents: "auto",
         cursor: "pointer",
         visibility: hidden ? "hidden" : "visible",
