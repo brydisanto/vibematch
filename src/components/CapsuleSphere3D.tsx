@@ -768,7 +768,6 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
       textureDisposables.forEach((t) => t.dispose());
 
       renderer.dispose();
-      renderer.forceContextLoss();
 
       sceneRef.current = null;
     };

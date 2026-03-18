@@ -1018,6 +1018,9 @@ export default function VibeCapsule({
     const [showConfetti, setShowConfetti] = useState(false);
     const [showBloom, setShowBloom] = useState(false);
     const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+    // Counter increments each time capsule opens — used as key to force fresh Three.js scene
+    const openCountRef = useRef(0);
+    useEffect(() => { if (isOpen) openCountRef.current++; }, [isOpen]);
     const isCosmic = tier === "cosmic";
     const isGold = tier === "gold";
     const colors = CAPSULE_COLORS[tier];
@@ -1262,7 +1265,7 @@ export default function VibeCapsule({
                                             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }}
                                         >
                                             <Suspense fallback={<div style={{ width: 700, height: 700 }} />}>
-                                                <CapsuleSphere3D tier={tier} phase={phase} onTap={handleCapsuleTap} />
+                                                <CapsuleSphere3D key={openCountRef.current} tier={tier} phase={phase} onTap={handleCapsuleTap} />
                                             </Suspense>
                                         </motion.div>
 
