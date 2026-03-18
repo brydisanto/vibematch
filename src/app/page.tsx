@@ -37,6 +37,7 @@ export default function Home() {
   const [showPinBook, setShowPinBook] = useState(false);
   const [showCapsule, setShowCapsule] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
+  const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -61,14 +62,35 @@ export default function Home() {
       .catch(err => console.error("Initial session check failed:", err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Earn capsule when game ends with score >= 15,000
+  // Track classic game played + earn capsule when game ends
   useEffect(() => {
-    if (game.state?.gamePhase === "gameover" && game.state.score >= 15000 && userProfile?.username) {
-      pinBook.earnCapsule(game.state.score).then(earned => {
-        if (earned) setCapsuleEarned(true);
-      });
+    if (game.state?.gamePhase === "gameover" && userProfile?.username) {
+      const mode = game.state.gameMode || 'classic';
+      // Track every classic game toward daily cap (win or lose)
+      if (mode === 'classic') {
+        pinBook.trackGame();
+      }
+      // Award capsule if score threshold met
+      if (game.state.score >= 15000) {
+        pinBook.earnCapsule(game.state.score, mode).then(earned => {
+          if (earned) setCapsuleEarned(true);
+        });
+      }
     }
   }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Award bonus capsule when T/cross shape is made (1 per game)
+  useEffect(() => {
+    if (game.matchEffect?.bonusCapsuleTriggered && userProfile?.username) {
+      const mode = game.state?.gameMode || 'classic';
+      pinBook.earnBonusCapsule(mode).then(earned => {
+        if (earned) {
+          setBonusCapsuleFlash(true);
+          setTimeout(() => setBonusCapsuleFlash(false), 2000);
+        }
+      });
+    }
+  }, [game.matchEffect?.timestamp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleMute = () => {
     playUIClick();
@@ -311,6 +333,34 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Bonus Capsule Flash */}
+            <AnimatePresence>
+              {bonusCapsuleFlash && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.2 }}
+                  transition={{ duration: 0.4, ease: "backOut" }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
+                >
+                  <div className="text-center">
+                    <motion.div
+                      initial={{ y: 20 }}
+                      animate={{ y: -10 }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                    >
+                      <div className="text-4xl sm:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#FFE048] via-[#FF5F1F] to-[#b366ff] drop-shadow-[0_0_30px_rgba(255,224,72,0.6)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)' }}>
+                        BONUS CAPSULE!
+                      </div>
+                      <div className="text-sm sm:text-base text-white/70 mt-1 font-display tracking-wide">
+                        T-shape bonus
+                      </div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Moves Warning Vignette */}
             {movesLeft <= 5 && game.state.gamePhase === "playing" && (

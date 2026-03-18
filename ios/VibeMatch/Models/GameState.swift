@@ -62,4 +62,5 @@ struct GameState: Codable, Sendable {
     var matchCount: Int
     var totalCascades: Int
     var gameOverReason: GameOverReason?
+    var bonusCapsuleAwarded: Bool
 }

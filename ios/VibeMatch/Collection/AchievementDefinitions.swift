@@ -28,8 +28,6 @@ enum AchievementRequirement: Codable, Hashable, Sendable {
     case lifetimeLShapes(Int)
     case lifetimeTShapes(Int)
     case lifetimeCrossShapes(Int)
-    case lifetimeSquareShapes(Int)
-
     // Collection
     case uniqueBadgesDiscovered(Int)
     case badgeMatchMastery(MatchMasteryLevel)        // Any single badge at this level
@@ -94,7 +92,6 @@ struct AchievementDefinition: Identifiable, Codable, Hashable, Sendable {
              .lifetimeLShapes(let n),
              .lifetimeTShapes(let n),
              .lifetimeCrossShapes(let n),
-             .lifetimeSquareShapes(let n),
              .uniqueBadgesDiscovered(let n),
              .dailyStreak(let n),
              .gamesPlayed(let n),
@@ -389,15 +386,6 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             category: .shapes,
             chestReward: .silver,
             requirement: .landShapeBonus(.cross)
-        ),
-        AchievementDefinition(
-            id: "shape_perfect_square",
-            name: "Perfect Square",
-            description: "Land your first square-shape match",
-            icon: "square.fill",
-            category: .shapes,
-            chestReward: .bronze,
-            requirement: .landShapeBonus(.square)
         ),
         AchievementDefinition(
             id: "shape_l_veteran",
@@ -796,7 +784,6 @@ final class AchievementTracker {
             case .l:      landed = stats.hasLandedL
             case .t:      landed = stats.hasLandedT
             case .cross:  landed = stats.hasLandedCross
-            case .square: landed = stats.hasLandedSquare
             }
             return (landed ? 1 : 0, landed)
 
@@ -810,10 +797,6 @@ final class AchievementTracker {
 
         case .lifetimeCrossShapes(let target):
             let value = stats.crossShapesLanded
-            return (value, value >= target)
-
-        case .lifetimeSquareShapes(let target):
-            let value = stats.squareShapesLanded
             return (value, value >= target)
 
         case .uniqueBadgesDiscovered(let target):

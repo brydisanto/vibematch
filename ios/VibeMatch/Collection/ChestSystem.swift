@@ -248,8 +248,6 @@ struct LifetimeStats: Codable, Hashable, Sendable {
     var lShapesLanded: Int = 0
     var tShapesLanded: Int = 0
     var crossShapesLanded: Int = 0
-    var squareShapesLanded: Int = 0
-
     // Special tile lifetime counts
     var bombsCreated: Int = 0
     var vibestreaksCreated: Int = 0
@@ -264,7 +262,6 @@ struct LifetimeStats: Codable, Hashable, Sendable {
     var hasLandedL: Bool = false
     var hasLandedT: Bool = false
     var hasLandedCross: Bool = false
-    var hasLandedSquare: Bool = false
 }
 
 // MARK: - Chest System
@@ -366,9 +363,6 @@ final class ChestSystem {
             case .cross where !lifetimeStats.hasLandedCross:
                 earned.append(EarnedChest(tier: .silver, trigger: .shapeBonus(.cross)))
                 lifetimeStats.hasLandedCross = true
-            case .square where !lifetimeStats.hasLandedSquare:
-                earned.append(EarnedChest(tier: .bronze, trigger: .shapeBonus(.square)))
-                lifetimeStats.hasLandedSquare = true
             default:
                 break
             }
@@ -609,7 +603,6 @@ final class ChestSystem {
             case .l:      lifetimeStats.lShapesLanded += 1
             case .t:      lifetimeStats.tShapesLanded += 1
             case .cross:  lifetimeStats.crossShapesLanded += 1
-            case .square: lifetimeStats.squareShapesLanded += 1
             }
         }
 

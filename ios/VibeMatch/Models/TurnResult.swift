@@ -2,12 +2,11 @@ import Foundation
 
 // MARK: - Shape Bonus
 
-/// A bonus awarded when matches form a recognizable shape (L, T, cross, or square).
+/// A bonus awarded when matches form a recognizable shape (L, T, or cross).
 enum ShapeBonusType: String, Codable, Hashable, Sendable {
     case L
     case T
     case cross
-    case square
 }
 
 /// A detected shape bonus with its scoring multiplier and affected positions.

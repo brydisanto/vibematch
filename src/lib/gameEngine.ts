@@ -42,6 +42,7 @@ export interface GameState {
     totalCascades: number;
     dailySeed?: number;
     gameOverReason: GameOverReason;
+    bonusCapsuleAwarded: boolean;
 }
 
 const BOARD_SIZE = 8;
@@ -75,6 +76,7 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         totalCascades: 0,
         dailySeed: seed,
         gameOverReason: null,
+        bonusCapsuleAwarded: false,
     };
 }
 
@@ -223,35 +225,13 @@ export function findAllMatches(board: Cell[][]): Match[] {
 
 // ===== SHAPE DETECTION =====
 
-export type ShapeBonus = { type: 'L' | 'T' | 'cross' | 'square'; multiplier: number } | null;
+export type ShapeBonus = { type: 'L' | 'T' | 'cross'; multiplier: number } | null;
 
 export function detectShapes(matches: Match[]): ShapeBonus {
     const horizontal = matches.filter(m => m.isHorizontal);
     const vertical = matches.filter(m => !m.isHorizontal);
 
     let bestShape: ShapeBonus = null;
-
-    // Check for 2x2 square: any 4 matched positions of the same badge forming a block
-    const allMatchedByBadge = new Map<string, Set<string>>();
-    for (const m of matches) {
-        const key = m.badge.id;
-        if (!allMatchedByBadge.has(key)) allMatchedByBadge.set(key, new Set());
-        const posSet = allMatchedByBadge.get(key)!;
-        for (const p of m.positions) {
-            posSet.add(`${p.row},${p.col}`);
-        }
-    }
-    for (const posSet of allMatchedByBadge.values()) {
-        for (const pos of posSet) {
-            const [r, c] = pos.split(",").map(Number);
-            // Check if (r,c), (r,c+1), (r+1,c), (r+1,c+1) are all matched
-            if (posSet.has(`${r},${c + 1}`) && posSet.has(`${r + 1},${c}`) && posSet.has(`${r + 1},${c + 1}`)) {
-                if (!bestShape || 2 > bestShape.multiplier) {
-                    bestShape = { type: 'square', multiplier: 2 };
-                }
-            }
-        }
-    }
 
     for (const h of horizontal) {
         for (const v of vertical) {
@@ -302,7 +282,7 @@ export function detectShapes(matches: Match[]): ShapeBonus {
                 detected = { type: 'L', multiplier: 1.5 };
             }
 
-            // Keep highest-tier shape (cross > T > L > square)
+            // Keep highest-tier shape (cross > T > L)
             if (detected) {
                 if (!bestShape || detected.multiplier > bestShape.multiplier) {
                     bestShape = detected;
@@ -545,9 +525,10 @@ export function processTurn(
     // Detect geometric shapes from initial matches
     const shapeBonus = detectShapes(initialMatches);
 
-    // Process cascades
+    // Process cascades (cap at 50 to prevent infinite loops from 2x2 gravity fills)
+    const MAX_CASCADES = 50;
     let matches = initialMatches;
-    while (matches.length > 0) {
+    while (matches.length > 0 && cascadeCount < MAX_CASCADES) {
         totalMatches = [...totalMatches, ...matches];
 
         // Check for special tiles to create
@@ -702,8 +683,9 @@ export function triggerSpecialTile(
     currentBoard = applyGravity(currentBoard, gameBadges);
 
     // Process any resulting cascades
+    const MAX_CASCADES = 50;
     let matches = findAllMatches(currentBoard);
-    while (matches.length > 0) {
+    while (matches.length > 0 && cascadeCount < MAX_CASCADES) {
         combo++;
         cascadeCount++;
         totalScore += calculateMatchScore(matches, combo);

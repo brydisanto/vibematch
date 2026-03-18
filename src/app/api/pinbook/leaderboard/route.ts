@@ -7,94 +7,125 @@ import { BADGES, BadgeTier } from '@/lib/badges';
 const TIER_POINTS: Record<BadgeTier, number> = { blue: 1, silver: 2, gold: 3, cosmic: 4 };
 const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
 
-// In-memory cache (30s TTL — collection data changes less often than scores)
-let cachedData: { data: any; expires: number } | null = null;
-const CACHE_TTL = 30_000;
+const LEADERBOARD_KEY = 'pinbook:leaderboard';
+const TOTAL_BADGES = BADGES.length;
 
+export interface LeaderboardEntry {
+    username: string;
+    avatarUrl: string;
+    uniqueCount: number;
+    totalPins: number;
+    percentComplete: number;
+    pinScore: number;
+}
+
+// Called from the collect action in /api/pinbook to update a single user's entry
+export function computeUserEntry(
+    username: string,
+    avatarUrl: string,
+    pins: Record<string, { count: number }>,
+): LeaderboardEntry {
+    const uniqueCount = Object.keys(pins).length;
+    const totalPins = Object.values(pins).reduce((sum, p) => sum + p.count, 0);
+    const percentComplete = Math.round((uniqueCount / TOTAL_BADGES) * 100);
+
+    let pinScore = 0;
+    for (const [badgeId, pin] of Object.entries(pins)) {
+        const tier = badgeTierMap.get(badgeId) || 'blue';
+        pinScore += pin.count * TIER_POINTS[tier];
+    }
+
+    return { username, avatarUrl, uniqueCount, totalPins, percentComplete, pinScore };
+}
+
+export async function updateLeaderboardEntry(entry: LeaderboardEntry): Promise<void> {
+    const existing = (await kv.get(LEADERBOARD_KEY)) as LeaderboardEntry[] | null ?? [];
+
+    // Replace or add this user's entry
+    const idx = existing.findIndex(e => e.username.toLowerCase() === entry.username.toLowerCase());
+    if (idx >= 0) {
+        existing[idx] = entry;
+    } else {
+        existing.push(entry);
+    }
+
+    // Sort
+    existing.sort((a, b) =>
+        b.percentComplete - a.percentComplete ||
+        b.pinScore - a.pinScore ||
+        b.uniqueCount - a.uniqueCount ||
+        b.totalPins - a.totalPins
+    );
+
+    await kv.set(LEADERBOARD_KEY, existing);
+}
+
+// GET — single KV read, no scanning
 export async function GET() {
     try {
-        // Return cached if fresh
-        if (cachedData && Date.now() < cachedData.expires) {
-            const session = await getSession();
-            return NextResponse.json(
-                { ...cachedData.data, currentUsername: session?.username || null },
-                { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
-            );
+        const [leaderboard, session] = await Promise.all([
+            kv.get(LEADERBOARD_KEY) as Promise<LeaderboardEntry[] | null>,
+            getSession(),
+        ]);
+
+        return NextResponse.json(
+            { leaderboard: leaderboard || [], currentUsername: session?.username || null },
+            { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
+        );
+    } catch (e) {
+        console.error('PinBook leaderboard error:', e);
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
+}
+
+// POST — rebuild leaderboard from all pinbook data (one-time migration)
+export async function POST() {
+    try {
+        const session = await getSession();
+        if (!session?.username) {
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        // Scan all pinbook keys — pattern: pinbook:{username}
         const allKeys: string[] = [];
         let cursor: any = 0;
         do {
             const result = await kv.scan(cursor, { match: 'pinbook:*', count: 100 }) as any;
             cursor = result[0];
-            allKeys.push(...(result[1] as string[]));
+            for (const key of result[1] as string[]) {
+                if (!key.includes(':daily:') && !key.includes(':leaderboard')) allKeys.push(key);
+            }
         } while (cursor != 0);
 
         if (allKeys.length === 0) {
-            const session = await getSession();
-            return NextResponse.json({
-                leaderboard: [],
-                currentUsername: session?.username || null,
-            });
+            return NextResponse.json({ rebuilt: true, count: 0 });
         }
 
-        // Batch fetch all pinbook data
         const pinbooks = await kv.mget(...allKeys);
-
-        // Also fetch profiles for avatars in a single batch
         const profileKeys = allKeys.map(k => `user:${k.replace('pinbook:', '')}`);
         const profiles = await kv.mget(...profileKeys);
 
-        const TOTAL_BADGES = 77;
-
-        const entries = allKeys.map((key, i) => {
+        const entries: LeaderboardEntry[] = [];
+        for (let i = 0; i < allKeys.length; i++) {
             const data = pinbooks[i] as any;
             const profile = profiles[i] as any;
-            if (!data?.pins) return null;
+            if (!data?.pins) continue;
 
-            const username = profile?.username || key.replace('pinbook:', '');
+            const username = profile?.username || allKeys[i].replace('pinbook:', '');
             const avatarUrl = profile?.avatarUrl || '';
-            const pins = data.pins as Record<string, { count: number }>;
-            const uniqueCount = Object.keys(pins).length;
-            const totalPins = Object.values(pins).reduce((sum, p) => sum + p.count, 0);
-            const percentComplete = Math.round((uniqueCount / TOTAL_BADGES) * 100);
+            entries.push(computeUserEntry(username, avatarUrl, data.pins));
+        }
 
-            // Pin Score: each pin × tier points (dupes count)
-            let pinScore = 0;
-            for (const [badgeId, pin] of Object.entries(pins)) {
-                const tier = badgeTierMap.get(badgeId) || 'blue';
-                pinScore += pin.count * TIER_POINTS[tier];
-            }
-
-            return {
-                username,
-                avatarUrl,
-                uniqueCount,
-                totalPins,
-                percentComplete,
-                pinScore,
-            };
-        }).filter(Boolean);
-
-        // Sort by % complete (desc), then pin score (desc), then unique count (desc), then total pins (desc)
-        entries.sort((a: any, b: any) =>
+        entries.sort((a, b) =>
             b.percentComplete - a.percentComplete ||
             b.pinScore - a.pinScore ||
             b.uniqueCount - a.uniqueCount ||
             b.totalPins - a.totalPins
         );
 
-        // Cache the leaderboard data (without user-specific info)
-        cachedData = { data: { leaderboard: entries }, expires: Date.now() + CACHE_TTL };
-
-        const session = await getSession();
-        return NextResponse.json(
-            { leaderboard: entries, currentUsername: session?.username || null },
-            { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
-        );
+        await kv.set(LEADERBOARD_KEY, entries);
+        return NextResponse.json({ rebuilt: true, count: entries.length });
     } catch (e) {
-        console.error('PinBook leaderboard error:', e);
+        console.error('Leaderboard rebuild error:', e);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }

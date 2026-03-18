@@ -21,7 +21,6 @@ let SHAPE_MULTIPLIERS: [ShapeBonusType: Double] = [
     .L: 1.5,
     .T: 2.5,
     .cross: 4.0,
-    .square: 2.0,
 ]
 
 // MARK: - Cell ID Generator
@@ -157,7 +156,7 @@ func findAllMatches(board: [[Cell]], gameBadges: [Badge]) -> [Match] {
 
 // MARK: - Shape Detection
 
-/// Detects geometric shapes (L, T, cross, square) formed by intersecting matches.
+/// Detects geometric shapes (L, T, cross) formed by intersecting matches.
 /// Returns the highest-multiplier shape found, or nil if none.
 func detectShapes(matches: [Match]) -> ShapeBonus? {
     // Determine which matches are horizontal vs vertical by checking positions
@@ -171,42 +170,6 @@ func detectShapes(matches: [Match]) -> ShapeBonus? {
     }
 
     var bestShape: ShapeBonus? = nil
-
-    // Check for 2x2 square: any 4 matched positions of the same badge forming a block
-    var allMatchedByBadge: [String: Set<String>] = [:]
-    for m in matches {
-        let key = m.badge.id
-        if allMatchedByBadge[key] == nil {
-            allMatchedByBadge[key] = Set<String>()
-        }
-        for p in m.positions {
-            allMatchedByBadge[key]!.insert("\(p.row),\(p.col)")
-        }
-    }
-
-    for posSet in allMatchedByBadge.values {
-        for pos in posSet {
-            let parts = pos.split(separator: ",").map { Int($0)! }
-            let r = parts[0]
-            let c = parts[1]
-            if posSet.contains("\(r),\(c + 1)") &&
-                posSet.contains("\(r + 1),\(c)") &&
-                posSet.contains("\(r + 1),\(c + 1)") {
-                if bestShape == nil || SHAPE_MULTIPLIERS[.square]! > bestShape!.multiplier {
-                    bestShape = ShapeBonus(
-                        type: .square,
-                        multiplier: SHAPE_MULTIPLIERS[.square]!,
-                        positions: [
-                            Position(row: r, col: c),
-                            Position(row: r, col: c + 1),
-                            Position(row: r + 1, col: c),
-                            Position(row: r + 1, col: c + 1),
-                        ]
-                    )
-                }
-            }
-        }
-    }
 
     // Check for L, T, cross shapes from intersecting horizontal and vertical matches
     for h in horizontal {
@@ -757,6 +720,7 @@ func createInitialState(mode: GameMode, gameBadges: [Badge], rng: inout any Rand
         gameBadges: gameBadges,
         matchCount: 0,
         totalCascades: 0,
-        gameOverReason: nil
+        gameOverReason: nil,
+        bonusCapsuleAwarded: false
     )
 }

@@ -634,8 +634,8 @@ export function getDailySeed(date?: string): number {
 }
 
 // Conflict groups: badges in the same group should never appear together in a game (color contrast)
-// Badges not in any group (robot_lover, straw_man, surfer, captain, shower, anchorman) have no conflicts.
-export const CONFLICT_GROUPS: Record<string, number> = {
+// Badges not in any group (straw_man, surfer, captain, shower, anchorman) have no conflicts.
+export const CONFLICT_GROUPS: Record<string, number | number[]> = {
     // #1
     any_gvc: 1,
     seas_the_day: 1,
@@ -715,6 +715,8 @@ export const CONFLICT_GROUPS: Record<string, number> = {
     hoodie_up_society: 10,
     rainbow_boombox: 10,
     multi_type_master: 10,
+    // robot_lover conflicts with groups 3, 4, and 10
+    robot_lover: [3, 4, 10],
     high_noon_hustler: 10,
 };
 
@@ -728,9 +730,12 @@ function selectFromTier(
     for (const badge of pool) {
         if (selected.length >= count) break;
         const group = CONFLICT_GROUPS[badge.id];
-        if (group !== undefined && usedGroups.has(group)) continue;
+        if (group !== undefined) {
+            const groups = Array.isArray(group) ? group : [group];
+            if (groups.some(g => usedGroups.has(g))) continue;
+            for (const g of groups) usedGroups.add(g);
+        }
         selected.push(badge);
-        if (group !== undefined) usedGroups.add(group);
     }
     return selected;
 }

@@ -153,6 +153,103 @@ let BADGES: [Badge] = [
     Badge(id: "one_of_one", name: "One of One", image: "/badges/one_of_one_1771354994630.webp", tier: .cosmic),
 ]
 
+// MARK: - Conflict Groups
+
+/// Maps badge IDs to conflict group numbers. Badges in the same group
+/// should never appear together in the same game session.
+/// A badge can belong to multiple groups (e.g. robot_lover conflicts with 3, 4, and 10).
+let CONFLICT_GROUPS: [String: [Int]] = [
+    // #1
+    "any_gvc": [1],
+    "seas_the_day": [1],
+    // #2
+    "chris_favorite_badge": [2],
+    "super_rare": [2],
+    "grayscale_seeker": [2],
+    "checkmate": [2],
+    "poker_face": [2],
+    "sir_vibes_a_lot": [2],
+    // #3 (includes former #6)
+    "one_of_one": [3],
+    "visooor_enjoyooor": [3],
+    "suited_up": [3],
+    "party_in_the_back": [3],
+    "flow_state": [3],
+    "highkeymoments_1": [3],
+    "gradient_lover": [3],
+    "power_duo": [3],
+    "pepe": [3],
+    "plants": [3],
+    "science_goggles": [3],
+    // #4
+    "full_send_maverick": [4],
+    "tanks_a_lot": [4],
+    "patch_powerhouse": [4],
+    "varsity_vibes": [4],
+    "mountain_goat": [4],
+    "electric_rings": [4],
+    "stone": [4],
+    "shadow_funk_division": [4],
+    // #5
+    "pothead": [5],
+    "funky_fresh": [5],
+    "vibefoot_fan_club": [5],
+    "ladies_night": [5],
+    "full_throttle": [5],
+    "astro_bean": [5],
+    "plastic_lover": [5],
+    "homerun": [5],
+    // #7
+    "king": [7],
+    "nounish_vibes": [7],
+    "lamp": [7],
+    "hail_mary_heroes": [7],
+    "gud_meat": [7],
+    "toy_bricks": [7],
+    "ranger": [7],
+    "trait_maxi": [7],
+    // #8
+    "rainbow_bubble_goggles": [8],
+    "astro_balls": [8],
+    "hue_too_fresh": [8],
+    "rainbow_citizen": [8],
+    "yin_n_yang": [8],
+    "elite_rainbow_ranger": [8],
+    "rainbow_visor": [8],
+    // #9
+    "zoom_in_vibe_out": [9],
+    "fur_the_win": [9],
+    "doge": [9],
+    "great_stacheby": [9],
+    "showtime": [9],
+    "no_face_no_problem": [9],
+    "gold_member": [9],
+    // #10
+    "necks_level": [10],
+    "gamer": [10],
+    "cosmic_guardian": [10],
+    "hoodie_up_society": [10],
+    "rainbow_boombox": [10],
+    "multi_type_master": [10],
+    // robot_lover conflicts with groups 3, 4, and 10
+    "robot_lover": [3, 4, 10],
+]
+
+/// Selects badges from a shuffled tier pool while respecting conflict groups.
+/// Badges whose conflict group is already used by a previously selected badge are skipped.
+private func selectFromTier(_ pool: [Badge], count: Int, usedGroups: inout Set<Int>) -> [Badge] {
+    var selected: [Badge] = []
+    for badge in pool {
+        if selected.count >= count { break }
+        if let groups = CONFLICT_GROUPS[badge.id] {
+            if groups.contains(where: { usedGroups.contains($0) }) { continue }
+            for g in groups { usedGroups.insert(g) }
+        }
+        selected.append(badge)
+    }
+    return selected
+}
+
 // MARK: - Fisher-Yates Shuffle
 
 /// Fisher-Yates shuffle using a seeded PRNG. Bit-compatible with TypeScript version.
@@ -184,11 +281,13 @@ func selectGameBadges(count: Int = 6, seed: Int? = nil) -> [Badge] {
     let cosmicBadges = shuffle(BADGES.filter { $0.tier == .cosmic }, rng: &rng)
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
+    // Use shared usedGroups set across tiers to enforce conflict groups
+    var usedGroups = Set<Int>()
     var selected: [Badge] = []
-    selected.append(contentsOf: blueBadges.prefix(3))
-    selected.append(contentsOf: silverBadges.prefix(1))
-    selected.append(contentsOf: goldBadges.prefix(1))
-    selected.append(contentsOf: cosmicBadges.prefix(1))
+    selected.append(contentsOf: selectFromTier(blueBadges, count: 3, usedGroups: &usedGroups))
+    selected.append(contentsOf: selectFromTier(silverBadges, count: 1, usedGroups: &usedGroups))
+    selected.append(contentsOf: selectFromTier(goldBadges, count: 1, usedGroups: &usedGroups))
+    selected.append(contentsOf: selectFromTier(cosmicBadges, count: 1, usedGroups: &usedGroups))
 
     return shuffle(selected, rng: &rng)
 }

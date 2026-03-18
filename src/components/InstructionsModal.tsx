@@ -254,9 +254,9 @@ function SlidePowerMoves() {
             <ContentCard icon={Target} color="#4A9EFF" title="Shape Bonuses" delay={0.15}>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                     {[
-                        { shape: "L / T", mult: "1.5x", color: "#4A9EFF" },
-                        { shape: "Cross", mult: "2x", color: "#FFE048" },
-                        { shape: "Square", mult: "1.3x", color: "#B366FF" },
+                        { shape: "L", mult: "1.5x", color: "#4A9EFF" },
+                        { shape: "T", mult: "2.5x", color: "#FFE048" },
+                        { shape: "Cross", mult: "4x", color: "#B366FF" },
                     ].map((s) => (
                         <span
                             key={s.shape}
@@ -271,6 +271,7 @@ function SlidePowerMoves() {
                         </span>
                     ))}
                 </div>
+                <p className="mt-1.5"><span className="text-[#FFE048] font-semibold">T</span> and <span className="text-[#B366FF] font-semibold">Cross</span> shapes also grant <span className="text-white/80 font-semibold">+1 Pin Capsule</span>!</p>
             </ContentCard>
         </div>
     );
@@ -396,7 +397,8 @@ function SlideScoring() {
                     </div>
                     <div>
                         <h4 className="font-display font-black text-[13px] text-[#FFE048]">Pin Capsule</h4>
-                        <p className="text-white/50 text-[11px] font-mundial">Hit <span className="text-[#FFE048] font-semibold">15,000+</span> points and you earn a capsule. Go collect those vibes.</p>
+                        <p className="text-white/50 text-[11px] font-mundial">Hit <span className="text-[#FFE048] font-semibold">15,000+</span> points and you earn a capsule. <span className="text-white/80 font-semibold">T</span> and <span className="text-white/80 font-semibold">Cross</span> shapes also grant <span className="text-[#FFE048] font-semibold">+1 bonus capsule</span>.</p>
+                        <p className="text-white/40 text-[10px] font-mundial mt-1">Capsules are earnable during your first <span className="text-[#FFE048] font-semibold">15 games</span> each day, plus the Daily Challenge.</p>
                     </div>
                 </div>
             </motion.div>

@@ -41,17 +41,45 @@ export function usePinBook() {
         }
     }, []);
 
-    const earnCapsule = useCallback(async (score: number): Promise<boolean> => {
+    const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<boolean> => {
         if (score < CAPSULE_SCORE_THRESHOLD) return false;
         try {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "earn", score }),
+                body: JSON.stringify({ action: "earn", score, gameMode }),
             });
             const data = await res.json();
             if (data.earned) {
-                setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + 1 }));
+                const amount = gameMode === 'daily' ? 2 : 1;
+                setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
+                return true;
+            }
+        } catch { /* ignore */ }
+        return false;
+    }, []);
+
+    const trackGame = useCallback(async (): Promise<void> => {
+        try {
+            await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "trackGame" }),
+            });
+        } catch { /* ignore */ }
+    }, []);
+
+    const earnBonusCapsule = useCallback(async (gameMode: string = 'classic'): Promise<boolean> => {
+        try {
+            const res = await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "bonus", gameMode }),
+            });
+            const data = await res.json();
+            if (data.earned) {
+                const amount = gameMode === 'daily' ? 2 : 1;
+                setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
                 return true;
             }
         } catch { /* ignore */ }
@@ -124,7 +152,9 @@ export function usePinBook() {
         state,
         pendingReveal,
         load,
+        trackGame,
         earnCapsule,
+        earnBonusCapsule,
         openCapsule,
         collectReveal,
         totalCollected: Object.keys(state.pins).length,

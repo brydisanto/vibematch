@@ -411,7 +411,6 @@ function CascadeLabel({ effect }: { effect: MatchEffect }) {
 /* ===== SHAPE ANNOUNCEMENT — top zone, CSS-only ===== */
 function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
     const SHAPE_INFO: Record<string, { label: string; multiplierLabel: string }> = {
-        square: { label: "\u25A0 SQUARE!", multiplierLabel: "2\u00D7" },
         L: { label: "L-SHAPE!", multiplierLabel: "1.5\u00D7" },
         T: { label: "T-SHAPE!", multiplierLabel: "2.5\u00D7" },
         cross: { label: "\u2726 CROSS!", multiplierLabel: "4\u00D7" },
@@ -564,6 +563,7 @@ export default function GameBoard({
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
     const [cellSize, setCellSize] = useState(0);
+    const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
 
     // Track active effect types for priority throttling
     const activeEffectCount = useMemo(() => {
@@ -762,16 +762,16 @@ export default function GameBoard({
                                             ${isDealing ? "tile-deal" : ""}
                                             ${isHinted && !isSelected ? "ring-[3px] ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]" : ""}
                                             ${isInvalidSwap ? "game-tile--invalid-shake" : ""}
-                                            ${isNewDrop ? "game-tile--dropping" : ""}
+                                            ${isNewDrop && !isMobile ? "game-tile--dropping" : ""}
                                             ${(isSwap1 || isSwap2) ? "game-tile--swapping" : ""}
-                                            ${isTileAnimating ? "game-tile--animating" : ""}
+                                            ${isTileAnimating && !isMobile ? "game-tile--animating" : ""}
                                         `}
                                         style={{
                                             borderColor: isSelected ? tierColor : tierBorder,
                                             animationDelay: isDealing ? `${dealDelay}s` : undefined,
                                             transform: tileTransform || undefined,
-                                            '--drop-distance': isNewDrop ? '-100px' : undefined,
-                                            '--drop-delay': isNewDrop ? `${colIdx * 0.035}s` : undefined,
+                                            '--drop-distance': isNewDrop && !isMobile ? '-60px' : undefined,
+                                            '--drop-delay': isNewDrop && !isMobile ? `${colIdx * 0.02}s` : undefined,
                                         } as React.CSSProperties}
                                         onPointerDown={(e) => handlePointerDown(e, rowIdx, colIdx)}
                                         onClick={() => {
@@ -791,6 +791,7 @@ export default function GameBoard({
                                                 fill
                                                 sizes="(max-width: 640px) 56px, 80px"
                                                 className="object-cover"
+                                                loading="eager"
                                                 unoptimized
                                             />
                                         </div>

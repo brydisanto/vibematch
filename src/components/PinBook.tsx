@@ -56,13 +56,14 @@ function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry
     );
 }
 
-function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
+function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: string; refreshKey?: number }) {
     const [entries, setEntries] = useState<PinLeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         (async () => {
             try {
+                setIsLoading(prev => entries.length === 0 ? true : prev);
                 const res = await fetch('/api/pinbook/leaderboard');
                 if (!res.ok) return;
                 const data = await res.json();
@@ -73,7 +74,7 @@ function PinLeaderboard({ currentUsername }: { currentUsername?: string }) {
                 setIsLoading(false);
             }
         })();
-    }, []);
+    }, [refreshKey]);
 
     if (isLoading) {
         return (
@@ -167,6 +168,12 @@ export default function PinBook({
 
     const ownedCount = useMemo(
         () => Object.keys(pins).length,
+        [pins]
+    );
+
+    // Derive a refresh key from total pin count so leaderboard refetches after capsule opens
+    const leaderboardRefreshKey = useMemo(
+        () => Object.values(pins).reduce((sum, p) => sum + p.count, 0),
         [pins]
     );
 
@@ -346,7 +353,7 @@ export default function PinBook({
                         {/* ── Scrollable Content ── */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {tab === "leaderboard" ? (
-                            <PinLeaderboard currentUsername={currentUsername} />
+                            <PinLeaderboard currentUsername={currentUsername} refreshKey={leaderboardRefreshKey} />
                         ) : (
                         <div className="px-5 sm:px-6 py-5 space-y-6">
                             {TIER_ORDER.map((tier, tierIdx) => {

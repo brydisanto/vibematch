@@ -51,8 +51,9 @@ export interface MatchEffect {
     positions: { row: number; col: number }[];
     timestamp: number;
     cascadeCount: number;
-    shapeBonusType?: 'L' | 'T' | 'cross' | 'square' | null;
+    shapeBonusType?: 'L' | 'T' | 'cross' | null;
     matchedBadgeName?: string;
+    bonusCapsuleTriggered?: boolean;
 }
 
 export interface UseGameReturn {
@@ -93,6 +94,7 @@ export function useGame(): UseGameReturn {
     const hintMessageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hintShownThisGame = useRef(false);
     const popupCounter = useRef(0);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     const resetHintTimer = useCallback((board: Cell[][]) => {
         if (hintTimer.current) clearTimeout(hintTimer.current);
@@ -117,33 +119,23 @@ export function useGame(): UseGameReturn {
         }, 8000);
     }, []);
 
-    const preloadBadgeImages = useCallback((badges: Badge[]) => {
+    const preloadBadgeImages = useCallback((badges: Badge[]): Promise<void> => {
         const seen = new Set<string>();
+        const promises: Promise<void>[] = [];
         for (const badge of badges) {
             if (seen.has(badge.image)) continue;
             seen.add(badge.image);
-            const img = new window.Image();
-            img.src = badge.image;
+            promises.push(new Promise((resolve) => {
+                const img = new window.Image();
+                img.onload = () => resolve();
+                img.onerror = () => resolve(); // don't block on failure
+                img.src = badge.image;
+            }));
         }
+        return Promise.all(promises).then(() => {});
     }, []);
 
-    const startGame = useCallback((mode: GameMode) => {
-        const initialState = createInitialState(mode);
-        preloadBadgeImages(initialState.gameBadges);
-        setState(initialState);
-        setScorePopups([]);
-        setLastTurnResult(null);
-        setMatchEffect(null);
-        setIsAnimating(false);
-        setHintMessage(null);
-        hintShownThisGame.current = false;
-        resetHintTimer(initialState.board);
-        playGameStartSound();
-    }, [resetHintTimer, preloadBadgeImages]);
-
-    const startGameWithBadges = useCallback((mode: GameMode, badges: Badge[]) => {
-        const initialState = createInitialState(mode, badges);
-        preloadBadgeImages(initialState.gameBadges);
+    const applyStartState = useCallback((initialState: GameState) => {
         setState(initialState);
         setScorePopups([]);
         setLastTurnResult(null);
@@ -154,6 +146,20 @@ export function useGame(): UseGameReturn {
         resetHintTimer(initialState.board);
         playGameStartSound();
     }, [resetHintTimer]);
+
+    const startGame = useCallback((mode: GameMode) => {
+        const initialState = createInitialState(mode);
+        preloadBadgeImages(initialState.gameBadges).then(() => {
+            applyStartState(initialState);
+        });
+    }, [preloadBadgeImages, applyStartState]);
+
+    const startGameWithBadges = useCallback((mode: GameMode, badges: Badge[]) => {
+        const initialState = createInitialState(mode, badges);
+        preloadBadgeImages(initialState.gameBadges).then(() => {
+            applyStartState(initialState);
+        });
+    }, [preloadBadgeImages, applyStartState]);
 
     const resetGame = useCallback(() => {
         const newState = createInitialState("classic");
@@ -242,6 +248,10 @@ export function useGame(): UseGameReturn {
             }
         }
 
+        // Check for T/cross bonus capsule (capped at 1 per game)
+        const isBonusShape = result.shapeBonus?.type === 'T' || result.shapeBonus?.type === 'cross';
+        const bonusCapsuleTriggered = isBonusShape && !prev.bonusCapsuleAwarded;
+
         // Set match effect for board to consume
         setMatchEffect({
             intensity,
@@ -253,6 +263,7 @@ export function useGame(): UseGameReturn {
             cascadeCount: result.cascadeCount,
             shapeBonusType: result.shapeBonus?.type ?? null,
             matchedBadgeName,
+            bonusCapsuleTriggered,
         });
 
         // Haptic feedback on mobile
@@ -311,7 +322,7 @@ export function useGame(): UseGameReturn {
         } else {
             setTimeout(() => {
                 setIsAnimating(false);
-            }, 500);
+            }, isMobile ? 120 : 300);
         }
 
         return {
@@ -327,6 +338,7 @@ export function useGame(): UseGameReturn {
             gameOverReason: prev.gameOverReason,
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,
+            bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
         };
     }, []);
 
@@ -394,9 +406,9 @@ export function useGame(): UseGameReturn {
             setTimeout(() => {
                 setSwapAnim(null);
                 setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
-            }, 300);
+            }, isMobile ? 50 : 150);
         },
-        [state, isAnimating, applyResult, resetHintTimer]
+        [state, isAnimating, applyResult, resetHintTimer, isMobile]
     );
 
     const swipeTiles = useCallback(

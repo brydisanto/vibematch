@@ -659,7 +659,7 @@ export function playFinalMoveWarning(movesLeft: number) {
 }
 
 // Shape bonus — chord stab
-export function playShapeBonusSound(shape: 'L' | 'T' | 'cross' | 'square') {
+export function playShapeBonusSound(shape: 'L' | 'T' | 'cross') {
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -707,10 +707,6 @@ export function playShapeBonusSound(shape: 'L' | 'T' | 'cross' | 'square') {
         }
         // Shimmer noise
         playNoise(0.2, 0.04, 0, "highpass", 4000);
-    } else if (shape === 'square') {
-        // Two octave C (C4-C5) as sine, 0.15s, clean
-        playNote(262, 0.15, "sine", 0.12);
-        playNote(523, 0.15, "sine", 0.12);
     }
 }
 

@@ -120,6 +120,12 @@ final class GameSession {
         didSet { AudioEngine.shared.toggleMute() }
     }
 
+    /// Whether a bonus capsule has been awarded this game (capped at 1 per game).
+    private(set) var bonusCapsuleAwarded: Bool = false
+
+    /// Set to true momentarily when a T/cross bonus capsule is triggered.
+    private(set) var bonusCapsuleTriggered: Bool = false
+
     /// Whether a new personal best was set this game.
     private(set) var isNewHighScore: Bool = false
 
@@ -222,6 +228,8 @@ final class GameSession {
         hintMessage = nil
         invalidSwapPositions = nil
         swapAnimation = nil
+        bonusCapsuleAwarded = false
+        bonusCapsuleTriggered = false
 
         // Start hint idle timer
         resetHintTimer()
@@ -434,6 +442,20 @@ final class GameSession {
             }
         }
 
+        // --- Bonus Capsule (T/cross shape, 1 per game) ---
+        if let shapeType = result.shapeBonus?.type,
+           (shapeType == .T || shapeType == .cross),
+           !bonusCapsuleAwarded {
+            bonusCapsuleAwarded = true
+            bonusCapsuleTriggered = true
+            // Reset trigger after UI has time to observe it
+            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.bonusCapsuleTriggered = false
+                }
+            }
+        }
+
         // Final move warning
         if costMove && newMovesLeft >= 1 && newMovesLeft <= 3 {
             Timer.scheduledTimer(withTimeInterval: 0.6, repeats: false) { _ in
@@ -624,6 +646,7 @@ final class GameSession {
         matchCount = state.matchCount
         totalCascades = state.totalCascades
         gameOverReason = state.gameOverReason
+        bonusCapsuleAwarded = state.bonusCapsuleAwarded
     }
 
     // MARK: - Preview Support

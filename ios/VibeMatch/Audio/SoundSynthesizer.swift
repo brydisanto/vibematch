@@ -84,7 +84,6 @@ final class SoundSynthesizer {
         cache[GameSound.shapeBonus(.L).cacheKey] = generateShapeBonus(shape: .L)
         cache[GameSound.shapeBonus(.T).cacheKey] = generateShapeBonus(shape: .T)
         cache[GameSound.shapeBonus(.cross).cacheKey] = generateShapeBonus(shape: .cross)
-        cache[GameSound.shapeBonus(.square).cacheKey] = generateShapeBonus(shape: .square)
 
         // Cascade levels 1-5
         for level in 1...5 {
@@ -646,12 +645,6 @@ final class SoundSynthesizer {
             addNoise(to: buffer, amplitude: 0.05, startSample: 0,
                      sampleCount: Int(0.20 * Double(sr)))
             applyLowPass(to: buffer, cutoffHz: 3000)
-        case .square:
-            // Two octave C: C4-C5
-            addTone(to: buffer, frequency: 262, amplitude: 0.20, startSample: 0,
-                    sampleCount: Int(0.15 * Double(sr)), waveform: .sine)
-            addTone(to: buffer, frequency: 523, amplitude: 0.20, startSample: 0,
-                    sampleCount: Int(0.15 * Double(sr)), waveform: .sine)
         }
 
         clamp(buffer)

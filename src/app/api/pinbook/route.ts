@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 
 // Rarity weights for capsule drops
 // 73 total badges: 38 blue, 25 silver, 8 gold, 2 cosmic
@@ -12,12 +13,39 @@ const TIER_WEIGHTS = {
 } as const;
 
 const CAPSULE_SCORE_THRESHOLD = 15000;
+const CLASSIC_DAILY_CAP = 15;
 
 export interface PinBookData {
     pins: Record<string, { count: number; firstEarned: string }>;
     capsules: number; // unopened
     totalOpened: number;
     totalEarned: number;
+}
+
+interface DailyTracker {
+    classicPlays: number;
+    date: string;
+}
+
+function getTodayKey(username: string): string {
+    const today = new Date().toISOString().slice(0, 10);
+    return `pinbook:${username}:daily:${today}`;
+}
+
+async function getDailyTracker(username: string): Promise<DailyTracker> {
+    const key = getTodayKey(username);
+    const data = await kv.get(key) as DailyTracker | null;
+    const today = new Date().toISOString().slice(0, 10);
+    if (data && data.date === today) return data;
+    return { classicPlays: 0, date: today };
+}
+
+async function incrementClassicPlays(username: string): Promise<DailyTracker> {
+    const tracker = await getDailyTracker(username);
+    tracker.classicPlays += 1;
+    const key = getTodayKey(username);
+    await kv.set(key, tracker, { ex: 86400 * 2 }); // expire after 2 days
+    return tracker;
 }
 
 function emptyPinBook(): PinBookData {
@@ -55,17 +83,62 @@ export async function POST(req: Request) {
         const key = `pinbook:${(session.username as string).toLowerCase()}`;
         const data = (await kv.get(key)) as PinBookData | null ?? emptyPinBook();
 
-        if (body.action === 'earn') {
+        if (body.action === 'trackGame') {
+            // Track a classic game played (win or lose) toward the daily cap
+            const username = (session.username as string).toLowerCase();
+            const tracker = await incrementClassicPlays(username);
+            const capped = tracker.classicPlays > CLASSIC_DAILY_CAP;
+            return NextResponse.json({ tracked: true, classicPlays: tracker.classicPlays, capped });
+
+        } else if (body.action === 'earn') {
             const score = body.score as number;
+            const gameMode = body.gameMode as string || 'classic';
+
             if (!score || score < CAPSULE_SCORE_THRESHOLD) {
                 return NextResponse.json({ earned: false, reason: 'Score below threshold' });
             }
 
-            data.capsules += 1;
-            data.totalEarned += 1;
-            await kv.set(key, data);
+            const username = (session.username as string).toLowerCase();
 
-            return NextResponse.json({ earned: true, capsules: data.capsules });
+            // Classic mode: enforce daily cap (based on games played, not earned)
+            if (gameMode === 'classic') {
+                const tracker = await getDailyTracker(username);
+                if (tracker.classicPlays > CLASSIC_DAILY_CAP) {
+                    return NextResponse.json({ earned: false, reason: 'Daily classic cap reached', capped: true });
+                }
+                data.capsules += 1;
+                data.totalEarned += 1;
+            } else {
+                // Daily challenge: double capsules
+                data.capsules += 2;
+                data.totalEarned += 2;
+            }
+
+            await kv.set(key, data);
+            return NextResponse.json({ earned: true, capsules: data.capsules, gameMode });
+
+        } else if (body.action === 'bonus') {
+            // Bonus capsule — awarded for T/cross shapes during gameplay
+            // Already limited to 1 per game by client-side bonusCapsuleAwarded flag
+            const gameMode = body.gameMode as string || 'classic';
+            const username = (session.username as string).toLowerCase();
+
+            // Classic mode: check daily cap (bonus is still within a capped game)
+            if (gameMode === 'classic') {
+                const tracker = await getDailyTracker(username);
+                if (tracker.classicPlays > CLASSIC_DAILY_CAP) {
+                    return NextResponse.json({ earned: false, reason: 'Daily classic cap reached', capped: true });
+                }
+                data.capsules += 1;
+                data.totalEarned += 1;
+            } else {
+                // Daily challenge: double bonus
+                data.capsules += 2;
+                data.totalEarned += 2;
+            }
+
+            await kv.set(key, data);
+            return NextResponse.json({ earned: true, capsules: data.capsules, gameMode });
 
         } else if (body.action === 'open') {
             if (data.capsules <= 0) {
@@ -114,6 +187,18 @@ export async function POST(req: Request) {
             }
 
             await kv.set(key, data);
+
+            // Update pre-computed leaderboard entry
+            const username = (session.username as string).toLowerCase();
+            const profileKey = `user:${username}`;
+            const profile = await kv.get(profileKey) as { username?: string; avatarUrl?: string } | null;
+            const entry = computeUserEntry(
+                profile?.username || username,
+                profile?.avatarUrl || '',
+                data.pins,
+            );
+            // Fire and don't await — leaderboard update is non-blocking
+            updateLeaderboardEntry(entry).catch(() => {});
 
             return NextResponse.json({
                 collected: true,

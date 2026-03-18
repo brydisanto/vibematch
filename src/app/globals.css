@@ -970,7 +970,12 @@ body {
 
 /* === Swap animation: spring-like overshoot === */
 .game-tile--swapping {
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (max-width: 767px) {
+    .game-tile--swapping {
+        transition: transform 0.05s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 }
 
 /* === Invalid swap shake === */
@@ -987,13 +992,13 @@ body {
 
 /* === New tile drop animation === */
 @keyframes tile-drop {
-    0% { transform: translateY(var(--drop-distance, -80px)); opacity: 0.6; }
-    70% { transform: translateY(4px); opacity: 1; }
-    85% { transform: translateY(-2px); }
+    0% { transform: translateY(var(--drop-distance, -60px)); opacity: 0.85; }
+    70% { transform: translateY(2px); opacity: 1; }
+    90% { transform: translateY(-1px); }
     100% { transform: translateY(0); opacity: 1; }
 }
 .game-tile--dropping {
-    animation: tile-drop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: tile-drop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     animation-delay: var(--drop-delay, 0s);
 }
 
