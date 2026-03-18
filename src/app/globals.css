@@ -1443,6 +1443,118 @@ body {
     animation: hud-low-moves-pulse 0.8s ease-in-out infinite;
 }
 
+/* ===== VIBE CAPSULE — 3D sphere animations ===== */
+
+/* Gentle idle float — up/down bob */
+@keyframes capsule-float-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+.capsule-float {
+    animation: capsule-float-bob 3s ease-in-out infinite;
+}
+
+/* Environment reflection map rotation — sells 3D illusion */
+@keyframes envMapRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Light sweep — glint moving across surface */
+@keyframes capsuleLightSweep {
+    0% { transform: rotate(25deg) translateX(-120px); }
+    100% { transform: rotate(25deg) translateX(280px); }
+}
+.capsule-light-sweep {
+    animation: capsuleLightSweep 4s ease-in-out infinite;
+}
+
+/* Cosmic shimmer overlay — iridescent color shift */
+@keyframes cosmicShimmer {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+/* Cosmic top half — animated gradient */
+.capsule-cosmic-top {
+    background: linear-gradient(
+        180deg,
+        #2D1B69 0%,
+        #1a0a2e 30%,
+        #12081e 60%,
+        #08030e 100%
+    ) !important;
+}
+
+/* Cosmic bottom half — animated gradient */
+.capsule-cosmic-bottom {
+    background: linear-gradient(
+        0deg,
+        #2D1B69 0%,
+        #1a0a2e 30%,
+        #12081e 60%,
+        #08030e 100%
+    ) !important;
+}
+
+/* Orbit particles — circle around capsule during anticipation */
+@keyframes capsuleOrbit {
+    from {
+        transform:
+            rotate(var(--orbit-angle))
+            translateX(var(--orbit-distance))
+            rotate(calc(-1 * var(--orbit-angle)));
+        opacity: 0;
+    }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    to {
+        transform:
+            rotate(calc(var(--orbit-angle) + 360deg))
+            translateX(var(--orbit-distance))
+            rotate(calc(-1 * (var(--orbit-angle) + 360deg)));
+        opacity: 0;
+    }
+}
+.capsule-orbit-particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--orbit-size);
+    height: var(--orbit-size);
+    margin-top: calc(-0.5 * var(--orbit-size));
+    margin-left: calc(-0.5 * var(--orbit-size));
+    border-radius: 50%;
+    background: var(--orbit-color);
+    box-shadow: 0 0 8px var(--orbit-color), 0 0 16px var(--orbit-color);
+    animation: capsuleOrbit var(--orbit-duration) var(--orbit-delay) linear infinite;
+    pointer-events: none;
+}
+
+/* Gold trail particles — floating upward sparkles */
+@keyframes goldTrailRise {
+    0% {
+        transform: translate(var(--trail-x), var(--trail-start-y)) scale(1);
+        opacity: 0;
+    }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.5; }
+    100% {
+        transform: translate(var(--trail-x), -30px) scale(0);
+        opacity: 0;
+    }
+}
+.capsule-gold-trail {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #FFD700;
+    box-shadow: 0 0 6px #FFD700, 0 0 12px rgba(255, 215, 0, 0.4);
+    animation: goldTrailRise 2s var(--trail-delay) ease-out infinite;
+    pointer-events: none;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
 

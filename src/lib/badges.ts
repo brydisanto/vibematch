@@ -750,8 +750,8 @@ export const TIER_COLORS: Record<BadgeTier, string> = {
 
 export const TIER_DISPLAY_NAMES: Record<BadgeTier, string> = {
     blue: "Common",
-    silver: "Uncommon",
-    gold: "Gold",
+    silver: "Rare",
+    gold: "Legendary",
     cosmic: "Cosmic",
 };
 
