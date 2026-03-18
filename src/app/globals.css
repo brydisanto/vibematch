@@ -974,13 +974,17 @@ body {
     transform: scale(0.93);
 }
 
-/* === Swap animation: spring-like overshoot with "click into place" hang === */
+/* === Swap animation: keyframe-based so it always fires (no transition-timing issues) === */
+@keyframes tile-swap {
+    from { transform: translate(0, 0); }
+    to   { transform: translate(var(--swap-dx), var(--swap-dy)); }
+}
 .game-tile--swapping {
-    transition: transform 0.22s cubic-bezier(0.18, 1.4, 0.4, 1);
+    animation: tile-swap 0.22s cubic-bezier(0.18, 1.4, 0.4, 1) forwards;
 }
 @media (max-width: 767px) {
     .game-tile--swapping {
-        transition: transform 0.18s cubic-bezier(0.18, 1.4, 0.4, 1);
+        animation-duration: 0.18s;
     }
 }
 

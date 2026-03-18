@@ -744,12 +744,6 @@ export default function GameBoard({
                                 // Determine if tile is currently animating (for will-change)
                                 const isTileAnimating = isInvalidSwap || isSwap1 || isSwap2 || isDroppingTile || isDealing;
 
-                                // Build inline transform for swap animations
-                                let tileTransform = '';
-                                if (isSwap1 || isSwap2) {
-                                    tileTransform = `translate(${swapDx}px, ${swapDy}px)`;
-                                }
-
                                 return (
                                     <button
                                         key={cell.id}
@@ -772,7 +766,8 @@ export default function GameBoard({
                                         style={{
                                             borderColor: isSelected ? tierColor : tierBorder,
                                             animationDelay: isDealing ? `${dealDelay}s` : undefined,
-                                            transform: tileTransform || undefined,
+                                            '--swap-dx': (isSwap1 || isSwap2) ? `${swapDx}px` : undefined,
+                                            '--swap-dy': (isSwap1 || isSwap2) ? `${swapDy}px` : undefined,
                                             '--drop-distance': isDroppingTile ? `${-dropPx}px` : undefined,
                                             '--drop-delay': isDroppingTile ? `${colIdx * 0.02}s` : undefined,
                                         } as React.CSSProperties}
