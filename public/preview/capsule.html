@@ -73,7 +73,7 @@
   }
   canvas { display: block; border-radius: 12px; }
 
-  /* Brand context section — shows capsule in situ */
+  /* Brand context section */
   .context-section {
     max-width: 1060px; margin: 0 auto 4rem;
     background: linear-gradient(180deg, #1a042d 0%, #0d0018 100%);
@@ -131,7 +131,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--a">Option A</span> Glass Orb</h2>
-    <p>Translucent glass sphere with visible refraction, environment reflections, Fresnel rim glow, and a luminous equator seam. Soft inner glow visible through the shell.</p>
+    <p>Translucent glass with high clearcoat shine, strong environment reflections, iridescent sheen, and a luminous equator seam. Badge floats above the seam line.</p>
   </div>
   <div class="tier-row" id="row-a"></div>
 </section>
@@ -140,7 +140,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--b">Option B</span> Heavy Chrome</h2>
-    <p>Polished metallic sphere with sharp environment reflections, strong specular highlights, and a deep grooved equator seam. Feels weighty and premium.</p>
+    <p>Mirror-polished metallic sphere with maximum reflectivity, iridescent clearcoat, and a deep grooved equator seam. Badge embossed on the surface.</p>
   </div>
   <div class="tier-row" id="row-b"></div>
 </section>
@@ -149,7 +149,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--c">Option C</span> Holographic Orb</h2>
-    <p>Iridescent surface that shifts color as it rotates — like holographic foil. Environment-mapped with animated iridescence and sheen.</p>
+    <p>Full iridescence with animated color shift — like holographic foil. Maximum sheen, high clearcoat, and rainbow shimmer as it rotates.</p>
   </div>
   <div class="tier-row" id="row-c"></div>
 </section>
@@ -158,7 +158,7 @@
 <section class="option-section">
   <div class="option-header">
     <h2><span class="tag tag--d">Option D</span> Crystal Ball</h2>
-    <p>The premium option. Transparent glass outer shell with a glowing energy core inside. Volumetric inner light, Fresnel rim, and a bright animated core that pulses. Cosmic tier gets orbiting particle rings.</p>
+    <p>Transparent glass shell with iridescent coating, glowing energy core inside, and pulsing seam. Badge visible through the glass. Cosmic tier gets orbiting rings.</p>
   </div>
   <div class="tier-row" id="row-d"></div>
 </section>
@@ -185,44 +185,55 @@ const TIERS = [
 // Single badge for all capsules — the shaka / Citizen of Vibetown
 const BADGE_IMAGE = '/badges/any_gvc_1759173799963.webp';
 
-// ── Environment map ──
+// ── Brighter environment map for shinier reflections ──
 function makeEnvMap() {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d');
 
-  // Dark purple environment with bright studio-style highlights
+  // Base gradient
   const grad = ctx.createLinearGradient(0, 0, 0, size);
-  grad.addColorStop(0, '#2a0845');
+  grad.addColorStop(0, '#3a1060');
   grad.addColorStop(0.2, '#1a042d');
   grad.addColorStop(0.45, '#0d0018');
   grad.addColorStop(0.55, '#0d0018');
   grad.addColorStop(0.8, '#1a042d');
-  grad.addColorStop(1, '#2a0845');
+  grad.addColorStop(1, '#3a1060');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
 
-  // Key light — large soft highlight top-left
-  const hl1 = ctx.createRadialGradient(size * 0.25, size * 0.2, 0, size * 0.25, size * 0.2, size * 0.2);
-  hl1.addColorStop(0, 'rgba(255,255,255,0.35)');
-  hl1.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+  // Bright key light — large, intense
+  const hl1 = ctx.createRadialGradient(size * 0.22, size * 0.18, 0, size * 0.22, size * 0.18, size * 0.25);
+  hl1.addColorStop(0, 'rgba(255,255,255,0.7)');
+  hl1.addColorStop(0.3, 'rgba(255,255,255,0.3)');
+  hl1.addColorStop(0.7, 'rgba(255,255,255,0.08)');
   hl1.addColorStop(1, 'transparent');
   ctx.fillStyle = hl1;
   ctx.fillRect(0, 0, size, size);
 
-  // Fill light — subtle right side
-  const hl2 = ctx.createRadialGradient(size * 0.8, size * 0.55, 0, size * 0.8, size * 0.55, size * 0.12);
-  hl2.addColorStop(0, 'rgba(255,255,255,0.12)');
+  // Secondary highlight — right side
+  const hl2 = ctx.createRadialGradient(size * 0.82, size * 0.5, 0, size * 0.82, size * 0.5, size * 0.15);
+  hl2.addColorStop(0, 'rgba(255,255,255,0.25)');
+  hl2.addColorStop(0.5, 'rgba(255,255,255,0.08)');
   hl2.addColorStop(1, 'transparent');
   ctx.fillStyle = hl2;
   ctx.fillRect(0, 0, size, size);
 
-  // Colored accent — purple bottom glow
-  const hl3 = ctx.createRadialGradient(size * 0.5, size * 0.85, 0, size * 0.5, size * 0.85, size * 0.25);
-  hl3.addColorStop(0, 'rgba(179,102,255,0.15)');
+  // Third highlight — bottom bounce
+  const hl3 = ctx.createRadialGradient(size * 0.4, size * 0.88, 0, size * 0.4, size * 0.88, size * 0.18);
+  hl3.addColorStop(0, 'rgba(200,180,255,0.2)');
   hl3.addColorStop(1, 'transparent');
   ctx.fillStyle = hl3;
+  ctx.fillRect(0, 0, size, size);
+
+  // Colored accent strip — adds rainbow feel to reflections
+  const hl4 = ctx.createLinearGradient(0, size * 0.35, size, size * 0.65);
+  hl4.addColorStop(0, 'rgba(255,100,180,0.08)');
+  hl4.addColorStop(0.3, 'rgba(100,200,255,0.06)');
+  hl4.addColorStop(0.6, 'rgba(255,224,72,0.08)');
+  hl4.addColorStop(1, 'rgba(179,102,255,0.06)');
+  ctx.fillStyle = hl4;
   ctx.fillRect(0, 0, size, size);
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -232,7 +243,7 @@ function makeEnvMap() {
 
 const envMap = makeEnvMap();
 
-// ── Load badge texture (single shaka badge for all) ──
+// ── Load badge texture ──
 const textureLoader = new THREE.TextureLoader();
 const badgeTexture = textureLoader.load(BADGE_IMAGE);
 badgeTexture.colorSpace = THREE.SRGBColorSpace;
@@ -249,7 +260,7 @@ function createCanvas(width, height) {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(width, height);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.5;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
@@ -259,29 +270,34 @@ function createCanvas(width, height) {
   return { canvas, renderer, scene, camera };
 }
 
-// ── Shared lighting rig ──
+// ── Lighting — brighter for more shine ──
 function addLights(scene, glowColor) {
-  const key = new THREE.DirectionalLight(0xffffff, 3.5);
+  const key = new THREE.DirectionalLight(0xffffff, 4.5);
   key.position.set(-2, 3, 3);
   scene.add(key);
 
-  const fill = new THREE.DirectionalLight(0x8888ff, 0.6);
+  const fill = new THREE.DirectionalLight(0xaaaaff, 1.0);
   fill.position.set(2, -1, 2);
   scene.add(fill);
 
-  const rim = new THREE.DirectionalLight(new THREE.Color(glowColor), 1.8);
+  const rim = new THREE.DirectionalLight(new THREE.Color(glowColor), 2.5);
   rim.position.set(0, 0, -3);
   scene.add(rim);
 
-  scene.add(new THREE.AmbientLight(0x1a042d, 0.4));
+  // Top spot for specular pop
+  const top = new THREE.DirectionalLight(0xffffff, 2.0);
+  top.position.set(0, 4, 1);
+  scene.add(top);
 
-  const point = new THREE.PointLight(new THREE.Color(glowColor), 2.5, 6);
+  scene.add(new THREE.AmbientLight(0x2a1050, 0.6));
+
+  const point = new THREE.PointLight(new THREE.Color(glowColor), 3.0, 6);
   point.position.set(0, 0.5, 2);
   scene.add(point);
 }
 
-// ── Equator seam torus ──
-function addSeam(scene, color) {
+// ── Equator seam — rendered BEFORE badge so badge occludes it ──
+function addSeam(group, color) {
   const geo = new THREE.TorusGeometry(1.008, 0.018, 8, 64);
   const mat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -292,7 +308,8 @@ function addSeam(scene, color) {
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.rotation.x = Math.PI / 2;
-  scene.add(mesh);
+  mesh.renderOrder = 0; // seam renders first
+  group.add(mesh);
   return mesh;
 }
 
@@ -317,79 +334,62 @@ function addGlow(scene, color) {
   return sprite;
 }
 
-// ── Badge decal on sphere surface ──
-function addBadgeDecal(scene, texture, yOffset = 0) {
-  const geo = new THREE.PlaneGeometry(0.7, 0.7);
+// ── Badge decal on sphere surface — renders ON TOP of seam ──
+function addBadgeDecal(group, texture) {
+  const geo = new THREE.PlaneGeometry(0.75, 0.75);
   const mat = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
-    opacity: 0.85,
-    depthWrite: false,
+    opacity: 0.92,
+    depthWrite: true,  // writes to depth buffer so seam is hidden behind it
+    depthTest: true,
     side: THREE.FrontSide,
   });
   const mesh = new THREE.Mesh(geo, mat);
-  // Position on front surface of sphere
-  mesh.position.set(0, yOffset, 1.01);
-  return mesh;
-}
-
-// ── Logo stamp (small, on the top hemisphere) ──
-let logoTexture = null;
-const logoPromise = new Promise((resolve) => {
-  logoTexture = textureLoader.load('/assets/logo-cropped.png', resolve);
-  logoTexture.colorSpace = THREE.SRGBColorSpace;
-});
-
-function addLogoStamp(parent) {
-  if (!logoTexture) return null;
-  const geo = new THREE.PlaneGeometry(0.45, 0.22);
-  const mat = new THREE.MeshBasicMaterial({
-    map: logoTexture,
-    transparent: true,
-    opacity: 0.6,
-    depthWrite: false,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  // Positioned at top-front of sphere
-  mesh.position.set(0, 0.6, 0.82);
-  mesh.rotation.x = -0.35;
-  parent.add(mesh);
+  mesh.position.set(0, 0, 1.02); // slightly in front of sphere surface
+  mesh.renderOrder = 1; // badge renders after seam
+  group.add(mesh);
   return mesh;
 }
 
 // ════════════════════════════════════════════════
-// OPTION A — Glass Orb
+// OPTION A — Glass Orb (shinier, iridescent sheen)
 // ════════════════════════════════════════════════
-function buildOptionA(tier, tierIdx) {
+function buildOptionA(tier) {
   const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
 
   const group = new THREE.Group();
   scene.add(group);
 
-  // Top hemisphere — glass
+  // Top hemisphere — shiny glass with iridescent sheen
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   const topMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(tier.shell),
-    metalness: 0.05,
-    roughness: 0.08,
-    transmission: 0.55,
+    metalness: 0.1,
+    roughness: 0.04,
+    transmission: 0.5,
     thickness: 0.9,
-    ior: 1.5,
+    ior: 1.6,
     envMap,
-    envMapIntensity: 1.8,
+    envMapIntensity: 2.5,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
+    clearcoatRoughness: 0.02,
+    iridescence: 0.6,
+    iridescenceIOR: 1.5,
+    iridescenceThicknessRange: [100, 400],
+    sheen: 0.5,
+    sheenRoughness: 0.15,
+    sheenColor: new THREE.Color(tier.accent),
     transparent: true,
-    opacity: 0.82,
+    opacity: 0.85,
   });
-  const topMesh = new THREE.Mesh(topGeo, topMat);
-  group.add(topMesh);
+  group.add(new THREE.Mesh(topGeo, topMat));
 
   // Bottom hemisphere
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = topMat.clone();
-  botMat.color = new THREE.Color(tier.shell).multiplyScalar(0.75);
+  botMat.color = new THREE.Color(tier.shell).multiplyScalar(0.7);
   group.add(new THREE.Mesh(botGeo, botMat));
 
   // Inner glow
@@ -397,18 +397,9 @@ function buildOptionA(tier, tierIdx) {
   const innerMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.glow), transparent: true, opacity: 0.3 });
   group.add(new THREE.Mesh(innerGeo, innerMat));
 
-  // Badge visible through glass
-  const badge = addBadgeDecal(scene, badgeTexture);
-  group.add(badge);
-
-  // Logo stamp
-  addLogoStamp(group);
-
-  const seam = addSeam(scene, tier.accent);
-  group.add(seam);
-  // Fix seam - it was added to scene, remove and re-add to group
-  scene.remove(seam);
-  group.add(seam);
+  // Seam first, then badge on top
+  addSeam(group, tier.accent);
+  addBadgeDecal(group, badgeTexture);
 
   const glow = addGlow(scene, tier.glow);
 
@@ -426,68 +417,74 @@ function buildOptionA(tier, tierIdx) {
 }
 
 // ════════════════════════════════════════════════
-// OPTION B — Heavy Chrome
+// OPTION B — Heavy Chrome (mirror polish + iridescent clearcoat)
 // ════════════════════════════════════════════════
-function buildOptionB(tier, tierIdx) {
+function buildOptionB(tier) {
   const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
 
   const group = new THREE.Group();
   scene.add(group);
 
-  // Top hemisphere — polished metal
+  // Top hemisphere — mirror chrome with iridescent clearcoat
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   const topMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(tier.shell),
-    metalness: 0.95,
-    roughness: 0.08,
+    metalness: 1.0,
+    roughness: 0.03,
     envMap,
-    envMapIntensity: 2.8,
-    clearcoat: 0.9,
-    clearcoatRoughness: 0.05,
+    envMapIntensity: 3.5,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.02,
+    iridescence: 0.4,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [150, 500],
     reflectivity: 1.0,
   });
   group.add(new THREE.Mesh(topGeo, topMat));
 
-  // Bottom hemisphere — slightly darker
+  // Bottom hemisphere
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(tier.shell).multiplyScalar(0.65),
-    metalness: 0.95,
-    roughness: 0.12,
+    color: new THREE.Color(tier.shell).multiplyScalar(0.6),
+    metalness: 1.0,
+    roughness: 0.06,
     envMap,
-    envMapIntensity: 2.2,
-    clearcoat: 0.7,
-    clearcoatRoughness: 0.08,
+    envMapIntensity: 2.8,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.04,
+    iridescence: 0.3,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [200, 600],
   });
   group.add(new THREE.Mesh(botGeo, botMat));
 
-  // Badge embossed on surface (on front face)
-  const badgePlane = new THREE.PlaneGeometry(0.65, 0.65);
+  // Badge embossed on surface — metallic finish
+  const badgePlane = new THREE.PlaneGeometry(0.7, 0.7);
   const badgeMat = new THREE.MeshStandardMaterial({
     map: badgeTexture,
     transparent: true,
-    metalness: 0.7,
-    roughness: 0.3,
+    metalness: 0.8,
+    roughness: 0.2,
     envMap,
-    envMapIntensity: 1.0,
+    envMapIntensity: 1.5,
+    depthWrite: true,
   });
   const badgeMesh = new THREE.Mesh(badgePlane, badgeMat);
-  badgeMesh.position.set(0, 0, 1.01);
+  badgeMesh.position.set(0, 0, 1.02);
+  badgeMesh.renderOrder = 1;
   group.add(badgeMesh);
 
-  // Logo
-  addLogoStamp(group);
-
-  // Groove seam
+  // Groove seam (add before badge)
   const seamGeo = new THREE.TorusGeometry(1.012, 0.028, 12, 64);
   const seamMat = new THREE.MeshStandardMaterial({
     color: 0x111111,
-    metalness: 0.9, roughness: 0.25,
-    emissive: new THREE.Color(tier.accent), emissiveIntensity: 0.4,
+    metalness: 0.95, roughness: 0.2,
+    emissive: new THREE.Color(tier.accent), emissiveIntensity: 0.5,
   });
   const seam = new THREE.Mesh(seamGeo, seamMat);
   seam.rotation.x = Math.PI / 2;
+  seam.renderOrder = 0;
   group.add(seam);
 
   addGlow(scene, tier.glow);
@@ -505,9 +502,9 @@ function buildOptionB(tier, tierIdx) {
 }
 
 // ════════════════════════════════════════════════
-// OPTION C — Holographic / Iridescent
+// OPTION C — Full Holographic (max iridescence)
 // ════════════════════════════════════════════════
-function buildOptionC(tier, tierIdx) {
+function buildOptionC(tier) {
   const { canvas, renderer, scene, camera } = createCanvas(220, 240);
   addLights(scene, tier.glow);
 
@@ -517,34 +514,27 @@ function buildOptionC(tier, tierIdx) {
   const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
   const topMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(tier.shell),
-    metalness: 0.3,
-    roughness: 0.12,
+    metalness: 0.5,
+    roughness: 0.05,
     envMap,
-    envMapIntensity: 2.2,
+    envMapIntensity: 3.0,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.04,
+    clearcoatRoughness: 0.02,
     iridescence: 1.0,
-    iridescenceIOR: 1.8,
-    iridescenceThicknessRange: [200, 600],
+    iridescenceIOR: 2.0,
+    iridescenceThicknessRange: [100, 800],
     sheen: 1.0,
-    sheenRoughness: 0.2,
+    sheenRoughness: 0.1,
     sheenColor: new THREE.Color(tier.accent),
   });
   group.add(new THREE.Mesh(topGeo, topMat));
 
   const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const botMat = topMat.clone();
-  botMat.iridescenceThicknessRange = [300, 700];
+  botMat.iridescenceThicknessRange = [200, 900];
   group.add(new THREE.Mesh(botGeo, botMat));
 
-  // Badge
-  const badge = addBadgeDecal(scene, badgeTexture);
-  group.add(badge);
-
-  // Logo
-  addLogoStamp(group);
-
-  // Seam
+  // Seam first, then badge
   const seamGeo = new THREE.TorusGeometry(1.008, 0.016, 8, 64);
   const seamMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -553,7 +543,10 @@ function buildOptionC(tier, tierIdx) {
   });
   const seam = new THREE.Mesh(seamGeo, seamMat);
   seam.rotation.x = Math.PI / 2;
+  seam.renderOrder = 0;
   group.add(seam);
+
+  addBadgeDecal(group, badgeTexture);
 
   addGlow(scene, tier.glow);
 
@@ -561,9 +554,9 @@ function buildOptionC(tier, tierIdx) {
   function animate() {
     t += 0.015;
     group.position.y = Math.sin(t) * 0.07;
-    group.rotation.y += 0.012;
-    const shift = Math.sin(t * 2) * 120;
-    topMat.iridescenceThicknessRange = [200 + shift, 600 + shift];
+    group.rotation.y += 0.012; // faster spin to show color shift
+    const shift = Math.sin(t * 2) * 150;
+    topMat.iridescenceThicknessRange = [100 + shift, 800 + shift];
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
@@ -572,7 +565,7 @@ function buildOptionC(tier, tierIdx) {
 }
 
 // ════════════════════════════════════════════════
-// OPTION D — Crystal Ball with inner core
+// OPTION D — Crystal Ball (glass + inner core + iridescent coating)
 // ════════════════════════════════════════════════
 function buildOptionD(tier, tierIdx, isCosmic) {
   const { canvas, renderer, scene, camera } = createCanvas(220, 240);
@@ -581,21 +574,24 @@ function buildOptionD(tier, tierIdx, isCosmic) {
   const group = new THREE.Group();
   scene.add(group);
 
-  // Outer shell — transparent glass
+  // Outer shell — transparent glass with iridescent coating
   const shellGeo = new THREE.SphereGeometry(1, 64, 32);
   const shellMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(tier.shell).multiplyScalar(0.4),
-    metalness: 0.0,
-    roughness: 0.04,
-    transmission: 0.88,
+    color: new THREE.Color(tier.shell).multiplyScalar(0.35),
+    metalness: 0.05,
+    roughness: 0.02,
+    transmission: 0.82,
     thickness: 1.3,
-    ior: 1.45,
+    ior: 1.5,
     envMap,
-    envMapIntensity: 2.0,
+    envMapIntensity: 2.5,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.02,
+    clearcoatRoughness: 0.01,
+    iridescence: 0.7,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [100, 500],
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.5,
   });
   group.add(new THREE.Mesh(shellGeo, shellMat));
 
@@ -618,15 +614,6 @@ function buildOptionD(tier, tierIdx, isCosmic) {
   const midMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent), transparent: true, opacity: 0.12 });
   group.add(new THREE.Mesh(midGeo, midMat));
 
-  // Badge visible inside
-  const badge = addBadgeDecal(scene, badgeTexture);
-  badge.position.z = 0.65;
-  badge.material.opacity = 0.7;
-  group.add(badge);
-
-  // Logo
-  addLogoStamp(group);
-
   // Seam
   const seamGeo = new THREE.TorusGeometry(1.01, 0.02, 8, 64);
   const seamMat = new THREE.MeshStandardMaterial({
@@ -636,7 +623,12 @@ function buildOptionD(tier, tierIdx, isCosmic) {
   });
   const seam = new THREE.Mesh(seamGeo, seamMat);
   seam.rotation.x = Math.PI / 2;
+  seam.renderOrder = 0;
   group.add(seam);
+
+  // Badge visible through glass — on the surface, renders on top of seam
+  const badge = addBadgeDecal(group, badgeTexture);
+  badge.material.opacity = 0.8;
 
   addGlow(scene, tier.glow);
 
@@ -650,7 +642,6 @@ function buildOptionD(tier, tierIdx, isCosmic) {
     ring1.rotation.z = 0.3;
     group.add(ring1);
 
-    // Particles on ring
     for (let i = 0; i < 3; i++) {
       const dg = new THREE.SphereGeometry(0.04, 8, 8);
       const dm = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent) });
@@ -683,6 +674,10 @@ function buildOptionD(tier, tierIdx, isCosmic) {
     // Pulsing seam
     seamMat.emissiveIntensity = 1.5 + Math.sin(t * 2) * 1;
 
+    // Animate iridescence
+    const shift = Math.sin(t * 1.5) * 100;
+    shellMat.iridescenceThicknessRange = [100 + shift, 500 + shift];
+
     if (ring1) ring1.rotation.z += 0.008;
     if (ring2) ring2.rotation.z -= 0.005;
 
@@ -709,13 +704,11 @@ function buildRow(containerId, buildFn) {
   });
 }
 
-// Wait for logo to load, then build everything
-logoPromise.then(() => {
-  buildRow('row-a', (tier, idx) => buildOptionA(tier, idx));
-  buildRow('row-b', (tier, idx) => buildOptionB(tier, idx));
-  buildRow('row-c', (tier, idx) => buildOptionC(tier, idx));
-  buildRow('row-d', (tier, idx, isCosmic) => buildOptionD(tier, idx, isCosmic));
-});
+// Build immediately — no logo dependency
+buildRow('row-a', (tier) => buildOptionA(tier));
+buildRow('row-b', (tier) => buildOptionB(tier));
+buildRow('row-c', (tier) => buildOptionC(tier));
+buildRow('row-d', (tier, idx, isCosmic) => buildOptionD(tier, idx, isCosmic));
 </script>
 </body>
 </html>
