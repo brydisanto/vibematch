@@ -6,52 +6,34 @@
 <title>VibeMatch — Pin Capsule Redesign Options</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #0a0015;
-    --surface: #130025;
-    --border: #1f0040;
-    --text: #e0d6f0;
-    --text-muted: #8a7aaa;
-    --sz: 160px;
-  }
-
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: #0a0015;
+    color: #e0d6f0;
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     line-height: 1.6;
     min-height: 100vh;
-    padding: 3rem 1.5rem 6rem;
+    padding: 2rem 1.5rem 4rem;
   }
-
   .page-header {
-    text-align: center;
-    margin-bottom: 4rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
+    text-align: center; margin-bottom: 3rem;
+    padding-bottom: 1.5rem; border-bottom: 1px solid #1f0040;
   }
   .page-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2rem; font-weight: 700;
     background: linear-gradient(135deg, #B366FF, #FF66B2, #FFE048);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
   }
-  .page-header p { color: var(--text-muted); font-size: 0.95rem; max-width: 620px; margin: 0 auto; }
+  .page-header p { color: #8a7aaa; font-size: 0.95rem; max-width: 620px; margin: 0 auto; }
 
   .option-section {
-    max-width: 1000px;
-    margin: 0 auto 5rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2.5rem 2rem;
+    max-width: 1000px; margin: 0 auto 4rem;
+    background: #130025; border: 1px solid #1f0040;
+    border-radius: 16px; padding: 2rem 1.5rem;
   }
-  .option-header { margin-bottom: 2rem; }
+  .option-header { margin-bottom: 1rem; }
   .option-header h2 { font-size: 1.35rem; font-weight: 600; margin-bottom: 0.35rem; }
-  .option-header p { color: var(--text-muted); font-size: 0.85rem; max-width: 720px; }
+  .option-header p { color: #8a7aaa; font-size: 0.85rem; max-width: 720px; }
   .tag {
     display: inline-block; font-size: 0.7rem; font-weight: 600;
     letter-spacing: 0.06em; text-transform: uppercase;
@@ -63,974 +45,529 @@
   .tag--d { background: #FF66B222; color: #FF66B2; }
 
   .tier-row {
-    display: flex;
-    justify-content: center;
-    gap: 2.5rem;
-    flex-wrap: wrap;
-    padding: 2rem 0 1rem;
+    display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
   }
   .tier-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.2rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
   }
   .tier-label {
     font-size: 0.75rem; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--text-muted);
+    color: #8a7aaa;
   }
-  .capsule-wrap {
-    width: 220px; height: 220px;
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-  }
-
-  /* ============================================================
-     SHARED FLOAT
-     ============================================================ */
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-  .tier-item:nth-child(2) .orb-root { animation-delay: -1s; }
-  .tier-item:nth-child(3) .orb-root { animation-delay: -2s; }
-  .tier-item:nth-child(4) .orb-root { animation-delay: -3s; }
-
-  /* ============================================================
-     OPTION A — GLASS SPHERE (true 3D hemisphere split)
-     Uses two clipped halves with independent perspective-aware
-     radial gradients to simulate top-lit transparent plastic.
-     ============================================================ */
-  .glass-sphere {
-    width: var(--sz); height: var(--sz);
-    position: relative;
-    animation: float 4s ease-in-out infinite;
-    transform-style: preserve-3d;
-    perspective: 500px;
-  }
-
-  /* Top hemisphere */
-  .glass-sphere .top-half {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 50%;
-    border-radius: calc(var(--sz)/2) calc(var(--sz)/2) 0 0;
-    overflow: hidden;
-    transform: rotateX(8deg);
-    transform-origin: center bottom;
-  }
-  .glass-sphere .top-half::before {
-    content: '';
-    position: absolute;
-    inset: 0; bottom: -100%;
-    border-radius: 50%;
-    background:
-      /* Primary specular — large crescent at top-left */
-      radial-gradient(ellipse 55% 50% at 30% 15%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 25%, transparent 55%),
-      /* Secondary specular bloom */
-      radial-gradient(ellipse 80% 30% at 38% 10%, rgba(255,255,255,0.3) 0%, transparent 70%),
-      /* Subsurface color diffusion */
-      radial-gradient(ellipse 90% 80% at 50% 60%, var(--shell) 0%, color-mix(in srgb, var(--shell), #000 35%) 60%, color-mix(in srgb, var(--shell), #000 70%) 100%);
-    box-shadow: inset 0 -3px 15px rgba(0,0,0,0.3);
-  }
-
-  /* Bottom hemisphere */
-  .glass-sphere .bot-half {
-    position: absolute;
-    bottom: 0; left: 0; width: 100%; height: 50%;
-    border-radius: 0 0 calc(var(--sz)/2) calc(var(--sz)/2);
-    overflow: hidden;
-    transform: rotateX(-6deg);
-    transform-origin: center top;
-  }
-  .glass-sphere .bot-half::before {
-    content: '';
-    position: absolute;
-    inset: -100% 0 0 0;
-    border-radius: 50%;
-    background:
-      /* Ambient occlusion — heavy darkness at bottom */
-      radial-gradient(ellipse 70% 60% at 50% 85%, rgba(0,0,0,0.5) 0%, transparent 70%),
-      /* Reflected light from ground — subtle rim at very bottom */
-      radial-gradient(ellipse 50% 20% at 50% 95%, rgba(255,255,255,0.08) 0%, transparent 70%),
-      /* Base color — darker half */
-      radial-gradient(ellipse 100% 80% at 50% 30%, color-mix(in srgb, var(--shell), #000 15%) 0%, color-mix(in srgb, var(--shell), #000 55%) 70%, color-mix(in srgb, var(--shell), #000 80%) 100%);
-    box-shadow: inset 0 3px 10px rgba(0,0,0,0.2);
-  }
-
-  /* Fresnel rim — edge-lit ring */
-  .glass-sphere .fresnel-rim {
-    position: absolute; inset: 0; border-radius: 50%; z-index: 5;
-    background: radial-gradient(circle at 50% 50%,
-      transparent 58%,
-      color-mix(in srgb, var(--accent), transparent 70%) 72%,
-      color-mix(in srgb, var(--accent), transparent 40%) 84%,
-      color-mix(in srgb, var(--accent), transparent 70%) 92%,
-      transparent 100%);
-    pointer-events: none;
-  }
-
-  /* Equator seam — bright glowing ridge */
-  .glass-sphere .seam {
-    position: absolute;
-    top: 50%; left: 0; width: 100%; height: 4px;
-    transform: translateY(-50%);
-    z-index: 6;
-    background: linear-gradient(90deg,
-      transparent 2%,
-      color-mix(in srgb, var(--accent), transparent 50%) 15%,
-      rgba(255,255,255,0.7) 35%,
-      rgba(255,255,255,0.9) 50%,
-      rgba(255,255,255,0.7) 65%,
-      color-mix(in srgb, var(--accent), transparent 50%) 85%,
-      transparent 98%);
-    filter: blur(0.5px);
-    box-shadow: 0 0 8px 2px var(--glow), 0 0 20px 4px color-mix(in srgb, var(--glow), transparent 60%);
-  }
-
-  /* Outer glow */
-  .glass-sphere .outer-glow {
-    position: absolute; inset: -20%; border-radius: 50%; z-index: -1;
-    background: radial-gradient(circle, color-mix(in srgb, var(--glow), transparent 75%) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* Drop shadow on ground */
-  .glass-sphere .ground-shadow {
-    position: absolute;
-    bottom: -16px; left: 20%; width: 60%; height: 14px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 70%);
-    filter: blur(4px);
-    z-index: -1;
-  }
-
-  .glass-sphere.blue   { --shell: #6C5CE7; --glow: #6C5CE780; --accent: #8B7FF0; }
-  .glass-sphere.silver { --shell: #6C5CE7; --glow: #2ECC7180; --accent: #54D98C; }
-  .glass-sphere.gold   { --shell: #7B5AE0; --glow: #FFE04880; --accent: #FFE048; }
-  .glass-sphere.cosmic { --shell: #B366FF; --glow: #B366FF80; --accent: #FF66B2; }
-
-
-  /* ============================================================
-     OPTION B — HEAVY CHROME SPHERE
-     True metallic look — strong directional highlight, deep shadow
-     side, environment reflection rotation, visible top/bottom
-     hemisphere geometry.
-     ============================================================ */
-  @keyframes envSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes shadowPulse {
-    0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.4; }
-    50% { transform: translateX(-50%) scaleX(0.82); opacity: 0.25; }
-  }
-
-  .chrome-sphere {
-    width: var(--sz); height: var(--sz);
-    position: relative;
-    animation: float 4.5s ease-in-out infinite;
-    transform-style: preserve-3d;
-    perspective: 600px;
-  }
-
-  /* Top half — the lit side */
-  .chrome-sphere .top-half {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 50%;
-    border-radius: calc(var(--sz)/2) calc(var(--sz)/2) 0 0;
-    overflow: hidden;
-    transform: rotateX(10deg) scale(1.01);
-    transform-origin: center bottom;
-  }
-  .chrome-sphere .top-half::before {
-    content: '';
-    position: absolute;
-    inset: 0; bottom: -100%;
-    border-radius: 50%;
-    background:
-      /* Bright specular hotspot */
-      radial-gradient(ellipse 35% 30% at 28% 20%, #fff 0%, rgba(255,255,255,0.6) 30%, transparent 55%),
-      /* Wide specular bloom */
-      radial-gradient(ellipse 70% 25% at 35% 12%, rgba(255,255,255,0.4) 0%, transparent 70%),
-      /* Anisotropic streak */
-      radial-gradient(ellipse 90% 6% at 42% 28%, rgba(255,255,255,0.3) 0%, transparent 80%),
-      /* Bright metallic surface */
-      radial-gradient(circle at 35% 30%,
-        color-mix(in srgb, var(--accent), white 40%) 0%,
-        var(--shell) 35%,
-        color-mix(in srgb, var(--shell), #000 20%) 70%,
-        color-mix(in srgb, var(--shell), #000 50%) 100%);
-  }
-
-  /* Bottom half — shadow side */
-  .chrome-sphere .bot-half {
-    position: absolute;
-    bottom: 0; left: 0; width: 100%; height: 50%;
-    border-radius: 0 0 calc(var(--sz)/2) calc(var(--sz)/2);
-    overflow: hidden;
-    transform: rotateX(-8deg) scale(1.01);
-    transform-origin: center top;
-  }
-  .chrome-sphere .bot-half::before {
-    content: '';
-    position: absolute;
-    inset: -100% 0 0 0;
-    border-radius: 50%;
-    background:
-      /* Rim light from below — reflected ground light */
-      radial-gradient(ellipse 40% 15% at 55% 92%, rgba(255,255,255,0.1) 0%, transparent 70%),
-      /* Heavy shadow */
-      radial-gradient(ellipse 80% 70% at 50% 80%, rgba(0,0,0,0.7) 0%, transparent 80%),
-      /* Dark metallic base */
-      radial-gradient(circle at 45% 40%,
-        color-mix(in srgb, var(--shell), #000 25%) 0%,
-        color-mix(in srgb, var(--shell), #000 55%) 60%,
-        color-mix(in srgb, var(--shell), #000 80%) 100%);
-  }
-
-  /* Env reflection — rotating conic */
-  .chrome-sphere .env-reflect {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: conic-gradient(from 0deg,
-      transparent 0%, rgba(255,255,255,0.08) 8%, transparent 16%,
-      rgba(255,255,255,0.05) 30%, transparent 40%,
-      rgba(255,255,255,0.1) 55%, transparent 65%,
-      rgba(255,255,255,0.06) 80%, transparent 90%);
-    animation: envSpin 10s linear infinite;
-    mix-blend-mode: screen;
-    z-index: 4;
-  }
-
-  /* Equator groove — inset metallic seam */
-  .chrome-sphere .seam {
-    position: absolute;
-    top: 50%; left: 0; width: 100%; height: 3px;
-    transform: translateY(-50%);
-    z-index: 5;
-    background: linear-gradient(90deg,
-      transparent 3%,
-      rgba(0,0,0,0.6) 8%,
-      rgba(255,255,255,0.5) 25%,
-      rgba(255,255,255,0.9) 50%,
-      rgba(255,255,255,0.5) 75%,
-      rgba(0,0,0,0.6) 92%,
-      transparent 97%);
-    box-shadow:
-      0 1px 0 rgba(0,0,0,0.5),
-      0 -1px 0 rgba(255,255,255,0.1),
-      0 0 10px 1px var(--glow);
-  }
-
-  /* Outer colored glow */
-  .chrome-sphere .outer-glow {
-    position: absolute; inset: -15%; border-radius: 50%; z-index: -1;
-    background: radial-gradient(circle, var(--glow) 0%, transparent 55%);
-    opacity: 0.3;
-  }
-
-  /* Ground shadow */
-  .chrome-sphere .ground-shadow {
-    position: absolute;
-    bottom: -18px; left: 50%; width: 65%; height: 14px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, color-mix(in srgb, var(--glow-solid), transparent 40%) 0%, transparent 70%);
-    filter: blur(5px);
-    animation: shadowPulse 4.5s ease-in-out infinite;
-    z-index: -1;
-  }
-
-  .chrome-sphere.blue   { --shell: #6C5CE7; --glow: #6C5CE755; --glow-solid: #6C5CE7; --accent: #8B7FF0; }
-  .chrome-sphere.silver { --shell: #6C5CE7; --glow: #2ECC7155; --glow-solid: #2ECC71; --accent: #54D98C; }
-  .chrome-sphere.gold   { --shell: #7B5AE0; --glow: #FFE04855; --glow-solid: #FFE048; --accent: #FFE048; }
-  .chrome-sphere.cosmic { --shell: #B366FF; --glow: #B366FF55; --glow-solid: #B366FF; --accent: #FF66B2; }
-
-
-  /* ============================================================
-     OPTION C — HOLOGRAPHIC ORB
-     Iridescent oil-slick surface + 3D hemisphere geometry +
-     breathing glow + orbit ring on Cosmic
-     ============================================================ */
-  @keyframes holoShift {
-    0% { filter: hue-rotate(0deg); }
-    100% { filter: hue-rotate(360deg); }
-  }
-  @keyframes breathe {
-    0%, 100% { opacity: 0.35; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.08); }
-  }
-  @keyframes orbit {
-    from { transform: rotateX(65deg) rotateZ(0deg); }
-    to { transform: rotateX(65deg) rotateZ(360deg); }
-  }
-
-  .holo-sphere {
-    width: var(--sz); height: var(--sz);
-    position: relative;
-    animation: float 3.8s ease-in-out infinite;
-    transform-style: preserve-3d;
-    perspective: 500px;
-  }
-
-  /* Holographic base — full sphere for the iridescent conic */
-  .holo-sphere .holo-base {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: conic-gradient(from 45deg,
-      var(--shell), var(--accent), #FF66B2, #FFE048, #2ECC71, #45B7D1, var(--shell));
-    animation: holoShift 5s linear infinite;
-    z-index: 1;
-  }
-
-  /* Top half 3D shading overlay */
-  .holo-sphere .top-shade {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 52%;
-    border-radius: calc(var(--sz)/2) calc(var(--sz)/2) 0 0;
-    z-index: 2;
-    background:
-      /* Specular crescent */
-      radial-gradient(ellipse 50% 45% at 30% 18%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.3) 30%, transparent 55%),
-      /* Wide bloom */
-      radial-gradient(ellipse 85% 30% at 40% 8%, rgba(255,255,255,0.25) 0%, transparent 70%),
-      /* Slight center brightness */
-      radial-gradient(circle at 45% 50%, rgba(255,255,255,0.1) 0%, transparent 50%);
-    pointer-events: none;
-  }
-
-  /* Bottom half darkness */
-  .holo-sphere .bot-shade {
-    position: absolute;
-    bottom: 0; left: 0; width: 100%; height: 52%;
-    border-radius: 0 0 calc(var(--sz)/2) calc(var(--sz)/2);
-    z-index: 2;
-    background:
-      radial-gradient(ellipse 70% 60% at 50% 80%, rgba(0,0,0,0.5) 0%, transparent 70%),
-      radial-gradient(circle at 50% 50%, transparent 40%, rgba(0,0,0,0.3) 80%);
-    pointer-events: none;
-  }
-
-  /* Fresnel rim */
-  .holo-sphere .fresnel-rim {
-    position: absolute; inset: 0; border-radius: 50%; z-index: 3;
-    background: radial-gradient(circle at 50% 50%,
-      transparent 60%, rgba(255,255,255,0.06) 72%, rgba(255,255,255,0.12) 85%, transparent 100%);
-  }
-
-  /* Seam */
-  .holo-sphere .seam {
-    position: absolute;
-    top: 50%; left: 3%; right: 3%; height: 2px;
-    transform: translateY(-50%); z-index: 4;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6) 20%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.6) 80%, transparent);
-    box-shadow: 0 0 8px 2px var(--glow);
-  }
-
-  /* Breathing outer glow */
-  .holo-sphere .outer-glow {
-    position: absolute; inset: -25%; border-radius: 50%; z-index: -1;
-    background: radial-gradient(circle, var(--glow) 0%, transparent 55%);
-    animation: breathe 3s ease-in-out infinite;
-  }
-
-  .holo-sphere .ground-shadow {
-    position: absolute;
-    bottom: -16px; left: 22%; width: 56%; height: 12px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
-    filter: blur(4px); z-index: -1;
-  }
-
-  /* Cosmic orbit ring */
-  .holo-sphere .orbit-ring { display: none; }
-  .holo-sphere.cosmic .orbit-ring {
-    display: block;
-    position: absolute;
-    width: 200px; height: 200px;
-    top: 50%; left: 50%;
-    margin: -100px 0 0 -100px;
-    border: 1.5px solid rgba(255,102,178,0.35);
-    border-radius: 50%;
-    animation: orbit 5s linear infinite;
-    z-index: 6;
-    box-shadow: 0 0 10px rgba(255,102,178,0.3);
-  }
-  .holo-sphere.cosmic .orbit-ring::before,
-  .holo-sphere.cosmic .orbit-ring::after {
-    content: '';
-    position: absolute;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #FF66B2;
-    box-shadow: 0 0 10px 3px #FF66B2;
-  }
-  .holo-sphere.cosmic .orbit-ring::before { top: -3px; left: 50%; }
-  .holo-sphere.cosmic .orbit-ring::after { bottom: -3px; left: 30%; }
-
-  .holo-sphere.blue   { --shell: #6C5CE7; --glow: #6C5CE766; --accent: #8B7FF0; }
-  .holo-sphere.silver { --shell: #6C5CE7; --glow: #2ECC7166; --accent: #54D98C; }
-  .holo-sphere.gold   { --shell: #7B5AE0; --glow: #FFE04866; --accent: #FFE048; }
-  .holo-sphere.cosmic { --shell: #B366FF; --glow: #B366FF66; --accent: #FF66B2; }
-
-
-  /* ============================================================
-     OPTION D — CRYSTAL BALL (Premium)
-     Deep layered internals, visible core, hemisphere geometry,
-     animated inner swirl, pulsing seam, ambient motes, dual
-     orbit rings on Cosmic.
-     ============================================================ */
-  @keyframes innerSwirl {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes seamPulse {
-    0%, 100% { opacity: 0.7; box-shadow: 0 0 6px 2px var(--glow), 0 0 16px 4px color-mix(in srgb, var(--glow), transparent 60%); }
-    50% { opacity: 1; box-shadow: 0 0 14px 4px var(--glow), 0 0 30px 8px color-mix(in srgb, var(--glow), transparent 40%); }
-  }
-  @keyframes moteFloat {
-    0% { transform: translate(0, 0) scale(1); opacity: 0; }
-    15% { opacity: 0.8; }
-    85% { opacity: 0.8; }
-    100% { transform: translate(var(--mx), var(--my)) scale(0.2); opacity: 0; }
-  }
-  @keyframes coreBreath {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 0.75; transform: scale(1.12); }
-  }
-  @keyframes ring1 {
-    from { transform: rotateX(68deg) rotateY(12deg) rotateZ(0deg); }
-    to { transform: rotateX(68deg) rotateY(12deg) rotateZ(360deg); }
-  }
-  @keyframes ring2 {
-    from { transform: rotateX(48deg) rotateY(-25deg) rotateZ(0deg); }
-    to { transform: rotateX(48deg) rotateY(-25deg) rotateZ(-360deg); }
-  }
-  @keyframes prismRotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .crystal-sphere {
-    width: var(--sz); height: var(--sz);
-    position: relative;
-    animation: float 4.2s ease-in-out infinite;
-    transform-style: preserve-3d;
-    perspective: 600px;
-  }
-
-  /* Deep shell — outer darkness layer (the "glass body") */
-  .crystal-sphere .shell {
-    position: absolute; inset: 0; border-radius: 50%; z-index: 1;
-    background: radial-gradient(circle at 50% 50%,
-      transparent 40%,
-      color-mix(in srgb, var(--shell), #000 40%) 60%,
-      color-mix(in srgb, var(--shell), #000 70%) 78%,
-      color-mix(in srgb, var(--shell), #000 85%) 100%);
-  }
-
-  /* Mid-depth color volume */
-  .crystal-sphere .volume {
-    position: absolute; inset: 12%; border-radius: 50%; z-index: 2;
-    background: radial-gradient(circle at 46% 42%,
-      color-mix(in srgb, var(--accent), transparent 10%) 0%,
-      color-mix(in srgb, var(--shell), transparent 30%) 40%,
-      transparent 100%);
-    opacity: 0.65;
-  }
-
-  /* Inner core glow — deep bright center */
-  .crystal-sphere .core {
-    position: absolute; inset: 28%; border-radius: 50%; z-index: 3;
-    background: radial-gradient(circle at 50% 48%,
-      rgba(255,255,255,0.6) 0%,
-      var(--accent) 25%,
-      color-mix(in srgb, var(--glow-solid), transparent 40%) 55%,
-      transparent 100%);
-    filter: blur(6px);
-    animation: coreBreath 3.5s ease-in-out infinite;
-  }
-
-  /* Animated inner swirl — very subtle internal movement */
-  .crystal-sphere .swirl {
-    position: absolute; inset: 8%; border-radius: 50%; z-index: 4;
-    background: conic-gradient(from 0deg,
-      transparent 0%,
-      color-mix(in srgb, var(--accent), transparent 82%) 12%,
-      transparent 25%,
-      color-mix(in srgb, var(--glow-solid), transparent 85%) 42%,
-      transparent 55%,
-      color-mix(in srgb, var(--accent), transparent 82%) 72%,
-      transparent 85%);
-    animation: innerSwirl 18s linear infinite;
-    mix-blend-mode: screen;
-    opacity: 0.4;
-  }
-
-  /* Top hemisphere — lit specular zone */
-  .crystal-sphere .top-lit {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 52%;
-    border-radius: calc(var(--sz)/2) calc(var(--sz)/2) 0 0;
-    z-index: 5;
-    background:
-      /* Hard specular crescent */
-      radial-gradient(ellipse 42% 40% at 28% 16%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 28%, transparent 52%),
-      /* Wide secondary bloom */
-      radial-gradient(ellipse 80% 28% at 36% 6%, rgba(255,255,255,0.3) 0%, transparent 70%),
-      /* Anisotropic light streak */
-      radial-gradient(ellipse 95% 5% at 40% 25%, rgba(255,255,255,0.18) 0%, transparent 80%);
-    pointer-events: none;
-  }
-
-  /* Bottom hemisphere — shadow zone */
-  .crystal-sphere .bot-dark {
-    position: absolute;
-    bottom: 0; left: 0; width: 100%; height: 52%;
-    border-radius: 0 0 calc(var(--sz)/2) calc(var(--sz)/2);
-    z-index: 5;
-    background:
-      /* Ground reflection — very subtle */
-      radial-gradient(ellipse 35% 12% at 55% 94%, rgba(255,255,255,0.06) 0%, transparent 70%),
-      /* Ambient occlusion */
-      radial-gradient(ellipse 75% 65% at 50% 82%, rgba(0,0,0,0.55) 0%, transparent 75%);
-    pointer-events: none;
-  }
-
-  /* Fresnel rim light */
-  .crystal-sphere .fresnel {
-    position: absolute; inset: 0; border-radius: 50%; z-index: 6;
-    background: radial-gradient(circle at 50% 50%,
-      transparent 58%,
-      color-mix(in srgb, var(--accent), transparent 75%) 70%,
-      color-mix(in srgb, var(--accent), transparent 45%) 83%,
-      color-mix(in srgb, var(--accent), transparent 70%) 92%,
-      transparent 100%);
-    pointer-events: none;
-  }
-
-  /* Equator seam — pulsing energy line */
-  .crystal-sphere .seam {
-    position: absolute;
-    top: 50%; left: 0; width: 100%; height: 3px;
-    transform: translateY(-50%); z-index: 7;
-    background: linear-gradient(90deg,
-      transparent 2%,
-      color-mix(in srgb, var(--accent), transparent 40%) 10%,
-      rgba(255,255,255,0.6) 30%,
-      rgba(255,255,255,0.95) 50%,
-      rgba(255,255,255,0.6) 70%,
-      color-mix(in srgb, var(--accent), transparent 40%) 90%,
-      transparent 98%);
-    animation: seamPulse 2.5s ease-in-out infinite;
-  }
-
-  /* Outer glow */
-  .crystal-sphere .outer-glow {
-    position: absolute; inset: -22%; border-radius: 50%; z-index: -1;
-    background: radial-gradient(circle,
-      color-mix(in srgb, var(--glow-solid), transparent 60%) 0%, transparent 55%);
-    opacity: 0.5;
-  }
-
-  /* Ground shadow */
-  .crystal-sphere .ground-shadow {
-    position: absolute;
-    bottom: -18px; left: 18%; width: 64%; height: 15px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
-    filter: blur(5px); z-index: -1;
-  }
-
-  /* Ambient motes */
-  .crystal-sphere .mote {
-    position: absolute;
-    width: 3px; height: 3px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px 2px var(--glow-solid);
-    z-index: 8;
-    animation: moteFloat var(--dur) ease-in-out infinite;
-    animation-delay: var(--delay);
-  }
-  .crystal-sphere .mote:nth-child(10) { top: 15%; left: -12px; --mx: -22px; --my: -28px; --dur: 4.2s; --delay: 0s; }
-  .crystal-sphere .mote:nth-child(11) { top: 55%; right: -10px; left: auto; --mx: 20px; --my: 18px; --dur: 5.2s; --delay: 1.2s; }
-  .crystal-sphere .mote:nth-child(12) { bottom: 8%; left: 35%; --mx: -12px; --my: 25px; --dur: 4.6s; --delay: 2.1s; }
-  .crystal-sphere .mote:nth-child(13) { top: 3%; right: 18%; left: auto; --mx: 16px; --my: -18px; --dur: 3.9s; --delay: 0.6s; }
-  .crystal-sphere .mote:nth-child(14) { top: 40%; left: -8px; --mx: -16px; --my: 12px; --dur: 5.6s; --delay: 1.8s; }
-
-  /* Cosmic extras */
-  .crystal-sphere .cosmic-ring,
-  .crystal-sphere .cosmic-ring-2,
-  .crystal-sphere .prism-edge { display: none; }
-
-  .crystal-sphere.cosmic .cosmic-ring {
-    display: block;
-    position: absolute;
-    width: 210px; height: 210px;
-    top: 50%; left: 50%;
-    margin: -105px 0 0 -105px;
-    border: 1.5px solid rgba(179,102,255,0.4);
-    border-radius: 50%;
-    animation: ring1 7s linear infinite;
-    z-index: 9;
-    box-shadow: 0 0 12px rgba(179,102,255,0.25);
-  }
-  .crystal-sphere.cosmic .cosmic-ring::before {
-    content: '';
-    position: absolute;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #B366FF;
-    box-shadow: 0 0 12px 4px #B366FF;
-    top: -3px; left: 50%;
-  }
-
-  .crystal-sphere.cosmic .cosmic-ring-2 {
-    display: block;
-    position: absolute;
-    width: 192px; height: 192px;
-    top: 50%; left: 50%;
-    margin: -96px 0 0 -96px;
-    border: 1px solid rgba(255,102,178,0.3);
-    border-radius: 50%;
-    animation: ring2 11s linear infinite;
-    z-index: 9;
-    box-shadow: 0 0 10px rgba(255,102,178,0.2);
-  }
-  .crystal-sphere.cosmic .cosmic-ring-2::before {
-    content: '';
-    position: absolute;
-    width: 5px; height: 5px; border-radius: 50%;
-    background: #FF66B2;
-    box-shadow: 0 0 10px 3px #FF66B2;
-    bottom: -2.5px; left: 35%;
-  }
-
-  .crystal-sphere.cosmic .prism-edge {
-    display: block;
-    position: absolute; inset: -3px; border-radius: 50%; z-index: 0;
-    background: conic-gradient(from 0deg,
-      transparent 0%, rgba(255,102,178,0.35) 8%, transparent 16%,
-      rgba(179,102,255,0.35) 30%, transparent 40%,
-      rgba(255,224,72,0.25) 52%, transparent 62%,
-      rgba(46,204,113,0.25) 76%, transparent 88%);
-    animation: prismRotate 8s linear infinite;
-    filter: blur(3px);
-    opacity: 0.6;
-  }
-
-  .crystal-sphere.blue   { --shell: #6C5CE7; --glow: #6C5CE755; --glow-solid: #6C5CE7; --accent: #8B7FF0; }
-  .crystal-sphere.silver { --shell: #6C5CE7; --glow: #2ECC7155; --glow-solid: #2ECC71; --accent: #54D98C; }
-  .crystal-sphere.gold   { --shell: #7B5AE0; --glow: #FFE04855; --glow-solid: #FFE048; --accent: #FFE048; }
-  .crystal-sphere.cosmic { --shell: #B366FF; --glow: #B366FF55; --glow-solid: #B366FF; --accent: #FF66B2; }
+  canvas { display: block; border-radius: 12px; }
 </style>
 </head>
 <body>
 
-  <header class="page-header">
-    <h1>VibeMatch — Pin Capsule Redesign</h1>
-    <p>Four 3D sphere designs with true hemisphere geometry, directional lighting, and depth. Each shows all four rarity tiers.</p>
-  </header>
+<header class="page-header">
+  <h1>VibeMatch — Pin Capsule Redesign</h1>
+  <p>Four real 3D sphere designs rendered with Three.js — proper lighting, reflections, materials, and depth. Each shows all four rarity tiers.</p>
+</header>
 
-  <!-- OPTION A — GLASS SPHERE -->
-  <section class="option-section">
-    <div class="option-header">
-      <h2><span class="tag tag--a">Option A</span> Glass Sphere</h2>
-      <p>Translucent glass with split hemisphere geometry (each half tilted in 3D perspective). Crescent specular highlight, Fresnel rim glow, luminous equator seam, subsurface color diffusion.</p>
-    </div>
-    <div class="tier-row">
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="glass-sphere orb-root blue">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Blue</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="glass-sphere orb-root silver">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Silver</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="glass-sphere orb-root gold">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Gold</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="glass-sphere orb-root cosmic">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Cosmic</span>
-      </div>
-    </div>
-  </section>
+<!-- OPTION A -->
+<section class="option-section">
+  <div class="option-header">
+    <h2><span class="tag tag--a">Option A</span> Glass Orb</h2>
+    <p>Translucent glass sphere with visible refraction, environment reflections, Fresnel rim glow, and a luminous equator seam. Soft inner glow visible through the shell.</p>
+  </div>
+  <div class="tier-row" id="row-a"></div>
+</section>
 
-  <!-- OPTION B — CHROME SPHERE -->
-  <section class="option-section">
-    <div class="option-header">
-      <h2><span class="tag tag--b">Option B</span> Heavy Chrome</h2>
-      <p>Opaque metallic sphere with aggressive directional lighting. Split hemispheres with strong top-left specular hotspot, anisotropic highlight streak, rotating environment reflection, deep shadow side, and a grooved metallic seam.</p>
-    </div>
-    <div class="tier-row">
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="chrome-sphere orb-root blue">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="env-reflect"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Blue</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="chrome-sphere orb-root silver">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="env-reflect"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Silver</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="chrome-sphere orb-root gold">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="env-reflect"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Gold</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="chrome-sphere orb-root cosmic">
-            <div class="top-half"></div>
-            <div class="bot-half"></div>
-            <div class="env-reflect"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-          </div>
-        </div>
-        <span class="tier-label">Cosmic</span>
-      </div>
-    </div>
-  </section>
+<!-- OPTION B -->
+<section class="option-section">
+  <div class="option-header">
+    <h2><span class="tag tag--b">Option B</span> Heavy Chrome</h2>
+    <p>Polished metallic sphere with sharp environment reflections, strong specular highlights, and a deep grooved equator seam. Feels weighty and premium.</p>
+  </div>
+  <div class="tier-row" id="row-b"></div>
+</section>
 
-  <!-- OPTION C — HOLOGRAPHIC -->
-  <section class="option-section">
-    <div class="option-header">
-      <h2><span class="tag tag--c">Option C</span> Holographic Orb</h2>
-      <p>Iridescent oil-slick surface (hue-rotating conic gradient) with 3D directional shading overlaid on top. Specular crescent, Fresnel rim, breathing outer glow. Cosmic tier gets an orbiting particle ring.</p>
-    </div>
-    <div class="tier-row">
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="holo-sphere orb-root blue">
-            <div class="holo-base"></div>
-            <div class="top-shade"></div>
-            <div class="bot-shade"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-            <div class="orbit-ring"></div>
-          </div>
-        </div>
-        <span class="tier-label">Blue</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="holo-sphere orb-root silver">
-            <div class="holo-base"></div>
-            <div class="top-shade"></div>
-            <div class="bot-shade"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-            <div class="orbit-ring"></div>
-          </div>
-        </div>
-        <span class="tier-label">Silver</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="holo-sphere orb-root gold">
-            <div class="holo-base"></div>
-            <div class="top-shade"></div>
-            <div class="bot-shade"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-            <div class="orbit-ring"></div>
-          </div>
-        </div>
-        <span class="tier-label">Gold</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="holo-sphere orb-root cosmic">
-            <div class="holo-base"></div>
-            <div class="top-shade"></div>
-            <div class="bot-shade"></div>
-            <div class="fresnel-rim"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="ground-shadow"></div>
-            <div class="orbit-ring"></div>
-          </div>
-        </div>
-        <span class="tier-label">Cosmic</span>
-      </div>
-    </div>
-  </section>
+<!-- OPTION C -->
+<section class="option-section">
+  <div class="option-header">
+    <h2><span class="tag tag--c">Option C</span> Holographic Orb</h2>
+    <p>Iridescent surface that shifts color as it rotates — like a soap bubble or holographic foil. Environment-mapped with a rainbow MatCap and animated rotation.</p>
+  </div>
+  <div class="tier-row" id="row-c"></div>
+</section>
 
-  <!-- OPTION D — CRYSTAL BALL -->
-  <section class="option-section">
-    <div class="option-header">
-      <h2><span class="tag tag--d">Option D</span> Crystal Ball</h2>
-      <p>The premium option. Six-layer depth stack: dark outer shell, mid-depth color volume, blurred core glow that breathes, animated inner swirl (mix-blend-mode: screen), 3D hemisphere lighting with hard specular crescent, Fresnel rim, pulsing energy seam, ambient floating motes. Cosmic tier adds dual counter-rotating orbit rings and a prismatic edge light.</p>
-    </div>
-    <div class="tier-row">
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="crystal-sphere orb-root blue">
-            <div class="shell"></div>
-            <div class="volume"></div>
-            <div class="core"></div>
-            <div class="swirl"></div>
-            <div class="top-lit"></div>
-            <div class="bot-dark"></div>
-            <div class="fresnel"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="ground-shadow"></div>
-            <div class="cosmic-ring"></div>
-            <div class="cosmic-ring-2"></div>
-            <div class="prism-edge"></div>
-          </div>
-        </div>
-        <span class="tier-label">Blue</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="crystal-sphere orb-root silver">
-            <div class="shell"></div>
-            <div class="volume"></div>
-            <div class="core"></div>
-            <div class="swirl"></div>
-            <div class="top-lit"></div>
-            <div class="bot-dark"></div>
-            <div class="fresnel"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="ground-shadow"></div>
-            <div class="cosmic-ring"></div>
-            <div class="cosmic-ring-2"></div>
-            <div class="prism-edge"></div>
-          </div>
-        </div>
-        <span class="tier-label">Silver</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="crystal-sphere orb-root gold">
-            <div class="shell"></div>
-            <div class="volume"></div>
-            <div class="core"></div>
-            <div class="swirl"></div>
-            <div class="top-lit"></div>
-            <div class="bot-dark"></div>
-            <div class="fresnel"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="ground-shadow"></div>
-            <div class="cosmic-ring"></div>
-            <div class="cosmic-ring-2"></div>
-            <div class="prism-edge"></div>
-          </div>
-        </div>
-        <span class="tier-label">Gold</span>
-      </div>
-      <div class="tier-item">
-        <div class="capsule-wrap">
-          <div class="crystal-sphere orb-root cosmic">
-            <div class="shell"></div>
-            <div class="volume"></div>
-            <div class="core"></div>
-            <div class="swirl"></div>
-            <div class="top-lit"></div>
-            <div class="bot-dark"></div>
-            <div class="fresnel"></div>
-            <div class="seam"></div>
-            <div class="outer-glow"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="mote"></div>
-            <div class="ground-shadow"></div>
-            <div class="cosmic-ring"></div>
-            <div class="cosmic-ring-2"></div>
-            <div class="prism-edge"></div>
-          </div>
-        </div>
-        <span class="tier-label">Cosmic</span>
-      </div>
-    </div>
-  </section>
+<!-- OPTION D -->
+<section class="option-section">
+  <div class="option-header">
+    <h2><span class="tag tag--d">Option D</span> Crystal Ball</h2>
+    <p>The premium option. A transparent glass outer shell with a glowing energy core inside. Volumetric inner light, Fresnel rim, and a bright animated core that pulses. Cosmic tier gets orbiting particle rings.</p>
+  </div>
+  <div class="tier-row" id="row-d"></div>
+</section>
 
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// ── Tier definitions ──
+const TIERS = [
+  { name: 'Common',    shell: 0x6C5CE7, glow: 0x8B7FF0, accent: 0xA594FF },
+  { name: 'Rare',      shell: 0x6C5CE7, glow: 0x2ECC71, accent: 0x54D98C },
+  { name: 'Legendary', shell: 0x7B5AE0, glow: 0xFFE048, accent: 0xFFD700 },
+  { name: 'Cosmic',    shell: 0xB366FF, glow: 0xB366FF, accent: 0xFF66B2 },
+];
+
+// ── Shared environment map (procedural gradient cube) ──
+function makeEnvMap(renderer) {
+  const size = 256;
+  const rt = new THREE.WebGLCubeRenderTarget(size);
+  const scene = new THREE.Scene();
+  // Dark purple-to-black gradient environment
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, '#2a0845');
+  grad.addColorStop(0.3, '#1a042d');
+  grad.addColorStop(0.5, '#0d0018');
+  grad.addColorStop(0.7, '#1a042d');
+  grad.addColorStop(1, '#2a0845');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  // Add some bright spots for reflections
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath(); ctx.arc(size * 0.3, size * 0.25, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.arc(size * 0.7, size * 0.6, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(179,102,255,0.1)';
+  ctx.beginPath(); ctx.arc(size * 0.5, size * 0.8, 40, 0, Math.PI * 2); ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  return tex;
+}
+
+// ── Create a single capsule scene + canvas ──
+function createCapsuleCanvas(width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width * window.devicePixelRatio;
+  canvas.height = height * window.devicePixelRatio;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(width, height);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 100);
+  camera.position.set(0, 0.15, 3.8);
+  camera.lookAt(0, 0, 0);
+
+  return { canvas, renderer, scene, camera };
+}
+
+// ── Lighting rig ──
+function addLights(scene, glowColor) {
+  // Key light — strong top-left
+  const key = new THREE.DirectionalLight(0xffffff, 3.0);
+  key.position.set(-2, 3, 3);
+  scene.add(key);
+
+  // Fill light — soft from right
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.8);
+  fill.position.set(2, -1, 2);
+  scene.add(fill);
+
+  // Rim light from behind
+  const rim = new THREE.DirectionalLight(new THREE.Color(glowColor), 1.5);
+  rim.position.set(0, 0, -3);
+  scene.add(rim);
+
+  // Ambient
+  scene.add(new THREE.AmbientLight(0x1a042d, 0.5));
+
+  // Point light for glow
+  const point = new THREE.PointLight(new THREE.Color(glowColor), 2, 6);
+  point.position.set(0, 0, 1.5);
+  scene.add(point);
+}
+
+// ── Seam ring (torus at equator) ──
+function addSeam(scene, color) {
+  const geo = new THREE.TorusGeometry(1.005, 0.015, 8, 64);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: new THREE.Color(color),
+    emissiveIntensity: 2,
+    metalness: 0.8,
+    roughness: 0.2,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = Math.PI / 2;
+  scene.add(mesh);
+  return mesh;
+}
+
+// ── Glow sprite behind sphere ──
+function addGlowSprite(scene, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  const c = new THREE.Color(color);
+  grad.addColorStop(0, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.4)`);
+  grad.addColorStop(0.5, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.1)`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(4, 4, 1);
+  sprite.position.z = -0.5;
+  scene.add(sprite);
+  return sprite;
+}
+
+const envMap = makeEnvMap(null);
+
+// ════════════════════════════════════════════════
+// OPTION A — Glass Orb
+// ════════════════════════════════════════════════
+function buildOptionA(tier) {
+  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+  addLights(scene, tier.glow);
+
+  // Top hemisphere — glass
+  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const topMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell),
+    metalness: 0.05,
+    roughness: 0.08,
+    transmission: 0.6,
+    thickness: 0.8,
+    ior: 1.5,
+    envMap,
+    envMapIntensity: 1.5,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    transparent: true,
+    opacity: 0.85,
+  });
+  const topMesh = new THREE.Mesh(topGeo, topMat);
+  scene.add(topMesh);
+
+  // Bottom hemisphere
+  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+  const botMat = topMat.clone();
+  botMat.color = new THREE.Color(tier.shell).multiplyScalar(0.8);
+  const botMesh = new THREE.Mesh(botGeo, botMat);
+  scene.add(botMesh);
+
+  // Inner glow sphere
+  const innerGeo = new THREE.SphereGeometry(0.5, 32, 16);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(tier.glow),
+    transparent: true,
+    opacity: 0.3,
+  });
+  scene.add(new THREE.Mesh(innerGeo, innerMat));
+
+  const seam = addSeam(scene, tier.accent);
+  const glow = addGlowSprite(scene, tier.glow);
+
+  let t = Math.random() * 100;
+  function animate() {
+    t += 0.012;
+    topMesh.position.y = Math.sin(t) * 0.06;
+    botMesh.position.y = topMesh.position.y;
+    seam.position.y = topMesh.position.y;
+    topMesh.rotation.y += 0.004;
+    botMesh.rotation.y += 0.004;
+    seam.rotation.y = topMesh.rotation.y;
+    glow.position.y = topMesh.position.y;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+  return canvas;
+}
+
+// ════════════════════════════════════════════════
+// OPTION B — Heavy Chrome
+// ════════════════════════════════════════════════
+function buildOptionB(tier) {
+  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+  addLights(scene, tier.glow);
+
+  // Top hemisphere — polished metal
+  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const topMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell),
+    metalness: 0.95,
+    roughness: 0.1,
+    envMap,
+    envMapIntensity: 2.5,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.08,
+    reflectivity: 1.0,
+  });
+  const topMesh = new THREE.Mesh(topGeo, topMat);
+  scene.add(topMesh);
+
+  // Bottom hemisphere — slightly darker
+  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+  const botMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell).multiplyScalar(0.7),
+    metalness: 0.95,
+    roughness: 0.15,
+    envMap,
+    envMapIntensity: 2.0,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.1,
+  });
+  const botMesh = new THREE.Mesh(botGeo, botMat);
+  scene.add(botMesh);
+
+  // Thick groove seam
+  const seamGeo = new THREE.TorusGeometry(1.01, 0.025, 12, 64);
+  const seamMat = new THREE.MeshStandardMaterial({
+    color: 0x222222,
+    metalness: 0.9,
+    roughness: 0.3,
+    emissive: new THREE.Color(tier.accent),
+    emissiveIntensity: 0.5,
+  });
+  const seam = new THREE.Mesh(seamGeo, seamMat);
+  seam.rotation.x = Math.PI / 2;
+  scene.add(seam);
+
+  addGlowSprite(scene, tier.glow);
+
+  let t = Math.random() * 100;
+  function animate() {
+    t += 0.01;
+    const y = Math.sin(t) * 0.06;
+    topMesh.position.y = y;
+    botMesh.position.y = y;
+    seam.position.y = y;
+    topMesh.rotation.y += 0.006;
+    botMesh.rotation.y += 0.006;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+  return canvas;
+}
+
+// ════════════════════════════════════════════════
+// OPTION C — Holographic / Iridescent
+// ════════════════════════════════════════════════
+function buildOptionC(tier) {
+  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+  addLights(scene, tier.glow);
+
+  // Iridescent sphere — uses iridescence properties
+  const topGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const topMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell),
+    metalness: 0.3,
+    roughness: 0.15,
+    envMap,
+    envMapIntensity: 2.0,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    iridescence: 1.0,
+    iridescenceIOR: 1.8,
+    iridescenceThicknessRange: [200, 600],
+    sheen: 1.0,
+    sheenRoughness: 0.2,
+    sheenColor: new THREE.Color(tier.accent),
+  });
+  const topMesh = new THREE.Mesh(topGeo, topMat);
+  scene.add(topMesh);
+
+  const botGeo = new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+  const botMat = topMat.clone();
+  botMat.iridescenceThicknessRange = [300, 700];
+  const botMesh = new THREE.Mesh(botGeo, botMat);
+  scene.add(botMesh);
+
+  const seam = addSeam(scene, tier.accent);
+  const glow = addGlowSprite(scene, tier.glow);
+
+  let t = Math.random() * 100;
+  function animate() {
+    t += 0.015;
+    const y = Math.sin(t) * 0.06;
+    topMesh.position.y = y;
+    botMesh.position.y = y;
+    seam.position.y = y;
+    // Faster rotation to show off iridescence shift
+    topMesh.rotation.y += 0.01;
+    botMesh.rotation.y += 0.01;
+    seam.rotation.y = topMesh.rotation.y;
+    glow.position.y = y;
+    // Animate iridescence thickness for shimmer
+    const shift = Math.sin(t * 2) * 100;
+    topMat.iridescenceThicknessRange = [200 + shift, 600 + shift];
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+  return canvas;
+}
+
+// ════════════════════════════════════════════════
+// OPTION D — Crystal Ball with inner glow core
+// ════════════════════════════════════════════════
+function buildOptionD(tier, isCosmic) {
+  const { canvas, renderer, scene, camera } = createCapsuleCanvas(200, 220);
+  addLights(scene, tier.glow);
+
+  // Outer shell — transparent glass
+  const shellGeo = new THREE.SphereGeometry(1, 64, 32);
+  const shellMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(tier.shell).multiplyScalar(0.5),
+    metalness: 0.0,
+    roughness: 0.05,
+    transmission: 0.85,
+    thickness: 1.2,
+    ior: 1.45,
+    envMap,
+    envMapIntensity: 1.8,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.02,
+    transparent: true,
+    opacity: 0.6,
+    side: THREE.FrontSide,
+  });
+  const shell = new THREE.Mesh(shellGeo, shellMat);
+  scene.add(shell);
+
+  // Inner core — glowing energy ball
+  const coreGeo = new THREE.SphereGeometry(0.35, 32, 16);
+  const coreMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(tier.glow),
+    transparent: true,
+    opacity: 0.9,
+  });
+  const core = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(core);
+
+  // Core glow (point light inside)
+  const coreLight = new THREE.PointLight(new THREE.Color(tier.glow), 3, 4);
+  coreLight.position.set(0, 0, 0);
+  scene.add(coreLight);
+
+  // Mid volume — subtle colored fog layer
+  const midGeo = new THREE.SphereGeometry(0.65, 32, 16);
+  const midMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(tier.accent),
+    transparent: true,
+    opacity: 0.15,
+  });
+  scene.add(new THREE.Mesh(midGeo, midMat));
+
+  // Seam
+  const seam = addSeam(scene, tier.accent);
+
+  // Outer glow
+  addGlowSprite(scene, tier.glow);
+
+  // Cosmic: orbiting ring
+  let ring1, ring2;
+  if (isCosmic) {
+    const ringGeo = new THREE.TorusGeometry(1.5, 0.012, 8, 80);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(tier.accent),
+      transparent: true,
+      opacity: 0.5,
+    });
+    ring1 = new THREE.Mesh(ringGeo, ringMat);
+    ring1.rotation.x = Math.PI / 2.5;
+    ring1.rotation.z = 0.3;
+    scene.add(ring1);
+
+    const ring2Geo = new THREE.TorusGeometry(1.35, 0.008, 8, 80);
+    const ring2Mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(tier.glow),
+      transparent: true,
+      opacity: 0.35,
+    });
+    ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.rotation.x = Math.PI / 3.5;
+    ring2.rotation.z = -0.5;
+    scene.add(ring2);
+
+    // Orbiting particles on ring
+    for (let i = 0; i < 3; i++) {
+      const dotGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const dotMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(tier.accent) });
+      const dot = new THREE.Mesh(dotGeo, dotMat);
+      const angle = (i / 3) * Math.PI * 2;
+      dot.position.set(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
+      ring1.add(dot);
+    }
+  }
+
+  let t = Math.random() * 100;
+  function animate() {
+    t += 0.012;
+    const y = Math.sin(t) * 0.06;
+    shell.position.y = y;
+    core.position.y = y;
+    seam.position.y = y;
+
+    shell.rotation.y += 0.003;
+
+    // Pulsing core
+    const pulse = 1.0 + Math.sin(t * 3) * 0.15;
+    core.scale.setScalar(pulse * 0.35 / 0.35);
+    coreMat.opacity = 0.7 + Math.sin(t * 3) * 0.2;
+    coreLight.intensity = 2 + Math.sin(t * 3) * 1.5;
+
+    if (ring1) {
+      ring1.position.y = y;
+      ring1.rotation.z += 0.008;
+      ring2.position.y = y;
+      ring2.rotation.z -= 0.005;
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+  return canvas;
+}
+
+// ── Build all rows ──
+function buildRow(containerId, buildFn) {
+  const row = document.getElementById(containerId);
+  TIERS.forEach((tier, i) => {
+    const item = document.createElement('div');
+    item.className = 'tier-item';
+    const canvas = buildFn(tier, i === 3); // i===3 is cosmic
+    item.appendChild(canvas);
+    const label = document.createElement('span');
+    label.className = 'tier-label';
+    label.textContent = tier.name;
+    item.appendChild(label);
+    row.appendChild(item);
+  });
+}
+
+buildRow('row-a', (tier) => buildOptionA(tier));
+buildRow('row-b', (tier) => buildOptionB(tier));
+buildRow('row-c', (tier) => buildOptionC(tier));
+buildRow('row-d', (tier, isCosmic) => buildOptionD(tier, isCosmic));
+
+</script>
 </body>
 </html>
