@@ -405,7 +405,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                     <div className="flex-1 overflow-y-auto" ref={scrollRef}>
                         <AnimatePresence mode="wait">
                             {isLoading ? (
-                                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                <motion.div key={`${mode}-loading`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="flex flex-col gap-3 px-5 py-6">
                                     {/* Skeleton rows */}
                                     {Array.from({ length: 6 }).map((_, i) => (
@@ -418,14 +418,14 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                     ))}
                                 </motion.div>
                             ) : leaderboard.length === 0 ? (
-                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                <motion.div key={`${mode}-empty`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="flex flex-col items-center justify-center py-20 text-white/30 text-center px-6">
                                     <Trophy size={48} className="mb-4 opacity-20" />
                                     <p className="font-bold uppercase tracking-widest text-sm">No scores yet</p>
                                     <p className="text-xs mt-2 text-white/20">Be the first to claim the top spot!</p>
                                 </motion.div>
                             ) : (
-                                <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <motion.div key={`${mode}-list`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                     {/* Podium */}
                                     {hasPodium && (
                                         <PodiumSection entries={top3} currentUsername={currentUsername} />

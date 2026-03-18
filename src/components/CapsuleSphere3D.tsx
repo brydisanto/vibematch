@@ -221,7 +221,9 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
       // Transition into crack
       if (phase === "crack") {
         s.topMat.transparent = true;
+        s.topMat.needsUpdate = true;
         s.botMat.transparent = true;
+        s.botMat.needsUpdate = true;
         s.shockwave.visible = true;
         s.swMat.opacity = 0;
         s.shockwave.scale.setScalar(1);
@@ -264,6 +266,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
         s.topMesh.scale.setScalar(1);
         s.topMat.opacity = 1;
         s.topMat.transparent = false;
+        s.topMat.needsUpdate = true;
 
         s.botMesh.visible = true;
         s.botMesh.position.set(0, 0, 0);
@@ -271,6 +274,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
         s.botMesh.scale.setScalar(1);
         s.botMat.opacity = 1;
         s.botMat.transparent = false;
+        s.botMat.needsUpdate = true;
 
         s.seamMesh.visible = true;
         s.seamMat.emissiveIntensity = 0.3;
@@ -332,7 +336,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
     // Scene + Camera — FOV 60 gives ±2.4 units visible so particles fade before the edge
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-    camera.position.set(0, 0.15, 3.5);
+    camera.position.set(0, 0.15, 4.2);
     camera.lookAt(0, 0, 0);
 
     // Tier colours
