@@ -968,13 +968,13 @@ body {
 .game-tile:hover { transform: scale(1.06); z-index: 5; }
 .game-tile:active { transform: scale(0.93); }
 
-/* === Swap animation: spring-like overshoot === */
+/* === Swap animation: spring-like overshoot with "click into place" hang === */
 .game-tile--swapping {
-    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.22s cubic-bezier(0.18, 1.4, 0.4, 1);
 }
 @media (max-width: 767px) {
     .game-tile--swapping {
-        transition: transform 0.05s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: transform 0.18s cubic-bezier(0.18, 1.4, 0.4, 1);
     }
 }
 
@@ -990,15 +990,15 @@ body {
     animation: invalid-shake 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* === New tile drop animation === */
+/* === Tile gravity drop animation (both existing tiles shifting down and new tiles entering) === */
 @keyframes tile-drop {
     0% { transform: translateY(var(--drop-distance, -60px)); opacity: 0.85; }
-    70% { transform: translateY(2px); opacity: 1; }
-    90% { transform: translateY(-1px); }
+    65% { transform: translateY(3px); opacity: 1; }
+    82% { transform: translateY(-2px); }
     100% { transform: translateY(0); opacity: 1; }
 }
 .game-tile--dropping {
-    animation: tile-drop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: tile-drop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: var(--drop-delay, 0s);
 }
 
@@ -1149,6 +1149,13 @@ body {
 }
 @keyframes constellation-orbit {
     to { transform: rotate(360deg) translateX(var(--orbit-r)); }
+}
+
+/* All-Time High gradient text animation */
+@keyframes ath-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 .constellation-draw-line {
     stroke-dasharray: 400;

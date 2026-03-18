@@ -13,6 +13,7 @@ export interface Cell {
     isSpecial?: SpecialTileType;
     isNew?: boolean;
     isMatched?: boolean;
+    dropDistance?: number; // rows this tile dropped during gravity (for animation)
 }
 
 export type SpecialTileType = "bomb" | "vibestreak" | "cosmic_blast";
@@ -377,27 +378,33 @@ export function applyGravity(
     const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
 
     for (let col = 0; col < BOARD_SIZE; col++) {
-        // Collect non-matched tiles from bottom to top
-        const remaining: Cell[] = [];
+        // Collect non-matched tiles from bottom to top, tracking original rows
+        const remaining: { cell: Cell; originalRow: number }[] = [];
         for (let row = BOARD_SIZE - 1; row >= 0; row--) {
             if (!newBoard[row][col].isMatched) {
-                remaining.push(newBoard[row][col]);
+                remaining.push({ cell: newBoard[row][col], originalRow: row });
             }
         }
+
+        const numNewTiles = BOARD_SIZE - remaining.length;
 
         // Fill from bottom
         for (let row = BOARD_SIZE - 1; row >= 0; row--) {
             const idx = BOARD_SIZE - 1 - row;
             if (idx < remaining.length) {
-                newBoard[row][col] = remaining[idx];
-                newBoard[row][col].isNew = false;
+                const { cell, originalRow } = remaining[idx];
+                const drop = row - originalRow; // how many rows this tile fell
+                newBoard[row][col] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             } else {
-                // Generate new tile
+                // Generate new tile — drops from above the board
                 const badge = gameBadges[Math.floor(Math.random() * gameBadges.length)];
+                // New tiles enter from above: distance = their target row + 1
+                // (relative to the top of the visible board)
                 newBoard[row][col] = {
                     badge,
                     id: nextCellId(),
                     isNew: true,
+                    dropDistance: numNewTiles,
                 };
             }
         }

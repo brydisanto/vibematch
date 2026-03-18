@@ -198,6 +198,11 @@ export function startBGM() {
     startMP3();
 }
 
+export function stopBGM() {
+    bgmShouldPlay = false;
+    stopMP3();
+}
+
 // Ensure AudioContext is only created immediately when needed, or unlocked on touch
 export function unlockAudio() {
     getAudioContext();

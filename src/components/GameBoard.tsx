@@ -435,7 +435,7 @@ function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
 
     return (
         <div
-            className="absolute top-[7%] left-0 right-0 flex flex-col items-center pointer-events-none z-40 shape-announce-enter"
+            className="absolute top-[4%] left-0 right-0 flex flex-col items-center pointer-events-none z-40 shape-announce-enter"
         >
             <span
                 className="font-display font-black text-2xl sm:text-3xl tracking-widest uppercase select-none px-4 py-1.5 rounded-full"
@@ -474,7 +474,7 @@ function MilestoneBanner({ milestone }: { milestone: number }) {
     return (
         <div
             className="absolute left-0 right-0 flex flex-col items-center justify-center pointer-events-none z-50 milestone-banner-enter"
-            style={{ top: "14%" }}
+            style={{ top: "22%" }}
         >
             {/* Main text */}
             <span
@@ -738,9 +738,11 @@ export default function GameBoard({
 
                                 const dealDelay = isDealing ? (rowIdx * 0.06 + colIdx * 0.02) : 0;
                                 const isNewDrop = cell.isNew && !isDealing;
+                                const isDroppingTile = !isDealing && (cell.dropDistance ?? 0) > 0;
+                                const dropPx = isDroppingTile ? (cell.dropDistance! * cellSize) : 0;
 
                                 // Determine if tile is currently animating (for will-change)
-                                const isTileAnimating = isInvalidSwap || isSwap1 || isSwap2 || isNewDrop || isDealing;
+                                const isTileAnimating = isInvalidSwap || isSwap1 || isSwap2 || isDroppingTile || isDealing;
 
                                 // Build inline transform for swap animations
                                 let tileTransform = '';
@@ -762,16 +764,16 @@ export default function GameBoard({
                                             ${isDealing ? "tile-deal" : ""}
                                             ${isHinted && !isSelected ? "ring-[3px] ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]" : ""}
                                             ${isInvalidSwap ? "game-tile--invalid-shake" : ""}
-                                            ${isNewDrop && !isMobile ? "game-tile--dropping" : ""}
+                                            ${isDroppingTile ? "game-tile--dropping" : ""}
                                             ${(isSwap1 || isSwap2) ? "game-tile--swapping" : ""}
-                                            ${isTileAnimating && !isMobile ? "game-tile--animating" : ""}
+                                            ${isTileAnimating ? "game-tile--animating" : ""}
                                         `}
                                         style={{
                                             borderColor: isSelected ? tierColor : tierBorder,
                                             animationDelay: isDealing ? `${dealDelay}s` : undefined,
                                             transform: tileTransform || undefined,
-                                            '--drop-distance': isNewDrop && !isMobile ? '-60px' : undefined,
-                                            '--drop-delay': isNewDrop && !isMobile ? `${colIdx * 0.02}s` : undefined,
+                                            '--drop-distance': isDroppingTile ? `${-dropPx}px` : undefined,
+                                            '--drop-delay': isDroppingTile ? `${colIdx * 0.02}s` : undefined,
                                         } as React.CSSProperties}
                                         onPointerDown={(e) => handlePointerDown(e, rowIdx, colIdx)}
                                         onClick={() => {

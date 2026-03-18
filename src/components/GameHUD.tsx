@@ -220,24 +220,24 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     return (
         <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full">
 
-            {/* Feature 3: Personal Best banner */}
+            {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
                 <div
-                    className="absolute left-0 right-0 top-0 z-50 flex justify-center pointer-events-none hud-pb-banner-enter"
+                    className="fixed inset-x-0 top-[8%] sm:top-[10%] z-[60] flex justify-center pointer-events-none hud-pb-banner-enter"
                 >
                     <div
-                        className="font-display font-black text-lg sm:text-xl tracking-wider uppercase select-none px-4 py-2 rounded-xl"
+                        className="font-display font-black text-3xl sm:text-4xl tracking-wider uppercase select-none px-6 py-3 rounded-2xl"
                         style={{
                             color: "#FFE048",
                             background: "linear-gradient(135deg, rgba(42,8,69,0.95) 0%, rgba(26,4,45,0.95) 100%)",
                             border: "2px solid rgba(255,224,72,0.6)",
-                            boxShadow: "0 0 20px rgba(255,224,72,0.4), 0 4px 20px rgba(0,0,0,0.8)",
-                            WebkitTextStroke: "0.5px #8b6b15",
-                            textShadow: "0 0 15px rgba(255,224,72,0.8), 0 2px 4px rgba(0,0,0,0.8)",
+                            boxShadow: "0 0 40px rgba(255,224,72,0.5), 0 0 80px rgba(255,224,72,0.2), 0 8px 32px rgba(0,0,0,0.8)",
+                            WebkitTextStroke: "1px #8b6b15",
+                            textShadow: "0 0 20px rgba(255,224,72,0.9), 0 0 40px rgba(255,224,72,0.4), 0 4px 8px rgba(0,0,0,0.9)",
                             paintOrder: "stroke fill",
                         }}
                     >
-                        ⭐ NEW PERSONAL BEST! ⭐
+                        NEW PERSONAL BEST!
                     </div>
                 </div>
             )}

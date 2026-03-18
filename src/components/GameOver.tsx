@@ -554,6 +554,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     const { score, matchCount, maxCombo, totalCascades, gameMode, gameBadges, gameOverReason } = state;
     const rank = getRank(score);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
+    const [isAllTimeHigh, setIsAllTimeHigh] = useState(false);
 
     // Persist score to Vercel KV Cloud Database
     useEffect(() => {
@@ -569,7 +570,11 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
             })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.isNewBest) {
+                    if (data.isNewAllTimeHigh) {
+                        setIsAllTimeHigh(true);
+                        setIsNewHighScore(true);
+                        playNewHighScoreSound();
+                    } else if (data.isNewBest) {
                         setIsNewHighScore(true);
                         playNewHighScoreSound();
                     }
@@ -704,23 +709,64 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             <AnimatedScore target={score} color={rank.color} />
                         </motion.div>
 
+                        {/* ===== NEW ALL TIME HIGH BANNER ===== */}
+                        <AnimatePresence>
+                            {isAllTimeHigh && (
+                                <motion.div
+                                    className="relative flex items-center justify-center px-6 py-3 rounded-2xl mb-4 mx-auto overflow-hidden"
+                                    style={{
+                                        background: "linear-gradient(135deg, rgba(179,102,255,0.2), rgba(255,224,72,0.15), rgba(179,102,255,0.2))",
+                                        border: "2px solid rgba(255,224,72,0.5)",
+                                        boxShadow: "0 0 30px rgba(255,224,72,0.3), 0 0 60px rgba(179,102,255,0.2), inset 0 0 30px rgba(255,224,72,0.1)",
+                                    }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ delay: 2.0, type: "spring", stiffness: 300, damping: 18 }}
+                                >
+                                    {/* Shimmer sweep */}
+                                    <motion.div
+                                        className="absolute inset-0 pointer-events-none"
+                                        style={{
+                                            background: "linear-gradient(105deg, transparent 40%, rgba(255,224,72,0.3) 50%, transparent 60%)",
+                                        }}
+                                        animate={{ x: ["-100%", "200%"] }}
+                                        transition={{ duration: 2, delay: 2.5, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
+                                    />
+                                    <span
+                                        className="font-display font-black text-lg sm:text-xl uppercase tracking-wider select-none relative z-10"
+                                        style={{
+                                            background: "linear-gradient(135deg, #FFE048, #FF8C00, #B366FF, #FFE048)",
+                                            backgroundSize: "300% 100%",
+                                            WebkitBackgroundClip: "text",
+                                            WebkitTextFillColor: "transparent",
+                                            animation: "ath-gradient-shift 4s ease infinite",
+                                            filter: "drop-shadow(0 0 8px rgba(255,224,72,0.5))",
+                                        }}
+                                    >
+                                        NEW ALL-TIME HIGH!!
+                                    </span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* ===== NEW PERSONAL BEST BANNER ===== */}
                         <AnimatePresence>
-                            {isNewHighScore && (
+                            {isNewHighScore && !isAllTimeHigh && (
                                 <motion.div
-                                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg mb-4 mx-auto"
+                                    className="flex items-center justify-center px-5 py-2.5 rounded-xl mb-4 mx-auto"
                                     style={{
                                         background: "linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,140,0,0.1))",
-                                        border: "1px solid rgba(255,140,0,0.3)",
-                                        boxShadow: "0 0 20px rgba(255,140,0,0.15)",
+                                        border: "1.5px solid rgba(255,140,0,0.4)",
+                                        boxShadow: "0 0 25px rgba(255,140,0,0.2), 0 4px 16px rgba(0,0,0,0.5)",
                                     }}
                                     initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ delay: 2.2, type: "spring", stiffness: 400, damping: 20 }}
                                 >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]" />
-                                    <span className="text-[#FF8C00] text-[10px] sm:text-[11px] font-mundial font-black uppercase tracking-[0.15em]">
-                                        New Personal Best
+                                    <span className="text-[#FF8C00] text-sm sm:text-base font-display font-black uppercase tracking-wider"
+                                        style={{ textShadow: "0 0 12px rgba(255,140,0,0.5)" }}
+                                    >
+                                        NEW PERSONAL BEST!
                                     </span>
                                 </motion.div>
                             )}

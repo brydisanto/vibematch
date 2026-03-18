@@ -17,7 +17,7 @@ import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
 import { ArrowLeft, Volume2, VolumeX, Menu, BookOpen } from "lucide-react";
-import { isMuted, toggleMute, startBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
+import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
 import { usePinBook } from "@/lib/usePinBook";
 import Image from "next/image";
 
@@ -140,6 +140,7 @@ export default function Home() {
 
   const handleGoHome = () => {
     playUIClick();
+    stopBGM();
     setView("landing");
   };
 

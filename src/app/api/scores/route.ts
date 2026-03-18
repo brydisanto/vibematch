@@ -41,6 +41,7 @@ export async function POST(req: Request) {
         const hasCaseVariant = canonicalUsername !== username;
 
         let isNewBest = false;
+        let isNewAllTimeHigh = false;
 
         if (mode === 'classic') {
             const weeklyKey = `classic_weekly:${getMonday()}`;
@@ -72,6 +73,17 @@ export async function POST(req: Request) {
             }
             await writePipe.exec();
 
+            // Check if this is now the all-time #1 score
+            const top1 = await kv.zrange('classic_leaderboard', 0, 0, { rev: true, withScores: true });
+            if (top1 && top1.length > 0) {
+                const topEntry = top1[0] as any;
+                const topScore = Number(topEntry.score ?? topEntry);
+                const topMember = (topEntry.member || topEntry.value || '').toString().toLowerCase();
+                if (topScore === score && topMember === canonicalUsername.toLowerCase()) {
+                    isNewAllTimeHigh = true;
+                }
+            }
+
             // Invalidate GET cache for affected leaderboards
             for (const [key] of cache) {
                 if (key.startsWith('leaderboard:')) cache.delete(key);
@@ -100,7 +112,7 @@ export async function POST(req: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, isNewBest });
+        return NextResponse.json({ success: true, isNewBest, isNewAllTimeHigh });
     } catch (error) {
         console.error('KV error saving score:', error);
         return NextResponse.json({ error: 'Failed to save score' }, { status: 500 });
