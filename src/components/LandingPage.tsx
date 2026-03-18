@@ -296,7 +296,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
                             transition={{ delay: 0.25, duration: 0.4 }}
-                            className="text-white/50 text-xs font-mundial tracking-[0.15em] uppercase mb-1 -mt-4"
+                            className="text-white/50 text-xs font-mundial tracking-[0.15em] uppercase mb-2 -mt-2 relative z-10"
                         >
                             Welcome back, <span className="text-[#FFE048] font-black">{username}</span>
                         </motion.p>
@@ -304,7 +304,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                 </AnimatePresence>
 
                 {/* Mode Cards — staggered entrance */}
-                <div className="flex flex-col gap-3 -mt-6">
+                <div className="flex flex-col gap-3 -mt-3">
                     {/* Classic Mode */}
                     <motion.div
                         initial={{ y: 30, opacity: 0 }}
