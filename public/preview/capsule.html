@@ -223,13 +223,14 @@ function buildTierScene(containerId, tier) {
   seamMesh.renderOrder = 0;
   group.add(seamMesh);
 
-  // ── Badge on front — flat plane, always faces camera, renderOrder on top ──
+  // ── Badge on front — positioned in front of seam (seam extends to ~1.037) ──
   const bGeo = new THREE.PlaneGeometry(0.72, 0.72);
   const bMat = new THREE.MeshBasicMaterial({
     map: badgeTexture, transparent: true, depthTest: true, depthWrite: true,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
   });
   const badge = new THREE.Mesh(bGeo, bMat);
-  badge.position.z = 1.03;
+  badge.position.z = 1.05;
   badge.renderOrder = 2;
   group.add(badge);
 
