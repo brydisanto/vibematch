@@ -373,7 +373,7 @@ function buildTierScene(containerId, tier) {
         group.position.z = Math.cos(phaseTime * freq * 0.9) * jit * 0.02;
       }
       group.scale.setScalar(1 + p * 0.18);
-      seamMat.emissiveIntensity = 3 + p * 10;
+      seamMat.emissiveIntensity = 0.3; // keep seam color constant
       coreLight.intensity = p * 4;
       if (p >= 1) {
         phase = 'crack'; phaseTime = 0;
@@ -383,6 +383,7 @@ function buildTierScene(containerId, tier) {
         setTimeout(() => { shockwave2.visible = true; }, 80);
         particles.forEach(p => { p.mesh.visible = true; });
         badge.visible = false;
+        seamMesh.visible = false; // hide seam immediately on crack
       }
     }
 
@@ -405,8 +406,6 @@ function buildTierScene(containerId, tier) {
       botMesh.rotation.x = ep * 0.7;
       botMesh.rotation.y = -ep * 0.3;
       botMat.opacity = Math.max(0, 1 - ep * 1.3);
-
-      seamMesh.visible = p < 0.15;
 
       group.scale.setScalar(1 + 0.18 * (1 - ep));
       group.rotation.z *= 0.9;
