@@ -197,8 +197,8 @@ export async function POST(req: Request) {
                 profile?.avatarUrl || '',
                 data.pins,
             );
-            // Fire and don't await — leaderboard update is non-blocking
-            updateLeaderboardEntry(entry).catch(() => {});
+            // Await leaderboard update so it's consistent when client fetches it
+            await updateLeaderboardEntry(entry);
 
             return NextResponse.json({
                 collected: true,
