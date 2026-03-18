@@ -1261,8 +1261,11 @@ export default function VibeCapsule({
                                             animate={phase === "appear" ? {
                                                 scaleX: [1, 1.12, 0.95, 1.03, 1],
                                                 scaleY: [1, 0.88, 1.06, 0.98, 1],
-                                            } : {}}
-                                            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }}
+                                            } : { scaleX: 1, scaleY: 1 }}
+                                            transition={phase === "appear"
+                                                ? { duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.38 }
+                                                : { duration: 0.15, ease: "easeOut" }
+                                            }
                                         >
                                             <Suspense fallback={<div style={{ width: 700, height: 700 }} />}>
                                                 <CapsuleSphere3D key={openCountRef.current} tier={tier} phase={phase} onTap={handleCapsuleTap} />
