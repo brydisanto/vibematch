@@ -78,6 +78,37 @@ export async function GET() {
     }
 }
 
+// DELETE — wipe all pinbook data and leaderboard (admin reset)
+export async function DELETE() {
+    try {
+        const session = await getSession();
+        if (!session?.username) {
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        }
+
+        // Scan for all pinbook keys (user data + daily trackers + leaderboard)
+        const allKeys: string[] = [];
+        let cursor: any = 0;
+        do {
+            const result = await kv.scan(cursor, { match: 'pinbook:*', count: 100 }) as any;
+            cursor = result[0];
+            for (const key of result[1] as string[]) {
+                allKeys.push(key);
+            }
+        } while (cursor != 0);
+
+        // Delete all in batches
+        if (allKeys.length > 0) {
+            await kv.del(...allKeys);
+        }
+
+        return NextResponse.json({ wiped: true, keysDeleted: allKeys.length });
+    } catch (e) {
+        console.error('Pinbook wipe error:', e);
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
+}
+
 // POST — rebuild leaderboard from all pinbook data (one-time migration)
 export async function POST() {
     try {

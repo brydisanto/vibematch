@@ -397,7 +397,8 @@ function SlideScoring() {
                     </div>
                     <div>
                         <h4 className="font-display font-black text-[13px] text-[#FFE048]">Pin Capsule</h4>
-                        <p className="text-white/50 text-[11px] font-mundial">Hit <span className="text-[#FFE048] font-semibold">15,000+</span> points and you earn a capsule. <span className="text-white/80 font-semibold">T</span> and <span className="text-white/80 font-semibold">Cross</span> shapes also grant <span className="text-[#FFE048] font-semibold">+1 bonus capsule</span>.</p>
+                        <p className="text-white/50 text-[11px] font-mundial">Hit <span className="text-[#FFE048] font-semibold">15,000+</span> points and you earn a capsule.</p>
+                        <p className="text-white/50 text-[11px] font-mundial mt-1"><span className="text-white/80 font-semibold">T</span> and <span className="text-white/80 font-semibold">Cross</span> shapes also grant <span className="text-[#FFE048] font-semibold">+1 bonus capsule</span>.</p>
                         <p className="text-white/40 text-[10px] font-mundial mt-1">Capsules are earnable during your first <span className="text-[#FFE048] font-semibold">15 games</span> each day, plus the Daily Challenge.</p>
                     </div>
                 </div>
@@ -690,7 +691,6 @@ export default function InstructionsModal({ isOpen, onClose }: InstructionsModal
                                         transition={{ type: "spring", stiffness: 400, damping: 20 }}
                                     >
                                         Got It!
-                                        <Sparkles size={14} />
                                     </motion.button>
                                 )}
                             </div>
