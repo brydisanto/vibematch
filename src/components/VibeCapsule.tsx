@@ -1432,8 +1432,8 @@ export default function VibeCapsule({
                                             {TIER_DISPLAY_NAMES[tier]}
                                         </motion.div>
 
-                                        {/* Duplicate label */}
-                                        {isDuplicate && (
+                                        {/* New pin / duplicate label */}
+                                        {isDuplicate ? (
                                             <motion.div
                                                 className="mt-2 text-[11px] sm:text-xs font-mundial text-white/40 tracking-wider z-10"
                                                 initial={{ y: 8, opacity: 0 }}
@@ -1442,6 +1442,21 @@ export default function VibeCapsule({
                                             >
                                                 Already Owned
                                                 <span className="ml-1.5 text-white/25">x{duplicateCount}</span>
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                className="mt-3 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-display font-black uppercase tracking-[0.15em] z-10"
+                                                style={{
+                                                    background: "linear-gradient(135deg, rgba(46,255,46,0.15), rgba(46,255,46,0.05))",
+                                                    color: "#2EFF2E",
+                                                    border: "1px solid rgba(46,255,46,0.25)",
+                                                    boxShadow: "0 0 16px rgba(46,255,46,0.15)",
+                                                }}
+                                                initial={{ y: 15, opacity: 0, scale: 0.7 }}
+                                                animate={{ y: 0, opacity: 1, scale: [0.7, 1.1, 1] }}
+                                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.4 }}
+                                            >
+                                                New Pin Collected!
                                             </motion.div>
                                         )}
 
