@@ -81,7 +81,17 @@ export function toggleMute(muted: boolean): boolean {
 
 // ===== BACKGROUND MUSIC =====
 let bgmAudio: HTMLAudioElement | null = null;
-let currentBGMTrack = 0;
+const TRACK_STORAGE_KEY = 'vibematch_bgm_track';
+let currentBGMTrack = (() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(TRACK_STORAGE_KEY);
+        if (saved !== null) {
+            const idx = parseInt(saved, 10);
+            if (!isNaN(idx) && idx >= 0) return idx;
+        }
+    }
+    return 0;
+})();
 // Fix #4: Track whether BGM has been requested to play.
 let bgmShouldPlay = false;
 
@@ -169,8 +179,15 @@ export function getCurrentTrackIndex(): number {
     return currentBGMTrack;
 }
 
+function persistTrack() {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(TRACK_STORAGE_KEY, String(currentBGMTrack));
+    }
+}
+
 export function selectBGMTrack(index: number): string {
     currentBGMTrack = index % BGM_TRACK_NAMES.length;
+    persistTrack();
     if (bgmAudio) {
         stopMP3();
     }
@@ -182,6 +199,7 @@ export function selectBGMTrack(index: number): string {
 
 export function switchBGMTrack(): string {
     currentBGMTrack = (currentBGMTrack + 1) % BGM_TRACK_NAMES.length;
+    persistTrack();
 
     // Actually switch the playing music if unmuted!
     if (bgmAudio) {
