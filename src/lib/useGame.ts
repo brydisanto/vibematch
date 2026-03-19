@@ -125,12 +125,17 @@ export function useGame(): UseGameReturn {
         for (const badge of badges) {
             if (seen.has(badge.image)) continue;
             seen.add(badge.image);
-            promises.push(new Promise((resolve) => {
-                const img = new window.Image();
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // don't block on failure
-                img.src = badge.image;
-            }));
+            // Preload both the original and the Next.js optimized URL (96px width)
+            // so the browser cache is warm for whichever the Image component requests
+            const optimizedUrl = `/_next/image?url=${encodeURIComponent(badge.image)}&w=96&q=75`;
+            for (const src of [badge.image, optimizedUrl]) {
+                promises.push(new Promise((resolve) => {
+                    const img = new window.Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => resolve(); // don't block on failure
+                    img.src = src;
+                }));
+            }
         }
         return Promise.all(promises).then(() => {});
     }, []);
@@ -162,20 +167,20 @@ export function useGame(): UseGameReturn {
     }, [preloadBadgeImages, applyStartState]);
 
     const resetGame = useCallback(() => {
-        const newState = createInitialState("classic");
         hintShownThisGame.current = false;
-        setState((prev) => {
-            const s = prev ? createInitialState(prev.gameMode) : newState;
+        const mode = state?.gameMode ?? "classic";
+        const s = createInitialState(mode);
+        preloadBadgeImages(s.gameBadges).then(() => {
+            setState(s);
             resetHintTimer(s.board);
-            return s;
+            setScorePopups([]);
+            setLastTurnResult(null);
+            setMatchEffect(null);
+            setIsAnimating(false);
+            setHintMessage(null);
+            playGameStartSound();
         });
-        setScorePopups([]);
-        setLastTurnResult(null);
-        setMatchEffect(null);
-        setIsAnimating(false);
-        setHintMessage(null);
-        playGameStartSound();
-    }, [resetHintTimer]);
+    }, [state?.gameMode, resetHintTimer, preloadBadgeImages]);
 
     // Shared helper: apply a TurnResult to game state with effects
     const applyResult = useCallback((

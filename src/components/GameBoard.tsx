@@ -790,7 +790,7 @@ export default function GameBoard({
                                                 sizes="(max-width: 640px) 56px, 80px"
                                                 className="object-cover transition-opacity duration-200"
                                                 loading="eager"
-                                                unoptimized
+                                                quality={75}
                                             />
                                         </div>
 
