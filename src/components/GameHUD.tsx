@@ -218,7 +218,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     }
 
     return (
-        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full">
+        <div className="relative flex flex-col h-full justify-between gap-1.5 sm:gap-2 w-full overflow-hidden">
 
             {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
@@ -294,12 +294,12 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {!hideHighScores && (
                 <>
                     {/* Score Card */}
-                    <HudCard className="flex-1 min-h-0 py-3">
-                        <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                    <HudCard className="flex-1 min-h-0 py-2">
+                        <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
                             SCORE
                         </div>
                         <div
-                            className={`font-display text-3xl sm:text-4xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
+                            className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
                             style={{
                                 color: "#FFE048",
                                 WebkitTextStroke: "1px #c9a84c",
@@ -320,12 +320,12 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                         {movesLeft <= 3 && (
                             <div className="absolute inset-0 rounded-2xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-3 w-full h-full">
-                            <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-2 w-full h-full">
+                            <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
                                 MOVES
                             </div>
                             <div
-                                className={`font-display text-4xl sm:text-5xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                className={`font-display text-3xl sm:text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
                                 style={movesLeft <= 3 ? {
                                     textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
                                 } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
@@ -337,12 +337,12 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     </div>
 
                     {/* Combo Card */}
-                    <HudCard className="flex-[0.8] min-h-0 py-3">
-                        <div className="text-[#B399D4] text-xs sm:text-sm font-black tracking-[0.2em] font-mundial mb-1">
+                    <HudCard className="flex-[0.7] min-h-0 py-2">
+                        <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
                             COMBO
                         </div>
                         <div
-                            className={`font-display text-3xl sm:text-4xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"} ${comboBumping ? "hud-combo-pop" : ""}`}
+                            className={`font-display text-2xl sm:text-3xl font-black leading-none ${combo >= 3 ? "text-[#FF5F1F]" : combo >= 2 ? "text-[#FFE048]" : "text-white/60"} ${comboBumping ? "hud-combo-pop" : ""}`}
                             style={{ textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
                         >
                             {combo > 0 ? `×${combo}` : "—"}
@@ -350,23 +350,23 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     </HudCard>
 
                     {/* High Scores Card */}
-                    <HudCard className="flex-1 min-h-0 py-3">
+                    <HudCard className="flex-1 min-h-0 py-2">
                         <div className="flex flex-col items-center w-full min-w-0">
-                            <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
+                            <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.15em] font-mundial">
                                 YOUR BEST
                             </div>
-                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-xl sm:text-2xl font-black text-[#FFE048] w-full text-center truncate" style={{ textShadow: '0 0 15px rgba(255,224,72,0.5), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-lg sm:text-xl font-black text-[#FFE048] w-full text-center truncate" style={{ textShadow: '0 0 15px rgba(255,224,72,0.5), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {formatScoreWithCommas(personalBest)}
                             </div>
                         </div>
 
-                        <div className="w-[85%] h-[2px] bg-white/20 my-2 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                        <div className="w-[85%] h-[1px] bg-white/20 my-1 rounded-full" />
 
                         <div className="flex flex-col items-center w-full min-w-0">
-                            <div className="text-[#B399D4] text-xs sm:text-[13px] font-black tracking-[0.2em] font-mundial mb-0.5">
+                            <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.15em] font-mundial">
                                 GLOBAL BEST
                             </div>
-                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-xl sm:text-2xl font-black text-[#C48CFF] w-full text-center truncate" style={{ textShadow: '0 0 15px rgba(196,140,255,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
+                            <div className="font-display tracking-normal sm:tracking-[-0.02em] text-lg sm:text-xl font-black text-[#C48CFF] w-full text-center truncate" style={{ textShadow: '0 0 15px rgba(196,140,255,0.4), 0 2px 4px rgba(0,0,0,0.5)' }}>
                                 {formatScoreWithCommas(globalBest)}
                             </div>
                         </div>
