@@ -163,8 +163,7 @@ export function findAllMatches(board: Cell[][]): Match[] {
         for (let col = 1; col <= BOARD_SIZE; col++) {
             if (
                 col < BOARD_SIZE &&
-                board[row][col].badge.id === board[row][runStart].badge.id &&
-                !board[row][col].isSpecial // Don't match specials in runs
+                board[row][col].badge.id === board[row][runStart].badge.id
             ) {
                 continue;
             }
@@ -195,8 +194,7 @@ export function findAllMatches(board: Cell[][]): Match[] {
         for (let row = 1; row <= BOARD_SIZE; row++) {
             if (
                 row < BOARD_SIZE &&
-                board[row][col].badge.id === board[runStart][col].badge.id &&
-                !board[row][col].isSpecial
+                board[row][col].badge.id === board[runStart][col].badge.id
             ) {
                 continue;
             }

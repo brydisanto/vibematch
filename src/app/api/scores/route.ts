@@ -12,6 +12,12 @@ function getMonday() {
 const cache = new Map<string, { data: any; expires: number }>();
 const CACHE_TTL = 15_000;
 
+export function invalidateLeaderboardCache() {
+    for (const [key] of cache) {
+        if (key.startsWith('leaderboard:')) cache.delete(key);
+    }
+}
+
 function getCached(key: string): any | null {
     const entry = cache.get(key);
     if (!entry) return null;
@@ -290,7 +296,7 @@ export async function GET(req: Request) {
         setCached(cacheKey, responseData);
         return NextResponse.json(
             responseData,
-            { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
+            { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=10' } }
         );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);

@@ -361,20 +361,6 @@ export function useGame(): UseGameReturn {
             setHintCells(new Set());
             setHintMessage(null);
 
-            // Check if clicked tile is a special tile — activate it immediately
-            const clickedCell = state.board[pos.row]?.[pos.col];
-            if (clickedCell?.isSpecial) {
-                const result = triggerSpecialTile(state.board, pos, state.gameBadges);
-                if (result) {
-                    if (clickedCell.isSpecial === "bomb") playBombSound();
-                    else if (clickedCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
-                    else if (clickedCell.isSpecial === "vibestreak") playVibestreakSound();
-                    else playBombSound();
-                    setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
-                    return;
-                }
-            }
-
             // No tile selected yet — select this one
             if (!state.selectedTile) {
                 playSelectSound();
@@ -382,8 +368,20 @@ export function useGame(): UseGameReturn {
                 return;
             }
 
-            // Clicking same tile — deselect
+            // Clicking same tile — if special, activate on double-click; otherwise deselect
             if (state.selectedTile.row === pos.row && state.selectedTile.col === pos.col) {
+                const cell = state.board[pos.row]?.[pos.col];
+                if (cell?.isSpecial) {
+                    const result = triggerSpecialTile(state.board, pos, state.gameBadges);
+                    if (result) {
+                        if (cell.isSpecial === "bomb") playBombSound();
+                        else if (cell.isSpecial === "cosmic_blast") playCosmicBlastSound();
+                        else if (cell.isSpecial === "vibestreak") playVibestreakSound();
+                        else playBombSound();
+                        setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
+                        return;
+                    }
+                }
                 playDeselectSound();
                 setState({ ...state, selectedTile: null });
                 return;
@@ -430,20 +428,6 @@ export function useGame(): UseGameReturn {
             if (!isAdjacentSwap(from, to)) return;
             setHintCells(new Set());
             setHintMessage(null);
-
-            // Check if source is a special tile — activate it
-            const fromCell = state.board[from.row]?.[from.col];
-            if (fromCell?.isSpecial) {
-                const result = triggerSpecialTile(state.board, from, state.gameBadges);
-                if (result) {
-                    if (fromCell.isSpecial === "bomb") playBombSound();
-                    else if (fromCell.isSpecial === "cosmic_blast") playCosmicBlastSound();
-                    else if (fromCell.isSpecial === "vibestreak") playVibestreakSound();
-                    else playBombSound();
-                    setState(prev => prev ? applyResult(prev, result, from, true) : prev);
-                    return;
-                }
-            }
 
             // Attempt swap
             const result = processTurn(state.board, from, to, state.gameBadges, state.comboCarry);

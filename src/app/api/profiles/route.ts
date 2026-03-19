@@ -1,6 +1,8 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { invalidateLeaderboardCache } from '@/app/api/scores/route';
+import type { LeaderboardEntry } from '@/app/api/pinbook/leaderboard/route';
 
 export async function POST(req: Request) {
     try {
@@ -22,6 +24,19 @@ export async function POST(req: Request) {
 
         const key = `user:${username.toLowerCase()}`;
         await kv.set(key, { username, avatarUrl });
+
+        // Bust score leaderboard cache so updated avatar shows immediately
+        invalidateLeaderboardCache();
+
+        // Update avatar in pinbook leaderboard entry if it exists
+        const pinbookLb = (await kv.get('pinbook:leaderboard')) as LeaderboardEntry[] | null;
+        if (pinbookLb) {
+            const idx = pinbookLb.findIndex(e => e.username.toLowerCase() === username.toLowerCase());
+            if (idx >= 0 && pinbookLb[idx].avatarUrl !== avatarUrl) {
+                pinbookLb[idx] = { ...pinbookLb[idx], avatarUrl };
+                await kv.set('pinbook:leaderboard', pinbookLb);
+            }
+        }
 
         return NextResponse.json({ success: true, profile: { username, avatarUrl } });
     } catch (error) {

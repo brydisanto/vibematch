@@ -254,9 +254,9 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         }));
         setIsLoading(false);
 
-        // Phase 2: Lazy-load avatars (non-blocking)
+        // Phase 2: Lazy-load avatars (non-blocking, cache-bust to get fresh avatars)
         try {
-            const avatarParams = new URLSearchParams({ mode: targetMode });
+            const avatarParams = new URLSearchParams({ mode: targetMode, _t: String(Date.now()) });
             if (currentUsername) avatarParams.set("username", currentUsername);
             const avatarRes = await fetch(`/api/scores?${avatarParams}`);
             if (!avatarRes.ok) return;
