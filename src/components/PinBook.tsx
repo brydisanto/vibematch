@@ -466,7 +466,7 @@ export default function PinBook({
                                                                         badge.image
                                                                     }
                                                                     alt={
-                                                                        badge.name
+                                                                        isOwned ? badge.name : "Undiscovered"
                                                                     }
                                                                     fill
                                                                     sizes="(max-width: 640px) 80px, 100px"
@@ -506,7 +506,7 @@ export default function PinBook({
                                                                         }`}
                                                                     >
                                                                         {
-                                                                            badge.name
+                                                                            isOwned ? badge.name : "???"
                                                                         }
                                                                     </span>
                                                                 </div>
