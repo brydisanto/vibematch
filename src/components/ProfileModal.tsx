@@ -28,11 +28,23 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAvatarUrl(reader.result as string);
+            // Resize to 128x128 thumbnail to keep data URL small (~5-10KB vs 200KB+)
+            const img = document.createElement("img");
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const size = 128;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext("2d")!;
+                // Center-crop to square
+                const min = Math.min(img.width, img.height);
+                const sx = (img.width - min) / 2;
+                const sy = (img.height - min) / 2;
+                ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+                setAvatarUrl(canvas.toDataURL("image/jpeg", 0.8));
+                URL.revokeObjectURL(img.src);
             };
-            reader.readAsDataURL(file);
+            img.src = URL.createObjectURL(file);
         }
     };
 
