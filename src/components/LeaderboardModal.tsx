@@ -83,14 +83,34 @@ function useCountdown(mode: TabMode): string | null {
     return formatCountdown(getMidnightTonight());
 }
 
-// --- Avatar component ---
+// --- Avatar cache (shared across all Avatar instances in the session) ---
+const avatarCache = new Map<string, string>();
 
 function Avatar({ entry, size = 40, className = "" }: { entry: LeaderboardEntry; size?: number; className?: string }) {
+    const [src, setSrc] = useState(entry.avatarUrl || avatarCache.get(entry.username.toLowerCase()) || "");
+
+    useEffect(() => {
+        if (src) return; // already have it
+        const key = entry.username.toLowerCase();
+        if (avatarCache.has(key)) {
+            setSrc(avatarCache.get(key)!);
+            return;
+        }
+        fetch(`/api/profiles?username=${encodeURIComponent(entry.username)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                const url = d?.profile?.avatarUrl || "";
+                avatarCache.set(key, url);
+                if (url) setSrc(url);
+            })
+            .catch(() => {});
+    }, [entry.username, src]);
+
     return (
         <div className={`rounded-full bg-[#2A2333] border border-[#3A3344] overflow-hidden flex items-center justify-center flex-shrink-0 ${className}`}
             style={{ width: size, height: size }}>
-            {entry.avatarUrl ? (
-                <Image src={entry.avatarUrl} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+            {src ? (
+                <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
             ) : (
                 <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
                     {entry.username.substring(0, 2)}
@@ -254,42 +274,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         }));
         setIsLoading(false);
 
-        // Phase 2: Lazy-load avatars (non-blocking, cache-bust to get fresh avatars)
-        try {
-            const avatarParams = new URLSearchParams({ mode: targetMode, _t: String(Date.now()) });
-            if (currentUsername) avatarParams.set("username", currentUsername);
-            const avatarRes = await fetch(`/api/scores?${avatarParams}`);
-            if (!avatarRes.ok) return;
-            const avatarData = await avatarRes.json();
-            const avatarList = avatarData.leaderboard || [];
-
-            const phase2List: LeaderboardEntry[] = avatarList.map((entry: any) => {
-                const isCurrentUser = currentUsername && currentAvatarUrl && entry.username.toLowerCase() === currentUsername.toLowerCase();
-                return {
-                    username: entry.username,
-                    score: Number(entry.score),
-                    avatarUrl: isCurrentUser ? currentAvatarUrl : (entry.avatarUrl || ""),
-                };
-            });
-
-            let ue2: UserEntry | null = null;
-            if (avatarData.userEntry) {
-                const e = avatarData.userEntry;
-                ue2 = {
-                    username: e.username,
-                    score: e.score,
-                    avatarUrl: (currentAvatarUrl && currentUsername?.toLowerCase() === e.username.toLowerCase()) ? currentAvatarUrl : (e.avatarUrl || ""),
-                    rank: avatarData.userRank || 0,
-                };
-            }
-
-            setCache(prev => ({
-                ...prev,
-                [targetMode]: { leaderboard: phase2List, userEntry: ue2 ?? prev[targetMode]?.userEntry ?? null, nextPlayer: prev[targetMode]?.nextPlayer ?? null, totalPlayers: avatarData.totalPlayers || prev[targetMode]?.totalPlayers || phase2List.length },
-            }));
-        } catch {
-            // Avatar enrichment failed — scores already displayed, silently ignore
-        }
+        // Avatars are now lazy-loaded per Avatar component via /api/profiles
     }, [currentUsername, currentAvatarUrl]);
 
     // Prefetch default mode immediately on mount (no waiting for animation)

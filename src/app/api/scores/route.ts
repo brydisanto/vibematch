@@ -278,10 +278,13 @@ export async function GET(req: Request) {
 
             enriched = allEntries.map((entry, index) => {
                 const profile = profiles[index] as any;
+                // Skip oversized data URLs (>15KB) — they bloat the response and cause timeouts
+                let avatar = profile?.avatarUrl || '';
+                if (avatar.length > 15000) avatar = '';
                 return {
                     username: entry.member,
                     score: Number(entry.score),
-                    avatarUrl: profile?.avatarUrl || ''
+                    avatarUrl: avatar
                 };
             });
         }
