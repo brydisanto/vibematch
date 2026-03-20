@@ -9,7 +9,6 @@ interface LeaderboardEntry {
     username: string;
     score: number;
     avatarUrl: string;
-    matchesPlayed?: number;
 }
 
 interface UserEntry extends LeaderboardEntry {
@@ -165,11 +164,6 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
                         <div className="text-sm font-extrabold text-[#FFD700] mt-0.5">
                             {formatScore(entry.score)}
                         </div>
-                        {entry.matchesPlayed ? (
-                            <div className="text-[9px] text-white/20 font-bold mt-0.5">
-                                {entry.matchesPlayed.toLocaleString()} match{entry.matchesPlayed !== 1 ? "es" : ""}
-                            </div>
-                        ) : null}
                         {/* Pedestal */}
                         <div className="w-[100px] rounded-t-lg mt-2"
                             style={{
@@ -188,7 +182,7 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
 
 // --- List row ---
 
-function LeaderboardRow({ entry, rank, isCurrentUser, showMatches }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean; showMatches?: boolean }) {
+function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean }) {
     return (
         <div
             className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${isCurrentUser
@@ -200,15 +194,8 @@ function LeaderboardRow({ entry, rank, isCurrentUser, showMatches }: { entry: Le
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />
-            <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-white/90 truncate">
-                    {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
-                </div>
-                {showMatches && entry.matchesPlayed ? (
-                    <div className="text-[10px] text-white/25 font-bold mt-0.5">
-                        {entry.matchesPlayed.toLocaleString()} match{entry.matchesPlayed !== 1 ? "es" : ""}
-                    </div>
-                ) : null}
+            <div className="flex-1 font-bold text-sm text-white/90 truncate">
+                {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
             </div>
             <div className="flex-shrink-0 font-display font-extrabold text-[#FFD700] text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 {formatScore(entry.score)}
@@ -226,6 +213,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         userEntry: UserEntry | null;
         nextPlayer: NextPlayer | null;
         totalPlayers: number;
+        totalMatchesPlayed: number;
     }>>({});
     const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -237,6 +225,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const userEntry = cached?.userEntry ?? null;
     const nextPlayer = cached?.nextPlayer ?? null;
     const totalPlayers = cached?.totalPlayers ?? 0;
+    const totalMatchesPlayed = cached?.totalMatchesPlayed ?? 0;
 
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
@@ -253,7 +242,6 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                 username: entry.username,
                 score: Number(entry.score),
                 avatarUrl: isCurrentUser ? currentAvatarUrl : "",
-                matchesPlayed: entry.matchesPlayed || 0,
             };
         });
 
@@ -282,7 +270,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         fetchedModes.current.add(targetMode);
         setCache(prev => ({
             ...prev,
-            [targetMode]: { leaderboard: phase1List, userEntry: ue, nextPlayer: np, totalPlayers: data.totalPlayers || phase1List.length },
+            [targetMode]: { leaderboard: phase1List, userEntry: ue, nextPlayer: np, totalPlayers: data.totalPlayers || phase1List.length, totalMatchesPlayed: data.totalMatchesPlayed || 0 },
         }));
         setIsLoading(false);
 
@@ -385,10 +373,11 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                 </button>
                             ))}
                         </div>
-                        {/* Reset countdown + player count */}
+                        {/* Reset countdown + player/match count */}
                         <div className="flex items-center justify-between mt-2 px-1">
                             <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
-                                {totalPlayers > 0 ? `${totalPlayers.toLocaleString()} player${totalPlayers !== 1 ? "s" : ""} vibing` : "\u00A0"}
+                                {totalPlayers > 0 ? `${totalPlayers.toLocaleString()} player${totalPlayers !== 1 ? "s" : ""}` : "\u00A0"}
+                                {mode === "classic" && totalMatchesPlayed > 0 ? ` \u00B7 ${totalMatchesPlayed.toLocaleString()} matches` : ""}
                             </span>
                             {countdown && (
                                 <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
@@ -443,7 +432,6 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                     entry={entry}
                                                     rank={hasPodium ? index + 4 : index + 1}
                                                     isCurrentUser={isCurrentUser}
-                                                    showMatches={mode === "classic"}
                                                 />
                                             );
                                         })}

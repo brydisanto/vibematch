@@ -251,28 +251,26 @@ export async function GET(req: Request) {
             }
         }
 
-        // Fetch match counts for classic mode (single hash read)
-        let matchCounts: Record<string, number> = {};
+        // Fetch total matches played across all users for classic mode
+        let totalMatchesPlayed = 0;
         if (mode === 'classic') {
             const allCounts = await kv.hgetall('classic_matches_played') as Record<string, number> | null;
-            if (allCounts) matchCounts = allCounts;
+            if (allCounts) {
+                totalMatchesPlayed = Object.values(allCounts).reduce((sum, v) => sum + Number(v), 0);
+            }
         }
 
-        const mapped = formatted.map((entry: any) => {
-            const username = entry.member || entry.value;
-            return {
-                username,
-                score: Number(entry.score),
-                matchesPlayed: matchCounts[username.toLowerCase()] || 0,
-            };
-        });
+        const mapped = formatted.map((entry: any) => ({
+            username: entry.member || entry.value,
+            score: Number(entry.score),
+        }));
 
         let userEntry: any = null;
         if (!userInTop && canonicalUsername && personalBest !== null) {
             userEntry = { username: canonicalUsername, score: personalBest, rank: userRank };
         }
 
-        const responseData = { leaderboard: mapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, userEntry, nextPlayer, totalPlayers };
+        const responseData = { leaderboard: mapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, userEntry, nextPlayer, totalPlayers, totalMatchesPlayed };
         setCached(cacheKey, responseData);
         return NextResponse.json(
             responseData,
