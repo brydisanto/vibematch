@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# iOS/Swift build artifacts
+.build/
+DerivedData/
+*.xcuserdata
+*.xcworkspacedata
+
+# Python dev scripts
+*.py
+__pycache__/
