@@ -52,6 +52,20 @@ function emptyPinBook(): PinBookData {
     return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0 };
 }
 
+// Simple per-user lock to prevent concurrent read-modify-write races
+const userLocks = new Map<string, Promise<any>>();
+async function withUserLock<T>(username: string, fn: () => Promise<T>): Promise<T> {
+    const prev = userLocks.get(username) || Promise.resolve();
+    const next = prev.then(fn, fn); // run fn after previous completes (even if it failed)
+    userLocks.set(username, next);
+    try {
+        return await next;
+    } finally {
+        // Clean up if this is still the latest promise
+        if (userLocks.get(username) === next) userLocks.delete(username);
+    }
+}
+
 // GET — fetch pin book for logged-in user
 export async function GET() {
     try {
@@ -80,12 +94,16 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const key = `pinbook:${(session.username as string).toLowerCase()}`;
+        const username = (session.username as string).toLowerCase();
+
+        // Serialize all pinbook mutations per user to prevent read-modify-write races
+        return await withUserLock(username, async () => {
+        const key = `pinbook:${username}`;
         const data = (await kv.get(key)) as PinBookData | null ?? emptyPinBook();
 
         if (body.action === 'trackGame') {
             // Track a classic game played (win or lose) toward the daily cap
-            const username = (session.username as string).toLowerCase();
+
             const tracker = await incrementClassicPlays(username);
             const capped = tracker.classicPlays > CLASSIC_DAILY_CAP;
             return NextResponse.json({ tracked: true, classicPlays: tracker.classicPlays, capped });
@@ -98,7 +116,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({ earned: false, reason: 'Score below threshold' });
             }
 
-            const username = (session.username as string).toLowerCase();
+
 
             // Classic mode: enforce daily cap (based on games played, not earned)
             if (gameMode === 'classic') {
@@ -121,7 +139,7 @@ export async function POST(req: Request) {
             // Bonus capsule — awarded for T/cross shapes during gameplay
             // Already limited to 1 per game by client-side bonusCapsuleAwarded flag
             const gameMode = body.gameMode as string || 'classic';
-            const username = (session.username as string).toLowerCase();
+
 
             // Classic mode: check daily cap (bonus is still within a capped game)
             if (gameMode === 'classic') {
@@ -189,7 +207,7 @@ export async function POST(req: Request) {
             await kv.set(key, data);
 
             // Update pre-computed leaderboard entry
-            const username = (session.username as string).toLowerCase();
+
             const profileKey = `user:${username}`;
             const profile = await kv.get(profileKey) as { username?: string; avatarUrl?: string } | null;
             const entry = computeUserEntry(
@@ -210,6 +228,7 @@ export async function POST(req: Request) {
         } else {
             return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
+        }); // end withUserLock
     } catch (e) {
         console.error('PinBook POST error:', e);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
