@@ -67,10 +67,11 @@ export async function POST(req: Request) {
             const maxCurrent = Math.max(Number(currentScore1 || 0), Number(currentScore2 || 0));
             isNewBest = maxCurrent === 0 || score > maxCurrent;
 
-            // Pipeline: write scores + cleanup in a single round trip
+            // Pipeline: write scores + increment match count + cleanup in a single round trip
             const writePipe = kv.pipeline();
             writePipe.zadd('classic_leaderboard', { gt: true } as any, { score, member: canonicalUsername });
             writePipe.zadd(weeklyKey, { gt: true } as any, { score, member: canonicalUsername });
+            writePipe.hincrby('classic_matches_played', canonicalUsername.toLowerCase(), 1);
             if (hasCaseVariant && currentScore2 !== null) {
                 writePipe.zrem('classic_leaderboard', username);
             }
@@ -250,12 +251,21 @@ export async function GET(req: Request) {
             }
         }
 
-        // Always return scores without avatars — avatars are lazy-loaded client-side
-        // via individual /api/profiles fetches to avoid bulk mget hitting Upstash 10MB limit
-        const mapped = formatted.map((entry: any) => ({
-            username: entry.member || entry.value,
-            score: Number(entry.score)
-        }));
+        // Fetch match counts for classic mode (single hash read)
+        let matchCounts: Record<string, number> = {};
+        if (mode === 'classic') {
+            const allCounts = await kv.hgetall('classic_matches_played') as Record<string, number> | null;
+            if (allCounts) matchCounts = allCounts;
+        }
+
+        const mapped = formatted.map((entry: any) => {
+            const username = entry.member || entry.value;
+            return {
+                username,
+                score: Number(entry.score),
+                matchesPlayed: matchCounts[username.toLowerCase()] || 0,
+            };
+        });
 
         let userEntry: any = null;
         if (!userInTop && canonicalUsername && personalBest !== null) {

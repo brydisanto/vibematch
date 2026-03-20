@@ -9,6 +9,7 @@ interface LeaderboardEntry {
     username: string;
     score: number;
     avatarUrl: string;
+    matchesPlayed?: number;
 }
 
 interface UserEntry extends LeaderboardEntry {
@@ -164,6 +165,11 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
                         <div className="text-sm font-extrabold text-[#FFD700] mt-0.5">
                             {formatScore(entry.score)}
                         </div>
+                        {entry.matchesPlayed ? (
+                            <div className="text-[9px] text-white/20 font-bold mt-0.5">
+                                {entry.matchesPlayed.toLocaleString()} match{entry.matchesPlayed !== 1 ? "es" : ""}
+                            </div>
+                        ) : null}
                         {/* Pedestal */}
                         <div className="w-[100px] rounded-t-lg mt-2"
                             style={{
@@ -182,7 +188,7 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
 
 // --- List row ---
 
-function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean }) {
+function LeaderboardRow({ entry, rank, isCurrentUser, showMatches }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean; showMatches?: boolean }) {
     return (
         <div
             className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${isCurrentUser
@@ -194,8 +200,15 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntr
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />
-            <div className="flex-1 font-bold text-sm text-white/90 truncate">
-                {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
+            <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm text-white/90 truncate">
+                    {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
+                </div>
+                {showMatches && entry.matchesPlayed ? (
+                    <div className="text-[10px] text-white/25 font-bold mt-0.5">
+                        {entry.matchesPlayed.toLocaleString()} match{entry.matchesPlayed !== 1 ? "es" : ""}
+                    </div>
+                ) : null}
             </div>
             <div className="flex-shrink-0 font-display font-extrabold text-[#FFD700] text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 {formatScore(entry.score)}
@@ -240,6 +253,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                 username: entry.username,
                 score: Number(entry.score),
                 avatarUrl: isCurrentUser ? currentAvatarUrl : "",
+                matchesPlayed: entry.matchesPlayed || 0,
             };
         });
 
@@ -429,6 +443,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                     entry={entry}
                                                     rank={hasPodium ? index + 4 : index + 1}
                                                     isCurrentUser={isCurrentUser}
+                                                    showMatches={mode === "classic"}
                                                 />
                                             );
                                         })}
