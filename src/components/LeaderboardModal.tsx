@@ -374,7 +374,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                             ))}
                         </div>
                         {/* Reset countdown + player/match count */}
-                        <div className="flex items-center justify-between mt-2 px-1">
+                        <div className={`flex items-center mt-2 px-1 ${countdown ? "justify-between" : "justify-center"}`}>
                             <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">
                                 {totalPlayers > 0 ? `${totalPlayers.toLocaleString()} player${totalPlayers !== 1 ? "s" : ""} vibing` : "\u00A0"}
                                 {mode === "classic" && totalMatchesPlayed > 0 ? ` \u00B7 ${totalMatchesPlayed.toLocaleString()} games played` : ""}
