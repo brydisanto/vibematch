@@ -193,7 +193,10 @@ export function useGame(): UseGameReturn {
         const newScore = prev.score + result.scoreGained;
         const newMatchCount = prev.matchCount + result.matchesFound.length;
         const newMaxCombo = Math.max(prev.maxCombo, result.combo);
-        const maxMatchSize = Math.max(...result.matchesFound.map(m => m.positions.length));
+        // Only count real run matches (max 8 positions = board width) for announcements.
+        // Special tile blasts create synthetic matches with 20+ positions that aren't real runs.
+        const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
+        const maxMatchSize = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.positions.length)) : 3;
         const allPositions = result.matchesFound.flatMap(m => m.positions);
 
         // Play match sounds (escalated)
