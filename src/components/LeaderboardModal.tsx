@@ -207,7 +207,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntr
 // --- Main component ---
 
 export default function LeaderboardModal({ onClose, currentUsername, currentAvatarUrl }: LeaderboardModalProps) {
-    const [mode, setMode] = useState<TabMode>("classic");
+    const [mode, setMode] = useState<TabMode>("weekly");
     const [cache, setCache] = useState<Record<string, {
         leaderboard: LeaderboardEntry[];
         userEntry: UserEntry | null;
