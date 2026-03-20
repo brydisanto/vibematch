@@ -41,12 +41,34 @@ interface PinLeaderboardEntry {
     pinScore: number;
 }
 
+// Shared avatar cache across PinBook avatars
+const pinAvatarCache = new Map<string, string>();
+
 function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry; size?: number }) {
+    const [src, setSrc] = useState(entry.avatarUrl || pinAvatarCache.get(entry.username.toLowerCase()) || "");
+
+    useEffect(() => {
+        if (src) return;
+        const key = entry.username.toLowerCase();
+        if (pinAvatarCache.has(key)) {
+            setSrc(pinAvatarCache.get(key)!);
+            return;
+        }
+        fetch(`/api/profiles?username=${encodeURIComponent(entry.username)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                const url = d?.profile?.avatarUrl || "";
+                pinAvatarCache.set(key, url);
+                if (url) setSrc(url);
+            })
+            .catch(() => {});
+    }, [entry.username, src]);
+
     return (
         <div className="rounded-full bg-[#2A1845] border border-[#3A2855] overflow-hidden flex items-center justify-center flex-shrink-0"
             style={{ width: size, height: size }}>
-            {entry.avatarUrl ? (
-                <Image src={entry.avatarUrl} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+            {src ? (
+                <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
             ) : (
                 <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
                     {entry.username.substring(0, 2)}

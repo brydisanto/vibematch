@@ -68,7 +68,9 @@ export async function GET() {
             getSession(),
         ]);
 
-        const lb = leaderboard || [];
+        // Strip avatar data from response — avatars are lazy-loaded client-side
+        // to avoid the single leaderboard key exceeding Upstash 10MB limit
+        const lb = (leaderboard || []).map(e => ({ ...e, avatarUrl: '' }));
         return NextResponse.json(
             { leaderboard: lb, totalPlayers: lb.length, currentUsername: session?.username || null },
             { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }

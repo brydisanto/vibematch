@@ -250,56 +250,23 @@ export async function GET(req: Request) {
             }
         }
 
-        // If we only need the scores and user strings, skip mapping out full avatars
-        if (skipAvatars) {
-            const basicMapped = formatted.map((entry: any) => ({
-                username: entry.member || entry.value,
-                score: Number(entry.score)
-            }));
-            const responseData = { leaderboard: basicMapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, nextPlayer, totalPlayers };
-            setCached(cacheKey, responseData);
-            return NextResponse.json(
-                responseData,
-                { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
-            );
+        // Always return scores without avatars — avatars are lazy-loaded client-side
+        // via individual /api/profiles fetches to avoid bulk mget hitting Upstash 10MB limit
+        const mapped = formatted.map((entry: any) => ({
+            username: entry.member || entry.value,
+            score: Number(entry.score)
+        }));
+
+        let userEntry: any = null;
+        if (!userInTop && canonicalUsername && personalBest !== null) {
+            userEntry = { username: canonicalUsername, score: personalBest, rank: userRank };
         }
 
-        // Enrich with avatars — single batch mget for all users
-        let enriched: any[] = [];
-        // Collect all usernames that need profiles (top 50 + possibly the current user)
-        const allEntries = [...formatted];
-        if (canonicalUsername && !userInTop && personalBest !== null) {
-            allEntries.push({ member: canonicalUsername, score: personalBest });
-        }
-
-        if (allEntries.length > 0) {
-            const pKeys = allEntries.map(entry => `user:${entry.member.toLowerCase()}`);
-            const profiles = await kv.mget(...pKeys);
-
-            enriched = allEntries.map((entry, index) => {
-                const profile = profiles[index] as any;
-                // Skip oversized data URLs (>15KB) — they bloat the response and cause timeouts
-                let avatar = profile?.avatarUrl || '';
-                if (avatar.length > 15000) avatar = '';
-                return {
-                    username: entry.member,
-                    score: Number(entry.score),
-                    avatarUrl: avatar
-                };
-            });
-        }
-
-        // Split out user entry if they're outside the top 50
-        const top50 = enriched.slice(0, formatted.length);
-        const userEntry = (!userInTop && canonicalUsername && personalBest !== null)
-            ? enriched[enriched.length - 1]
-            : null;
-
-        const responseData = { leaderboard: top50, personalBest: personalBest ? Number(personalBest) : 0, userRank, userEntry, nextPlayer, totalPlayers };
+        const responseData = { leaderboard: mapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, userEntry, nextPlayer, totalPlayers };
         setCached(cacheKey, responseData);
         return NextResponse.json(
             responseData,
-            { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=10' } }
+            { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
         );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);
