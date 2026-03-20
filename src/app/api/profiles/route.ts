@@ -58,7 +58,9 @@ export async function GET(req: Request) {
         const profile = await kv.get(key);
 
         if (profile) {
-            return NextResponse.json({ profile });
+            return NextResponse.json({ profile }, {
+                headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
+            });
         } else {
             return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
         }

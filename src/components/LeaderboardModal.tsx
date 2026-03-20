@@ -228,8 +228,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
-        // Phase 1: Fast fetch with skip_avatars=true
-        const params = new URLSearchParams({ mode: targetMode, skip_avatars: "true" });
+        const params = new URLSearchParams({ mode: targetMode });
         if (currentUsername) params.set("username", currentUsername);
         const res = await fetch(`/api/scores?${params}`);
         if (!res.ok) return;

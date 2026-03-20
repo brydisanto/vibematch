@@ -26,7 +26,9 @@ export async function GET(req: Request) {
 
     try {
         const data = await kv.get<StreakData>(`streak:${username.toLowerCase()}`);
-        return NextResponse.json(data ?? { streak: 0, lastPlayed: null });
+        return NextResponse.json(data ?? { streak: 0, lastPlayed: null }, {
+            headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
+        });
     } catch (error) {
         console.error('KV error fetching streak:', error);
         return NextResponse.json({ streak: 0, lastPlayed: null });

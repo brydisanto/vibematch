@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { BADGES } from "@/lib/badges";
-import { Zap, Trophy, HelpCircle, ChevronRight, User, Crown, BookOpen } from "lucide-react";
+import { HelpCircle, ChevronRight, User, Crown, BookOpen } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import { toast } from "react-hot-toast";

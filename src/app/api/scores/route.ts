@@ -129,11 +129,11 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode'); // 'classic' or 'daily'
     const username = searchParams.get('username');
-    const skipAvatars = searchParams.get('skip_avatars') === 'true';
+    // skip_avatars param removed — avatars are always lazy-loaded client-side now
 
     try {
         // Check in-memory cache first
-        const cacheKey = `leaderboard:${mode}:${username || ''}:${skipAvatars}`;
+        const cacheKey = `leaderboard:${mode}:${username || ''}`;
         const cached = getCached(cacheKey);
         if (cached) {
             return NextResponse.json(cached, {

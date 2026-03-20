@@ -96,7 +96,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
         if (score > 0 && personalBest > 0 && globalBest > 0) return;
 
         const effectiveUsername = username || localStorage.getItem('vibematch_username');
-        const url = `/api/scores?mode=${gameMode}&skip_avatars=true${effectiveUsername ? `&username=${effectiveUsername}` : ''}`;
+        const url = `/api/scores?mode=${gameMode}${effectiveUsername ? `&username=${effectiveUsername}` : ''}`;
 
         fetch(url)
             .then(res => res.json())

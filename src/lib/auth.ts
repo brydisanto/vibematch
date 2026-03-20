@@ -1,6 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
 
 // Lazy init: resolve JWT_SECRET at first use, not at module load.
 // This prevents Next.js build from failing when env vars aren't available.
@@ -136,19 +135,3 @@ export async function getSession() {
     return await decrypt(session);
 }
 
-export async function updateSession(request: NextRequest) {
-    const session = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    if (!session) return;
-
-    // Refresh the session so it doesn't expire
-    const parsed = await decrypt(session);
-    parsed.expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const res = NextResponse.next();
-    res.cookies.set({
-        name: SESSION_COOKIE_NAME,
-        value: await encrypt(parsed),
-        httpOnly: true,
-        expires: parsed.expires,
-    });
-    return res;
-}

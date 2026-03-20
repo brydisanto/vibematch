@@ -14,7 +14,9 @@ export async function GET(req: Request) {
         const playedKey = `daily_played:${username.toLowerCase()}:${today}`;
         const hasPlayed = await kv.get(playedKey);
 
-        return NextResponse.json({ playedToday: !!hasPlayed });
+        return NextResponse.json({ playedToday: !!hasPlayed }, {
+            headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' }
+        });
     } catch (error) {
         console.error('KV error checking daily config:', error);
         return NextResponse.json({ error: 'Failed to check status' }, { status: 500 });
