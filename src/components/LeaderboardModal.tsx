@@ -37,19 +37,18 @@ const formatScore = (value: number) => {
 
 function getNextMonday(): Date {
     const now = new Date();
-    const day = now.getDay();
+    const day = now.getUTCDay();
     const daysUntilMonday = day === 0 ? 1 : 8 - day;
     const next = new Date(now);
-    next.setDate(now.getDate() + daysUntilMonday);
-    next.setHours(0, 0, 0, 0);
+    next.setUTCDate(now.getUTCDate() + daysUntilMonday);
+    next.setUTCHours(0, 0, 0, 0);
     return next;
 }
 
 function getMidnightTonight(): Date {
     const now = new Date();
     const midnight = new Date(now);
-    midnight.setDate(now.getDate() + 1);
-    midnight.setHours(0, 0, 0, 0);
+    midnight.setUTCHours(24, 0, 0, 0);
     return midnight;
 }
 
