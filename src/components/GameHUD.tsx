@@ -35,32 +35,42 @@ function HudCard({
 
     return (
         <div
-            className={`relative w-full rounded-2xl flex flex-col items-center justify-center ${className}`}
+            className={`relative w-full rounded-2xl flex flex-col items-center justify-center overflow-hidden ${className}`}
             style={{
-                padding: "3px",
                 boxShadow: `0 8px 16px rgba(0,0,0,0.6), 0 0 20px ${glowColor}`,
-                background: usesProgressBorder
-                    ? `conic-gradient(from 0deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.1) ${borderProgress! * 360}deg)`
-                    : borderColor,
+                background: "linear-gradient(180deg, #3A1061 0%, #21083B 50%, #110321 100%)",
+                border: usesProgressBorder ? "none" : `3px solid ${borderColor}`,
                 borderRadius: "1rem",
             }}
         >
-            {/* Inner card — sits inside the 3px "border" padding */}
-            <div
-                className="absolute inset-[3px] z-0 rounded-[calc(1rem-3px)] overflow-hidden"
-                style={{
-                    background: "linear-gradient(180deg, #3A1061 0%, #21083B 50%, #110321 100%)",
-                    boxShadow: "inset 0 6px 15px rgba(0,0,0,0.7), inset 0 -2px 5px rgba(0,0,0,0.5)",
-                }}
-            >
-                {/* Inner highlight shimmer */}
+            {/* Conic-gradient border overlay for progress indicator */}
+            {usesProgressBorder && (
                 <div
-                    className="absolute inset-0 z-0 opacity-60 pointer-events-none"
+                    className="absolute inset-0 z-0 rounded-2xl pointer-events-none"
                     style={{
-                        background: "radial-gradient(ellipse at 85% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
+                        padding: "3px",
+                        background: `conic-gradient(from 0deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.08) ${borderProgress! * 360}deg)`,
+                        WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                        WebkitMaskComposite: "xor",
+                        maskComposite: "exclude",
+                        borderRadius: "inherit",
                     }}
                 />
-            </div>
+            )}
+            {/* Inner highlight shimmer */}
+            <div
+                className="absolute inset-0 z-0 opacity-60 pointer-events-none"
+                style={{
+                    background: "radial-gradient(ellipse at 85% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
+                }}
+            />
+            {/* Inner shadow overlay */}
+            <div
+                className="absolute inset-0 z-0 pointer-events-none rounded-2xl"
+                style={{
+                    boxShadow: "inset 0 6px 15px rgba(0,0,0,0.7), inset 0 -2px 5px rgba(0,0,0,0.5)",
+                }}
+            />
             <div className="relative z-10 w-full h-full flex flex-col items-center justify-center overflow-hidden px-2">
                 {children}
             </div>

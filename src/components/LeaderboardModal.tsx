@@ -194,7 +194,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntr
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />
-            <div className="flex-1 font-bold text-sm text-white/90 truncate">
+            <div className="flex-1 font-display font-extrabold text-base text-white/90 truncate">
                 {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
             </div>
             <div className="flex-shrink-0 font-display font-extrabold text-[#FFD700] text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">

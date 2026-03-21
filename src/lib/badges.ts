@@ -566,13 +566,15 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     };
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
-    // Select in order, tracking used conflict groups across all tiers
+    // Select cosmic FIRST so its conflict group is guaranteed reserved.
+    // Previously, blue/silver/gold could consume all 3 cosmic conflict groups
+    // (3, 4, 10), leaving zero valid cosmic picks → only 5 tiles on the board.
     const usedGroups = new Set<number>();
     const selected: Badge[] = [
-        ...selectFromTier(byTier.blue, 3, usedGroups),
-        ...selectFromTier(byTier.silver, 1, usedGroups),
-        ...selectFromTier(byTier.gold, 1, usedGroups),
         ...selectFromTier(byTier.cosmic, 1, usedGroups),
+        ...selectFromTier(byTier.gold, 1, usedGroups),
+        ...selectFromTier(byTier.silver, 1, usedGroups),
+        ...selectFromTier(byTier.blue, 3, usedGroups),
     ];
 
     return shuffle(selected, rng);
@@ -591,10 +593,10 @@ export function selectDraftPool(seed?: number): Badge[] {
 
     const usedGroups = new Set<number>();
     const pool: Badge[] = [
-        ...selectFromTier(byTier.blue, 5, usedGroups),
-        ...selectFromTier(byTier.silver, 2, usedGroups),
-        ...selectFromTier(byTier.gold, 2, usedGroups),
         ...selectFromTier(byTier.cosmic, 1, usedGroups),
+        ...selectFromTier(byTier.gold, 2, usedGroups),
+        ...selectFromTier(byTier.silver, 2, usedGroups),
+        ...selectFromTier(byTier.blue, 5, usedGroups),
     ];
 
     return shuffle(pool, rng);
