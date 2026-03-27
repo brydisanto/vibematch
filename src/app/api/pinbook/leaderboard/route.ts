@@ -70,51 +70,43 @@ export async function updateLeaderboardEntry(entry: LeaderboardEntry): Promise<v
 // GET — read sorted set + per-user entries (race-free)
 export async function GET() {
     try {
+        const session = await getSession();
+        const currentUsername = session?.username || null;
+
         // Check if new sorted set exists; fall back to legacy key if not yet migrated
         const rankSize = await kv.zcard(RANK_KEY);
 
         if (rankSize === 0) {
             // Fall back to legacy JSON array
-            const [leaderboard, session] = await Promise.all([
-                kv.get(LEGACY_KEY) as Promise<LeaderboardEntry[] | null>,
-                getSession(),
-            ]);
+            const leaderboard = await kv.get(LEGACY_KEY) as LeaderboardEntry[] | null;
             const lb = (leaderboard || []).map(e => ({ ...e, avatarUrl: '' }));
             return NextResponse.json(
-                { leaderboard: lb, totalPlayers: lb.length, currentUsername: session?.username || null },
+                { leaderboard: lb, totalPlayers: lb.length, currentUsername, _source: 'legacy' },
                 { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
             );
         }
 
-        // Get all members ordered by score descending
+        // Get all members ordered by score descending (zrange with rev)
         const members = await kv.zrange(RANK_KEY, 0, -1, { rev: true }) as string[];
 
         if (members.length === 0) {
-            const session = await getSession();
             return NextResponse.json(
-                { leaderboard: [], totalPlayers: 0, currentUsername: session?.username || null },
+                { leaderboard: [], totalPlayers: 0, currentUsername, _source: 'sorted_set', _rankSize: rankSize, _members: 0 },
                 { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
             );
         }
 
-        // Batch-fetch all per-user entries
-        const entryKeys = members.map(m => `${ENTRY_PREFIX}${m}`);
-        const [entries, session] = await Promise.all([
-            kv.mget(...entryKeys) as Promise<(LeaderboardEntry | null)[]>,
-            getSession(),
-        ]);
-
-        // Assemble leaderboard (strip avatars to save bandwidth)
+        // Fetch per-user entries individually (avoid mget size limit)
         const lb: LeaderboardEntry[] = [];
-        for (let i = 0; i < members.length; i++) {
-            const entry = entries[i];
+        for (const m of members) {
+            const entry = await kv.get(`${ENTRY_PREFIX}${m}`) as LeaderboardEntry | null;
             if (entry) {
                 lb.push({ ...entry, avatarUrl: '' });
             }
         }
 
         return NextResponse.json(
-            { leaderboard: lb, totalPlayers: lb.length, currentUsername: session?.username || null },
+            { leaderboard: lb, totalPlayers: lb.length, currentUsername, _source: 'sorted_set', _rankSize: rankSize },
             { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
         );
     } catch (e) {
