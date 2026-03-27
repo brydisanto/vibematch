@@ -49,24 +49,26 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "earn", score, gameMode }),
             });
+            if (!res.ok) { console.error("pinbook earn failed:", res.status); return false; }
             const data = await res.json();
             if (data.earned) {
                 const amount = gameMode === 'daily' ? 2 : 1;
                 setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
                 return true;
             }
-        } catch { /* ignore */ }
+        } catch (e) { console.error("pinbook earn error:", e); }
         return false;
     }, []);
 
     const trackGame = useCallback(async (): Promise<void> => {
         try {
-            await fetch("/api/pinbook", {
+            const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "trackGame" }),
             });
-        } catch { /* ignore */ }
+            if (!res.ok) console.error("pinbook trackGame failed:", res.status);
+        } catch (e) { console.error("pinbook trackGame error:", e); }
     }, []);
 
     const earnBonusCapsule = useCallback(async (gameMode: string = 'classic'): Promise<boolean> => {
@@ -76,13 +78,14 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "bonus", gameMode }),
             });
+            if (!res.ok) { console.error("pinbook bonus failed:", res.status); return false; }
             const data = await res.json();
             if (data.earned) {
                 const amount = gameMode === 'daily' ? 2 : 1;
                 setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
                 return true;
             }
-        } catch { /* ignore */ }
+        } catch (e) { console.error("pinbook bonus error:", e); }
         return false;
     }, []);
 
@@ -94,6 +97,7 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "open" }),
             });
+            if (!res.ok) { console.error("pinbook open failed:", res.status); return null; }
             const data = await res.json();
             if (!data.opened) return null;
 
@@ -118,7 +122,8 @@ export function usePinBook() {
 
             setPendingReveal(reveal);
             return reveal;
-        } catch {
+        } catch (e) {
+            console.error("pinbook open error:", e);
             return null;
         }
     }, [state.capsules, state.pins]);
@@ -131,6 +136,7 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "collect", badgeId: pendingReveal.badge.id }),
             });
+            if (!res.ok) { console.error("pinbook collect failed:", res.status); return; }
             const data = await res.json();
             if (data.collected) {
                 setState(prev => ({
@@ -139,13 +145,15 @@ export function usePinBook() {
                         ...prev.pins,
                         [pendingReveal.badge.id]: {
                             count: data.count,
-                            firstEarned: prev.pins[pendingReveal.badge.id]?.firstEarned || new Date().toISOString(),
+                            firstEarned: data.firstEarned || prev.pins[pendingReveal.badge.id]?.firstEarned || new Date().toISOString(),
                         },
                     },
                 }));
+                setPendingReveal(null);
+            } else {
+                console.error("pinbook collect returned collected=false");
             }
-        } catch { /* ignore */ }
-        setPendingReveal(null);
+        } catch (e) { console.error("pinbook collect error:", e); }
     }, [pendingReveal]);
 
     return {

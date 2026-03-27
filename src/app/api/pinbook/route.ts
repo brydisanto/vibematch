@@ -222,6 +222,7 @@ export async function POST(req: Request) {
                 collected: true,
                 isDuplicate: !!existing,
                 count: data.pins[badgeId].count,
+                firstEarned: data.pins[badgeId].firstEarned,
                 totalCollected: Object.keys(data.pins).length,
             });
 

@@ -373,7 +373,7 @@ function StatCard({
 }) {
     return (
         <motion.div
-            className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden group"
+            className="relative bg-[#1a0533]/95 border border-white/[0.08] rounded-2xl p-3 sm:p-4 overflow-hidden group"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
@@ -609,7 +609,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
         >
             {/* Backdrop */}
             <motion.div
-                className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+                className="absolute inset-0 bg-black/90"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
             />

@@ -239,7 +239,7 @@ export default function PinBook({
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/85"
                         onClick={onClose}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -266,7 +266,7 @@ export default function PinBook({
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* ── Sticky Header ── */}
-                        <div className="sticky top-0 z-10 bg-gradient-to-b from-[#3A1061] to-[#3A1061]/95 backdrop-blur-md px-5 sm:px-6 pt-5 pb-4 border-b border-white/10">
+                        <div className="sticky top-0 z-10 bg-gradient-to-b from-[#3A1061] to-[#3A1061] px-5 sm:px-6 pt-5 pb-4 border-b border-white/10">
                             {/* Title Row */}
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -580,7 +580,7 @@ export default function PinBook({
                         </div>
 
                         {/* ── Footer ── */}
-                        <div className="px-5 sm:px-6 py-4 border-t border-white/10 bg-[#110321]/80 backdrop-blur-md flex items-center justify-between">
+                        <div className="px-5 sm:px-6 py-4 border-t border-white/10 bg-[#110321] flex items-center justify-between">
                             <span className="text-white/25 text-[10px] font-mundial uppercase tracking-widest">
                                 {totalCount} Total Pins
                             </span>

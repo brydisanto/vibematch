@@ -497,7 +497,7 @@ export default function InstructionsModal({ isOpen, onClose }: InstructionsModal
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/75 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/85"
                         onClick={onClose}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}

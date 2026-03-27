@@ -82,10 +82,10 @@ function HudCard({
 function FinalMoveBanner() {
     return (
         <div
-            className="font-display font-black text-sm sm:text-base tracking-widest uppercase select-none text-center mt-1 hud-final-move-pulse"
+            className="absolute inset-x-0 bottom-1 font-display font-black text-[10px] sm:text-xs tracking-widest uppercase select-none text-center pointer-events-none hud-final-move-pulse"
             style={{
                 color: "#FFE048",
-                textShadow: "0 0 12px rgba(255,224,72,0.8), 0 0 24px rgba(255,224,72,0.4), 0 2px 4px rgba(0,0,0,0.8)",
+                textShadow: "0 0 8px rgba(255,224,72,0.8), 0 1px 2px rgba(0,0,0,0.8)",
             }}
         >
             FINAL MOVE!
@@ -236,15 +236,13 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     className="fixed inset-x-0 top-[8%] sm:top-[10%] z-[60] flex justify-center pointer-events-none hud-pb-banner-enter"
                 >
                     <div
-                        className="font-display font-black text-3xl sm:text-4xl tracking-wider uppercase select-none px-6 py-3 rounded-2xl"
+                        className="font-display font-black text-xl sm:text-2xl tracking-wider uppercase select-none px-5 py-2.5 rounded-xl"
                         style={{
                             color: "#FFE048",
-                            background: "linear-gradient(135deg, rgba(42,8,69,0.95) 0%, rgba(26,4,45,0.95) 100%)",
-                            border: "2px solid rgba(255,224,72,0.6)",
-                            boxShadow: "0 0 40px rgba(255,224,72,0.5), 0 0 80px rgba(255,224,72,0.2), 0 8px 32px rgba(0,0,0,0.8)",
-                            WebkitTextStroke: "1px #8b6b15",
-                            textShadow: "0 0 20px rgba(255,224,72,0.9), 0 0 40px rgba(255,224,72,0.4), 0 4px 8px rgba(0,0,0,0.9)",
-                            paintOrder: "stroke fill",
+                            background: "linear-gradient(135deg, #2a0845 0%, #1a042d 100%)",
+                            border: "2px solid rgba(255,224,72,0.8)",
+                            boxShadow: "0 0 30px rgba(255,224,72,0.4), 0 6px 24px rgba(0,0,0,0.7)",
+                            textShadow: "0 0 12px rgba(255,224,72,0.7), 0 2px 4px rgba(0,0,0,0.8)",
                         }}
                     >
                         NEW PERSONAL BEST!
@@ -254,7 +252,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
 
             {/* Mobile metrics row (top HUD on mobile) */}
             {hideHighScores && (
-                <div className="flex gap-1.5 w-full -mt-1 px-1">
+                <div className="flex gap-1.5 w-full px-1">
                     {/* Score */}
                     <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>

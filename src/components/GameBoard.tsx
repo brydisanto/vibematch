@@ -17,15 +17,15 @@ const EFFECT_PRIORITY: Record<string, number> = {
     TileMatchFlash: 2,
     ScreenEdgeGlow: 1,
 };
-const MAX_SIMULTANEOUS_EFFECTS = 7;
+const MAX_SIMULTANEOUS_EFFECTS = typeof window !== 'undefined' && window.innerWidth < 768 ? 4 : 7;
 
 /* ===== RESPONSIVE PARTICLE CAPS ===== */
 function getParticleCap(): number {
     if (typeof window === 'undefined') return 140;
     const w = window.innerWidth;
-    if (w < 768) return 45;
-    if (w < 1024) return 80;
-    return 140;
+    if (w < 768) return 16;
+    if (w < 1024) return 40;
+    return 80;
 }
 
 interface GameBoardProps {
@@ -788,9 +788,9 @@ export default function GameBoard({
                                                 alt={cell.badge.name}
                                                 fill
                                                 sizes="(max-width: 640px) 56px, 80px"
-                                                className="object-cover transition-opacity duration-200"
-                                                loading="eager"
-                                                quality={75}
+                                                className="object-cover"
+                                                priority={rowIndex < 3}
+                                                quality={60}
                                             />
                                         </div>
 

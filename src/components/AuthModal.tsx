@@ -54,7 +54,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/70 backdrop-blur-md">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/85">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
