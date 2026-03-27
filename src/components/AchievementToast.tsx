@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import type { AchievementUnlockEvent } from "@/lib/useAchievements";
+
+const ACHIEVEMENT_BADGE = "/badges/any_gvc_1759173799963.webp";
 
 interface AchievementToastProps {
     event: AchievementUnlockEvent | null;
@@ -45,7 +48,9 @@ export default function AchievementToast({ event, onDismiss }: AchievementToastP
                         }}
                     >
                         {/* Icon */}
-                        <div className="text-2xl flex-shrink-0">{event.achievement.icon}</div>
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: "rgba(255, 224, 72, 0.12)" }}>
+                            <Image src={ACHIEVEMENT_BADGE} alt="" width={28} height={28} className="rounded-full object-cover" />
+                        </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">

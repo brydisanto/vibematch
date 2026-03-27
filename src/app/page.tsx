@@ -322,9 +322,9 @@ export default function Home() {
               onShowInstructions={() => setShowInstructions(true)}
               onLogout={() => setUserProfile(null)}
               onOpenPinBook={() => setShowPinBook(true)}
-              onOpenAchievements={() => setShowAchievements(true)}
+              onOpenAchievements={() => { setShowAchievements(true); achievements.markSeen(); }}
               capsuleCount={pinBook.state.capsules}
-              achievementCount={achievements.unlockedCount}
+              achievementCount={achievements.unseenCount}
               userProfile={userProfile}
             />
           </motion.div>

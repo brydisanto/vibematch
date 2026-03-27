@@ -24,6 +24,7 @@ export function useAchievements() {
         loaded: false,
     });
     const [pendingToasts, setPendingToasts] = useState<AchievementUnlockEvent[]>([]);
+    const [seenCount, setSeenCount] = useState<number>(0);
 
     // Prevent duplicate unlock calls for the same achievement within a session
     const pendingUnlocks = useRef(new Set<string>());
@@ -34,6 +35,10 @@ export function useAchievements() {
             if (!res.ok) return;
             const data = await res.json();
             setState({ unlocked: data.unlocked || {}, loaded: true });
+
+            // Restore seen count from localStorage
+            const stored = localStorage.getItem("vibematch_achievements_seen");
+            setSeenCount(stored ? parseInt(stored, 10) || 0 : 0);
 
             // Server detected user won yesterday's daily — auto-unlock
             if (data.dailyChampEligible && !data.unlocked?.['daily_champ']) {
@@ -140,6 +145,16 @@ export function useAchievements() {
         setPendingToasts(prev => prev.slice(1));
     }, []);
 
+    /** Mark all current achievements as "seen" — clears the badge. */
+    const markSeen = useCallback(() => {
+        const count = Object.keys(state.unlocked).length;
+        setSeenCount(count);
+        localStorage.setItem("vibematch_achievements_seen", String(count));
+    }, [state.unlocked]);
+
+    const unlockedCount = Object.keys(state.unlocked).length;
+    const unseenCount = Math.max(0, unlockedCount - seenCount);
+
     return {
         state,
         pendingToasts,
@@ -148,6 +163,8 @@ export function useAchievements() {
         getUnlockedSet,
         unlock,
         dismissToast,
-        unlockedCount: Object.keys(state.unlocked).length,
+        markSeen,
+        unlockedCount,
+        unseenCount,
     };
 }

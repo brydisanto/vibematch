@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
     JOURNEY_ACHIEVEMENTS,
     MASTERY_ACHIEVEMENTS,
     ALL_ACHIEVEMENTS,
     type AchievementDef,
 } from "@/lib/achievements";
+
+const ACHIEVEMENT_BADGE = "/badges/any_gvc_1759173799963.webp";
 
 interface AchievementsPanelProps {
     isOpen: boolean;
@@ -68,7 +71,7 @@ export default function AchievementsPanel({ isOpen, onClose, unlocked }: Achieve
                         {/* Header */}
                         <div className="px-5 pt-5 pb-3 border-b border-white/10">
                             <div className="flex items-center justify-between mb-3">
-                                <h2 className="text-white font-black text-xl tracking-wide">Achievements</h2>
+                                <h2 className="text-white font-display font-black text-xl tracking-wide">Achievements</h2>
                                 <button
                                     onClick={onClose}
                                     className="text-white/40 hover:text-white/80 transition-colors text-2xl leading-none"
@@ -184,7 +187,7 @@ function AchievementCard({
         >
             {/* Icon */}
             <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${
+                className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
                     isLocked ? "grayscale" : ""
                 }`}
                 style={{
@@ -193,7 +196,13 @@ function AchievementCard({
                         : "rgba(179, 102, 255, 0.1)",
                 }}
             >
-                {isLocked ? "🔒" : achievement.icon}
+                <Image
+                    src={ACHIEVEMENT_BADGE}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className={`rounded-full object-cover ${isLocked ? "opacity-40" : ""}`}
+                />
             </div>
 
             {/* Content */}
