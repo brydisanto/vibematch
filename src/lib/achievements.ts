@@ -54,8 +54,8 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         id: "first_vibestreak",
         category: "journey",
         icon: "⚡",
-        title: "Vibe Check",
-        description: "Create your first vibestreak",
+        title: "Laser Party",
+        description: "Create your first laser party",
         capsules: 2,
         order: 4,
     },
@@ -164,13 +164,22 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 5,
     },
     {
+        id: "pins_50",
+        category: "mastery",
+        icon: "🏅",
+        title: "Pin Hoarder",
+        description: "Collect 50 unique badges",
+        capsules: 3,
+        order: 6,
+    },
+    {
         id: "pins_all",
         category: "mastery",
         icon: "💎",
         title: "Pin Completionist",
         description: "Collect all 73 badges",
         capsules: 3,
-        order: 6,
+        order: 7,
     },
     {
         id: "tier_silver",
@@ -179,7 +188,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Silver Lining",
         description: "Collect your first Silver badge",
         capsules: 1,
-        order: 7,
+        order: 8,
     },
     {
         id: "tier_gold",
@@ -188,7 +197,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Gold Standard",
         description: "Collect your first Gold badge",
         capsules: 2,
-        order: 8,
+        order: 9,
     },
     {
         id: "tier_cosmic",
@@ -197,7 +206,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cosmic Destiny",
         description: "Collect your first Cosmic badge",
         capsules: 3,
-        order: 9,
+        order: 10,
     },
     {
         id: "bombs_5",
@@ -206,7 +215,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Bomb Squad",
         description: "Create 5 bombs in one game",
         capsules: 1,
-        order: 10,
+        order: 11,
     },
     {
         id: "cascades_15",
@@ -215,7 +224,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cascade Master",
         description: "15+ total cascades in one game",
         capsules: 2,
-        order: 11,
+        order: 12,
     },
     {
         id: "score_50k",
@@ -224,7 +233,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Score Legend",
         description: "Score 50,000+ in a single game",
         capsules: 2,
-        order: 12,
+        order: 13,
     },
     {
         id: "score_100k",
@@ -233,7 +242,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Century Club",
         description: "Score 100,000+ in a single game",
         capsules: 3,
-        order: 13,
+        order: 14,
     },
     {
         id: "streak_7",
@@ -242,7 +251,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Devoted",
         description: "Reach a 7-day streak",
         capsules: 2,
-        order: 14,
+        order: 15,
     },
     {
         id: "streak_30",
@@ -251,7 +260,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Committed",
         description: "Reach a 30-day streak",
         capsules: 3,
-        order: 15,
+        order: 16,
     },
     {
         id: "cross_3",
@@ -260,7 +269,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cross Roads",
         description: "Land 3 cross shapes in one game",
         capsules: 3,
-        order: 16,
+        order: 17,
     },
     {
         id: "daily_cap",
@@ -269,7 +278,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 17,
+        order: 18,
     },
 ];
 
@@ -343,6 +352,7 @@ export function checkAchievements(
     check("combo_8", stats.maxCombo >= 8);
     check("pins_10", context.uniquePins >= 10);
     check("pins_25", context.uniquePins >= 25);
+    check("pins_50", context.uniquePins >= 50);
     check("pins_all", context.uniquePins >= 73);
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
@@ -383,6 +393,7 @@ export function checkRetroactiveAchievements(
     // Mastery — pin collection + streaks
     check("pins_10", context.uniquePins >= 10);
     check("pins_25", context.uniquePins >= 25);
+    check("pins_50", context.uniquePins >= 50);
     check("pins_all", context.uniquePins >= 73);
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
