@@ -81,7 +81,7 @@ export async function GET() {
             const leaderboard = await kv.get(LEGACY_KEY) as LeaderboardEntry[] | null;
             const lb = (leaderboard || []).map(e => ({ ...e, avatarUrl: '' }));
             return NextResponse.json(
-                { leaderboard: lb, totalPlayers: lb.length, currentUsername, _source: 'legacy' },
+                { leaderboard: lb, totalPlayers: lb.length, currentUsername },
                 { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
             );
         }
@@ -91,7 +91,7 @@ export async function GET() {
 
         if (members.length === 0) {
             return NextResponse.json(
-                { leaderboard: [], totalPlayers: 0, currentUsername, _source: 'sorted_set', _rankSize: rankSize, _members: 0 },
+                { leaderboard: [], totalPlayers: 0, currentUsername },
                 { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
             );
         }
@@ -106,7 +106,7 @@ export async function GET() {
         }
 
         return NextResponse.json(
-            { leaderboard: lb, totalPlayers: lb.length, currentUsername, _source: 'sorted_set', _rankSize: rankSize },
+            { leaderboard: lb, totalPlayers: lb.length, currentUsername },
             { headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' } }
         );
     } catch (e) {
