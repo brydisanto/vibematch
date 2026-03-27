@@ -178,7 +178,7 @@ export async function POST() {
         } while (cursor != 0);
 
         if (allKeys.length === 0) {
-            return NextResponse.json({ rebuilt: true, count: 0 });
+            return NextResponse.json({ rebuilt: true, count: 0, keys: [] });
         }
 
         const pinbooks = await kv.mget(...allKeys);
@@ -186,15 +186,17 @@ export async function POST() {
         const profiles = await kv.mget(...profileKeys);
 
         // Clear old sorted set and legacy key
-        await kv.del(RANK_KEY, LEGACY_KEY);
+        try { await kv.del(RANK_KEY); } catch { /* may not exist */ }
+        try { await kv.del(LEGACY_KEY); } catch { /* may not exist */ }
 
         let count = 0;
-        const ops: Promise<any>[] = [];
+        const rebuilt: string[] = [];
 
+        // Process users one at a time to avoid overwhelming Redis
         for (let i = 0; i < allKeys.length; i++) {
             const data = pinbooks[i] as any;
             const profile = profiles[i] as any;
-            if (!data?.pins) continue;
+            if (!data?.pins || Object.keys(data.pins).length === 0) continue;
 
             const username = profile?.username || allKeys[i].replace('pinbook:', '');
             const avatarUrl = profile?.avatarUrl || '';
@@ -202,17 +204,15 @@ export async function POST() {
             const score = compositeScore(entry);
             const member = username.toLowerCase();
 
-            ops.push(
-                kv.zadd(RANK_KEY, { score, member }),
-                kv.set(`${ENTRY_PREFIX}${member}`, entry),
-            );
+            await kv.zadd(RANK_KEY, { score, member });
+            await kv.set(`${ENTRY_PREFIX}${member}`, entry);
+            rebuilt.push(`${username}: ${entry.uniqueCount} pins, score ${entry.pinScore}`);
             count++;
         }
 
-        await Promise.all(ops);
-        return NextResponse.json({ rebuilt: true, count });
-    } catch (e) {
-        console.error('Leaderboard rebuild error:', e);
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+        return NextResponse.json({ rebuilt: true, count, users: rebuilt });
+    } catch (e: any) {
+        console.error('Leaderboard rebuild error:', e?.message || e);
+        return NextResponse.json({ error: 'Server error', detail: e?.message || String(e) }, { status: 500 });
     }
 }
