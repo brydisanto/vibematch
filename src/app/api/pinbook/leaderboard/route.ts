@@ -181,10 +181,6 @@ export async function POST() {
             return NextResponse.json({ rebuilt: true, count: 0, keys: [] });
         }
 
-        const pinbooks = await kv.mget(...allKeys);
-        const profileKeys = allKeys.map(k => `user:${k.replace('pinbook:', '')}`);
-        const profiles = await kv.mget(...profileKeys);
-
         // Clear old sorted set and legacy key
         try { await kv.del(RANK_KEY); } catch { /* may not exist */ }
         try { await kv.del(LEGACY_KEY); } catch { /* may not exist */ }
@@ -192,13 +188,17 @@ export async function POST() {
         let count = 0;
         const rebuilt: string[] = [];
 
-        // Process users one at a time to avoid overwhelming Redis
-        for (let i = 0; i < allKeys.length; i++) {
-            const data = pinbooks[i] as any;
-            const profile = profiles[i] as any;
+        // Process users one at a time to avoid mget size limits (1MB Upstash cap)
+        for (const key of allKeys) {
+            const uname = key.replace('pinbook:', '');
+            const [data, profile] = await Promise.all([
+                kv.get(key) as Promise<any>,
+                kv.get(`user:${uname}`) as Promise<any>,
+            ]);
+
             if (!data?.pins || Object.keys(data.pins).length === 0) continue;
 
-            const username = profile?.username || allKeys[i].replace('pinbook:', '');
+            const username = profile?.username || uname;
             const avatarUrl = profile?.avatarUrl || '';
             const entry = computeUserEntry(username, avatarUrl, data.pins);
             const score = compositeScore(entry);
