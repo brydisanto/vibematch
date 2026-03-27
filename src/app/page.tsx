@@ -19,6 +19,10 @@ import VibeCapsule from "@/components/VibeCapsule";
 import { ArrowLeft, Volume2, VolumeX, Menu, BookOpen } from "lucide-react";
 import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
 import { usePinBook } from "@/lib/usePinBook";
+import { useAchievements } from "@/lib/useAchievements";
+import { checkAchievements, checkMidGameAchievements, type GameEndStats, type PlayerContext } from "@/lib/achievements";
+import AchievementToast from "@/components/AchievementToast";
+import AchievementsPanel from "@/components/AchievementsPanel";
 import Image from "next/image";
 
 type AppView = "landing" | "drafting" | "playing";
@@ -38,9 +42,20 @@ export default function Home() {
   const [showCapsule, setShowCapsule] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
+  const achievements = useAchievements();
+
+  // Per-game session stats for achievements (not in GameState)
+  const gameSessionStats = useRef({
+    bombsCreated: 0,
+    vibestreaksCreated: 0,
+    cosmicBlastsCreated: 0,
+    crossCount: 0,
+    shapesLanded: [] as { type: string; count: number }[],
+  });
 
   useEffect(() => {
     // Restore reduce-motion preference on mount
@@ -57,6 +72,7 @@ export default function Home() {
         if (data.authenticated) {
           setUserProfile({ username: data.user.username, avatarUrl: data.user.avatarUrl });
           pinBook.load(); // Load pin book for authenticated user
+          achievements.load(); // Load achievements for authenticated user
         }
       })
       .catch(err => console.error("Initial session check failed:", err));
@@ -92,6 +108,87 @@ export default function Home() {
     }
   }, [game.matchEffect?.timestamp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Accumulate per-game stats + check mid-game achievements after each turn
+  useEffect(() => {
+    if (!game.lastTurnResult || !userProfile?.username) return;
+    const result = game.lastTurnResult;
+    const stats = gameSessionStats.current;
+
+    // Accumulate specials created
+    for (const s of result.specialTilesCreated) {
+      if (s.type === "bomb") stats.bombsCreated++;
+      else if (s.type === "vibestreak") stats.vibestreaksCreated++;
+      else if (s.type === "cosmic_blast") stats.cosmicBlastsCreated++;
+    }
+
+    // Accumulate shape bonuses
+    if (result.shapeBonus?.type) {
+      if (result.shapeBonus.type === "cross") stats.crossCount++;
+      const existing = stats.shapesLanded.find(s => s.type === result.shapeBonus!.type);
+      if (existing) existing.count++;
+      else stats.shapesLanded.push({ type: result.shapeBonus.type, count: 1 });
+    }
+
+    // Check mid-game achievements
+    if (achievements.state.loaded) {
+      const specials = result.specialTilesCreated.map(s => s.type);
+      const midGameIds = checkMidGameAchievements(
+        result.combo,
+        result.cascadeCount,
+        specials,
+        result.shapeBonus?.type ?? null,
+        achievements.getUnlockedSet(),
+      );
+      if (midGameIds.length > 0) {
+        achievements.unlock(midGameIds);
+      }
+    }
+  }, [game.lastTurnResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check end-of-game achievements
+  useEffect(() => {
+    if (game.state?.gamePhase !== "gameover" || !userProfile?.username || !achievements.state.loaded) return;
+    const gs = game.state;
+    const stats = gameSessionStats.current;
+
+    const gameEndStats: GameEndStats = {
+      score: gs.score,
+      maxCombo: gs.maxCombo,
+      totalCascades: gs.totalCascades,
+      matchCount: gs.matchCount,
+      bombsCreated: stats.bombsCreated,
+      vibestreaksCreated: stats.vibestreaksCreated,
+      cosmicBlastsCreated: stats.cosmicBlastsCreated,
+      shapesLanded: stats.shapesLanded,
+      crossCount: stats.crossCount,
+      gameMode: gs.gameMode,
+    };
+
+    // Build player context from pinbook state
+    const playerCtx: PlayerContext = {
+      streak: 0, // fetched separately, not critical for most achievements
+      uniquePins: Object.keys(pinBook.state.pins).length,
+      totalPinsOpened: pinBook.state.totalOpened || 0,
+      hasSilverPin: false,
+      hasGoldPin: false,
+      hasCosmicPin: false,
+      gamesPlayedToday: 0,
+    };
+
+    // Check pin tiers from pinbook state
+    for (const pin of Object.values(pinBook.state.pins)) {
+      const p = pin as { tier?: string };
+      if (p.tier === "silver") playerCtx.hasSilverPin = true;
+      if (p.tier === "gold") playerCtx.hasGoldPin = true;
+      if (p.tier === "cosmic") playerCtx.hasCosmicPin = true;
+    }
+
+    const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
+    if (ids.length > 0) {
+      achievements.unlock(ids);
+    }
+  }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleToggleMute = () => {
     playUIClick();
     const newMuted = toggleMute(!muted);
@@ -118,6 +215,7 @@ export default function Home() {
     // To re-enable: route classic mode to drafting view with selectDraftPool()
     game.startGame(mode);
     setCapsuleEarned(false);
+    gameSessionStats.current = { bombsCreated: 0, vibestreaksCreated: 0, cosmicBlastsCreated: 0, crossCount: 0, shapesLanded: [] };
     setIsDealing(true);
     setView("playing");
     startBGM();
@@ -181,7 +279,9 @@ export default function Home() {
               onShowInstructions={() => setShowInstructions(true)}
               onLogout={() => setUserProfile(null)}
               onOpenPinBook={() => setShowPinBook(true)}
+              onOpenAchievements={() => setShowAchievements(true)}
               capsuleCount={pinBook.state.capsules}
+              achievementCount={achievements.unlockedCount}
               userProfile={userProfile}
             />
           </motion.div>
@@ -545,6 +645,19 @@ export default function Home() {
         />
       )}
 
+      {/* Achievement Toast */}
+      <AchievementToast
+        event={achievements.pendingToasts[0] ?? null}
+        onDismiss={achievements.dismissToast}
+      />
+
+      {/* Achievements Panel */}
+      <AchievementsPanel
+        isOpen={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        unlocked={achievements.state.unlocked}
+      />
+
       {/* Global Auth Modal for Game Over Save Score */}
       <AuthModal
         isOpen={showSystemAuthModal}
@@ -554,6 +667,7 @@ export default function Home() {
           localStorage.setItem('vibematch_username', username);
           setShowSystemAuthModal(false);
           pinBook.load(); // Load pin book after login
+          achievements.load(); // Load achievements after login
         }}
       />
     </main >

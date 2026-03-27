@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { BADGES } from "@/lib/badges";
-import { HelpCircle, ChevronRight, User, Crown, BookOpen } from "lucide-react";
+import { HelpCircle, ChevronRight, User, Crown, BookOpen, Trophy } from "lucide-react";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import { toast } from "react-hot-toast";
@@ -15,7 +15,9 @@ interface LandingPageProps {
     onShowInstructions?: () => void;
     onLogout?: () => void;
     onOpenPinBook?: () => void;
+    onOpenAchievements?: () => void;
     capsuleCount?: number;
+    achievementCount?: number;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
 
@@ -142,7 +144,7 @@ function useDailyCountdown() {
     return countdown;
 }
 
-export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, capsuleCount = 0, userProfile }: LandingPageProps) {
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, capsuleCount = 0, achievementCount = 0, userProfile }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -416,7 +418,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)",
                         }}
                     >
-                        <div className="grid grid-cols-4">
+                        <div className="grid grid-cols-5">
                             {/* Profile / Login */}
                             <button
                                 onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
@@ -450,6 +452,32 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 </div>
                                 <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
                                     Pins
+                                </span>
+                            </button>
+
+                            {/* Achievements */}
+                            <button
+                                onClick={isLoggedIn ? onOpenAchievements : undefined}
+                                disabled={!isLoggedIn}
+                                className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
+                                <div className="relative">
+                                    <Trophy size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
+                                    {achievementCount > 0 && (
+                                        <span
+                                            className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
+                                            style={{
+                                                background: "#FFE048",
+                                                color: "#1A0633",
+                                                boxShadow: "0 0 8px rgba(255,224,72,0.6)",
+                                            }}
+                                        >
+                                            {achievementCount}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
+                                    Goals
                                 </span>
                             </button>
 

@@ -74,8 +74,24 @@ export async function GET() {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        const key = `pinbook:${(session.username as string).toLowerCase()}`;
-        const data = (await kv.get(key)) as PinBookData | null;
+        const username = (session.username as string).toLowerCase();
+        const key = `pinbook:${username}`;
+        const [data, profile] = await Promise.all([
+            kv.get(key) as Promise<PinBookData | null>,
+            kv.get(`user:${username}`) as Promise<{ username?: string; avatarUrl?: string } | null>,
+        ]);
+
+        // Self-heal: refresh this user's leaderboard entry from their actual pinbook data.
+        // This fixes stale entries caused by race conditions in the shared leaderboard key.
+        if (data?.pins && Object.keys(data.pins).length > 0) {
+            const entry = computeUserEntry(
+                profile?.username || username,
+                profile?.avatarUrl || '',
+                data.pins,
+            );
+            // Fire-and-forget — don't block the response
+            updateLeaderboardEntry(entry).catch(() => {});
+        }
 
         return NextResponse.json(data || emptyPinBook());
     } catch (e) {

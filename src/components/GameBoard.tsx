@@ -789,7 +789,7 @@ export default function GameBoard({
                                                 fill
                                                 sizes="(max-width: 640px) 56px, 80px"
                                                 className="object-cover"
-                                                priority={rowIndex < 3}
+                                                priority={rowIdx < 3}
                                                 quality={60}
                                             />
                                         </div>
