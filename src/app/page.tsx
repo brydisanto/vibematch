@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { GameMode } from "@/lib/gameEngine";
 import { useGame } from "@/lib/useGame";
-import { Badge, selectDraftPool, getDailySeed } from "@/lib/badges";
+import { Badge, BADGES, selectDraftPool, getDailySeed } from "@/lib/badges";
 import GameBoard from "@/components/GameBoard";
 import GameHUD from "@/components/GameHUD";
 import GameOver from "@/components/GameOver";
@@ -20,7 +20,7 @@ import { ArrowLeft, Volume2, VolumeX, Menu, BookOpen } from "lucide-react";
 import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
 import { usePinBook } from "@/lib/usePinBook";
 import { useAchievements } from "@/lib/useAchievements";
-import { checkAchievements, checkMidGameAchievements, type GameEndStats, type PlayerContext } from "@/lib/achievements";
+import { checkAchievements, checkMidGameAchievements, checkRetroactiveAchievements, type GameEndStats, type PlayerContext } from "@/lib/achievements";
 import AchievementToast from "@/components/AchievementToast";
 import AchievementsPanel from "@/components/AchievementsPanel";
 import Image from "next/image";
@@ -77,6 +77,48 @@ export default function Home() {
       })
       .catch(err => console.error("Initial session check failed:", err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Retroactive achievement check — awards achievements for progress made before the system existed
+  const retroChecked = useRef(false);
+  useEffect(() => {
+    if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username || retroChecked.current) return;
+    retroChecked.current = true;
+
+    // Build badge tier lookup
+    const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
+
+    // Build player context from pinbook
+    const ctx: PlayerContext = {
+      streak: 0,
+      uniquePins: Object.keys(pinBook.state.pins).length,
+      totalPinsOpened: pinBook.state.totalOpened || 0,
+      hasSilverPin: false,
+      hasGoldPin: false,
+      hasCosmicPin: false,
+      gamesPlayedToday: 0,
+    };
+
+    for (const badgeId of Object.keys(pinBook.state.pins)) {
+      const tier = badgeTierMap.get(badgeId);
+      if (tier === "silver") ctx.hasSilverPin = true;
+      if (tier === "gold") ctx.hasGoldPin = true;
+      if (tier === "cosmic") ctx.hasCosmicPin = true;
+    }
+
+    // Fetch streak then check
+    fetch(`/api/streak?username=${userProfile.username}`)
+      .then(r => r.json())
+      .then(s => {
+        ctx.streak = s.streak || 0;
+        const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
+        if (ids.length > 0) achievements.unlock(ids);
+      })
+      .catch(() => {
+        // Check without streak data
+        const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
+        if (ids.length > 0) achievements.unlock(ids);
+      });
+  }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track classic game played + earn capsule when game ends
   useEffect(() => {
@@ -175,12 +217,13 @@ export default function Home() {
       gamesPlayedToday: 0,
     };
 
-    // Check pin tiers from pinbook state
-    for (const pin of Object.values(pinBook.state.pins)) {
-      const p = pin as { tier?: string };
-      if (p.tier === "silver") playerCtx.hasSilverPin = true;
-      if (p.tier === "gold") playerCtx.hasGoldPin = true;
-      if (p.tier === "cosmic") playerCtx.hasCosmicPin = true;
+    // Check pin tiers by cross-referencing with badge definitions
+    const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
+    for (const badgeId of Object.keys(pinBook.state.pins)) {
+      const tier = badgeTierMap.get(badgeId);
+      if (tier === "silver") playerCtx.hasSilverPin = true;
+      if (tier === "gold") playerCtx.hasGoldPin = true;
+      if (tier === "cosmic") playerCtx.hasCosmicPin = true;
     }
 
     const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());

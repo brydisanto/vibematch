@@ -360,6 +360,40 @@ export function checkAchievements(
 }
 
 /**
+ * Checks achievements that can be retroactively awarded based on player context
+ * (pin collection, streaks, etc.) — no active game needed.
+ * Called once on app load so existing players get credit for past progress.
+ */
+export function checkRetroactiveAchievements(
+    context: PlayerContext,
+    alreadyUnlocked: Set<string>,
+): string[] {
+    const newly: string[] = [];
+
+    function check(id: string, condition: boolean) {
+        if (condition && !alreadyUnlocked.has(id)) {
+            newly.push(id);
+        }
+    }
+
+    // Journey — context-based only
+    check("first_capsule", context.totalPinsOpened >= 1);
+    check("streak_3", context.streak >= 3);
+
+    // Mastery — pin collection + streaks
+    check("pins_10", context.uniquePins >= 10);
+    check("pins_25", context.uniquePins >= 25);
+    check("pins_all", context.uniquePins >= 73);
+    check("tier_silver", context.hasSilverPin);
+    check("tier_gold", context.hasGoldPin);
+    check("tier_cosmic", context.hasCosmicPin);
+    check("streak_7", context.streak >= 7);
+    check("streak_30", context.streak >= 30);
+
+    return newly;
+}
+
+/**
  * Checks achievements that can trigger mid-game (after each turn).
  * Only includes achievements detectable from a single turn result.
  */
