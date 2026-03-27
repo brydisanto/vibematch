@@ -280,6 +280,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 1,
         order: 18,
     },
+    {
+        id: "daily_champ",
+        category: "mastery",
+        icon: "👑",
+        title: "Daily Champion",
+        description: "Finish #1 on the Daily Challenge",
+        capsules: 3,
+        order: 19,
+    },
 ];
 
 export const ALL_ACHIEVEMENTS: AchievementDef[] = [

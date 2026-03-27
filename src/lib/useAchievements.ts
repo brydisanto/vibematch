@@ -34,6 +34,32 @@ export function useAchievements() {
             if (!res.ok) return;
             const data = await res.json();
             setState({ unlocked: data.unlocked || {}, loaded: true });
+
+            // Server detected user won yesterday's daily — auto-unlock
+            if (data.dailyChampEligible && !data.unlocked?.['daily_champ']) {
+                // Defer to after state is set
+                setTimeout(() => {
+                    fetch("/api/achievements", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "unlock", achievementIds: ["daily_champ"] }),
+                    }).then(async (r) => {
+                        if (!r.ok) return;
+                        const result = await r.json();
+                        if (result.unlocked?.length > 0) {
+                            setState(prev => {
+                                const next = { ...prev.unlocked };
+                                next['daily_champ'] = { id: 'daily_champ', unlockedAt: new Date().toISOString() };
+                                return { ...prev, unlocked: next };
+                            });
+                            setPendingToasts(prev => [...prev, {
+                                achievement: ACHIEVEMENTS_BY_ID['daily_champ'],
+                                capsules: result.unlocked[0].capsules,
+                            }]);
+                        }
+                    }).catch(() => {});
+                }, 500);
+            }
         } catch {
             // Not logged in or error
         }

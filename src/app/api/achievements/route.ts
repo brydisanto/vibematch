@@ -19,10 +19,29 @@ export async function GET() {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        const key = `achievements:${(session.username as string).toLowerCase()}`;
+        const username = (session.username as string).toLowerCase();
+        const key = `achievements:${username}`;
         const data = (await kv.get(key)) as AchievementsData | null;
+        const achievements = data || emptyAchievements();
 
-        return NextResponse.json(data || emptyAchievements());
+        // Check if user won yesterday's daily challenge (for daily_champ achievement)
+        let dailyChampEligible = false;
+        if (!achievements.unlocked['daily_champ']) {
+            try {
+                const yesterday = new Date();
+                yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+                const yesterdayKey = `daily_leaderboard:${yesterday.toISOString().split('T')[0]}`;
+                // Get #1 entry from yesterday's sorted set (highest score)
+                const top = await kv.zrange(yesterdayKey, 0, 0, { rev: true }) as string[];
+                if (top.length > 0 && top[0].toLowerCase() === username) {
+                    dailyChampEligible = true;
+                }
+            } catch {
+                // Non-critical — skip if leaderboard check fails
+            }
+        }
+
+        return NextResponse.json({ ...achievements, dailyChampEligible });
     } catch (e) {
         console.error('Achievements GET error:', e);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
