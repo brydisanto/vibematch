@@ -70,8 +70,8 @@ export default function AchievementsPanel({ isOpen, onClose, unlocked }: Achieve
                     >
                         {/* Header */}
                         <div className="px-5 pt-5 pb-3 border-b border-white/10">
-                            <div className="flex items-center justify-between mb-3">
-                                <h2 className="text-white font-display font-black text-xl tracking-wide">Achievements</h2>
+                            <div className="flex items-center justify-between mb-1">
+                                <h2 className="text-white font-display font-black text-xl tracking-wide">Bonus Quests</h2>
                                 <button
                                     onClick={onClose}
                                     className="text-white/40 hover:text-white/80 transition-colors text-2xl leading-none"
@@ -79,6 +79,7 @@ export default function AchievementsPanel({ isOpen, onClose, unlocked }: Achieve
                                     ×
                                 </button>
                             </div>
+                            <p className="text-[#B399D4] text-xs mb-3">Complete each quest to unlock 1-time bonus capsules!</p>
 
                             {/* Progress bar */}
                             <div className="flex items-center gap-3 mb-3">

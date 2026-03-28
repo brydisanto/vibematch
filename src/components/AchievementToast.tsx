@@ -55,7 +55,7 @@ export default function AchievementToast({ event, onDismiss }: AchievementToastP
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                             <div className="text-[10px] font-black tracking-[0.15em] uppercase text-[#FFE048] font-mundial">
-                                Achievement Unlocked
+                                Quest Complete
                             </div>
                             <div className="text-white font-bold text-sm leading-tight truncate">
                                 {event.achievement.title}
