@@ -11,6 +11,7 @@ import {
     playCapsuleAnticipateSound,
     playCapsuleCrackSound,
     playCapsuleRevealSound,
+    playNewPinSound,
     playCapsuleCollectSound,
 } from "@/lib/sounds";
 
@@ -1071,6 +1072,7 @@ export default function VibeCapsule({
                 setShowRevealParticles(true);
                 if (isGold || isCosmic) setShowConfetti(true);
                 playCapsuleRevealSound(tier);
+                if (!isDuplicate) playNewPinSound();
             }, QUICK_DURATIONS.crack);
             addTimeout(() => { setShowRevealParticles(false); }, QUICK_DURATIONS.crack + QUICK_DURATIONS.reveal);
         } else {
@@ -1085,7 +1087,7 @@ export default function VibeCapsule({
                 playCapsuleAnticipateSound();
             }, PHASE_DURATION.appear);
         }
-    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic]);
+    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic, isDuplicate]);
 
     // Handle tap to crack
     const handleCapsuleTap = useCallback(() => {
@@ -1120,6 +1122,7 @@ export default function VibeCapsule({
             setShowRevealParticles(true);
             if (tier === "gold" || tier === "cosmic") setShowConfetti(true);
             playCapsuleRevealSound(tier);
+            if (!isDuplicate) playNewPinSound();
             triggerHaptic(20);
         }, PHASE_DURATION.crack * 0.7);
 
@@ -1127,7 +1130,7 @@ export default function VibeCapsule({
             setShowBloom(false);
             setShowRevealParticles(false);
         }, PHASE_DURATION.crack * 0.7 + PHASE_DURATION.reveal);
-    }, [phase, addTimeout, tier]);
+    }, [phase, addTimeout, tier, isDuplicate]);
 
     // Handle collect tap
     const handleCollect = useCallback(() => {

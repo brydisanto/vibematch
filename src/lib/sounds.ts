@@ -1029,6 +1029,27 @@ export function playCapsuleRevealSound(tier: 'blue' | 'silver' | 'gold' | 'cosmi
     }
 }
 
+// New pin discovery — celebratory stinger layered on top of reveal
+// Plays a bright ascending fanfare + sparkle shimmer + satisfying "ding"
+export function playNewPinSound() {
+    // Bright ascending discovery fanfare (pentatonic — feels magical)
+    const notes = [784, 988, 1175, 1568]; // G5, B5, D6, G6
+    notes.forEach((freq, i) => {
+        playNote(freq, 0.18, "triangle", 0.14, 0.05 + i * 0.09);
+    });
+
+    // Final sparkle "ding" — the moment of delight
+    playNote(2093, 0.4, "sine", 0.1, 0.4); // C7 — high, bell-like
+    playNote(2637, 0.3, "sine", 0.06, 0.42); // E7 — overtone shimmer
+
+    // Sparkle noise tail
+    playNoise(0.25, 0.04, 0.35, "highpass", 6000);
+    playNoise(0.15, 0.03, 0.5, "highpass", 8000);
+
+    // Warm sub presence to ground it
+    playNote(196, 0.3, "sine", 0.06, 0.1); // G3
+}
+
 // Capsule collect — satisfying swoosh into pin book
 export function playCapsuleCollectSound() {
     const ctx = getAudioContext();
