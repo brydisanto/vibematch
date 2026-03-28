@@ -477,7 +477,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                     )}
                                 </div>
                                 <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
-                                    Goals
+                                    Quests
                                 </span>
                             </button>
 
