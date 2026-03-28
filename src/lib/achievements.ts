@@ -137,13 +137,22 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 2,
     },
     {
+        id: "combo_6",
+        category: "mastery",
+        icon: "🤯",
+        title: "rkf4trrgrggrgh;[['11]",
+        description: "Reach a 6× combo",
+        capsules: 2,
+        order: 3,
+    },
+    {
         id: "combo_8",
         category: "mastery",
         icon: "👑",
         title: "Untouchable",
         description: "Reach an 8× combo",
         capsules: 3,
-        order: 3,
+        order: 4,
     },
     {
         id: "pins_10",
@@ -152,7 +161,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Pin Enthusiast",
         description: "Collect 10 unique badges",
         capsules: 1,
-        order: 4,
+        order: 5,
     },
     {
         id: "pins_25",
@@ -161,7 +170,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Pin Collector",
         description: "Collect 25 unique badges",
         capsules: 2,
-        order: 5,
+        order: 6,
     },
     {
         id: "pins_50",
@@ -170,7 +179,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Pin Hoarder",
         description: "Collect 50 unique badges",
         capsules: 3,
-        order: 6,
+        order: 7,
     },
     {
         id: "pins_all",
@@ -179,7 +188,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Pin Completionist",
         description: "Collect all 73 badges",
         capsules: 3,
-        order: 7,
+        order: 8,
     },
     {
         id: "tier_silver",
@@ -188,7 +197,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Silver Lining",
         description: "Collect your first Silver badge",
         capsules: 1,
-        order: 8,
+        order: 9,
     },
     {
         id: "tier_gold",
@@ -197,7 +206,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Gold Standard",
         description: "Collect your first Gold badge",
         capsules: 2,
-        order: 9,
+        order: 10,
     },
     {
         id: "tier_cosmic",
@@ -206,7 +215,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cosmic Destiny",
         description: "Collect your first Cosmic badge",
         capsules: 3,
-        order: 10,
+        order: 11,
     },
     {
         id: "bombs_5",
@@ -215,7 +224,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Bomb Squad",
         description: "Create 5 bombs in one game",
         capsules: 1,
-        order: 11,
+        order: 12,
     },
     {
         id: "cascades_15",
@@ -224,7 +233,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cascade Master",
         description: "15+ total cascades in one game",
         capsules: 2,
-        order: 12,
+        order: 13,
     },
     {
         id: "score_50k",
@@ -233,7 +242,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Score Legend",
         description: "Score 50,000+ in a single game",
         capsules: 2,
-        order: 13,
+        order: 14,
     },
     {
         id: "score_75k",
@@ -242,7 +251,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Diamond Hands",
         description: "Score 75,000+ in a single game",
         capsules: 2,
-        order: 14,
+        order: 15,
     },
     {
         id: "score_100k",
@@ -251,7 +260,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Century Club",
         description: "Score 100,000+ in a single game",
         capsules: 3,
-        order: 15,
+        order: 16,
     },
     {
         id: "streak_7",
@@ -260,7 +269,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Devoted",
         description: "Reach a 7-day streak",
         capsules: 2,
-        order: 16,
+        order: 17,
     },
     {
         id: "streak_30",
@@ -269,7 +278,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Committed",
         description: "Reach a 30-day streak",
         capsules: 3,
-        order: 17,
+        order: 18,
     },
     {
         id: "cross_3",
@@ -278,7 +287,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cross Roads",
         description: "Land 3 cross shapes in one game",
         capsules: 3,
-        order: 18,
+        order: 19,
     },
     {
         id: "daily_cap",
@@ -287,7 +296,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 19,
+        order: 20,
     },
     {
         id: "daily_champ",
@@ -296,7 +305,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Champion",
         description: "Finish #1 on the Daily Challenge",
         capsules: 3,
-        order: 20,
+        order: 21,
     },
 ];
 
@@ -367,6 +376,7 @@ export function checkAchievements(
     // Mastery
     check("cascade_5", stats.totalCascades >= 5);
     check("combo_5", stats.maxCombo >= 5);
+    check("combo_6", stats.maxCombo >= 6);
     check("combo_8", stats.maxCombo >= 8);
     check("pins_10", context.uniquePins >= 10);
     check("pins_25", context.uniquePins >= 25);
@@ -448,6 +458,7 @@ export function checkMidGameAchievements(
     check("first_cosmic", specialsCreated.includes("cosmic_blast"));
     check("first_shape", shapeType === "T" || shapeType === "cross");
     check("combo_5", turnCombo >= 5);
+    check("combo_6", turnCombo >= 6);
     check("combo_8", turnCombo >= 8);
     check("cascade_5", turnCascades >= 5);
 
