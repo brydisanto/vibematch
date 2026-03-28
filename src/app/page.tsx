@@ -95,14 +95,19 @@ export default function Home() {
       hasSilverPin: false,
       hasGoldPin: false,
       hasCosmicPin: false,
+      commonPinCount: 0,
+      rarePinCount: 0,
+      legendaryPinCount: 0,
+      cosmicPinCount: 0,
       gamesPlayedToday: 0,
     };
 
     for (const badgeId of Object.keys(pinBook.state.pins)) {
       const tier = badgeTierMap.get(badgeId);
-      if (tier === "silver") ctx.hasSilverPin = true;
-      if (tier === "gold") ctx.hasGoldPin = true;
-      if (tier === "cosmic") ctx.hasCosmicPin = true;
+      if (tier === "blue") ctx.commonPinCount++;
+      if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
+      if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
+      if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
     }
 
     // Fetch streak then check
@@ -214,6 +219,10 @@ export default function Home() {
       hasSilverPin: false,
       hasGoldPin: false,
       hasCosmicPin: false,
+      commonPinCount: 0,
+      rarePinCount: 0,
+      legendaryPinCount: 0,
+      cosmicPinCount: 0,
       gamesPlayedToday: 0,
     };
 
@@ -221,9 +230,10 @@ export default function Home() {
     const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
     for (const badgeId of Object.keys(pinBook.state.pins)) {
       const tier = badgeTierMap.get(badgeId);
-      if (tier === "silver") playerCtx.hasSilverPin = true;
-      if (tier === "gold") playerCtx.hasGoldPin = true;
-      if (tier === "cosmic") playerCtx.hasCosmicPin = true;
+      if (tier === "blue") playerCtx.commonPinCount++;
+      if (tier === "silver") { playerCtx.hasSilverPin = true; playerCtx.rarePinCount++; }
+      if (tier === "gold") { playerCtx.hasGoldPin = true; playerCtx.legendaryPinCount++; }
+      if (tier === "cosmic") { playerCtx.hasCosmicPin = true; playerCtx.cosmicPinCount++; }
     }
 
     const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());

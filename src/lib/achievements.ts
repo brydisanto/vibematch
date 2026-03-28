@@ -194,8 +194,8 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         id: "tier_silver",
         category: "mastery",
         icon: "🥈",
-        title: "Silver Lining",
-        description: "Collect your first Silver badge",
+        title: "Rare Find",
+        description: "Collect your first Rare pin",
         capsules: 1,
         order: 9,
     },
@@ -204,7 +204,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🥇",
         title: "Gold Standard",
-        description: "Collect your first Gold badge",
+        description: "Collect your first Legendary pin",
         capsules: 2,
         order: 10,
     },
@@ -213,9 +213,45 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "✨",
         title: "Cosmic Destiny",
-        description: "Collect your first Cosmic badge",
+        description: "Collect your first Cosmic pin",
         capsules: 3,
         order: 11,
+    },
+    {
+        id: "all_common",
+        category: "mastery",
+        icon: "📋",
+        title: "Common Ground",
+        description: "Collect all 15 Common pins",
+        capsules: 2,
+        order: 12,
+    },
+    {
+        id: "all_rare",
+        category: "mastery",
+        icon: "🗂️",
+        title: "Rare Breed",
+        description: "Collect all 46 Rare pins",
+        capsules: 3,
+        order: 13,
+    },
+    {
+        id: "all_legendary",
+        category: "mastery",
+        icon: "🏆",
+        title: "Living Legend",
+        description: "Collect all 13 Legendary pins",
+        capsules: 3,
+        order: 14,
+    },
+    {
+        id: "all_cosmic",
+        category: "mastery",
+        icon: "🌌",
+        title: "Cosmic Completionist",
+        description: "Collect all 3 Cosmic pins",
+        capsules: 5,
+        order: 15,
     },
     {
         id: "bombs_5",
@@ -224,7 +260,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Bomb Squad",
         description: "Create 5 bombs in one game",
         capsules: 1,
-        order: 12,
+        order: 16,
     },
     {
         id: "cascades_15",
@@ -233,7 +269,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cascade Master",
         description: "15+ total cascades in one game",
         capsules: 2,
-        order: 13,
+        order: 17,
     },
     {
         id: "score_50k",
@@ -242,7 +278,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Score Legend",
         description: "Score 50,000+ in a single game",
         capsules: 2,
-        order: 14,
+        order: 18,
     },
     {
         id: "score_75k",
@@ -251,7 +287,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Diamond Hands",
         description: "Score 75,000+ in a single game",
         capsules: 2,
-        order: 15,
+        order: 19,
     },
     {
         id: "score_100k",
@@ -260,7 +296,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Century Club",
         description: "Score 100,000+ in a single game",
         capsules: 3,
-        order: 16,
+        order: 20,
     },
     {
         id: "streak_7",
@@ -269,7 +305,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Devoted",
         description: "Reach a 7-day streak",
         capsules: 2,
-        order: 17,
+        order: 21,
     },
     {
         id: "streak_30",
@@ -278,7 +314,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Committed",
         description: "Reach a 30-day streak",
         capsules: 3,
-        order: 18,
+        order: 22,
     },
     {
         id: "cross_3",
@@ -287,7 +323,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cross Roads",
         description: "Land 3 cross shapes in one game",
         capsules: 3,
-        order: 19,
+        order: 23,
     },
     {
         id: "daily_cap",
@@ -296,7 +332,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 20,
+        order: 24,
     },
     {
         id: "daily_champ",
@@ -305,7 +341,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Champion",
         description: "Finish #1 on the Daily Challenge",
         capsules: 3,
-        order: 21,
+        order: 25,
     },
 ];
 
@@ -340,6 +376,10 @@ export interface PlayerContext {
     hasSilverPin: boolean;
     hasGoldPin: boolean;
     hasCosmicPin: boolean;
+    commonPinCount: number;   // unique common pins collected
+    rarePinCount: number;     // unique rare pins collected
+    legendaryPinCount: number; // unique legendary pins collected
+    cosmicPinCount: number;   // unique cosmic pins collected
     gamesPlayedToday: number;
 }
 
@@ -385,6 +425,10 @@ export function checkAchievements(
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
     check("tier_cosmic", context.hasCosmicPin);
+    check("all_common", context.commonPinCount >= 15);
+    check("all_rare", context.rarePinCount >= 46);
+    check("all_legendary", context.legendaryPinCount >= 13);
+    check("all_cosmic", context.cosmicPinCount >= 3);
     check("bombs_5", stats.bombsCreated >= 5);
     check("cascades_15", stats.totalCascades >= 15);
     check("score_50k", stats.score >= 50000);
@@ -427,6 +471,10 @@ export function checkRetroactiveAchievements(
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
     check("tier_cosmic", context.hasCosmicPin);
+    check("all_common", context.commonPinCount >= 15);
+    check("all_rare", context.rarePinCount >= 46);
+    check("all_legendary", context.legendaryPinCount >= 13);
+    check("all_cosmic", context.cosmicPinCount >= 3);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
 
