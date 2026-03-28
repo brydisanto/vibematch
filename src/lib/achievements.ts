@@ -236,13 +236,22 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 13,
     },
     {
+        id: "score_75k",
+        category: "mastery",
+        icon: "💫",
+        title: "Diamond Hands",
+        description: "Score 75,000+ in a single game",
+        capsules: 2,
+        order: 14,
+    },
+    {
         id: "score_100k",
         category: "mastery",
         icon: "🌟",
         title: "Century Club",
         description: "Score 100,000+ in a single game",
         capsules: 3,
-        order: 14,
+        order: 15,
     },
     {
         id: "streak_7",
@@ -251,7 +260,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Devoted",
         description: "Reach a 7-day streak",
         capsules: 2,
-        order: 15,
+        order: 16,
     },
     {
         id: "streak_30",
@@ -260,7 +269,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Committed",
         description: "Reach a 30-day streak",
         capsules: 3,
-        order: 16,
+        order: 17,
     },
     {
         id: "cross_3",
@@ -269,7 +278,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cross Roads",
         description: "Land 3 cross shapes in one game",
         capsules: 3,
-        order: 17,
+        order: 18,
     },
     {
         id: "daily_cap",
@@ -278,7 +287,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 18,
+        order: 19,
     },
     {
         id: "daily_champ",
@@ -287,7 +296,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Champion",
         description: "Finish #1 on the Daily Challenge",
         capsules: 3,
-        order: 19,
+        order: 20,
     },
 ];
 
@@ -369,6 +378,7 @@ export function checkAchievements(
     check("bombs_5", stats.bombsCreated >= 5);
     check("cascades_15", stats.totalCascades >= 15);
     check("score_50k", stats.score >= 50000);
+    check("score_75k", stats.score >= 75000);
     check("score_100k", stats.score >= 100000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
