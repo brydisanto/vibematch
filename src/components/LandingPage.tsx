@@ -481,17 +481,6 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 </span>
                             </button>
 
-                            {/* Rules */}
-                            <button
-                                onClick={onShowInstructions}
-                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
-                            >
-                                <HelpCircle size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                    Rules
-                                </span>
-                            </button>
-
                             {/* Leaderboards */}
                             <button
                                 onClick={() => setIsLeaderboardOpen(true)}
@@ -503,6 +492,17 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 </span>
                                 <span className="text-[10px] font-mundial font-bold tracking-wider uppercase hidden sm:inline" style={{ color: "rgba(179,102,255,0.85)" }}>
                                     Leaderboards
+                                </span>
+                            </button>
+
+                            {/* Rules */}
+                            <button
+                                onClick={onShowInstructions}
+                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                            >
+                                <HelpCircle size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                    Rules
                                 </span>
                             </button>
                         </div>

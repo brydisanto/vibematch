@@ -134,7 +134,7 @@ export default function Home() {
         pinBook.trackGame();
       }
       // Award capsule if score threshold met
-      if (game.state.score >= 15000) {
+      if (game.state.score >= 20000) {
         pinBook.earnCapsule(game.state.score, mode).then(earned => {
           if (earned) setCapsuleEarned(true);
         });

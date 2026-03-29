@@ -12,7 +12,7 @@ const TIER_WEIGHTS = {
     cosmic: 3,   // ~3%
 } as const;
 
-const CAPSULE_SCORE_THRESHOLD = 15000;
+const CAPSULE_SCORE_THRESHOLD = 20000;
 const CLASSIC_DAILY_CAP = 15;
 
 export interface PinBookData {

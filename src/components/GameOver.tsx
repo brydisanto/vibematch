@@ -338,10 +338,10 @@ function XIcon({ size = 16 }: { size?: number }) {
 }
 
 const RANK_CONFIG = [
-    { threshold: 20000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", glow: "rgba(179,102,255,0.6)", stars: 5, icon: "🌌" },
-    { threshold: 15000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", glow: "rgba(255,224,72,0.5)", stars: 4, icon: "🥇" },
-    { threshold: 10000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", glow: "rgba(226,232,240,0.4)", stars: 3, icon: "🥈" },
-    { threshold: 5000, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", glow: "rgba(205,127,50,0.5)", stars: 2, icon: "🥉" },
+    { threshold: 30000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", glow: "rgba(179,102,255,0.6)", stars: 5, icon: "🌌" },
+    { threshold: 20000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", glow: "rgba(255,224,72,0.5)", stars: 4, icon: "🥇" },
+    { threshold: 15000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", glow: "rgba(226,232,240,0.4)", stars: 3, icon: "🥈" },
+    { threshold: 7500, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", glow: "rgba(205,127,50,0.5)", stars: 2, icon: "🥉" },
     { threshold: 0, label: "WOOD", color: "#A0522D", accent: "#2a1205", glow: "rgba(160,82,45,0.5)", stars: 1, icon: "🪵" },
 ];
 

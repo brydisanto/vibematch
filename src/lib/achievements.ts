@@ -60,13 +60,31 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         order: 4,
     },
     {
-        id: "first_shape",
+        id: "first_l_shape",
+        category: "journey",
+        icon: "🔷",
+        title: "L Takes",
+        description: "Land your first L shape",
+        capsules: 1,
+        order: 5,
+    },
+    {
+        id: "first_t_shape",
+        category: "journey",
+        icon: "🔶",
+        title: "T Time",
+        description: "Land your first T shape",
+        capsules: 1,
+        order: 6,
+    },
+    {
+        id: "first_cross_shape",
         category: "journey",
         icon: "✦",
-        title: "Shape Shifter",
-        description: "Land your first T or cross shape",
+        title: "Cross That Off",
+        description: "Land your first cross shape",
         capsules: 2,
-        order: 5,
+        order: 7,
     },
     {
         id: "first_capsule",
@@ -75,16 +93,16 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Collector",
         description: "Open your first capsule",
         capsules: 1,
-        order: 6,
+        order: 8,
     },
     {
         id: "first_daily",
         category: "journey",
         icon: "📅",
         title: "Daily Ritual",
-        description: "Complete your first Daily Vibe",
+        description: "Finish your first Daily Challenge game",
         capsules: 1,
-        order: 7,
+        order: 9,
     },
     {
         id: "streak_3",
@@ -93,7 +111,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Streak Starter",
         description: "Reach a 3-day streak",
         capsules: 2,
-        order: 8,
+        order: 10,
     },
     {
         id: "first_cosmic",
@@ -102,7 +120,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cosmic Touch",
         description: "Create your first cosmic blast",
         capsules: 3,
-        order: 9,
+        order: 11,
     },
     {
         id: "score_25k",
@@ -111,7 +129,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "High Roller",
         description: "Score 25,000+ in a single game",
         capsules: 2,
-        order: 10,
+        order: 12,
     },
 ];
 
@@ -326,13 +344,31 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 23,
     },
     {
+        id: "shape_trifecta",
+        category: "mastery",
+        icon: "🔮",
+        title: "Shape Trifecta",
+        description: "Land an L, T, and cross in the same game",
+        capsules: 3,
+        order: 24,
+    },
+    {
         id: "daily_cap",
         category: "mastery",
         icon: "⚔️",
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 24,
+        order: 25,
+    },
+    {
+        id: "daily_30k",
+        category: "mastery",
+        icon: "📅",
+        title: "Daily Grinder",
+        description: "Score 30,000+ in a Daily Challenge",
+        capsules: 2,
+        order: 26,
     },
     {
         id: "daily_champ",
@@ -341,7 +377,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Champion",
         description: "Finish #1 on the Daily Challenge",
         capsules: 3,
-        order: 25,
+        order: 27,
     },
 ];
 
@@ -406,7 +442,9 @@ export function checkAchievements(
     check("first_combo", stats.maxCombo >= 2);
     check("first_bomb", stats.bombsCreated >= 1);
     check("first_vibestreak", stats.vibestreaksCreated >= 1);
-    check("first_shape", stats.shapesLanded.some(s => s.type === "T" || s.type === "cross"));
+    check("first_l_shape", stats.shapesLanded.some(s => s.type === "L"));
+    check("first_t_shape", stats.shapesLanded.some(s => s.type === "T"));
+    check("first_cross_shape", stats.shapesLanded.some(s => s.type === "cross"));
     check("first_capsule", context.totalPinsOpened >= 1);
     check("first_daily", stats.gameMode === "daily");
     check("streak_3", context.streak >= 3);
@@ -437,7 +475,12 @@ export function checkAchievements(
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     check("cross_3", stats.crossCount >= 3);
+    const hasL = stats.shapesLanded.some(s => s.type === "L");
+    const hasT = stats.shapesLanded.some(s => s.type === "T");
+    const hasCross = stats.shapesLanded.some(s => s.type === "cross");
+    check("shape_trifecta", hasL && hasT && hasCross);
     check("daily_cap", context.gamesPlayedToday >= 15);
+    check("daily_30k", stats.gameMode === "daily" && stats.score >= 30000);
 
     return newly;
 }
@@ -504,7 +547,9 @@ export function checkMidGameAchievements(
     check("first_bomb", specialsCreated.includes("bomb"));
     check("first_vibestreak", specialsCreated.includes("vibestreak"));
     check("first_cosmic", specialsCreated.includes("cosmic_blast"));
-    check("first_shape", shapeType === "T" || shapeType === "cross");
+    check("first_l_shape", shapeType === "L");
+    check("first_t_shape", shapeType === "T");
+    check("first_cross_shape", shapeType === "cross");
     check("combo_5", turnCombo >= 5);
     check("combo_6", turnCombo >= 6);
     check("combo_8", turnCombo >= 8);
