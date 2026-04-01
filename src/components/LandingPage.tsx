@@ -404,7 +404,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 className="rounded-xl px-4 py-3 overflow-hidden"
                                 style={{
                                     background: "rgba(17,17,17,0.9)",
-                                    border: "1px solid rgba(179,102,255,0.15)",
+                                    border: "2px solid rgba(179,102,255,0.35)",
                                 }}
                             >
                                 <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mb-1">
