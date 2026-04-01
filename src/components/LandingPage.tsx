@@ -283,7 +283,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 alt="VIBE MATCH Logo"
                                 width={320}
                                 height={160}
-                                className="drop-shadow-[0_10px_30px_rgba(255,224,72,0.3)] hover:scale-105 transition-transform duration-300 w-[240px] sm:w-[320px] h-auto max-w-full"
+                                className="drop-shadow-[0_10px_30px_rgba(255,224,72,0.3)] hover:scale-105 transition-transform duration-300 w-[240px] sm:w-[320px] h-auto max-w-full mx-auto block"
                                 priority
                             />
                         </motion.div>
@@ -418,21 +418,21 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                         const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
                         return (
                             <div
-                                className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl"
+                                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
                                 style={{
-                                    background: capped ? "rgba(255,80,80,0.03)" : "rgba(255,255,255,0.02)",
-                                    border: capped ? "1px solid rgba(255,80,80,0.08)" : "1px solid rgba(255,255,255,0.05)",
+                                    background: capped ? "rgba(255,80,80,0.10)" : "rgba(179,102,255,0.08)",
+                                    border: capped ? "1px solid rgba(255,80,80,0.20)" : "1px solid rgba(179,102,255,0.20)",
                                 }}
                             >
-                                <span className="text-sm" style={capped ? { filter: "grayscale(0.5)", opacity: 0.5 } : {}}>🫧</span>
-                                <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.35)" }}>
+                                <span className="text-sm" style={capped ? { filter: "grayscale(0.5)", opacity: 0.6 } : {}}>🫧</span>
+                                <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.50)" : "rgba(255,255,255,0.65)" }}>
                                     {capped ? (
-                                        <><strong style={{ color: "rgba(255,100,100,0.5)", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
+                                        <><strong style={{ color: "rgba(255,100,100,0.8)", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
                                     ) : (
-                                        <><strong style={{ color: remaining <= 3 ? "#FFB464" : "rgba(179,102,255,0.8)", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
+                                        <><strong style={{ color: remaining <= 3 ? "#FFB464" : "#B366FF", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
                                     )}
                                 </span>
-                                <div className="ml-auto w-[60px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.06)" }}>
+                                <div className="ml-auto w-[60px] h-1.5 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.12)" }}>
                                     <div
                                         className="h-full rounded-sm"
                                         style={{
