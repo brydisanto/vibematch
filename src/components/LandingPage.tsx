@@ -418,16 +418,16 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                         const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
                         return (
                             <div
-                                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
+                                className="relative z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl backdrop-blur-sm"
                                 style={{
-                                    background: capped ? "rgba(255,80,80,0.10)" : "rgba(179,102,255,0.08)",
-                                    border: capped ? "1px solid rgba(255,80,80,0.20)" : "1px solid rgba(179,102,255,0.20)",
+                                    background: capped ? "rgba(30,10,10,0.85)" : "rgba(13,10,26,0.85)",
+                                    border: capped ? "1px solid rgba(255,80,80,0.30)" : "1px solid rgba(179,102,255,0.30)",
                                 }}
                             >
                                 <span className="text-sm" style={capped ? { filter: "grayscale(0.5)", opacity: 0.6 } : {}}>🫧</span>
-                                <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.50)" : "rgba(255,255,255,0.65)" }}>
+                                <span className="text-[11px] font-mundial font-medium" style={{ color: capped ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.80)" }}>
                                     {capped ? (
-                                        <><strong style={{ color: "rgba(255,100,100,0.8)", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
+                                        <><strong style={{ color: "#FF6B6B", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
                                     ) : (
                                         <><strong style={{ color: remaining <= 3 ? "#FFB464" : "#B366FF", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
                                     )}
