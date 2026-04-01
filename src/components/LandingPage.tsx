@@ -363,8 +363,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                     </motion.div>
 
                     {/* Prize Games + Daily Reset — side by side info boxes */}
-                    {isLoggedIn && (
-                        <motion.div
+                    <motion.div
                             className="grid grid-cols-2 gap-2.5"
                             initial={{ y: 30, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -416,8 +415,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                     Daily resets in
                                 </p>
                             </div>
-                        </motion.div>
-                    )}
+                    </motion.div>
                 </div>
 
                 {/* Bottom Action Row */}
