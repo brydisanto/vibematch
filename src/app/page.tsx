@@ -292,6 +292,7 @@ export default function Home() {
   const handleGoHome = () => {
     playUIClick();
     stopBGM();
+    pinBook.load(); // Refresh to get updated classicPlays count
     setView("landing");
   };
 
