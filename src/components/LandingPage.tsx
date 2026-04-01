@@ -309,40 +309,19 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                             <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] mb-0.5 uppercase">
                                                 Classic VibeMatch
                                             </h2>
-                                            <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
-                                                30 moves to score as high as you can.
-                                            </p>
                                             {isLoggedIn && (() => {
                                                 const DAILY_CAP = 15;
                                                 const remaining = Math.max(0, DAILY_CAP - classicPlays);
                                                 const capped = remaining === 0;
-                                                const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
                                                 return (
-                                                    <div className="flex items-center gap-2 mt-1.5">
-                                                        <span className="text-xs" style={capped ? { filter: "grayscale(0.5)", opacity: 0.6 } : {}}>🫧</span>
-                                                        <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.55)" }}>
-                                                            {capped ? (
-                                                                <><strong style={{ color: "#FF6B6B", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
-                                                            ) : (
-                                                                <><strong style={{ color: remaining <= 3 ? "#FFB464" : "#FFE048", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
-                                                            )}
-                                                        </span>
-                                                        <div className="w-[50px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.10)" }}>
-                                                            <div
-                                                                className="h-full rounded-sm"
-                                                                style={{
-                                                                    width: `${pct}%`,
-                                                                    background: capped
-                                                                        ? "linear-gradient(90deg, #FF6B6B, #FF4757)"
-                                                                        : remaining <= 3
-                                                                            ? "linear-gradient(90deg, #FFB464, #FF8C42)"
-                                                                            : "linear-gradient(90deg, #c9a84c, #FFE048)",
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    <p className="text-[#FFE048]/50 text-[10px] font-mundial tracking-wider mb-0.5">
+                                                        {capped ? "Prize limit reached — resets tomorrow" : `${remaining} prize games remaining`}
+                                                    </p>
                                                 );
                                             })()}
+                                            <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
+                                                30 moves to score as high as you can.
+                                            </p>
                                         </div>
                                         <div className="w-10 h-10 shrink-0 rounded-full bg-[#c9a84c]/10 flex items-center justify-center border border-[#c9a84c]/30 group-hover:bg-[#c9a84c]/20 transition-colors">
                                             <ChevronRight size={18} className="text-[#c9a84c]/70 group-hover:text-[#FFE048] transition-colors" />
