@@ -309,33 +309,6 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                             <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] mb-0.5 uppercase">
                                                 Classic VibeMatch
                                             </h2>
-                                            {isLoggedIn && (() => {
-                                                const DAILY_CAP = 15;
-                                                const remaining = Math.max(0, DAILY_CAP - classicPlays);
-                                                const capped = remaining === 0;
-                                                const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
-                                                return (
-                                                    <div className="flex items-center gap-2 mb-0.5">
-                                                        <p className="text-[#FFE048]/50 text-[10px] font-mundial tracking-wider">
-                                                            {capped ? "Prize limit reached — resets tomorrow" : `${remaining} prize games remaining`}
-                                                        </p>
-                                                        <div className="w-[40px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,224,72,0.15)" }}>
-                                                            <div
-                                                                className="h-full rounded-sm"
-                                                                style={{
-                                                                    width: `${pct}%`,
-                                                                    background: capped
-                                                                        ? "#FF6B6B"
-                                                                        : remaining <= 3
-                                                                            ? "#FFB464"
-                                                                            : "#FFE048",
-                                                                    opacity: 0.6,
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
                                             <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
                                                 30 moves to score as high as you can.
                                             </p>
@@ -389,45 +362,62 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                         </button>
                     </motion.div>
 
-                    {/* $VIBESTR RUSH — Coming Soon (shimmer + Notify Me) */}
-                    <motion.div
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.65, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
-                    >
-                        <button
-                            onClick={handleNotifyMe}
-                            className="group w-full text-left outline-none"
+                    {/* Prize Games + Daily Reset — side by side info boxes */}
+                    {isLoggedIn && (
+                        <motion.div
+                            className="grid grid-cols-2 gap-2.5"
+                            initial={{ y: 30, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.65, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
                         >
-                            <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-                                {/* Shimmer sweep */}
-                                <motion.div
-                                    className="absolute inset-0 z-10 pointer-events-none"
-                                    animate={{ x: ["-100%", "150%"] }}
-                                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.5 }}
-                                    style={{
-                                        background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%)",
-                                        transform: "skewX(-15deg)",
-                                    }}
-                                />
-                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-2xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
-                                    <div className="relative flex items-center justify-between z-10 w-full">
-                                        <div className="flex flex-col items-start gap-0.5">
-                                            <h2 className="font-display text-xl sm:text-2xl font-black text-white/50 uppercase">
-                                                <em>$VIBESTR RUSH</em>
-                                            </h2>
-                                            <p className="text-white/35 text-[10px] font-mundial tracking-wider group-hover:text-white/50 transition-colors">
-                                                Tap to get notified at launch
-                                            </p>
+                            {(() => {
+                                const DAILY_CAP = 15;
+                                const remaining = Math.max(0, DAILY_CAP - classicPlays);
+                                const capped = remaining === 0;
+                                const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
+                                return (
+                                    <div
+                                        className="rounded-xl px-4 py-3 overflow-hidden"
+                                        style={{
+                                            background: "rgba(17,17,17,0.9)",
+                                            border: "1px solid rgba(255,224,72,0.15)",
+                                        }}
+                                    >
+                                        <p className="text-[#FFE048] text-[18px] sm:text-[20px] font-display font-black">
+                                            {capped ? "0" : remaining}
+                                        </p>
+                                        <p className="text-[#FFE048]/50 text-[10px] font-mundial tracking-wider mt-0.5">
+                                            {capped ? "Prize limit reached" : "Prize games left"}
+                                        </p>
+                                        <div className="w-full h-1 rounded-sm overflow-hidden mt-2" style={{ background: "rgba(255,224,72,0.12)" }}>
+                                            <div
+                                                className="h-full rounded-sm"
+                                                style={{
+                                                    width: `${pct}%`,
+                                                    background: capped ? "#FF6B6B" : remaining <= 3 ? "#FFB464" : "#FFE048",
+                                                    opacity: 0.7,
+                                                }}
+                                            />
                                         </div>
-                                        <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white/50 text-[10px] font-bold uppercase tracking-wider font-mundial group-hover:bg-white/20 transition-colors">
-                                            Coming Soon
-                                        </span>
                                     </div>
-                                </div>
+                                );
+                            })()}
+                            <div
+                                className="rounded-xl px-4 py-3 overflow-hidden"
+                                style={{
+                                    background: "rgba(17,17,17,0.9)",
+                                    border: "1px solid rgba(179,102,255,0.15)",
+                                }}
+                            >
+                                <p className="text-[#B366FF] text-[18px] sm:text-[20px] font-display font-black">
+                                    {dailyCountdown}
+                                </p>
+                                <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mt-0.5">
+                                    Daily resets in
+                                </p>
                             </div>
-                        </button>
-                    </motion.div>
+                        </motion.div>
+                    )}
                 </div>
 
                 {/* Bottom Action Row */}
