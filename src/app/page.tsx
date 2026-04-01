@@ -134,7 +134,7 @@ export default function Home() {
         pinBook.trackGame();
       }
       // Award capsule if score threshold met
-      if (game.state.score >= 20000) {
+      if (game.state.score >= 15000) {
         pinBook.earnCapsule(game.state.score, mode).then(earned => {
           if (earned) setCapsuleEarned(true);
         });
@@ -335,6 +335,7 @@ export default function Home() {
               onOpenAchievements={() => { setShowAchievements(true); achievements.markSeen(); }}
               capsuleCount={pinBook.state.capsules}
               achievementCount={achievements.unseenCount}
+              classicPlays={pinBook.state.classicPlays}
               userProfile={userProfile}
             />
           </motion.div>

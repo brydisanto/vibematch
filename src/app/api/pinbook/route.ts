@@ -12,7 +12,7 @@ const TIER_WEIGHTS = {
     cosmic: 3,   // ~3%
 } as const;
 
-const CAPSULE_SCORE_THRESHOLD = 20000;
+const CAPSULE_SCORE_THRESHOLD = 15000;
 const CLASSIC_DAILY_CAP = 15;
 
 export interface PinBookData {
@@ -93,7 +93,8 @@ export async function GET() {
             updateLeaderboardEntry(entry).catch(() => {});
         }
 
-        return NextResponse.json(data || emptyPinBook());
+        const tracker = await getDailyTracker(username);
+        return NextResponse.json({ ...(data || emptyPinBook()), classicPlays: tracker.classicPlays });
     } catch (e) {
         console.error('PinBook GET error:', e);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -134,18 +135,21 @@ export async function POST(req: Request) {
 
 
 
+            // Tiered capsule rewards
+            const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
+
             // Classic mode: enforce daily cap (based on games played, not earned)
             if (gameMode === 'classic') {
                 const tracker = await getDailyTracker(username);
                 if (tracker.classicPlays > CLASSIC_DAILY_CAP) {
                     return NextResponse.json({ earned: false, reason: 'Daily classic cap reached', capped: true });
                 }
-                data.capsules += 1;
-                data.totalEarned += 1;
+                data.capsules += capsuleCount;
+                data.totalEarned += capsuleCount;
             } else {
                 // Daily challenge: double capsules
-                data.capsules += 2;
-                data.totalEarned += 2;
+                data.capsules += capsuleCount * 2;
+                data.totalEarned += capsuleCount * 2;
             }
 
             await kv.set(key, data);

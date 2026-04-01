@@ -8,6 +8,7 @@ export interface PinBookState {
     capsules: number;
     totalOpened: number;
     totalEarned: number;
+    classicPlays: number;
     loaded: boolean;
 }
 
@@ -18,7 +19,7 @@ export interface CapsuleReveal {
     duplicateCount: number;
 }
 
-const CAPSULE_SCORE_THRESHOLD = 20000;
+const CAPSULE_SCORE_THRESHOLD = 15000;
 
 export function usePinBook() {
     const [state, setState] = useState<PinBookState>({
@@ -26,6 +27,7 @@ export function usePinBook() {
         capsules: 0,
         totalOpened: 0,
         totalEarned: 0,
+        classicPlays: 0,
         loaded: false,
     });
     const [pendingReveal, setPendingReveal] = useState<CapsuleReveal | null>(null);
@@ -67,7 +69,11 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "trackGame" }),
             });
-            if (!res.ok) console.error("pinbook trackGame failed:", res.status);
+            if (!res.ok) { console.error("pinbook trackGame failed:", res.status); return; }
+            const data = await res.json();
+            if (data.classicPlays != null) {
+                setState(prev => ({ ...prev, classicPlays: data.classicPlays }));
+            }
         } catch (e) { console.error("pinbook trackGame error:", e); }
     }, []);
 

@@ -18,6 +18,7 @@ interface LandingPageProps {
     onOpenAchievements?: () => void;
     capsuleCount?: number;
     achievementCount?: number;
+    classicPlays?: number;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
 
@@ -144,7 +145,7 @@ function useDailyCountdown() {
     return countdown;
 }
 
-export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, capsuleCount = 0, achievementCount = 0, userProfile }: LandingPageProps) {
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, capsuleCount = 0, achievementCount = 0, classicPlays = 0, userProfile }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -409,6 +410,45 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6, duration: 0.5 }}
                 >
+                    {/* Prize Games Remaining */}
+                    {isLoggedIn && (() => {
+                        const DAILY_CAP = 15;
+                        const remaining = Math.max(0, DAILY_CAP - classicPlays);
+                        const capped = remaining === 0;
+                        const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
+                        return (
+                            <div
+                                className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl"
+                                style={{
+                                    background: capped ? "rgba(255,80,80,0.03)" : "rgba(255,255,255,0.02)",
+                                    border: capped ? "1px solid rgba(255,80,80,0.08)" : "1px solid rgba(255,255,255,0.05)",
+                                }}
+                            >
+                                <span className="text-sm" style={capped ? { filter: "grayscale(0.5)", opacity: 0.5 } : {}}>🫧</span>
+                                <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.35)" }}>
+                                    {capped ? (
+                                        <><strong style={{ color: "rgba(255,100,100,0.5)", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
+                                    ) : (
+                                        <><strong style={{ color: remaining <= 3 ? "#FFB464" : "rgba(179,102,255,0.8)", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
+                                    )}
+                                </span>
+                                <div className="ml-auto w-[60px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.06)" }}>
+                                    <div
+                                        className="h-full rounded-sm"
+                                        style={{
+                                            width: `${pct}%`,
+                                            background: capped
+                                                ? "linear-gradient(90deg, #FF6B6B, #FF4757)"
+                                                : remaining <= 3
+                                                    ? "linear-gradient(90deg, #FFB464, #FF8C42)"
+                                                    : "linear-gradient(90deg, #6C5CE7, #B366FF)",
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     {/* Monochrome Purple Unified Bar */}
                     <div
                         className="rounded-2xl overflow-hidden"

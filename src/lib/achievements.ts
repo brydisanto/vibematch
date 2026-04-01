@@ -344,13 +344,31 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 23,
     },
     {
+        id: "l_shapes_3",
+        category: "mastery",
+        icon: "🔷",
+        title: "L Train",
+        description: "Land 3 L shapes in one game",
+        capsules: 3,
+        order: 24,
+    },
+    {
+        id: "t_shapes_3",
+        category: "mastery",
+        icon: "🔶",
+        title: "T Party",
+        description: "Land 3 T shapes in one game",
+        capsules: 3,
+        order: 25,
+    },
+    {
         id: "shape_trifecta",
         category: "mastery",
         icon: "🔮",
         title: "Shape Trifecta",
         description: "Land an L, T, and cross in the same game",
         capsules: 3,
-        order: 24,
+        order: 26,
     },
     {
         id: "daily_cap",
@@ -359,7 +377,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Weekly Warrior",
         description: "Play 15 games in one day",
         capsules: 1,
-        order: 25,
+        order: 27,
     },
     {
         id: "daily_30k",
@@ -368,7 +386,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Grinder",
         description: "Score 30,000+ in a Daily Challenge",
         capsules: 2,
-        order: 26,
+        order: 28,
     },
     {
         id: "daily_champ",
@@ -377,7 +395,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Champion",
         description: "Finish #1 on the Daily Challenge",
         capsules: 3,
-        order: 27,
+        order: 29,
     },
 ];
 
@@ -475,10 +493,12 @@ export function checkAchievements(
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     check("cross_3", stats.crossCount >= 3);
-    const hasL = stats.shapesLanded.some(s => s.type === "L");
-    const hasT = stats.shapesLanded.some(s => s.type === "T");
-    const hasCross = stats.shapesLanded.some(s => s.type === "cross");
-    check("shape_trifecta", hasL && hasT && hasCross);
+    const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
+    const tCount = stats.shapesLanded.find(s => s.type === "T")?.count ?? 0;
+    const crossCount = stats.shapesLanded.find(s => s.type === "cross")?.count ?? 0;
+    check("l_shapes_3", lCount >= 3);
+    check("t_shapes_3", tCount >= 3);
+    check("shape_trifecta", lCount > 0 && tCount > 0 && crossCount > 0);
     check("daily_cap", context.gamesPlayedToday >= 15);
     check("daily_30k", stats.gameMode === "daily" && stats.score >= 30000);
 
