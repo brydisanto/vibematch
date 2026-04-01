@@ -313,10 +313,27 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                 const DAILY_CAP = 15;
                                                 const remaining = Math.max(0, DAILY_CAP - classicPlays);
                                                 const capped = remaining === 0;
+                                                const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
                                                 return (
-                                                    <p className="text-[#FFE048]/50 text-[10px] font-mundial tracking-wider mb-0.5">
-                                                        {capped ? "Prize limit reached — resets tomorrow" : `${remaining} prize games remaining`}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <p className="text-[#FFE048]/50 text-[10px] font-mundial tracking-wider">
+                                                            {capped ? "Prize limit reached — resets tomorrow" : `${remaining} prize games remaining`}
+                                                        </p>
+                                                        <div className="w-[40px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,224,72,0.15)" }}>
+                                                            <div
+                                                                className="h-full rounded-sm"
+                                                                style={{
+                                                                    width: `${pct}%`,
+                                                                    background: capped
+                                                                        ? "#FF6B6B"
+                                                                        : remaining <= 3
+                                                                            ? "#FFB464"
+                                                                            : "#FFE048",
+                                                                    opacity: 0.6,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 );
                                             })()}
                                             <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
