@@ -302,19 +302,34 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             onClick={() => onStartGame("classic", username, avatarUrl)}
                             className="group w-full text-left outline-none"
                         >
-                            <div className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#c9a84c]/40 shadow-[0_4px_20px_rgba(201,168,76,0.2),0_8px_25px_rgba(0,0,0,0.4)]">
-                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                            <div
+                                className="relative overflow-visible transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl p-[3px]"
+                                style={{
+                                    background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 40%, #8B6914 100%)",
+                                    boxShadow: "0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",
+                                }}
+                            >
+                                <div className="relative rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden" style={{
+                                    background: "linear-gradient(180deg, #2A1A0A 0%, #1A1005 100%)",
+                                }}>
+                                    {/* Gloss reflection */}
+                                    <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none z-0" style={{
+                                        background: "linear-gradient(180deg, rgba(255,224,72,0.08) 0%, transparent 100%)",
+                                    }} />
                                     <div className="relative flex items-center justify-between z-10 w-full">
                                         <div className="flex flex-col items-start justify-center">
-                                            <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] mb-0.5 uppercase">
+                                            <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] mb-0.5 uppercase" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                                                 Classic VibeMatch
                                             </h2>
                                             <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
                                                 30 moves to score as high as you can.
                                             </p>
                                         </div>
-                                        <div className="w-10 h-10 shrink-0 rounded-full bg-[#c9a84c]/10 flex items-center justify-center border border-[#c9a84c]/30 group-hover:bg-[#c9a84c]/20 transition-colors">
-                                            <ChevronRight size={18} className="text-[#c9a84c]/70 group-hover:text-[#FFE048] transition-colors" />
+                                        <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{
+                                            background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 100%)",
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
+                                        }}>
+                                            <ChevronRight size={18} className="text-[#1A0633]" />
                                         </div>
                                     </div>
                                 </div>
@@ -332,12 +347,24 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             onClick={handleStartDaily}
                             className="group w-full text-left outline-none"
                         >
-                            <div className="relative overflow-hidden transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl border-[3px] border-[#B366FF]/40 shadow-[0_4px_20px_rgba(179,102,255,0.2),0_8px_25px_rgba(0,0,0,0.4)]">
-                                <div className="relative bg-[rgba(17,17,17,0.9)] rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden">
+                            <div
+                                className="relative overflow-visible transition-all duration-300 transform group-hover:-translate-y-1 group-active:translate-y-0.5 rounded-2xl p-[3px]"
+                                style={{
+                                    background: "linear-gradient(180deg, #D8A0FF 0%, #B366FF 40%, #6B1FC0 100%)",
+                                    boxShadow: "0 2px 0 #4A1A80, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",
+                                }}
+                            >
+                                <div className="relative rounded-xl px-5 py-3 sm:px-6 sm:py-4 overflow-hidden" style={{
+                                    background: "linear-gradient(180deg, #1A0A2E 0%, #110520 100%)",
+                                }}>
+                                    {/* Gloss reflection */}
+                                    <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none z-0" style={{
+                                        background: "linear-gradient(180deg, rgba(179,102,255,0.08) 0%, transparent 100%)",
+                                    }} />
                                     <div className="relative flex items-center justify-between z-10 w-full">
                                         <div className="flex flex-col items-start justify-center">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <h2 className="font-display text-xl sm:text-2xl font-black text-[#B366FF] uppercase leading-[1]">
+                                                <h2 className="font-display text-xl sm:text-2xl font-black text-[#B366FF] uppercase leading-[1]" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                                                     THE DAILY CHALLENGE
                                                 </h2>
                                                 {streak > 0 && (
@@ -350,8 +377,11 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                 Same board for everyone. 1 shot to stoke it to the max!
                                             </p>
                                         </div>
-                                        <div className="w-10 h-10 shrink-0 rounded-full bg-[#B366FF]/10 flex items-center justify-center border border-[#B366FF]/30 group-hover:bg-[#B366FF]/20 transition-colors">
-                                            <ChevronRight size={18} className="text-[#B366FF]/70 group-hover:text-[#B366FF] transition-colors" />
+                                        <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{
+                                            background: "linear-gradient(180deg, #D8A0FF 0%, #B366FF 100%)",
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
+                                        }}>
+                                            <ChevronRight size={18} className="text-[#1A0633]" />
                                         </div>
                                     </div>
                                 </div>
@@ -424,102 +454,114 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6, duration: 0.5 }}
                 >
-                    {/* Monochrome Purple Unified Bar */}
+                    {/* Enamel Pin Menu Bar */}
                     <div
-                        className="rounded-2xl overflow-hidden"
+                        className="rounded-2xl overflow-hidden p-[2px]"
                         style={{
-                            background: "linear-gradient(180deg, #2D0B4E 0%, #1A0633 100%)",
-                            border: "1px solid rgba(179,102,255,0.20)",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.3)",
+                            background: "linear-gradient(180deg, rgba(179,102,255,0.5) 0%, rgba(179,102,255,0.25) 40%, rgba(107,31,192,0.4) 100%)",
+                            boxShadow: "0 2px 0 #0D0520, 0 4px 8px rgba(0,0,0,0.5)",
                         }}
                     >
-                        <div className="grid grid-cols-5">
-                            {/* Profile / Login */}
-                            <button
-                                onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
-                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
-                            >
-                                <User size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                    {isLoggedIn ? "Profile" : "Login"}
-                                </span>
-                            </button>
-
-                            {/* Pins */}
-                            <button
-                                onClick={isLoggedIn ? onOpenPinBook : undefined}
-                                disabled={!isLoggedIn}
-                                className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                            >
-                                <div className="relative">
-                                    <BookOpen size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
-                                    {capsuleCount > 0 && (
-                                        <span
-                                            className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
-                                            style={{
-                                                background: "#FF5F1F",
-                                                boxShadow: "0 0 8px rgba(255,95,31,0.6)",
-                                            }}
-                                        >
-                                            {capsuleCount}
+                        <div
+                            className="rounded-[14px] overflow-hidden"
+                            style={{
+                                background: "linear-gradient(180deg, #2D0B4E 0%, #1A0633 100%)",
+                            }}
+                        >
+                            {/* Gloss */}
+                            <div className="relative">
+                                <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none" style={{
+                                    background: "linear-gradient(180deg, rgba(179,102,255,0.06) 0%, transparent 100%)",
+                                }} />
+                                <div className="grid grid-cols-5 relative z-10">
+                                    {/* Profile / Login */}
+                                    <button
+                                        onClick={() => isLoggedIn ? setIsProfileModalOpen(true) : setIsAuthModalOpen(true)}
+                                        className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                                    >
+                                        <User size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                            {isLoggedIn ? "Profile" : "Login"}
                                         </span>
-                                    )}
-                                </div>
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
-                                    Pins
-                                </span>
-                            </button>
+                                    </button>
 
-                            {/* Achievements */}
-                            <button
-                                onClick={isLoggedIn ? onOpenAchievements : undefined}
-                                disabled={!isLoggedIn}
-                                className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                            >
-                                <div className="relative">
-                                    <Trophy size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
-                                    {achievementCount > 0 && (
-                                        <span
-                                            className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
-                                            style={{
-                                                background: "#FFE048",
-                                                color: "#1A0633",
-                                                boxShadow: "0 0 8px rgba(255,224,72,0.6)",
-                                            }}
-                                        >
-                                            {achievementCount}
+                                    {/* Pins */}
+                                    <button
+                                        onClick={isLoggedIn ? onOpenPinBook : undefined}
+                                        disabled={!isLoggedIn}
+                                        className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                    >
+                                        <div className="relative">
+                                            <BookOpen size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
+                                            {capsuleCount > 0 && (
+                                                <span
+                                                    className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
+                                                    style={{
+                                                        background: "#FF5F1F",
+                                                        boxShadow: "0 0 8px rgba(255,95,31,0.6)",
+                                                    }}
+                                                >
+                                                    {capsuleCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
+                                            Pins
                                         </span>
-                                    )}
+                                    </button>
+
+                                    {/* Achievements */}
+                                    <button
+                                        onClick={isLoggedIn ? onOpenAchievements : undefined}
+                                        disabled={!isLoggedIn}
+                                        className="relative flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                    >
+                                        <div className="relative">
+                                            <Trophy size={20} style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }} />
+                                            {achievementCount > 0 && (
+                                                <span
+                                                    className="absolute -top-2 -right-3 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[9px] font-mundial font-bold px-1"
+                                                    style={{
+                                                        background: "#FFE048",
+                                                        color: "#1A0633",
+                                                        boxShadow: "0 0 8px rgba(255,224,72,0.6)",
+                                                    }}
+                                                >
+                                                    {achievementCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
+                                            Quests
+                                        </span>
+                                    </button>
+
+                                    {/* Leaderboards */}
+                                    <button
+                                        onClick={() => setIsLeaderboardOpen(true)}
+                                        className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                                    >
+                                        <Crown size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase sm:hidden" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                            Boards
+                                        </span>
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase hidden sm:inline" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                            Leaderboards
+                                        </span>
+                                    </button>
+
+                                    {/* Rules */}
+                                    <button
+                                        onClick={onShowInstructions}
+                                        className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
+                                    >
+                                        <HelpCircle size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
+                                        <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
+                                            Rules
+                                        </span>
+                                    </button>
                                 </div>
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: isLoggedIn ? "rgba(179,102,255,0.85)" : "rgba(179,102,255,0.25)" }}>
-                                    Quests
-                                </span>
-                            </button>
-
-                            {/* Leaderboards */}
-                            <button
-                                onClick={() => setIsLeaderboardOpen(true)}
-                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
-                            >
-                                <Crown size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase sm:hidden" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                    Boards
-                                </span>
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase hidden sm:inline" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                    Leaderboards
-                                </span>
-                            </button>
-
-                            {/* Rules */}
-                            <button
-                                onClick={onShowInstructions}
-                                className="flex flex-col items-center gap-1.5 py-3.5 px-2 transition-all duration-200 hover:bg-white/[0.04] active:scale-95"
-                            >
-                                <HelpCircle size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
-                                <span className="text-[10px] font-mundial font-bold tracking-wider uppercase" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                    Rules
-                                </span>
-                            </button>
+                            </div>
                         </div>
                     </div>
 
