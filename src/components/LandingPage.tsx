@@ -312,6 +312,37 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                             <p className="text-white/60 text-xs sm:text-sm font-mundial pr-4 leading-relaxed text-left">
                                                 30 moves to score as high as you can.
                                             </p>
+                                            {isLoggedIn && (() => {
+                                                const DAILY_CAP = 15;
+                                                const remaining = Math.max(0, DAILY_CAP - classicPlays);
+                                                const capped = remaining === 0;
+                                                const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
+                                                return (
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <span className="text-xs" style={capped ? { filter: "grayscale(0.5)", opacity: 0.6 } : {}}>🫧</span>
+                                                        <span className="text-[10px] font-mundial" style={{ color: capped ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.55)" }}>
+                                                            {capped ? (
+                                                                <><strong style={{ color: "#FF6B6B", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
+                                                            ) : (
+                                                                <><strong style={{ color: remaining <= 3 ? "#FFB464" : "#FFE048", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
+                                                            )}
+                                                        </span>
+                                                        <div className="w-[50px] h-1 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.10)" }}>
+                                                            <div
+                                                                className="h-full rounded-sm"
+                                                                style={{
+                                                                    width: `${pct}%`,
+                                                                    background: capped
+                                                                        ? "linear-gradient(90deg, #FF6B6B, #FF4757)"
+                                                                        : remaining <= 3
+                                                                            ? "linear-gradient(90deg, #FFB464, #FF8C42)"
+                                                                            : "linear-gradient(90deg, #c9a84c, #FFE048)",
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="w-10 h-10 shrink-0 rounded-full bg-[#c9a84c]/10 flex items-center justify-center border border-[#c9a84c]/30 group-hover:bg-[#c9a84c]/20 transition-colors">
                                             <ChevronRight size={18} className="text-[#c9a84c]/70 group-hover:text-[#FFE048] transition-colors" />
@@ -361,45 +392,6 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             </div>
                         </button>
                     </motion.div>
-
-                    {/* Prize Games Remaining */}
-                    {isLoggedIn && (() => {
-                        const DAILY_CAP = 15;
-                        const remaining = Math.max(0, DAILY_CAP - classicPlays);
-                        const capped = remaining === 0;
-                        const pct = Math.min(100, (classicPlays / DAILY_CAP) * 100);
-                        return (
-                            <div
-                                className="relative z-10 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl backdrop-blur-sm"
-                                style={{
-                                    background: capped ? "rgba(30,10,10,0.85)" : "rgba(13,10,26,0.85)",
-                                    border: capped ? "1px solid rgba(255,80,80,0.30)" : "1px solid rgba(179,102,255,0.30)",
-                                }}
-                            >
-                                <span className="text-sm" style={capped ? { filter: "grayscale(0.5)", opacity: 0.6 } : {}}>🫧</span>
-                                <span className="text-[11px] font-mundial font-medium" style={{ color: capped ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.80)" }}>
-                                    {capped ? (
-                                        <><strong style={{ color: "#FF6B6B", fontWeight: 700 }}>Prize limit reached</strong> — resets tomorrow</>
-                                    ) : (
-                                        <><strong style={{ color: remaining <= 3 ? "#FFB464" : "#B366FF", fontWeight: 700 }}>{remaining}</strong> prize games remaining</>
-                                    )}
-                                </span>
-                                <div className="ml-auto w-[60px] h-1.5 rounded-sm overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.12)" }}>
-                                    <div
-                                        className="h-full rounded-sm"
-                                        style={{
-                                            width: `${pct}%`,
-                                            background: capped
-                                                ? "linear-gradient(90deg, #FF6B6B, #FF4757)"
-                                                : remaining <= 3
-                                                    ? "linear-gradient(90deg, #FFB464, #FF8C42)"
-                                                    : "linear-gradient(90deg, #6C5CE7, #B366FF)",
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })()}
 
                     {/* $VIBESTR RUSH — Coming Soon (shimmer + Notify Me) */}
                     <motion.div
