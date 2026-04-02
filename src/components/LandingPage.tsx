@@ -400,49 +400,61 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                 const DAILY_CAP = 15;
                                 const remaining = Math.max(0, DAILY_CAP - classicPlays);
                                 const capped = remaining === 0;
-                                const progress = remaining / DAILY_CAP; // 1 = full, 0 = empty
-                                const borderColor = capped ? "#FF6B6B" : remaining <= 3 ? "#FFB464" : "#FFE048";
+                                const pct = (remaining / DAILY_CAP) * 100;
                                 return (
                                     <div
-                                        className="relative rounded-xl px-4 py-3 overflow-hidden"
+                                        className="relative rounded-xl p-[2px] overflow-hidden"
                                         style={{
-                                            background: "rgba(17,17,17,0.9)",
+                                            background: "linear-gradient(180deg, #A0A0A8 0%, #707078 40%, #45454D 100%)",
+                                            boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                         }}
                                     >
-                                        {/* Conic border progress */}
-                                        <div
-                                            className="absolute inset-0 rounded-xl pointer-events-none"
-                                            style={{
-                                                padding: "2px",
-                                                background: `conic-gradient(from 0deg, ${borderColor} ${progress * 360}deg, rgba(255,255,255,0.08) ${progress * 360}deg)`,
-                                                WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                                                WebkitMaskComposite: "xor",
-                                                maskComposite: "exclude",
-                                                borderRadius: "inherit",
-                                            }}
-                                        />
-                                        <p className="relative z-10 text-[#FFE048]/50 text-[10px] font-mundial tracking-wider mb-1">
-                                            {capped ? "Prize limit reached" : "Prize games left"}
-                                        </p>
-                                        <p className="relative z-10 text-[#FFE048] text-[18px] sm:text-[20px] font-display font-black">
-                                            {capped ? "0" : remaining}
-                                        </p>
+                                        <div className="rounded-[10px] px-4 py-3 relative overflow-hidden" style={{
+                                            background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
+                                        }}>
+                                            {/* Gloss */}
+                                            <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none" style={{
+                                                background: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
+                                            }} />
+                                            <p className="relative z-10 text-[10px] font-mundial tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+                                                {capped ? "Prize limit reached" : "Prize games left"}
+                                            </p>
+                                            <p className="relative z-10 text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                                                {capped ? "0" : remaining}
+                                            </p>
+                                        </div>
+                                        {/* Bottom edge progress bar */}
+                                        <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: "rgba(255,255,255,0.06)" }}>
+                                            <div className="h-full" style={{
+                                                width: `${pct}%`,
+                                                background: capped ? "#FF6B6B" : remaining <= 3 ? "#FFB464" : remaining <= 5 ? "#FFE048" : "rgba(255,255,255,0.5)",
+                                                borderRadius: "0 2px 0 0",
+                                            }} />
+                                        </div>
                                     </div>
                                 );
                             })()}
                             <div
-                                className="rounded-xl px-4 py-3 overflow-hidden"
+                                className="rounded-xl p-[2px] h-full"
                                 style={{
-                                    background: "rgba(17,17,17,0.9)",
-                                    border: "2px solid rgba(179,102,255,0.35)",
+                                    background: "linear-gradient(180deg, #A0A0A8 0%, #707078 40%, #45454D 100%)",
+                                    boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                 }}
                             >
-                                <p className="text-[#B366FF]/50 text-[10px] font-mundial tracking-wider mb-1">
-                                    Daily challenge & plays reset in
-                                </p>
-                                <p className="text-[#B366FF] text-[18px] sm:text-[20px] font-display font-black">
-                                    {dailyCountdown}
-                                </p>
+                                <div className="rounded-[10px] px-4 py-3 h-full relative overflow-hidden" style={{
+                                    background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
+                                }}>
+                                    {/* Gloss */}
+                                    <div className="absolute inset-x-0 top-0 h-1/2 pointer-events-none" style={{
+                                        background: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
+                                    }} />
+                                    <p className="relative z-10 text-[10px] font-mundial tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+                                        Daily challenge & plays reset in
+                                    </p>
+                                    <p className="relative z-10 text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                                        {dailyCountdown}
+                                    </p>
+                                </div>
                             </div>
                     </motion.div>
                 </div>
@@ -543,7 +555,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                     >
                                         <Crown size={20} style={{ color: "rgba(179,102,255,0.85)" }} />
                                         <span className="text-[10px] font-mundial font-bold tracking-wider uppercase sm:hidden" style={{ color: "rgba(179,102,255,0.85)" }}>
-                                            Boards
+                                            Leaders
                                         </span>
                                         <span className="text-[10px] font-mundial font-bold tracking-wider uppercase hidden sm:inline" style={{ color: "rgba(179,102,255,0.85)" }}>
                                             Leaderboards
