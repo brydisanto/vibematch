@@ -700,8 +700,14 @@ export default function GameBoard({
             )}
 
             {/* Board container with combo-reactive glow */}
-            <div className={`${boardGlowClass} rounded-2xl p-[3px] bg-gradient-to-br ${boardBorderGradient} ${shakeClass} transition-all duration-300 h-full border-2 border-[#c9a84c]`}>
-                <div className="rounded-2xl bg-[#111]/95 p-1 sm:p-2 h-full" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+            <div
+                className={`${boardGlowClass} rounded-2xl p-[3px] ${shakeClass} transition-all duration-300 h-full`}
+                style={{
+                    background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 40%, #8B6914 100%)",
+                    boxShadow: "0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",
+                }}
+            >
+                <div className="rounded-[13px] bg-[#111]/95 p-1 sm:p-2 h-full" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
                     <div
                         ref={gridRef}
                         className="grid gap-[2px] sm:gap-1 h-full"
