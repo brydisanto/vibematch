@@ -449,7 +449,7 @@ export default function Home() {
             {/* Game Layout — Royal Match style: HUD left, Board center */}
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
-              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
+              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 py-1" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
                 <GameHUD state={game.state} username={userProfile?.username} />
               </div>
 

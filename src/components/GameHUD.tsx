@@ -54,7 +54,7 @@ function HudCard({
                         WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
                         WebkitMaskComposite: "xor",
                         maskComposite: "exclude",
-                        padding: "1.5px",
+                        padding: "2.5px",
                         borderRadius: "inherit",
                     }}
                 />
