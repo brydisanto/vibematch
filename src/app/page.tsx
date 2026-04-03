@@ -696,6 +696,28 @@ export default function Home() {
             await pinBook.collectReveal();
             setShowCapsule(false);
             setShowPinBook(true); // Return to pin book after collecting
+
+            // Re-check achievements after new pin collected (tier completions, etc.)
+            if (userProfile?.username) {
+              const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
+              const ctx: PlayerContext = {
+                streak: 0,
+                uniquePins: Object.keys(pinBook.state.pins).length,
+                totalPinsOpened: pinBook.state.totalOpened || 0,
+                hasSilverPin: false, hasGoldPin: false, hasCosmicPin: false,
+                commonPinCount: 0, rarePinCount: 0, legendaryPinCount: 0, cosmicPinCount: 0,
+                gamesPlayedToday: 0,
+              };
+              for (const badgeId of Object.keys(pinBook.state.pins)) {
+                const tier = badgeTierMap.get(badgeId);
+                if (tier === "blue") ctx.commonPinCount++;
+                if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
+                if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
+                if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
+              }
+              const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
+              if (ids.length > 0) achievements.unlock(ids);
+            }
           }}
         />
       )}
