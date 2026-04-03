@@ -393,7 +393,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="pointer-events-none flex items-center justify-center z-50">
+                <div className="pointer-events-none flex items-center justify-center z-50 mt-1 sm:mt-2">
                   <Image
                     src="/assets/logo-cropped.png"
                     alt="VIBE MATCH"

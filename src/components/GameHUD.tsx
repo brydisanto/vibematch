@@ -17,10 +17,10 @@ const formatScoreWithCommas = (value: number) => {
     return value.toLocaleString();
 };
 
-/* ===== Card wrapper for consistent styling ===== */
+/* ===== Card wrapper — enamel pin style ===== */
 function HudCard({
     children,
-    borderColor = "rgba(179, 102, 255, 0.8)",
+    borderColor = "rgba(179, 102, 255, 0.5)",
     glowColor = "rgba(156, 101, 240, 0.2)",
     borderProgress,
     className = "",
@@ -31,45 +31,38 @@ function HudCard({
     borderProgress?: number; // 0-1, fraction of border filled
     className?: string;
 }) {
-    const usesProgressBorder = borderProgress !== undefined;
+    // Outer shell IS the border — padding trick
+    const rimBg = borderProgress !== undefined
+        ? `conic-gradient(from 0deg, ${borderColor} ${borderProgress * 360}deg, rgba(255,255,255,0.1) ${borderProgress * 360}deg)`
+        : borderColor;
 
     return (
         <div
-            className={`relative w-full rounded-2xl flex flex-col items-center justify-center overflow-hidden ${className}`}
+            className={`relative w-full rounded-xl flex flex-col items-center justify-center overflow-hidden ${className}`}
             style={{
-                boxShadow: `0 8px 16px rgba(0,0,0,0.6), 0 0 20px ${glowColor}`,
                 background: "linear-gradient(180deg, #3A1061 0%, #21083B 50%, #110321 100%)",
-                border: usesProgressBorder ? "none" : `3px solid ${borderColor}`,
-                borderRadius: "1rem",
+                border: borderProgress !== undefined ? 'none' : `1.5px solid ${borderColor}`,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.5)",
             }}
         >
-            {/* Conic-gradient border overlay for progress indicator */}
-            {usesProgressBorder && (
+            {/* Conic progress border for moves */}
+            {borderProgress !== undefined && (
                 <div
-                    className="absolute inset-0 z-0 rounded-2xl pointer-events-none"
+                    className="absolute inset-0 rounded-xl pointer-events-none z-0"
                     style={{
-                        padding: "3px",
-                        background: `conic-gradient(from 0deg, ${borderColor} ${borderProgress! * 360}deg, rgba(255,255,255,0.08) ${borderProgress! * 360}deg)`,
+                        background: `conic-gradient(from 0deg, ${borderColor} ${borderProgress * 360}deg, rgba(255,255,255,0.15) ${borderProgress * 360}deg)`,
                         WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
                         WebkitMaskComposite: "xor",
                         maskComposite: "exclude",
+                        padding: "1.5px",
                         borderRadius: "inherit",
                     }}
                 />
             )}
-            {/* Inner highlight shimmer */}
+            {/* Gloss */}
             <div
-                className="absolute inset-0 z-0 opacity-60 pointer-events-none"
-                style={{
-                    background: "radial-gradient(ellipse at 85% 0%, rgba(255,224,72,0.3) 0%, rgba(180,140,255,0.1) 40%, transparent 70%)",
-                }}
-            />
-            {/* Inner shadow overlay */}
-            <div
-                className="absolute inset-0 z-0 pointer-events-none rounded-2xl"
-                style={{
-                    boxShadow: "inset 0 6px 15px rgba(0,0,0,0.7), inset 0 -2px 5px rgba(0,0,0,0.5)",
-                }}
+                className="absolute inset-x-0 top-0 h-1/2 pointer-events-none z-0"
+                style={{ background: "linear-gradient(180deg, rgba(179,102,255,0.06) 0%, transparent 100%)" }}
             />
             <div className="relative z-10 w-full h-full flex flex-col items-center justify-center overflow-hidden px-2">
                 {children}
@@ -228,7 +221,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     }
 
     return (
-        <div className="relative flex flex-col h-full justify-between gap-1.5 sm:gap-2 w-full overflow-hidden">
+        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-hidden">
 
             {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
@@ -271,9 +264,9 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     {/* Moves */}
                     <div className="relative flex-1">
                         {movesLeft <= 3 && (
-                            <div className="absolute inset-0 rounded-2xl pointer-events-none z-10 hud-low-moves-warning" />
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full">
+                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full">
                             <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
                             <div
                                 className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
@@ -326,7 +319,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     {/* Moves Card — border acts as radial indicator */}
                     <div className="relative flex-1 min-h-0">
                         {movesLeft <= 3 && (
-                            <div className="absolute inset-0 rounded-2xl pointer-events-none z-10 hud-low-moves-warning" />
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
                         <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-2 w-full h-full">
                             <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
