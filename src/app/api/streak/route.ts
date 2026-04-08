@@ -26,7 +26,19 @@ export async function GET(req: Request) {
 
     try {
         const data = await kv.get<StreakData>(`streak:${username.toLowerCase()}`);
-        return NextResponse.json(data ?? { streak: 0, lastPlayed: null }, {
+        if (!data) {
+            return NextResponse.json({ streak: 0, lastPlayed: null }, {
+                headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
+            });
+        }
+        // Check if streak is still valid (played today or yesterday)
+        const today = getTodayUTC();
+        const yesterday = getYesterdayUTC();
+        const isActive = data.lastPlayed === today || data.lastPlayed === yesterday;
+        return NextResponse.json({
+            streak: isActive ? data.streak : 0,
+            lastPlayed: data.lastPlayed,
+        }, {
             headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
         });
     } catch (error) {
