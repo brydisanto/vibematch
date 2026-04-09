@@ -3,6 +3,12 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 
+interface AnomalyFlag {
+    id: string;
+    label: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
 interface GameLogEntry {
     timestamp: number;
     gameMode: string;
@@ -17,7 +23,8 @@ interface GameLogEntry {
     gameOverReason: string;
     matchId: string | null;
     validatedMatch: boolean;
-    flags: string[];
+    flags: AnomalyFlag[];
+    severity?: 'low' | 'medium' | 'high' | 'critical' | 'none';
 }
 
 interface UserDetail {
@@ -198,8 +205,8 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
                                             {g.flags.length > 0 && (
                                                 <div className="flex flex-wrap gap-1">
                                                     {g.flags.map(f => (
-                                                        <span key={f} className="text-[9px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded">
-                                                            {f}
+                                                        <span key={f.id} className="text-[9px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded" title={f.id}>
+                                                            {f.label}
                                                         </span>
                                                     ))}
                                                 </div>

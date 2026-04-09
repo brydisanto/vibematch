@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
+import { detectAnomalies, highestSeverity, type GameLogEntry } from "@/lib/game-anomalies";
 
 export const dynamic = "force-dynamic";
 
@@ -105,17 +106,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             }
         }).filter(Boolean);
 
-        // Compute game log anomaly flags — helps spot cheating
-        const gameLogWithFlags = gameLog.map((g: any) => {
-            const flags: string[] = [];
-            if (g.score > 200_000) flags.push('score-high');
-            if (g.maxCombo > 15) flags.push('combo-high');
-            if (g.totalCascades > 50) flags.push('cascades-high');
-            if (g.bombsCreated > 20) flags.push('bombs-high');
-            if (g.matchCount > 500) flags.push('matches-high');
-            // Score per match sanity check (rough upper bound)
-            if (g.matchCount > 0 && g.score / g.matchCount > 500) flags.push('score-per-match-high');
-            return { ...g, flags };
+        // Compute game log anomaly flags via shared helper
+        const gameLogWithFlags = gameLog.map((g: GameLogEntry) => {
+            const flags = detectAnomalies(g);
+            return { ...g, flags, severity: highestSeverity(flags) };
         });
 
         return NextResponse.json({
