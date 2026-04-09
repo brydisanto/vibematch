@@ -414,7 +414,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                             boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                         }}
                                     >
-                                        <div className="rounded-[10px] px-4 py-3 relative overflow-hidden" style={{
+                                        <div className="rounded-[10px] px-4 py-3 relative overflow-hidden text-center" style={{
                                             background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
                                         }}>
                                             {/* Gloss */}
@@ -424,7 +424,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                             <p className="relative z-10 text-[10px] font-mundial tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
                                                 {capped ? "Out of prize games" : "Prize games left"}
                                             </p>
-                                            <div className="relative z-10 flex items-baseline gap-1.5">
+                                            <div className="relative z-10 flex items-baseline justify-center gap-1.5">
                                                 <p className="text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                                                     {capped ? "0" : remaining}
                                                 </p>

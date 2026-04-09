@@ -3,6 +3,23 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 
+interface GameLogEntry {
+    timestamp: number;
+    gameMode: string;
+    score: number;
+    matchCount: number;
+    maxCombo: number;
+    totalCascades: number;
+    bombsCreated: number;
+    vibestreaksCreated: number;
+    cosmicBlastsCreated: number;
+    crossCount: number;
+    gameOverReason: string;
+    matchId: string | null;
+    validatedMatch: boolean;
+    flags: string[];
+}
+
 interface UserDetail {
     auth: { username: string; createdAt: string } | null;
     profile: { username: string; avatarUrl: string } | null;
@@ -15,6 +32,10 @@ interface UserDetail {
     streak: { streak: number; lastPlayed: string } | null;
     achievements: any;
     leaderboardEntry: any;
+    highScore: number;
+    dailyHighScore: number;
+    totalVibestrSpent: number;
+    totalBonusGamesPurchased: number;
     dailyTrackers: Array<{
         date: string;
         classicPlays: number;
@@ -27,6 +48,7 @@ interface UserDetail {
         timestamp: number;
         wallet: string;
     }>;
+    gameLog: GameLogEntry[];
 }
 
 export default function AdminUserPage({ params }: { params: Promise<{ username: string }> }) {
@@ -54,7 +76,7 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
 
     const pinsArr = data.pinbook?.pins ? Object.entries(data.pinbook.pins) : [];
     const totalPinsOwned = pinsArr.reduce((sum, [_, v]) => sum + v.count, 0);
-    const totalVibestrSpent = data.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+    const totalVibestrSpent = data.totalVibestrSpent ?? data.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
     return (
         <div className="space-y-8">
@@ -67,14 +89,18 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="High Score" value={data.highScore > 0 ? data.highScore.toLocaleString() : "—"} highlight />
+                <StatCard label="Daily High Score" value={data.dailyHighScore > 0 ? data.dailyHighScore.toLocaleString() : "—"} />
                 <StatCard label="Unique Pins" value={pinsArr.length} />
                 <StatCard label="Total Pins" value={totalPinsOwned} />
                 <StatCard label="Capsules (Unopened)" value={data.pinbook?.capsules || 0} />
                 <StatCard label="Total Earned" value={data.pinbook?.totalEarned || 0} />
-                <StatCard label="Current Streak" value={data.streak?.streak || 0} />
                 <StatCard label="Total Opened" value={data.pinbook?.totalOpened || 0} />
+                <StatCard label="Current Streak" value={data.streak?.streak || 0} />
                 <StatCard label="Transactions" value={data.transactions.length} accent />
                 <StatCard label="VIBESTR Spent" value={totalVibestrSpent.toLocaleString()} accent />
+                <StatCard label="Bonus Games Bought" value={data.totalBonusGamesPurchased || 0} accent />
+                <StatCard label="Games Logged" value={data.gameLog?.length || 0} />
             </div>
 
             {/* Account info */}
@@ -115,6 +141,80 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
                         ))}
                     </div>
                 )}
+            </Section>
+
+            {/* Game Log — forensic trail for anomaly detection */}
+            <Section title={`Game Log (last ${data.gameLog?.length || 0} games)`}>
+                {!data.gameLog || data.gameLog.length === 0 ? (
+                    <div className="text-white/40 text-sm">No games logged yet</div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                            <thead className="text-white/60 border-b border-white/10">
+                                <tr>
+                                    <th className="text-left py-2 px-2">Date</th>
+                                    <th className="text-left py-2 px-2">Mode</th>
+                                    <th className="text-right py-2 px-2">Score</th>
+                                    <th className="text-right py-2 px-2">Matches</th>
+                                    <th className="text-right py-2 px-2">Max Combo</th>
+                                    <th className="text-right py-2 px-2">Cascades</th>
+                                    <th className="text-right py-2 px-2">Bombs</th>
+                                    <th className="text-right py-2 px-2">Streaks</th>
+                                    <th className="text-right py-2 px-2">Cosmic</th>
+                                    <th className="text-right py-2 px-2">Cross</th>
+                                    <th className="text-center py-2 px-2">Valid</th>
+                                    <th className="text-left py-2 px-2">Flags</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.gameLog.map((g, i) => (
+                                    <tr key={i} className={`border-b border-white/5 ${g.flags.length > 0 ? "bg-red-500/5" : ""}`}>
+                                        <td className="py-2 px-2 text-white/50 whitespace-nowrap">
+                                            {new Date(g.timestamp).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            <span className={g.gameMode === "daily" ? "text-[#B366FF]" : "text-white/70"}>
+                                                {g.gameMode}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 px-2 text-right font-bold text-[#FFE048]">
+                                            {g.score.toLocaleString()}
+                                        </td>
+                                        <td className="py-2 px-2 text-right">{g.matchCount}</td>
+                                        <td className="py-2 px-2 text-right">{g.maxCombo}</td>
+                                        <td className="py-2 px-2 text-right">{g.totalCascades}</td>
+                                        <td className="py-2 px-2 text-right">{g.bombsCreated}</td>
+                                        <td className="py-2 px-2 text-right">{g.vibestreaksCreated}</td>
+                                        <td className="py-2 px-2 text-right">{g.cosmicBlastsCreated}</td>
+                                        <td className="py-2 px-2 text-right">{g.crossCount}</td>
+                                        <td className="py-2 px-2 text-center">
+                                            {g.validatedMatch ? (
+                                                <span className="text-green-400">✓</span>
+                                            ) : (
+                                                <span className="text-white/20">—</span>
+                                            )}
+                                        </td>
+                                        <td className="py-2 px-2">
+                                            {g.flags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {g.flags.map(f => (
+                                                        <span key={f} className="text-[9px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded">
+                                                            {f}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <p className="text-[10px] text-white/30 mt-3">
+                    Retains last 500 games per user. Flags highlight statistically unusual values for manual review.
+                    "Valid" = game was logged with a server-issued match token (classic mode only).
+                </p>
             </Section>
 
             {/* Daily activity */}
@@ -177,11 +277,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     );
 }
 
-function StatCard({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
+function StatCard({ label, value, accent, highlight }: { label: string; value: string | number; accent?: boolean; highlight?: boolean }) {
+    const bgClass = highlight
+        ? "bg-[#B366FF]/10 border-[#B366FF]/30"
+        : accent
+            ? "bg-[#FFE048]/5 border-[#FFE048]/20"
+            : "bg-white/5 border-white/10";
+    const textClass = highlight ? "text-[#B366FF]" : accent ? "text-[#FFE048]" : "text-white";
     return (
-        <div className={`rounded-xl p-4 border ${accent ? "bg-[#FFE048]/5 border-[#FFE048]/20" : "bg-white/5 border-white/10"}`}>
+        <div className={`rounded-xl p-4 border ${bgClass}`}>
             <div className="text-[10px] uppercase tracking-wider text-white/50 font-bold">{label}</div>
-            <div className={`text-2xl font-display font-black mt-1 ${accent ? "text-[#FFE048]" : "text-white"}`}>{value}</div>
+            <div className={`text-2xl font-display font-black mt-1 ${textClass}`}>{value}</div>
         </div>
     );
 }

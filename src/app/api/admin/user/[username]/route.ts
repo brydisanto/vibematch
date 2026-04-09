@@ -35,6 +35,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             kv.get(`pinbook:lb:entry:${username}`),
         ]);
 
+        // High score lookup: try canonical username first (from profile), then raw
+        const canonicalUsername = (profileRaw as any)?.username;
+        let highScore: number | null = null;
+        if (canonicalUsername) {
+            highScore = await kv.zscore('classic_leaderboard', canonicalUsername) as number | null;
+        }
+        if (highScore == null) {
+            highScore = await kv.zscore('classic_leaderboard', username) as number | null;
+        }
+        // Daily high score
+        let dailyHighScore: number | null = null;
+        const today = new Date().toISOString().split('T')[0];
+        if (canonicalUsername) {
+            dailyHighScore = await kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as number | null;
+        }
+        if (dailyHighScore == null) {
+            dailyHighScore = await kv.zscore(`daily_leaderboard:${today}`, username) as number | null;
+        }
+
         const auth = authRaw as any;
         if (!auth) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -73,6 +92,32 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         }
         userTxs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
+        const totalVibestrSpent = userTxs.reduce((sum, tx) => sum + parseFloat(tx.amount || "0"), 0);
+        const totalBonusGamesPurchased = userTxs.reduce((sum, tx) => sum + Number(tx.packageSize || 0), 0);
+
+        // Fetch game log (last 100 games, newest first)
+        const gameLogRaw = await kv.zrange(`gamelog:${username}`, 0, 99, { rev: true });
+        const gameLog = (gameLogRaw as string[]).map(entry => {
+            try {
+                return typeof entry === 'string' ? JSON.parse(entry) : entry;
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Compute game log anomaly flags — helps spot cheating
+        const gameLogWithFlags = gameLog.map((g: any) => {
+            const flags: string[] = [];
+            if (g.score > 200_000) flags.push('score-high');
+            if (g.maxCombo > 15) flags.push('combo-high');
+            if (g.totalCascades > 50) flags.push('cascades-high');
+            if (g.bombsCreated > 20) flags.push('bombs-high');
+            if (g.matchCount > 500) flags.push('matches-high');
+            // Score per match sanity check (rough upper bound)
+            if (g.matchCount > 0 && g.score / g.matchCount > 500) flags.push('score-per-match-high');
+            return { ...g, flags };
+        });
+
         return NextResponse.json({
             auth: safeAuth,
             profile,
@@ -82,6 +127,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             leaderboardEntry: lbEntryRaw,
             dailyTrackers: dailyTrackers.slice(0, 30),
             transactions: userTxs,
+            totalVibestrSpent,
+            totalBonusGamesPurchased,
+            highScore: highScore ?? 0,
+            dailyHighScore: dailyHighScore ?? 0,
+            gameLog: gameLogWithFlags,
         });
     } catch (e) {
         console.error("Admin user detail error:", e);

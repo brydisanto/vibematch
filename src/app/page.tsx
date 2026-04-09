@@ -134,20 +134,39 @@ export default function Home() {
       });
   }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track classic game played + earn capsule when game ends
+  // Track classic game played + earn capsule when game ends + log for admin forensics
   useEffect(() => {
     if (game.state?.gamePhase === "gameover" && userProfile?.username) {
       const mode = game.state.gameMode || 'classic';
-      // Track every classic game toward daily cap (win or lose)
-      if (mode === 'classic') {
-        pinBook.trackGame();
-      }
-      // Award capsule if score threshold met
-      if (game.state.score >= 15000) {
-        pinBook.earnCapsule(game.state.score, mode).then(earned => {
+      const gs = game.state;
+      const stats = gameSessionStats.current;
+
+      (async () => {
+        // Track every classic game toward daily cap (win or lose). This also issues
+        // the match token that earnCapsule needs — must await before earn.
+        if (mode === 'classic') {
+          await pinBook.trackGame();
+        }
+
+        // Log every completed game for admin forensics (anomaly detection)
+        await pinBook.logGame({
+          score: gs.score || 0,
+          matchCount: gs.matchCount || 0,
+          maxCombo: gs.maxCombo || 0,
+          totalCascades: gs.totalCascades || 0,
+          bombsCreated: stats.bombsCreated || 0,
+          vibestreaksCreated: stats.vibestreaksCreated || 0,
+          cosmicBlastsCreated: stats.cosmicBlastsCreated || 0,
+          crossCount: stats.crossCount || 0,
+          gameOverReason: gs.gameOverReason || 'unknown',
+        }, mode);
+
+        // Award capsule if score threshold met
+        if (gs.score >= 15000) {
+          const earned = await pinBook.earnCapsule(gs.score, mode);
           if (earned) setCapsuleEarned(true);
-        });
-      }
+        }
+      })();
     }
   }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -22,6 +22,9 @@ interface User {
     totalEarned: number;
     totalOpened: number;
     uniquePins: number;
+    highScore: number;
+    vibestrSpent: number;
+    purchaseCount: number;
 }
 
 export default function AdminDashboard() {
@@ -85,36 +88,48 @@ export default function AdminDashboard() {
                     />
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-white/5 border-b border-white/10">
                             <tr className="text-left text-white/60">
                                 <th className="px-4 py-3">Username</th>
                                 <th className="px-4 py-3">Created</th>
+                                <th className="px-4 py-3 text-right">High Score</th>
                                 <th className="px-4 py-3 text-right">Unique Pins</th>
                                 <th className="px-4 py-3 text-right">Capsules</th>
                                 <th className="px-4 py-3 text-right">Earned</th>
                                 <th className="px-4 py-3 text-right">Opened</th>
+                                <th className="px-4 py-3 text-right">VIBESTR Spent</th>
+                                <th className="px-4 py-3 text-right">Purchases</th>
                                 <th className="px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading && users.length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
+                                <tr><td colSpan={10} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
                             )}
                             {!loading && users.length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
+                                <tr><td colSpan={10} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
                             )}
                             {users.map(u => (
                                 <tr key={u.lowercaseUsername} className="border-b border-white/5 hover:bg-white/[0.02]">
-                                    <td className="px-4 py-3 font-bold">{u.username}</td>
-                                    <td className="px-4 py-3 text-white/60 text-xs">
+                                    <td className="px-4 py-3 font-bold whitespace-nowrap">{u.username}</td>
+                                    <td className="px-4 py-3 text-white/60 text-xs whitespace-nowrap">
                                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-white font-bold">
+                                        {u.highScore > 0 ? u.highScore.toLocaleString() : "—"}
                                     </td>
                                     <td className="px-4 py-3 text-right">{u.uniquePins}</td>
                                     <td className="px-4 py-3 text-right text-[#FFE048]">{u.capsules}</td>
                                     <td className="px-4 py-3 text-right">{u.totalEarned}</td>
                                     <td className="px-4 py-3 text-right">{u.totalOpened}</td>
+                                    <td className="px-4 py-3 text-right text-[#FFE048] font-bold">
+                                        {u.vibestrSpent > 0 ? u.vibestrSpent.toLocaleString() : "—"}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {u.purchaseCount > 0 ? u.purchaseCount : "—"}
+                                    </td>
                                     <td className="px-4 py-3 text-right">
                                         <Link
                                             href={`/admin/user/${u.lowercaseUsername}`}

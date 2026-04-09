@@ -176,6 +176,77 @@ export async function POST(req: Request) {
                 matchId,
             });
 
+        } else if (body.action === 'logGame') {
+            // Log a completed game for admin forensics. Requires a valid match token.
+            // Stats are client-reported; bounded for sanity. Used purely for anomaly
+            // detection — not for grant decisions.
+            const matchId = body.matchId as string | undefined;
+            const gameMode = body.gameMode as string || 'classic';
+            const stats = body.stats as {
+                score?: number;
+                matchCount?: number;
+                maxCombo?: number;
+                totalCascades?: number;
+                bombsCreated?: number;
+                vibestreaksCreated?: number;
+                cosmicBlastsCreated?: number;
+                crossCount?: number;
+                gameOverReason?: string;
+            } | undefined;
+
+            if (!stats || typeof stats !== 'object') {
+                return NextResponse.json({ error: 'Missing stats' }, { status: 400 });
+            }
+
+            // Sanity-bound every numeric stat so forged payloads can't bloat storage
+            const safeNum = (v: unknown, max: number) => {
+                const n = Number(v);
+                if (!Number.isFinite(n) || n < 0) return 0;
+                return Math.min(n, max);
+            };
+
+            const safeStats = {
+                score: safeNum(stats.score, MAX_PLAUSIBLE_SCORE),
+                matchCount: safeNum(stats.matchCount, 10_000),
+                maxCombo: safeNum(stats.maxCombo, 100),
+                totalCascades: safeNum(stats.totalCascades, 1_000),
+                bombsCreated: safeNum(stats.bombsCreated, 1_000),
+                vibestreaksCreated: safeNum(stats.vibestreaksCreated, 1_000),
+                cosmicBlastsCreated: safeNum(stats.cosmicBlastsCreated, 1_000),
+                crossCount: safeNum(stats.crossCount, 1_000),
+                gameOverReason: typeof stats.gameOverReason === 'string' ? stats.gameOverReason.slice(0, 50) : 'unknown',
+            };
+
+            // If a matchId is provided, validate it (classic mode only)
+            let validatedMatch = false;
+            if (matchId && typeof matchId === 'string' && gameMode === 'classic') {
+                const matchKey = `pinbook:${username}:match:${matchId}`;
+                const match = await kv.get(matchKey) as any;
+                if (match && match.username === username) {
+                    validatedMatch = true;
+                }
+            }
+
+            const logEntry = {
+                username,
+                gameMode,
+                ...safeStats,
+                matchId: matchId || null,
+                validatedMatch,
+                timestamp: Date.now(),
+            };
+
+            // Sorted set keyed by timestamp for easy pagination
+            const logKey = `gamelog:${username}`;
+            // Use JSON member with timestamp as score; cap retention at last 500 games per user
+            await kv.zadd(logKey, { score: Date.now(), member: JSON.stringify(logEntry) });
+            const count = await kv.zcard(logKey);
+            if (count > 500) {
+                await kv.zremrangebyrank(logKey, 0, count - 501);
+            }
+
+            return NextResponse.json({ logged: true });
+
         } else if (body.action === 'earn') {
             const score = body.score as number;
             const matchId = body.matchId as string | undefined;
