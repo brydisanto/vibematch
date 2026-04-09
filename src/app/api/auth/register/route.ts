@@ -10,6 +10,39 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Username and password required" }, { status: 400 });
         }
 
+        if (typeof username !== 'string' || typeof password !== 'string') {
+            return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+        }
+
+        if (username.length < 3 || username.length > 30) {
+            return NextResponse.json({ error: "Username must be 3-30 characters" }, { status: 400 });
+        }
+
+        if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
+            return NextResponse.json(
+                { error: "Username may only contain letters, numbers, underscores, hyphens, and periods" },
+                { status: 400 }
+            );
+        }
+
+        if (password.length < 8) {
+            return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+        }
+
+        // Rate limit registrations by IP (5 per hour)
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rateLimitKey = `rl:register:${ip}`;
+        const attempts = await kv.incr(rateLimitKey);
+        if (attempts === 1) {
+            await kv.expire(rateLimitKey, 60 * 60);
+        }
+        if (attempts > 5) {
+            return NextResponse.json(
+                { error: "Too many registration attempts. Please try again later." },
+                { status: 429 }
+            );
+        }
+
         const userKey = `user_auth:${username.toLowerCase()}`;
         const existingUser = await kv.get(userKey);
 

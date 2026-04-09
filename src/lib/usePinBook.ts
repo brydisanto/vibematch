@@ -33,6 +33,7 @@ export function usePinBook() {
         loaded: false,
     });
     const [pendingReveal, setPendingReveal] = useState<CapsuleReveal | null>(null);
+    const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -51,7 +52,7 @@ export function usePinBook() {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "earn", score, gameMode }),
+                body: JSON.stringify({ action: "earn", score, gameMode, matchId: activeMatchId }),
             });
             if (!res.ok) { console.error("pinbook earn failed:", res.status); return false; }
             const data = await res.json();
@@ -62,7 +63,7 @@ export function usePinBook() {
             }
         } catch (e) { console.error("pinbook earn error:", e); }
         return false;
-    }, []);
+    }, [activeMatchId]);
 
     const trackGame = useCallback(async (): Promise<void> => {
         try {
@@ -76,6 +77,9 @@ export function usePinBook() {
             if (data.classicPlays != null) {
                 setState(prev => ({ ...prev, classicPlays: data.classicPlays }));
             }
+            if (data.matchId) {
+                setActiveMatchId(data.matchId);
+            }
         } catch (e) { console.error("pinbook trackGame error:", e); }
     }, []);
 
@@ -84,7 +88,7 @@ export function usePinBook() {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "bonus", gameMode }),
+                body: JSON.stringify({ action: "bonus", gameMode, matchId: activeMatchId }),
             });
             if (!res.ok) { console.error("pinbook bonus failed:", res.status); return false; }
             const data = await res.json();
@@ -95,7 +99,7 @@ export function usePinBook() {
             }
         } catch (e) { console.error("pinbook bonus error:", e); }
         return false;
-    }, []);
+    }, [activeMatchId]);
 
     const openCapsule = useCallback(async (): Promise<CapsuleReveal | null> => {
         if (state.capsules <= 0) return null;
@@ -109,10 +113,13 @@ export function usePinBook() {
             const data = await res.json();
             if (!data.opened) return null;
 
-            // Pick a random badge from the returned tier
+            // Server picks both tier AND specific badge (authoritative)
             const tier = data.tier as BadgeTier;
-            const tierBadges = BADGES.filter(b => b.tier === tier);
-            const badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+            const badge = BADGES.find(b => b.id === data.badgeId);
+            if (!badge) {
+                console.error("Server returned unknown badgeId:", data.badgeId);
+                return null;
+            }
 
             const existing = state.pins[badge.id];
             const reveal: CapsuleReveal = {

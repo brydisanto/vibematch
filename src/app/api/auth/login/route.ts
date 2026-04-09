@@ -1,6 +1,10 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
-import { verifyPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { verifyPassword, hashPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
+
+// Rate limit: 10 attempts per 15 minutes per IP+username combo
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const MAX_LOGIN_ATTEMPTS = 10;
 
 export async function POST(req: Request) {
     try {
@@ -8,6 +12,20 @@ export async function POST(req: Request) {
 
         if (!username || !password) {
             return NextResponse.json({ error: "Username and password required" }, { status: 400 });
+        }
+
+        // Rate limit by IP + username
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rateLimitKey = `rl:login:${ip}:${username.toLowerCase()}`;
+        const attempts = await kv.incr(rateLimitKey);
+        if (attempts === 1) {
+            await kv.expire(rateLimitKey, LOGIN_WINDOW_SECONDS);
+        }
+        if (attempts > MAX_LOGIN_ATTEMPTS) {
+            return NextResponse.json(
+                { error: "Too many login attempts. Please try again in a few minutes." },
+                { status: 429 }
+            );
         }
 
         const userKey = `user_auth:${username.toLowerCase()}`;
@@ -20,6 +38,17 @@ export async function POST(req: Request) {
         const passwordValid = await verifyPassword(password, user.password);
         if (!passwordValid) {
             return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+        }
+
+        // Successful login — clear rate limit and rehash legacy SHA-256 passwords
+        await kv.del(rateLimitKey);
+        if (!user.password.startsWith("pbkdf2:")) {
+            try {
+                const newHash = await hashPassword(password);
+                await kv.set(userKey, { ...user, password: newHash });
+            } catch (e) {
+                console.warn("Failed to rehash legacy password:", e);
+            }
         }
 
         // Fetch profile in parallel with JWT generation so login returns everything

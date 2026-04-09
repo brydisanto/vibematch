@@ -2,6 +2,10 @@ import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
+import { BADGES } from '@/lib/badges';
+
+// Maximum plausible score for a classic game — reject forged submissions above this.
+const MAX_PLAUSIBLE_SCORE = 500_000;
 
 // Rarity weights for capsule drops
 // 73 total badges: 38 blue, 25 silver, 8 gold, 2 cosmic
@@ -43,26 +47,48 @@ export async function getDailyTracker(username: string): Promise<DailyTracker> {
 }
 
 async function incrementClassicPlays(username: string): Promise<DailyTracker> {
-    const tracker = await getDailyTracker(username);
-    tracker.classicPlays += 1;
+    // Ensure the tracker exists with today's date (so bonusPrizeGames isn't lost on rollover)
     const key = getTodayKey(username);
-    await kv.set(key, tracker, { ex: 86400 * 2 }); // expire after 2 days
-    return tracker;
+    const existing = await getDailyTracker(username);
+    const updated: DailyTracker = {
+        classicPlays: existing.classicPlays + 1,
+        date: existing.date,
+        bonusPrizeGames: existing.bonusPrizeGames || 0,
+    };
+    await kv.set(key, updated, { ex: 86400 * 2 });
+    return updated;
 }
 
 function emptyPinBook(): PinBookData {
     return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0 };
 }
 
-// Simple per-user lock to prevent concurrent read-modify-write races
+// Per-user lock backed by KV (works across serverless instances).
+// In-memory map is kept as a fast path for same-instance concurrency.
 const userLocks = new Map<string, Promise<any>>();
 async function withUserLock<T>(username: string, fn: () => Promise<T>): Promise<T> {
+    // KV lock: set NX with short TTL, retry briefly if contested
+    const lockKey = `lock:pinbook:${username}`;
+    const maxAttempts = 10;
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+        const acquired = await kv.set(lockKey, '1', { nx: true, ex: 5 });
+        if (acquired) break;
+        attempts++;
+        await new Promise(r => setTimeout(r, 100));
+    }
+    if (attempts >= maxAttempts) {
+        throw new Error('Could not acquire user lock after retries');
+    }
+
+    // In-memory serialization for same-instance concurrency
     const prev = userLocks.get(username) || Promise.resolve();
-    const next = prev.then(fn, fn); // run fn after previous completes (even if it failed)
+    const next = prev.then(fn, fn);
     userLocks.set(username, next);
     try {
         return await next;
     } finally {
+        await kv.del(lockKey).catch(() => {});
         // Clean up if this is still the latest promise
         if (userLocks.get(username) === next) userLocks.delete(username);
     }
@@ -125,62 +151,131 @@ export async function POST(req: Request) {
         const data = (await kv.get(key)) as PinBookData | null ?? emptyPinBook();
 
         if (body.action === 'trackGame') {
-            // Track a classic game played (win or lose) toward the daily cap
-
+            // Track a classic game played (win or lose) toward the daily cap.
+            // Issue a one-shot match token that earn/bonus must present to get capsules.
+            // Each token represents exactly one physical game the client has started.
             const tracker = await incrementClassicPlays(username);
-            const capped = tracker.classicPlays > CLASSIC_DAILY_CAP;
-            return NextResponse.json({ tracked: true, classicPlays: tracker.classicPlays, capped });
+            const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
+            const capped = tracker.classicPlays > effectiveCap;
+
+            // Generate match token. Bound to user and single-use.
+            const matchId = crypto.randomUUID();
+            const matchKey = `pinbook:${username}:match:${matchId}`;
+            await kv.set(matchKey, {
+                username,
+                createdAt: Date.now(),
+                earnedCapsule: false,
+                earnedBonus: false,
+                prizeEligible: !capped,
+            }, { ex: 60 * 60 * 2 }); // 2 hour window
+
+            return NextResponse.json({
+                tracked: true,
+                classicPlays: tracker.classicPlays,
+                capped,
+                matchId,
+            });
 
         } else if (body.action === 'earn') {
             const score = body.score as number;
+            const matchId = body.matchId as string | undefined;
             const gameMode = body.gameMode as string || 'classic';
 
-            if (!score || score < CAPSULE_SCORE_THRESHOLD) {
-                return NextResponse.json({ earned: false, reason: 'Score below threshold' });
+            // Validate score is a plausible number
+            if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > MAX_PLAUSIBLE_SCORE) {
+                return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
             }
 
-
+            if (score < CAPSULE_SCORE_THRESHOLD) {
+                return NextResponse.json({ earned: false, reason: 'Score below threshold' });
+            }
 
             // Tiered capsule rewards
             const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
 
-            // Classic mode: enforce daily cap (base + any purchased bonus games)
             if (gameMode === 'classic') {
-                const tracker = await getDailyTracker(username);
-                const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
-                if (tracker.classicPlays > effectiveCap) {
-                    return NextResponse.json({ earned: false, reason: 'Daily prize cap reached', capped: true });
+                // Classic: require a valid single-use match token from trackGame
+                if (!matchId || typeof matchId !== 'string') {
+                    return NextResponse.json({ error: 'Missing matchId' }, { status: 400 });
                 }
+                const matchKey = `pinbook:${username}:match:${matchId}`;
+                const match = await kv.get(matchKey) as any;
+                if (!match || match.username !== username) {
+                    return NextResponse.json({ error: 'Invalid or expired match token' }, { status: 400 });
+                }
+                if (match.earnedCapsule) {
+                    return NextResponse.json({ error: 'Capsule already claimed for this match' }, { status: 400 });
+                }
+                if (!match.prizeEligible) {
+                    return NextResponse.json({ earned: false, reason: 'Match was outside prize cap', capped: true });
+                }
+                // Atomically mark the match as claimed
+                await kv.set(matchKey, { ...match, earnedCapsule: true }, { ex: 60 * 60 * 2 });
                 data.capsules += capsuleCount;
                 data.totalEarned += capsuleCount;
-            } else {
-                // Daily challenge: double capsules
+            } else if (gameMode === 'daily') {
+                // Daily: require that the daily_played marker exists for today
+                const today = new Date().toISOString().split('T')[0];
+                const playedKey = `daily_played:${username}:${today}`;
+                const hasPlayed = await kv.get(playedKey);
+                if (!hasPlayed) {
+                    return NextResponse.json({ error: 'Daily challenge not played yet' }, { status: 400 });
+                }
+                // Also require single-use: only one daily capsule grant per day
+                const dailyEarnedKey = `daily_earned:${username}:${today}`;
+                const alreadyEarned = await kv.set(dailyEarnedKey, '1', { nx: true, ex: 86400 * 2 });
+                if (!alreadyEarned) {
+                    return NextResponse.json({ error: 'Daily capsule already claimed' }, { status: 400 });
+                }
                 data.capsules += capsuleCount * 2;
                 data.totalEarned += capsuleCount * 2;
+            } else {
+                return NextResponse.json({ error: 'Invalid game mode' }, { status: 400 });
             }
 
             await kv.set(key, data);
             return NextResponse.json({ earned: true, capsules: data.capsules, gameMode });
 
         } else if (body.action === 'bonus') {
-            // Bonus capsule — awarded for T/cross shapes during gameplay
-            // Already limited to 1 per game by client-side bonusCapsuleAwarded flag
+            // Bonus capsule — awarded for T/cross shapes during gameplay.
+            // Also requires a match token (one bonus per match, like earn).
+            const matchId = body.matchId as string | undefined;
             const gameMode = body.gameMode as string || 'classic';
 
-
-            // Classic mode: check daily cap (bonus is still within a capped game)
             if (gameMode === 'classic') {
-                const tracker = await getDailyTracker(username);
-                const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
-                if (tracker.classicPlays > effectiveCap) {
-                    return NextResponse.json({ earned: false, reason: 'Daily prize cap reached', capped: true });
+                if (!matchId || typeof matchId !== 'string') {
+                    return NextResponse.json({ error: 'Missing matchId' }, { status: 400 });
                 }
+                const matchKey = `pinbook:${username}:match:${matchId}`;
+                const match = await kv.get(matchKey) as any;
+                if (!match || match.username !== username) {
+                    return NextResponse.json({ error: 'Invalid or expired match token' }, { status: 400 });
+                }
+                if (match.earnedBonus) {
+                    return NextResponse.json({ error: 'Bonus already claimed for this match' }, { status: 400 });
+                }
+                if (!match.prizeEligible) {
+                    return NextResponse.json({ earned: false, reason: 'Match was outside prize cap', capped: true });
+                }
+                await kv.set(matchKey, { ...match, earnedBonus: true }, { ex: 60 * 60 * 2 });
                 data.capsules += 1;
                 data.totalEarned += 1;
-            } else {
-                // Daily challenge: double bonus
+            } else if (gameMode === 'daily') {
+                const today = new Date().toISOString().split('T')[0];
+                const playedKey = `daily_played:${username}:${today}`;
+                const hasPlayed = await kv.get(playedKey);
+                if (!hasPlayed) {
+                    return NextResponse.json({ error: 'Daily challenge not played yet' }, { status: 400 });
+                }
+                const dailyBonusKey = `daily_bonus:${username}:${today}`;
+                const claimed = await kv.set(dailyBonusKey, '1', { nx: true, ex: 86400 * 2 });
+                if (!claimed) {
+                    return NextResponse.json({ error: 'Daily bonus already claimed' }, { status: 400 });
+                }
                 data.capsules += 2;
                 data.totalEarned += 2;
+            } else {
+                return NextResponse.json({ error: 'Invalid game mode' }, { status: 400 });
             }
 
             await kv.set(key, data);
@@ -191,9 +286,16 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'No capsules to open' }, { status: 400 });
             }
 
-            // Pick a random tier based on weights
+            // Reject opening if a pending reveal already exists
+            const pendingKey = `pinbook:${username}:pending`;
+            const existingPending = await kv.get(pendingKey);
+            if (existingPending) {
+                return NextResponse.json({ error: 'A pending capsule is already open' }, { status: 400 });
+            }
+
+            // Pick a random tier based on weights (server-side)
             const roll = Math.random() * 100;
-            let tier: string;
+            let tier: 'blue' | 'silver' | 'gold' | 'cosmic';
             if (roll < TIER_WEIGHTS.cosmic) {
                 tier = 'cosmic';
             } else if (roll < TIER_WEIGHTS.cosmic + TIER_WEIGHTS.gold) {
@@ -204,26 +306,57 @@ export async function POST(req: Request) {
                 tier = 'blue';
             }
 
-            // Return tier + random badge ID from that tier (client picks from BADGES)
+            // Pick a specific badge from that tier (server-side, authoritative)
+            const tierBadges = BADGES.filter(b => b.tier === tier);
+            if (tierBadges.length === 0) {
+                return NextResponse.json({ error: 'No badges available for tier' }, { status: 500 });
+            }
+            const badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+
+            // Store pending reveal so collect can validate it
+            await kv.set(pendingKey, {
+                tier,
+                badgeId: badge.id,
+                openedAt: Date.now(),
+            }, { ex: 60 * 5 }); // 5 minute window to collect
+
+            // Decrement capsule count
             data.capsules -= 1;
             data.totalOpened += 1;
             await kv.set(key, data);
 
-            // We pass back the tier; the client selects the specific badge
-            // This keeps the badge list client-side only
             return NextResponse.json({
                 opened: true,
                 tier,
+                badgeId: badge.id,
                 capsules: data.capsules,
                 totalOpened: data.totalOpened,
             });
 
         } else if (body.action === 'collect') {
-            // Client confirms which badge was revealed — save to pin book
+            // Server validates the badge against the pending reveal
             const badgeId = body.badgeId as string;
-            if (!badgeId) {
+            if (!badgeId || typeof badgeId !== 'string') {
                 return NextResponse.json({ error: 'Missing badgeId' }, { status: 400 });
             }
+
+            const pendingKey = `pinbook:${username}:pending`;
+            const pending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number } | null;
+            if (!pending) {
+                return NextResponse.json({ error: 'No pending capsule to collect' }, { status: 400 });
+            }
+            if (pending.badgeId !== badgeId) {
+                return NextResponse.json({ error: 'Badge does not match pending capsule' }, { status: 400 });
+            }
+
+            // Double-check: badge actually exists in catalog with matching tier
+            const badgeDef = BADGES.find(b => b.id === badgeId);
+            if (!badgeDef || badgeDef.tier !== pending.tier) {
+                return NextResponse.json({ error: 'Invalid badge' }, { status: 400 });
+            }
+
+            // Consume the pending reveal atomically
+            await kv.del(pendingKey);
 
             const existing = data.pins[badgeId];
             if (existing) {

@@ -36,6 +36,9 @@ const PACKAGE_PRICES: Record<number, string> = {
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
 
+// Minimum confirmations before accepting a tx (protects against chain reorgs)
+const REQUIRED_CONFIRMATIONS = BigInt(3);
+
 const client = createPublicClient({
     chain: mainnet,
     transport: fallback([
@@ -44,6 +47,9 @@ const client = createPublicClient({
         http('https://1rpc.io/eth'),
     ], { rank: true }),
 });
+
+const TX_HASH_REGEX = /^0x[0-9a-fA-F]{64}$/;
+const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 export async function POST(request: Request) {
     try {
@@ -55,11 +61,12 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { txHash, walletAddress, packageSize } = body;
 
-        if (!txHash || typeof txHash !== 'string') {
-            return NextResponse.json({ error: 'Missing or invalid txHash' }, { status: 400 });
+        // Strict format validation — reject before hitting any RPC
+        if (!txHash || typeof txHash !== 'string' || !TX_HASH_REGEX.test(txHash)) {
+            return NextResponse.json({ error: 'Invalid transaction hash format' }, { status: 400 });
         }
-        if (!walletAddress || typeof walletAddress !== 'string') {
-            return NextResponse.json({ error: 'Missing or invalid walletAddress' }, { status: 400 });
+        if (!walletAddress || typeof walletAddress !== 'string' || !WALLET_REGEX.test(walletAddress)) {
+            return NextResponse.json({ error: 'Invalid wallet address format' }, { status: 400 });
         }
         if (!PACKAGE_PRICES[packageSize]) {
             return NextResponse.json({ error: 'Invalid packageSize. Must be 1, 5, or 10.' }, { status: 400 });
@@ -75,20 +82,48 @@ export async function POST(request: Request) {
         const normalizedTxHash = txHash.toLowerCase();
         const requiredAmount = parseEther(PACKAGE_PRICES[packageSize]);
 
-        // --- Replay protection & lock ---
+        // --- Replay protection: atomic NX set (reserves the tx hash) ---
+        // No TTL — replay markers are permanent. Cheap storage vs economic loss.
         const txKey = `tx:${normalizedTxHash}:processed`;
-        const lockKey = `tx:${normalizedTxHash}:lock`;
-
-        const acquired = await kv.set(lockKey, 'locked', { nx: true, ex: 60 });
-        if (!acquired) {
-            return NextResponse.json({ error: 'Transaction is currently being processed' }, { status: 409 });
-        }
-
-        const alreadyProcessed = await kv.get(txKey);
-        if (alreadyProcessed) {
-            await kv.del(lockKey);
+        const reservation = await kv.set(
+            txKey,
+            JSON.stringify({ status: 'pending', reservedAt: Date.now(), username }),
+            { nx: true }
+        );
+        if (!reservation) {
             return NextResponse.json({ error: 'Transaction already processed' }, { status: 409 });
         }
+
+        // Helper to release the reservation on any failure path before it's finalized
+        const releaseReservation = async () => {
+            // Only delete if still pending — never delete a finalized record
+            try {
+                const current = await kv.get(txKey);
+                if (current) {
+                    const parsed = typeof current === 'string' ? JSON.parse(current) : current;
+                    if (parsed?.status === 'pending') {
+                        await kv.del(txKey);
+                    }
+                }
+            } catch {
+                // swallow
+            }
+        };
+
+        // Per-user lock (prevents two simultaneous purchase calls from racing)
+        const lockKey = `lock:purchase:${username}`;
+        const gotLock = await kv.set(lockKey, '1', { nx: true, ex: 30 });
+        if (!gotLock) {
+            await releaseReservation();
+            return NextResponse.json({ error: 'Another purchase is in flight. Please wait.' }, { status: 409 });
+        }
+
+        // Helper for error paths — releases lock and pending reservation
+        const fail = async (status: number, message: string, extra?: Record<string, unknown>) => {
+            await kv.del(lockKey);
+            await releaseReservation();
+            return NextResponse.json({ error: message, ...(extra || {}) }, { status });
+        };
 
         // --- Fetch and verify transaction ---
         let receipt;
@@ -96,19 +131,29 @@ export async function POST(request: Request) {
             receipt = await client.getTransactionReceipt({ hash: normalizedTxHash as `0x${string}` });
         } catch (e: any) {
             console.error(`[Purchase] getTransactionReceipt failed:`, e?.message || e);
-            await kv.del(lockKey);
-            return NextResponse.json({ error: 'Transaction not found or not yet confirmed. Please retry.' }, { status: 404 });
+            return await fail(404, 'Transaction not found or not yet confirmed. Please retry.');
         }
 
         if (receipt.status !== 'success') {
-            await kv.del(lockKey);
-            return NextResponse.json({ error: 'Transaction failed on-chain' }, { status: 400 });
+            return await fail(400, 'Transaction failed on-chain');
+        }
+
+        // Confirmation depth check: protect against reorgs
+        let currentBlock: bigint;
+        try {
+            currentBlock = await client.getBlockNumber();
+        } catch (e: any) {
+            console.error(`[Purchase] getBlockNumber failed:`, e?.message || e);
+            return await fail(503, 'Could not verify confirmation depth. Please retry.');
+        }
+        const confirmations = currentBlock - receipt.blockNumber;
+        if (confirmations < REQUIRED_CONFIRMATIONS) {
+            return await fail(425, `Awaiting confirmations (${confirmations}/${REQUIRED_CONFIRMATIONS}). Please retry shortly.`);
         }
 
         const tx = await client.getTransaction({ hash: normalizedTxHash as `0x${string}` });
         if (tx.from.toLowerCase() !== normalizedWallet) {
-            await kv.del(lockKey);
-            return NextResponse.json({ error: 'Transaction sender does not match provided wallet' }, { status: 400 });
+            return await fail(400, 'Transaction sender does not match provided wallet');
         }
 
         // Parse event logs for valid Transfer
@@ -139,15 +184,13 @@ export async function POST(request: Request) {
         }
 
         if (!validTransferFound) {
-            await kv.del(lockKey);
-            return NextResponse.json({ error: 'No valid VIBESTR transfer event found in transaction' }, { status: 400 });
+            return await fail(400, 'Payment verification failed');
         }
 
         if (actualAmount < requiredAmount) {
-            await kv.del(lockKey);
-            return NextResponse.json({
-                error: `Insufficient payment. Expected ${PACKAGE_PRICES[packageSize]} VIBESTR, got ${formatEther(actualAmount)} VIBESTR`,
-            }, { status: 400 });
+            // Log detail server-side, return generic message to client
+            console.warn(`[Purchase] Insufficient payment for tx ${normalizedTxHash}: expected ${PACKAGE_PRICES[packageSize]}, got ${formatEther(actualAmount)}`);
+            return await fail(400, 'Payment verification failed');
         }
 
         // --- Check daily bonus cap ---
@@ -156,28 +199,30 @@ export async function POST(request: Request) {
         const newBonusTotal = currentBonus + packageSize;
 
         if (newBonusTotal > MAX_BONUS_PRIZE_GAMES_PER_DAY) {
-            await kv.del(lockKey);
-            return NextResponse.json({
-                error: `Daily bonus cap reached. You can purchase ${MAX_BONUS_PRIZE_GAMES_PER_DAY - currentBonus} more prize games today.`,
+            return await fail(400, `Daily bonus cap reached. You can purchase ${MAX_BONUS_PRIZE_GAMES_PER_DAY - currentBonus} more prize games today.`, {
                 currentBonus,
                 maxBonus: MAX_BONUS_PRIZE_GAMES_PER_DAY,
-            }, { status: 400 });
+            });
         }
 
         // --- Grant bonus games ---
-        const key = getTodayKey(username);
+        const dailyKey = getTodayKey(username);
         const updated = { ...tracker, bonusPrizeGames: newBonusTotal };
-        await kv.set(key, updated, { ex: 86400 * 2 });
+        await kv.set(dailyKey, updated, { ex: 86400 * 2 });
 
-        // Mark tx as processed (7-day TTL)
+        // Finalize replay marker — permanent (no TTL) to prevent replay after any TTL expiry
         await kv.set(txKey, JSON.stringify({
+            status: 'finalized',
             username,
             wallet: normalizedWallet,
             packageSize,
             amount: formatEther(actualAmount),
             timestamp: Date.now(),
-        }), { ex: 60 * 60 * 24 * 7 });
+        }));
+
         await kv.del(lockKey);
+
+        console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatEther(actualAmount)}`);
 
         return NextResponse.json({
             success: true,
