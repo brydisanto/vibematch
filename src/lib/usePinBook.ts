@@ -96,6 +96,7 @@ export function usePinBook() {
         vibestreaksCreated: number;
         cosmicBlastsCreated: number;
         crossCount: number;
+        shapesLanded: Array<{ type: string; count: number }>;
         gameOverReason: string;
     }, gameMode: string = 'classic'): Promise<void> => {
         try {
@@ -199,9 +200,14 @@ export function usePinBook() {
         setState(prev => ({ ...prev, bonusPrizeGames: bonus }));
     }, []);
 
+    // Exposed for consumers that need to read the latest match id in async flows
+    const getActiveMatchId = useCallback(() => activeMatchIdRef.current, []);
+
     return {
         state,
         pendingReveal,
+        activeMatchId,
+        getActiveMatchId,
         load,
         trackGame,
         logGame,

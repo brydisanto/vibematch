@@ -84,8 +84,11 @@ export function useAchievements() {
      * Attempts to unlock one or more achievements.
      * Filters out already-unlocked ones, sends to server, and queues toasts.
      * Returns the newly unlocked achievement IDs.
+     *
+     * context (optional) — when passed with matchId/gameMode, the server will
+     * re-verify gameplay achievements against the match's server-stored stats.
      */
-    const unlock = useCallback(async (ids: string[]): Promise<string[]> => {
+    const unlock = useCallback(async (ids: string[], context?: { matchId?: string | null; gameMode?: string }): Promise<string[]> => {
         // Filter out already unlocked and currently pending
         const newIds = ids.filter(
             id => !state.unlocked[id] && !pendingUnlocks.current.has(id) && ACHIEVEMENTS_BY_ID[id]
@@ -99,7 +102,12 @@ export function useAchievements() {
             const res = await fetch("/api/achievements", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "unlock", achievementIds: newIds }),
+                body: JSON.stringify({
+                    action: "unlock",
+                    achievementIds: newIds,
+                    matchId: context?.matchId ?? null,
+                    gameMode: context?.gameMode ?? 'classic',
+                }),
             });
 
             if (!res.ok) {

@@ -15,7 +15,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, fallback, parseEther, formatEther, decodeEventLog, parseAbi } from 'viem';
+import { createPublicClient, http, fallback, parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
 import { mainnet } from 'viem/chains';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
@@ -24,8 +24,24 @@ import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '../
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const TREASURY_ADDRESS = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
-const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196'.toLowerCase();
+// Two-env treasury verification:
+// - NEXT_PUBLIC_TREASURY_ADDRESS is what the client sees & sends funds to
+// - TREASURY_ADDRESS_VERIFIER is what the server actually checks against
+// If these disagree, a frontend misconfig can't silently redirect funds.
+// In absence of the verifier var, fall back to the public var with a warning.
+const PUBLIC_TREASURY = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
+const VERIFIER_TREASURY = (process.env.TREASURY_ADDRESS_VERIFIER || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
+const TREASURY_ADDRESS = VERIFIER_TREASURY;
+
+if (process.env.TREASURY_ADDRESS_VERIFIER && PUBLIC_TREASURY && PUBLIC_TREASURY !== VERIFIER_TREASURY) {
+    console.error(
+        `[Purchase] TREASURY MISMATCH: public=${PUBLIC_TREASURY} verifier=${VERIFIER_TREASURY}. ` +
+        `This WILL reject legitimate payments. Fix env vars immediately.`
+    );
+}
+
+const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
+const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 
 // Price per package (in VIBESTR). 10-pack has ~20% discount.
 const PACKAGE_PRICES: Record<number, string> = {
@@ -35,6 +51,7 @@ const PACKAGE_PRICES: Record<number, string> = {
 };
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
+const erc20DecimalsAbi = parseAbi(['function decimals() view returns (uint8)']);
 
 // Minimum confirmations before accepting a tx (protects against chain reorgs)
 const REQUIRED_CONFIRMATIONS = BigInt(3);
@@ -47,6 +64,32 @@ const client = createPublicClient({
         http('https://1rpc.io/eth'),
     ], { rank: true }),
 });
+
+// Cache the token's decimals value on first call. If the token doesn't respond
+// or returns something wild, refuse to process payments.
+let cachedDecimals: number | null = null;
+async function getTokenDecimals(): Promise<number> {
+    if (cachedDecimals !== null) return cachedDecimals;
+    try {
+        const result = await client.readContract({
+            address: VIBESTR_ADDRESS_RAW as `0x${string}`,
+            abi: erc20DecimalsAbi,
+            functionName: 'decimals',
+        });
+        const decimals = Number(result);
+        if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) {
+            throw new Error(`Invalid decimals: ${decimals}`);
+        }
+        if (decimals !== 18) {
+            console.warn(`[Purchase] VIBESTR token decimals = ${decimals}, expected 18. parseUnits will still work but verify this is correct.`);
+        }
+        cachedDecimals = decimals;
+        return decimals;
+    } catch (e) {
+        console.error('[Purchase] Failed to read VIBESTR decimals:', e);
+        throw new Error('Could not verify token configuration');
+    }
+}
 
 const TX_HASH_REGEX = /^0x[0-9a-fA-F]{64}$/;
 const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
@@ -80,7 +123,14 @@ export async function POST(request: Request) {
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
         const normalizedTxHash = txHash.toLowerCase();
-        const requiredAmount = parseEther(PACKAGE_PRICES[packageSize]);
+        // Fetch token decimals (cached after first call) — refuse payments if unavailable
+        let decimals: number;
+        try {
+            decimals = await getTokenDecimals();
+        } catch (e) {
+            return NextResponse.json({ error: 'Payment temporarily unavailable' }, { status: 503 });
+        }
+        const requiredAmount = parseUnits(PACKAGE_PRICES[packageSize], decimals);
 
         // --- Replay protection: atomic NX set (reserves the tx hash) ---
         // No TTL — replay markers are permanent. Cheap storage vs economic loss.
@@ -189,7 +239,7 @@ export async function POST(request: Request) {
 
         if (actualAmount < requiredAmount) {
             // Log detail server-side, return generic message to client
-            console.warn(`[Purchase] Insufficient payment for tx ${normalizedTxHash}: expected ${PACKAGE_PRICES[packageSize]}, got ${formatEther(actualAmount)}`);
+            console.warn(`[Purchase] Insufficient payment for tx ${normalizedTxHash}: expected ${PACKAGE_PRICES[packageSize]}, got ${formatUnits(actualAmount, decimals)}`);
             return await fail(400, 'Payment verification failed');
         }
 
@@ -216,13 +266,13 @@ export async function POST(request: Request) {
             username,
             wallet: normalizedWallet,
             packageSize,
-            amount: formatEther(actualAmount),
+            amount: formatUnits(actualAmount, decimals),
             timestamp: Date.now(),
         }));
 
         await kv.del(lockKey);
 
-        console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatEther(actualAmount)}`);
+        console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatUnits(actualAmount, decimals)}`);
 
         return NextResponse.json({
             success: true,

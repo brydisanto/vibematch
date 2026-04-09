@@ -177,9 +177,10 @@ export async function POST(req: Request) {
             });
 
         } else if (body.action === 'logGame') {
-            // Log a completed game for admin forensics. Requires a valid match token.
-            // Stats are client-reported; bounded for sanity. Used purely for anomaly
-            // detection — not for grant decisions.
+            // Log a completed game for admin forensics AND for server-side achievement
+            // verification. Stats are client-reported; bounded for sanity. Match-token
+            // validated games are additionally stored keyed by matchId so the achievements
+            // endpoint can verify gameplay achievements against authoritative stats.
             const matchId = body.matchId as string | undefined;
             const gameMode = body.gameMode as string || 'classic';
             const stats = body.stats as {
@@ -191,6 +192,7 @@ export async function POST(req: Request) {
                 vibestreaksCreated?: number;
                 cosmicBlastsCreated?: number;
                 crossCount?: number;
+                shapesLanded?: Array<{ type: string; count: number }>;
                 gameOverReason?: string;
             } | undefined;
 
@@ -205,6 +207,17 @@ export async function POST(req: Request) {
                 return Math.min(n, max);
             };
 
+            // Sanitize shapesLanded (only L, T, cross types; bounded count)
+            const ALLOWED_SHAPES = new Set(['L', 'T', 'cross']);
+            const safeShapes: Array<{ type: string; count: number }> = [];
+            if (Array.isArray(stats.shapesLanded)) {
+                for (const s of stats.shapesLanded.slice(0, 10)) {
+                    if (s && typeof s === 'object' && typeof s.type === 'string' && ALLOWED_SHAPES.has(s.type)) {
+                        safeShapes.push({ type: s.type, count: safeNum(s.count, 1000) });
+                    }
+                }
+            }
+
             const safeStats = {
                 score: safeNum(stats.score, MAX_PLAUSIBLE_SCORE),
                 matchCount: safeNum(stats.matchCount, 10_000),
@@ -214,6 +227,7 @@ export async function POST(req: Request) {
                 vibestreaksCreated: safeNum(stats.vibestreaksCreated, 1_000),
                 cosmicBlastsCreated: safeNum(stats.cosmicBlastsCreated, 1_000),
                 crossCount: safeNum(stats.crossCount, 1_000),
+                shapesLanded: safeShapes,
                 gameOverReason: typeof stats.gameOverReason === 'string' ? stats.gameOverReason.slice(0, 50) : 'unknown',
             };
 
@@ -238,11 +252,20 @@ export async function POST(req: Request) {
 
             // Sorted set keyed by timestamp for easy pagination
             const logKey = `gamelog:${username}`;
-            // Use JSON member with timestamp as score; cap retention at last 500 games per user
             await kv.zadd(logKey, { score: Date.now(), member: JSON.stringify(logEntry) });
             const count = await kv.zcard(logKey);
             if (count > 500) {
                 await kv.zremrangebyrank(logKey, 0, count - 501);
+            }
+
+            // Also store by matchId for achievement verification lookup.
+            // Classic: keyed by the validated match token. Daily: keyed by a server-derived
+            // daily match key so we can still verify daily gameplay achievements.
+            if (validatedMatch && matchId) {
+                await kv.set(`matchstats:${username}:${matchId}`, logEntry, { ex: 60 * 60 * 2 });
+            } else if (gameMode === 'daily') {
+                const today = new Date().toISOString().split('T')[0];
+                await kv.set(`matchstats:${username}:daily:${today}`, logEntry, { ex: 86400 * 2 });
             }
 
             return NextResponse.json({ logged: true });

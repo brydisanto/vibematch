@@ -1,7 +1,13 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { ACHIEVEMENTS_BY_ID, checkRetroactiveAchievements, type PlayerContext } from '@/lib/achievements';
+import {
+    ACHIEVEMENTS_BY_ID,
+    checkAchievements,
+    checkRetroactiveAchievements,
+    type PlayerContext,
+    type GameEndStats,
+} from '@/lib/achievements';
 import { BADGES } from '@/lib/badges';
 
 export interface AchievementsData {
@@ -135,6 +141,7 @@ export async function POST(req: Request) {
         }
 
         // Run server-side retroactive check to get the AUTHORITATIVE set of unlockable IDs
+        // (pin/tier/streak based — verifiable from stored state)
         const alreadyUnlockedSet = new Set(Object.keys(achievements.unlocked));
         const authoritativeUnlockable = new Set(checkRetroactiveAchievements(ctx, alreadyUnlockedSet));
 
@@ -143,19 +150,42 @@ export async function POST(req: Request) {
             authoritativeUnlockable.add('daily_champ');
         }
 
-        // Game-play achievements (first_combo, first_bomb, cascade_5, etc.) cannot be
-        // verified from stored state. They require a match token from trackGame to prove
-        // the player actually earned them. Until that system is added, we trust the client
-        // ONLY if the achievement's capsule reward is 1 or less (low-value trust) AND the
-        // achievement is in a known game-play category.
-        const GAMEPLAY_ACHIEVEMENT_IDS = new Set([
-            'first_game', 'first_combo', 'first_bomb', 'first_vibestreak',
-            'first_l_shape', 'first_t_shape', 'first_cross_shape', 'first_cosmic',
-            'score_25k', 'score_50k', 'score_75k', 'score_100k',
-            'cascade_5', 'combo_5', 'combo_6', 'combo_8',
-            'bombs_5', 'cascades_15', 'cross_3', 'l_shapes_3', 't_shapes_3',
-            'shape_trifecta', 'daily_cap', 'daily_30k',
-        ]);
+        // --- Game-play achievement verification ---
+        // Gameplay achievements (cascade_5, first_bomb, score_50k, etc.) are verified by
+        // looking up the authoritative match stats stored by logGame and re-running
+        // checkAchievements server-side against those stats.
+        const matchId = typeof body.matchId === 'string' ? body.matchId : undefined;
+        const gameMode = typeof body.gameMode === 'string' ? body.gameMode : 'classic';
+
+        let serverVerifiedGameplay = new Set<string>();
+        if (matchId || gameMode === 'daily') {
+            let matchStats: any = null;
+            if (matchId && gameMode === 'classic') {
+                matchStats = await kv.get(`matchstats:${username}:${matchId}`);
+            } else if (gameMode === 'daily') {
+                const today = new Date().toISOString().split('T')[0];
+                matchStats = await kv.get(`matchstats:${username}:daily:${today}`);
+            }
+
+            if (matchStats && typeof matchStats === 'object') {
+                const stats = matchStats as any;
+                const gameEndStats: GameEndStats = {
+                    score: Number(stats.score) || 0,
+                    maxCombo: Number(stats.maxCombo) || 0,
+                    totalCascades: Number(stats.totalCascades) || 0,
+                    matchCount: Number(stats.matchCount) || 0,
+                    bombsCreated: Number(stats.bombsCreated) || 0,
+                    vibestreaksCreated: Number(stats.vibestreaksCreated) || 0,
+                    cosmicBlastsCreated: Number(stats.cosmicBlastsCreated) || 0,
+                    shapesLanded: Array.isArray(stats.shapesLanded) ? stats.shapesLanded : [],
+                    crossCount: Number(stats.crossCount) || 0,
+                    gameMode: String(stats.gameMode || gameMode),
+                };
+                // checkAchievements returns all IDs that pass — filter to gameplay ones
+                const verifiedIds = checkAchievements(gameEndStats, ctx, alreadyUnlockedSet);
+                serverVerifiedGameplay = new Set(verifiedIds);
+            }
+        }
 
         const newlyUnlocked: Array<{ id: string; capsules: number }> = [];
         let totalCapsules = 0;
@@ -168,7 +198,7 @@ export async function POST(req: Request) {
             const def = ACHIEVEMENTS_BY_ID[id];
             if (!def) continue;
 
-            // Strict verification path: retroactively verifiable from state
+            // Path 1: retroactively verifiable from stored state (pins, tiers, streak, daily champ)
             if (authoritativeUnlockable.has(id)) {
                 achievements.unlocked[id] = { unlockedAt: new Date().toISOString() };
                 totalCapsules += def.capsules;
@@ -176,9 +206,9 @@ export async function POST(req: Request) {
                 continue;
             }
 
-            // Game-play achievements: allow for now, but log for monitoring.
-            // Low capsule value (1-3) limits abuse impact. TODO: gate with match token.
-            if (GAMEPLAY_ACHIEVEMENT_IDS.has(id) && def.capsules <= 3) {
+            // Path 2: gameplay achievement verified by server re-running checkAchievements
+            // against match-token-bound stats
+            if (serverVerifiedGameplay.has(id)) {
                 achievements.unlocked[id] = { unlockedAt: new Date().toISOString() };
                 totalCapsules += def.capsules;
                 newlyUnlocked.push({ id, capsules: def.capsules });

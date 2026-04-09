@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { kv } from "@vercel/kv";
 
 // Lazy init: resolve JWT_SECRET at first use, not at module load.
 // This prevents Next.js build from failing when env vars aren't available.
@@ -19,9 +20,19 @@ function getKey(): Uint8Array {
 }
 
 export const SESSION_COOKIE_NAME = "vibematch_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
+/**
+ * Create a JWT session bound to a unique jti stored in KV.
+ * Revoking a session is as simple as deleting its KV entry.
+ */
 export async function encrypt(payload: any) {
-    return await new SignJWT(payload)
+    // Generate a unique session id and store it in KV as an active session
+    const jti = crypto.randomUUID();
+    const username = payload?.username || "";
+    await kv.set(`session:${jti}`, { username, createdAt: Date.now() }, { ex: SESSION_TTL_SECONDS });
+
+    return await new SignJWT({ ...payload, jti })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
         .setExpirationTime("7d")
@@ -32,7 +43,21 @@ export async function decrypt(input: string): Promise<any> {
     const { payload } = await jwtVerify(input, getKey(), {
         algorithms: ["HS256"],
     });
+    // Check KV for an active session; if missing, the session has been revoked
+    const jti = payload.jti as string | undefined;
+    if (jti) {
+        const active = await kv.get(`session:${jti}`);
+        if (!active) {
+            throw new Error("Session revoked");
+        }
+    }
     return payload;
+}
+
+/** Revoke the given jti so the session stops validating. */
+export async function revokeSession(jti: string): Promise<void> {
+    if (!jti) return;
+    await kv.del(`session:${jti}`);
 }
 
 // Fix #2: PBKDF2 password hashing via SubtleCrypto (Edge Runtime compatible).
@@ -132,6 +157,11 @@ export async function verifyPassword(
 export async function getSession() {
     const session = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
     if (!session) return null;
-    return await decrypt(session);
+    try {
+        return await decrypt(session);
+    } catch {
+        // Invalid or revoked session
+        return null;
+    }
 }
 
