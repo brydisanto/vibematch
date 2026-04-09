@@ -16,6 +16,7 @@ import FlameBackground from "@/components/FlameBackground";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
+import PrizeGamesOnboarding from "@/components/PrizeGamesOnboarding";
 import dynamic from "next/dynamic";
 
 // Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
@@ -52,6 +53,7 @@ export default function Home() {
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
+  const [prizeOnboarding, setPrizeOnboarding] = useState<null | { variant: "running-low" | "capped"; remaining: number }>(null);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -208,6 +210,30 @@ export default function Home() {
       const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
       if (ids.length > 0) {
         await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
+      }
+
+      // 5. First-time prize-games onboarding: show a one-time modal when the user
+      // first runs low or hits the cap in classic mode. Gated by localStorage so
+      // each variant only fires once ever per user.
+      if (mode === 'classic' && userProfile?.username) {
+        try {
+          const effectiveCap = 10 + (pinBook.state.bonusPrizeGames || 0);
+          const remaining = Math.max(0, effectiveCap - pinBook.state.classicPlays);
+          const seenKey = `vibematch_prize_onboarding:${userProfile.username.toLowerCase()}`;
+          const seen = JSON.parse(localStorage.getItem(seenKey) || '{}') as { runningLow?: boolean; capped?: boolean };
+
+          if (remaining === 0 && !seen.capped) {
+            seen.capped = true;
+            localStorage.setItem(seenKey, JSON.stringify(seen));
+            setPrizeOnboarding({ variant: 'capped', remaining: 0 });
+          } else if (remaining <= 3 && remaining > 0 && !seen.runningLow) {
+            seen.runningLow = true;
+            localStorage.setItem(seenKey, JSON.stringify(seen));
+            setPrizeOnboarding({ variant: 'running-low', remaining });
+          }
+        } catch {
+          // localStorage unavailable — silently skip
+        }
       }
     })();
   }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -758,6 +784,18 @@ export default function Home() {
           />
         </WalletProvider>
       )}
+
+      {/* First-time prize games onboarding (running-low or capped variants) */}
+      <PrizeGamesOnboarding
+        isOpen={prizeOnboarding !== null}
+        variant={prizeOnboarding?.variant || "running-low"}
+        remaining={prizeOnboarding?.remaining || 0}
+        onClose={() => setPrizeOnboarding(null)}
+        onBuy={() => {
+          setPrizeOnboarding(null);
+          setShowBuyPrizeGames(true);
+        }}
+      />
 
       {/* Achievement Toast */}
       <AchievementToast
