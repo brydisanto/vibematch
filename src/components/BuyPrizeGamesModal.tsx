@@ -23,9 +23,9 @@ interface Package {
 }
 
 const PACKAGES: Package[] = [
-    { size: 1, price: '50', pricePerGame: '50' },
-    { size: 5, price: '225', pricePerGame: '45', discount: '10% off' },
-    { size: 10, price: '400', pricePerGame: '40', discount: '20% off', featured: true },
+    { size: 1, price: '1', pricePerGame: '1' },
+    { size: 5, price: '3', pricePerGame: '0.6', discount: '40% off' },
+    { size: 10, price: '5', pricePerGame: '0.5', discount: '50% off', featured: true },
 ];
 
 interface BuyPrizeGamesModalProps {

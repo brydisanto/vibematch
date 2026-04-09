@@ -43,11 +43,11 @@ if (process.env.TREASURY_ADDRESS_VERIFIER && PUBLIC_TREASURY && PUBLIC_TREASURY 
 const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 
-// Price per package (in VIBESTR). 10-pack has ~20% discount.
+// Price per package (in VIBESTR). Testing prices — will raise before public launch.
 const PACKAGE_PRICES: Record<number, string> = {
-    1: '50',    // 50 VIBESTR per game
-    5: '225',   // 45 VIBESTR per game (10% off)
-    10: '400',  // 40 VIBESTR per game (20% off)
+    1: '1',   // 1 VIBESTR per game
+    5: '3',   // 0.6 VIBESTR per game (testing)
+    10: '5',  // 0.5 VIBESTR per game (testing)
 };
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
