@@ -9,6 +9,7 @@ export interface PinBookState {
     totalOpened: number;
     totalEarned: number;
     classicPlays: number;
+    bonusPrizeGames: number;
     loaded: boolean;
 }
 
@@ -28,6 +29,7 @@ export function usePinBook() {
         totalOpened: 0,
         totalEarned: 0,
         classicPlays: 0,
+        bonusPrizeGames: 0,
         loaded: false,
     });
     const [pendingReveal, setPendingReveal] = useState<CapsuleReveal | null>(null);
@@ -162,6 +164,10 @@ export function usePinBook() {
         } catch (e) { console.error("pinbook collect error:", e); }
     }, [pendingReveal]);
 
+    const setBonusPrizeGames = useCallback((bonus: number) => {
+        setState(prev => ({ ...prev, bonusPrizeGames: bonus }));
+    }, []);
+
     return {
         state,
         pendingReveal,
@@ -171,6 +177,7 @@ export function usePinBook() {
         earnBonusCapsule,
         openCapsule,
         collectReveal,
+        setBonusPrizeGames,
         totalCollected: Object.keys(state.pins).length,
         totalBadges: BADGES.length,
     };

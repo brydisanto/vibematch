@@ -1455,6 +1455,19 @@ body {
     animation: hud-low-moves-pulse 0.8s ease-in-out infinite;
 }
 
+/* ===== PRIZE GAME — pulsing gold glow on board ===== */
+@keyframes prize-game-pulse {
+    0%, 100% {
+        box-shadow: 0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4), 0 0 20px rgba(255,224,72,0.3);
+    }
+    50% {
+        box-shadow: 0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4), 0 0 45px rgba(255,224,72,0.6);
+    }
+}
+.prize-game-pulse {
+    animation: prize-game-pulse 3s ease-in-out infinite;
+}
+
 /* ===== VIBE CAPSULE — 3D sphere animations ===== */
 
 /* Gentle idle float — up/down bob */

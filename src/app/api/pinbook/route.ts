@@ -13,7 +13,8 @@ const TIER_WEIGHTS = {
 } as const;
 
 const CAPSULE_SCORE_THRESHOLD = 15000;
-const CLASSIC_DAILY_CAP = 15;
+const CLASSIC_DAILY_CAP = 10;
+export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 10;
 
 export interface PinBookData {
     pins: Record<string, { count: number; firstEarned: string }>;
@@ -25,19 +26,20 @@ export interface PinBookData {
 interface DailyTracker {
     classicPlays: number;
     date: string;
+    bonusPrizeGames?: number; // additional prize games purchased today
 }
 
-function getTodayKey(username: string): string {
+export function getTodayKey(username: string): string {
     const today = new Date().toISOString().slice(0, 10);
     return `pinbook:${username}:daily:${today}`;
 }
 
-async function getDailyTracker(username: string): Promise<DailyTracker> {
+export async function getDailyTracker(username: string): Promise<DailyTracker> {
     const key = getTodayKey(username);
     const data = await kv.get(key) as DailyTracker | null;
     const today = new Date().toISOString().slice(0, 10);
-    if (data && data.date === today) return data;
-    return { classicPlays: 0, date: today };
+    if (data && data.date === today) return { bonusPrizeGames: 0, ...data };
+    return { classicPlays: 0, date: today, bonusPrizeGames: 0 };
 }
 
 async function incrementClassicPlays(username: string): Promise<DailyTracker> {
@@ -94,7 +96,11 @@ export async function GET() {
         }
 
         const tracker = await getDailyTracker(username);
-        return NextResponse.json({ ...(data || emptyPinBook()), classicPlays: tracker.classicPlays });
+        return NextResponse.json({
+            ...(data || emptyPinBook()),
+            classicPlays: tracker.classicPlays,
+            bonusPrizeGames: tracker.bonusPrizeGames || 0,
+        });
     } catch (e) {
         console.error('PinBook GET error:', e);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -138,11 +144,12 @@ export async function POST(req: Request) {
             // Tiered capsule rewards
             const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
 
-            // Classic mode: enforce daily cap (based on games played, not earned)
+            // Classic mode: enforce daily cap (base + any purchased bonus games)
             if (gameMode === 'classic') {
                 const tracker = await getDailyTracker(username);
-                if (tracker.classicPlays > CLASSIC_DAILY_CAP) {
-                    return NextResponse.json({ earned: false, reason: 'Daily classic cap reached', capped: true });
+                const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
+                if (tracker.classicPlays > effectiveCap) {
+                    return NextResponse.json({ earned: false, reason: 'Daily prize cap reached', capped: true });
                 }
                 data.capsules += capsuleCount;
                 data.totalEarned += capsuleCount;
@@ -164,8 +171,9 @@ export async function POST(req: Request) {
             // Classic mode: check daily cap (bonus is still within a capped game)
             if (gameMode === 'classic') {
                 const tracker = await getDailyTracker(username);
-                if (tracker.classicPlays > CLASSIC_DAILY_CAP) {
-                    return NextResponse.json({ earned: false, reason: 'Daily classic cap reached', capped: true });
+                const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
+                if (tracker.classicPlays > effectiveCap) {
+                    return NextResponse.json({ earned: false, reason: 'Daily prize cap reached', capped: true });
                 }
                 data.capsules += 1;
                 data.totalEarned += 1;

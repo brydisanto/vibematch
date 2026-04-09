@@ -16,6 +16,14 @@ import FlameBackground from "@/components/FlameBackground";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
+import dynamic from "next/dynamic";
+
+// Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
+const BuyPrizeGamesModal = dynamic(() => import("@/components/BuyPrizeGamesModal"), { ssr: false });
+const WalletProvider = dynamic(
+  () => import("@/components/WalletProvider").then(m => m.WalletProvider),
+  { ssr: false, loading: () => <>{/* placeholder */}</> }
+);
 import { ArrowLeft, Volume2, VolumeX, Menu, BookOpen } from "lucide-react";
 import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
 import { usePinBook } from "@/lib/usePinBook";
@@ -43,6 +51,7 @@ export default function Home() {
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -337,6 +346,8 @@ export default function Home() {
               capsuleCount={pinBook.state.capsules}
               achievementCount={achievements.unseenCount}
               classicPlays={pinBook.state.classicPlays}
+              bonusPrizeGames={pinBook.state.bonusPrizeGames}
+              onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
               userProfile={userProfile}
             />
           </motion.div>
@@ -481,6 +492,7 @@ export default function Home() {
                     hintCells={game.hintCells}
                     invalidSwapCells={game.invalidSwapCells}
                     swapAnim={game.swapAnim}
+                    isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && pinBook.state.classicPlays < (10 + pinBook.state.bonusPrizeGames)}
                   />
                 </div>
               </div>
@@ -720,6 +732,20 @@ export default function Home() {
             }
           }}
         />
+      )}
+
+      {/* Buy Prize Games Modal — only mount when open (keeps wallet context scoped) */}
+      {showBuyPrizeGames && (
+        <WalletProvider>
+          <BuyPrizeGamesModal
+            isOpen={showBuyPrizeGames}
+            onClose={() => setShowBuyPrizeGames(false)}
+            currentBonus={pinBook.state.bonusPrizeGames}
+            onSuccess={(newBonusTotal) => {
+              pinBook.setBonusPrizeGames(newBonusTotal);
+            }}
+          />
+        </WalletProvider>
       )}
 
       {/* Achievement Toast */}
