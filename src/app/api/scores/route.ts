@@ -1,5 +1,10 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
+
+// Maximum plausible score for a classic game — used to reject obviously-forged submissions.
+// Well above any realistic game total given 30 moves + max combos.
+const MAX_PLAUSIBLE_SCORE = 500_000;
 
 function getMonday() {
     const d = new Date();
@@ -34,16 +39,34 @@ function setCached(key: string, data: any) {
 
 export async function POST(req: Request) {
     try {
-        const { username, mode, score } = await req.json();
+        // Auth required — derive username from session, never from body
+        const session = await getSession();
+        if (!session?.username) {
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        }
 
-        if (!username || !mode || score === undefined) {
+        const { mode, score } = await req.json();
+
+        if (!mode || score === undefined) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
         }
 
+        // Validate score is a plausible number
+        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > MAX_PLAUSIBLE_SCORE) {
+            return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
+        }
+
+        if (mode !== 'classic' && mode !== 'daily') {
+            return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
+        }
+
+        const sessionUsername = session.username as string;
+
         // Ensure canonical casing from profile
-        const profileKey = `user:${username.toLowerCase()}`;
+        const profileKey = `user:${sessionUsername.toLowerCase()}`;
         const profile = await kv.get(profileKey) as any;
-        const canonicalUsername = profile?.username || username;
+        const canonicalUsername = profile?.username || sessionUsername;
+        const username = sessionUsername; // body.username ignored
         const hasCaseVariant = canonicalUsername !== username;
 
         let isNewBest = false;

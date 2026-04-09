@@ -1,5 +1,6 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 interface StreakData {
     streak: number;
@@ -47,13 +48,14 @@ export async function GET(req: Request) {
     }
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
     try {
-        const { username } = await req.json();
-
-        if (!username) {
-            return NextResponse.json({ error: 'Username required' }, { status: 400 });
+        // Auth required — derive username from session, never from body
+        const session = await getSession();
+        if (!session?.username) {
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
+        const username = session.username as string;
 
         const key = `streak:${username.toLowerCase()}`;
         const today = getTodayUTC();

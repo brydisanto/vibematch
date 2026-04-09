@@ -16,9 +16,11 @@ interface LandingPageProps {
     onLogout?: () => void;
     onOpenPinBook?: () => void;
     onOpenAchievements?: () => void;
+    onOpenBuyPrizeGames?: () => void;
     capsuleCount?: number;
     achievementCount?: number;
     classicPlays?: number;
+    bonusPrizeGames?: number;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
 
@@ -145,7 +147,7 @@ function useDailyCountdown() {
     return countdown;
 }
 
-export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, capsuleCount = 0, achievementCount = 0, classicPlays = 0, userProfile }: LandingPageProps) {
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, onOpenBuyPrizeGames, capsuleCount = 0, achievementCount = 0, classicPlays = 0, bonusPrizeGames = 0, userProfile }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -397,19 +399,22 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             transition={{ delay: 0.65, duration: 0.45, type: "spring", stiffness: 200, damping: 20 }}
                         >
                             {(() => {
-                                const DAILY_CAP = 15;
-                                const remaining = Math.max(0, DAILY_CAP - classicPlays);
+                                const BASE_CAP = 10;
+                                const totalCap = BASE_CAP + bonusPrizeGames;
+                                const remaining = Math.max(0, totalCap - classicPlays);
                                 const capped = remaining === 0;
-                                const pct = (remaining / DAILY_CAP) * 100;
+                                const pct = totalCap > 0 ? (remaining / totalCap) * 100 : 0;
                                 return (
-                                    <div
-                                        className="relative rounded-xl p-[2px] overflow-hidden"
+                                    <button
+                                        onClick={isLoggedIn ? onOpenBuyPrizeGames : undefined}
+                                        disabled={!isLoggedIn}
+                                        className="relative rounded-xl p-[2px] overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed"
                                         style={{
                                             background: "linear-gradient(180deg, #A0A0A8 0%, #707078 40%, #45454D 100%)",
                                             boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                         }}
                                     >
-                                        <div className="rounded-[10px] px-4 py-3 relative overflow-hidden" style={{
+                                        <div className="rounded-[10px] px-4 py-3 relative overflow-hidden text-center" style={{
                                             background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
                                         }}>
                                             {/* Gloss */}
@@ -417,11 +422,21 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                 background: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
                                             }} />
                                             <p className="relative z-10 text-[10px] font-mundial tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
-                                                {capped ? "Prize limit reached" : "Prize games left"}
+                                                {capped ? "Out of prize games" : "Prize games left"}
                                             </p>
-                                            <p className="relative z-10 text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                                                {capped ? "0" : remaining}
-                                            </p>
+                                            <div className="relative z-10 flex items-baseline justify-center gap-1.5">
+                                                <p className="text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                                                    {capped ? "0" : remaining}
+                                                </p>
+                                                {bonusPrizeGames > 0 && (
+                                                    <span className="text-[10px] text-[#FFE048]/70 font-mundial font-bold">+{bonusPrizeGames}</span>
+                                                )}
+                                            </div>
+                                            {isLoggedIn && (
+                                                <p className="relative z-10 text-[9px] font-mundial tracking-wider mt-1" style={{ color: "rgba(255,224,72,0.6)" }}>
+                                                    {capped ? "Tap to buy more →" : "Tap to buy more"}
+                                                </p>
+                                            )}
                                         </div>
                                         {/* Bottom edge progress bar */}
                                         <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: "rgba(255,255,255,0.06)" }}>
@@ -431,7 +446,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                 borderRadius: "0 2px 0 0",
                                             }} />
                                         </div>
-                                    </div>
+                                    </button>
                                 );
                             })()}
                             <div

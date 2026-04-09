@@ -399,7 +399,7 @@ function SlideScoring() {
                         <h4 className="font-display font-black text-[13px] text-[#FFE048]">Pin Capsule</h4>
                         <p className="text-white/50 text-[11px] font-mundial">Score <span className="text-[#FFE048] font-semibold">15K+</span> to win 1 Capsule, <span className="text-[#FFE048] font-semibold">30K+</span> to win 2, <span className="text-[#FFE048] font-semibold">50K+</span> to win 3!</p>
                         <p className="text-white/50 text-[11px] font-mundial mt-1"><span className="text-white/80 font-semibold">T</span> and <span className="text-white/80 font-semibold">Cross</span> shapes also grant <span className="text-[#FFE048] font-semibold">+1 bonus capsule</span>.</p>
-                        <p className="text-white/40 text-[10px] font-mundial mt-1">Capsules are earnable during your first <span className="text-[#FFE048] font-semibold">15 games</span> each day, plus the Daily Challenge.</p>
+                        <p className="text-white/40 text-[10px] font-mundial mt-1">Capsules are earnable during your first <span className="text-[#FFE048] font-semibold">10 games</span> each day, plus the Daily Challenge.</p>
                     </div>
                 </div>
             </motion.div>

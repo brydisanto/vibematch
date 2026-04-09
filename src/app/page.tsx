@@ -16,6 +16,14 @@ import FlameBackground from "@/components/FlameBackground";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
+import dynamic from "next/dynamic";
+
+// Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
+const BuyPrizeGamesModal = dynamic(() => import("@/components/BuyPrizeGamesModal"), { ssr: false });
+const WalletProvider = dynamic(
+  () => import("@/components/WalletProvider").then(m => m.WalletProvider),
+  { ssr: false, loading: () => <>{/* placeholder */}</> }
+);
 import { ArrowLeft, Volume2, VolumeX, Menu, BookOpen } from "lucide-react";
 import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, playUIClick } from "@/lib/sounds";
 import { usePinBook } from "@/lib/usePinBook";
@@ -43,6 +51,7 @@ export default function Home() {
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -125,21 +134,82 @@ export default function Home() {
       });
   }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track classic game played + earn capsule when game ends
+  // Unified game-end flow: trackGame → logGame → earnCapsule → achievements
+  // Must run sequentially so each step has the state it depends on:
+  // - logGame depends on trackGame's match token
+  // - earnCapsule depends on trackGame's match token
+  // - achievements depends on logGame's stored match stats for gameplay verification
   useEffect(() => {
-    if (game.state?.gamePhase === "gameover" && userProfile?.username) {
-      const mode = game.state.gameMode || 'classic';
-      // Track every classic game toward daily cap (win or lose)
+    if (game.state?.gamePhase !== "gameover" || !userProfile?.username || !achievements.state.loaded) return;
+    const mode = game.state.gameMode || 'classic';
+    const gs = game.state;
+    const stats = gameSessionStats.current;
+
+    (async () => {
+      // 1. Track classic game + issue match token
       if (mode === 'classic') {
-        pinBook.trackGame();
+        await pinBook.trackGame();
       }
-      // Award capsule if score threshold met
-      if (game.state.score >= 15000) {
-        pinBook.earnCapsule(game.state.score, mode).then(earned => {
-          if (earned) setCapsuleEarned(true);
-        });
+
+      // 2. Log game stats (persists authoritative stats keyed by matchId for achievements)
+      await pinBook.logGame({
+        score: gs.score || 0,
+        matchCount: gs.matchCount || 0,
+        maxCombo: gs.maxCombo || 0,
+        totalCascades: gs.totalCascades || 0,
+        bombsCreated: stats.bombsCreated || 0,
+        vibestreaksCreated: stats.vibestreaksCreated || 0,
+        cosmicBlastsCreated: stats.cosmicBlastsCreated || 0,
+        crossCount: stats.crossCount || 0,
+        shapesLanded: stats.shapesLanded || [],
+        gameOverReason: gs.gameOverReason || 'unknown',
+      }, mode);
+
+      // 3. Award capsule if score threshold met
+      if (gs.score >= 15000) {
+        const earned = await pinBook.earnCapsule(gs.score, mode);
+        if (earned) setCapsuleEarned(true);
       }
-    }
+
+      // 4. Check end-of-game achievements with match context for server-side verification
+      const gameEndStats: GameEndStats = {
+        score: gs.score,
+        maxCombo: gs.maxCombo,
+        totalCascades: gs.totalCascades,
+        matchCount: gs.matchCount,
+        bombsCreated: stats.bombsCreated,
+        vibestreaksCreated: stats.vibestreaksCreated,
+        cosmicBlastsCreated: stats.cosmicBlastsCreated,
+        shapesLanded: stats.shapesLanded,
+        crossCount: stats.crossCount,
+        gameMode: gs.gameMode,
+      };
+      const playerCtx: PlayerContext = {
+        streak: 0,
+        uniquePins: Object.keys(pinBook.state.pins).length,
+        totalPinsOpened: pinBook.state.totalOpened || 0,
+        hasSilverPin: false,
+        hasGoldPin: false,
+        hasCosmicPin: false,
+        commonPinCount: 0,
+        rarePinCount: 0,
+        legendaryPinCount: 0,
+        cosmicPinCount: 0,
+        gamesPlayedToday: 0,
+      };
+      const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
+      for (const badgeId of Object.keys(pinBook.state.pins)) {
+        const tier = badgeTierMap.get(badgeId);
+        if (tier === "blue") playerCtx.commonPinCount++;
+        if (tier === "silver") { playerCtx.hasSilverPin = true; playerCtx.rarePinCount++; }
+        if (tier === "gold") { playerCtx.hasGoldPin = true; playerCtx.legendaryPinCount++; }
+        if (tier === "cosmic") { playerCtx.hasCosmicPin = true; playerCtx.cosmicPinCount++; }
+      }
+      const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
+      if (ids.length > 0) {
+        await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
+      }
+    })();
   }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Award bonus capsule when T/cross shape is made (1 per game)
@@ -191,56 +261,6 @@ export default function Home() {
       }
     }
   }, [game.lastTurnResult]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Check end-of-game achievements
-  useEffect(() => {
-    if (game.state?.gamePhase !== "gameover" || !userProfile?.username || !achievements.state.loaded) return;
-    const gs = game.state;
-    const stats = gameSessionStats.current;
-
-    const gameEndStats: GameEndStats = {
-      score: gs.score,
-      maxCombo: gs.maxCombo,
-      totalCascades: gs.totalCascades,
-      matchCount: gs.matchCount,
-      bombsCreated: stats.bombsCreated,
-      vibestreaksCreated: stats.vibestreaksCreated,
-      cosmicBlastsCreated: stats.cosmicBlastsCreated,
-      shapesLanded: stats.shapesLanded,
-      crossCount: stats.crossCount,
-      gameMode: gs.gameMode,
-    };
-
-    // Build player context from pinbook state
-    const playerCtx: PlayerContext = {
-      streak: 0, // fetched separately, not critical for most achievements
-      uniquePins: Object.keys(pinBook.state.pins).length,
-      totalPinsOpened: pinBook.state.totalOpened || 0,
-      hasSilverPin: false,
-      hasGoldPin: false,
-      hasCosmicPin: false,
-      commonPinCount: 0,
-      rarePinCount: 0,
-      legendaryPinCount: 0,
-      cosmicPinCount: 0,
-      gamesPlayedToday: 0,
-    };
-
-    // Check pin tiers by cross-referencing with badge definitions
-    const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-    for (const badgeId of Object.keys(pinBook.state.pins)) {
-      const tier = badgeTierMap.get(badgeId);
-      if (tier === "blue") playerCtx.commonPinCount++;
-      if (tier === "silver") { playerCtx.hasSilverPin = true; playerCtx.rarePinCount++; }
-      if (tier === "gold") { playerCtx.hasGoldPin = true; playerCtx.legendaryPinCount++; }
-      if (tier === "cosmic") { playerCtx.hasCosmicPin = true; playerCtx.cosmicPinCount++; }
-    }
-
-    const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
-    if (ids.length > 0) {
-      achievements.unlock(ids);
-    }
-  }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleMute = () => {
     playUIClick();
@@ -337,6 +357,8 @@ export default function Home() {
               capsuleCount={pinBook.state.capsules}
               achievementCount={achievements.unseenCount}
               classicPlays={pinBook.state.classicPlays}
+              bonusPrizeGames={pinBook.state.bonusPrizeGames}
+              onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
               userProfile={userProfile}
             />
           </motion.div>
@@ -481,6 +503,7 @@ export default function Home() {
                     hintCells={game.hintCells}
                     invalidSwapCells={game.invalidSwapCells}
                     swapAnim={game.swapAnim}
+                    isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && pinBook.state.classicPlays < (10 + pinBook.state.bonusPrizeGames)}
                   />
                 </div>
               </div>
@@ -720,6 +743,20 @@ export default function Home() {
             }
           }}
         />
+      )}
+
+      {/* Buy Prize Games Modal — only mount when open (keeps wallet context scoped) */}
+      {showBuyPrizeGames && (
+        <WalletProvider>
+          <BuyPrizeGamesModal
+            isOpen={showBuyPrizeGames}
+            onClose={() => setShowBuyPrizeGames(false)}
+            currentBonus={pinBook.state.bonusPrizeGames}
+            onSuccess={(newBonusTotal) => {
+              pinBook.setBonusPrizeGames(newBonusTotal);
+            }}
+          />
+        </WalletProvider>
       )}
 
       {/* Achievement Toast */}

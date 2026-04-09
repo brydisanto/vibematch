@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { requireAdmin } from '@/lib/admin-auth';
 import { BADGES, BadgeTier } from '@/lib/badges';
 
 // Tier → point value for Pin Score
@@ -115,12 +116,12 @@ export async function GET() {
     }
 }
 
-// DELETE — wipe all pinbook data and leaderboard
+// DELETE — wipe all pinbook data and leaderboard (admin only)
 export async function DELETE() {
     try {
-        const session = await getSession();
-        if (!session?.username) {
-            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        const admin = await requireAdmin();
+        if (!admin) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Scan for all pinbook keys (user data + daily trackers + leaderboard entries + legacy)
@@ -148,12 +149,12 @@ export async function DELETE() {
     }
 }
 
-// POST — rebuild leaderboard from all pinbook data (migration to sorted set)
+// POST — rebuild leaderboard from all pinbook data (admin only)
 export async function POST() {
     try {
-        const session = await getSession();
-        if (!session?.username) {
-            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        const admin = await requireAdmin();
+        if (!admin) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Find all user pinbook keys (skip daily trackers, leaderboard entries, legacy key)

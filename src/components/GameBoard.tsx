@@ -42,6 +42,7 @@ interface GameBoardProps {
     hintCells?: Set<string>;
     invalidSwapCells?: { row: number; col: number }[] | null;
     swapAnim?: { pos1: Position; pos2: Position } | null;
+    isPrizeGame?: boolean;
 }
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
@@ -559,6 +560,7 @@ export default function GameBoard({
     hintCells = EMPTY_HINT_SET,
     invalidSwapCells = null,
     swapAnim = null,
+    isPrizeGame = false,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -701,7 +703,7 @@ export default function GameBoard({
 
             {/* Board container with combo-reactive glow */}
             <div
-                className={`${boardGlowClass} rounded-2xl p-[3px] ${shakeClass} transition-all duration-300 h-full`}
+                className={`${boardGlowClass} rounded-2xl p-[3px] ${shakeClass} transition-all duration-300 h-full ${isPrizeGame ? "prize-game-pulse" : ""}`}
                 style={{
                     background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 40%, #8B6914 100%)",
                     boxShadow: "0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",

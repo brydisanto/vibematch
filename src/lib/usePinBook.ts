@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Badge, BADGES, BadgeTier } from "./badges";
 
 export interface PinBookState {
@@ -9,6 +9,7 @@ export interface PinBookState {
     totalOpened: number;
     totalEarned: number;
     classicPlays: number;
+    bonusPrizeGames: number;
     loaded: boolean;
 }
 
@@ -28,9 +29,11 @@ export function usePinBook() {
         totalOpened: 0,
         totalEarned: 0,
         classicPlays: 0,
+        bonusPrizeGames: 0,
         loaded: false,
     });
     const [pendingReveal, setPendingReveal] = useState<CapsuleReveal | null>(null);
+    const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -43,13 +46,16 @@ export function usePinBook() {
         }
     }, []);
 
+    // Ref mirror of activeMatchId so async flows always read the latest value
+    const activeMatchIdRef = useRef<string | null>(null);
+
     const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<boolean> => {
         if (score < CAPSULE_SCORE_THRESHOLD) return false;
         try {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "earn", score, gameMode }),
+                body: JSON.stringify({ action: "earn", score, gameMode, matchId: activeMatchIdRef.current }),
             });
             if (!res.ok) { console.error("pinbook earn failed:", res.status); return false; }
             const data = await res.json();
@@ -74,7 +80,32 @@ export function usePinBook() {
             if (data.classicPlays != null) {
                 setState(prev => ({ ...prev, classicPlays: data.classicPlays }));
             }
+            if (data.matchId) {
+                activeMatchIdRef.current = data.matchId;
+                setActiveMatchId(data.matchId);
+            }
         } catch (e) { console.error("pinbook trackGame error:", e); }
+    }, []);
+
+    const logGame = useCallback(async (stats: {
+        score: number;
+        matchCount: number;
+        maxCombo: number;
+        totalCascades: number;
+        bombsCreated: number;
+        vibestreaksCreated: number;
+        cosmicBlastsCreated: number;
+        crossCount: number;
+        shapesLanded: Array<{ type: string; count: number }>;
+        gameOverReason: string;
+    }, gameMode: string = 'classic'): Promise<void> => {
+        try {
+            await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "logGame", matchId: activeMatchIdRef.current, gameMode, stats }),
+            });
+        } catch (e) { console.error("pinbook logGame error:", e); }
     }, []);
 
     const earnBonusCapsule = useCallback(async (gameMode: string = 'classic'): Promise<boolean> => {
@@ -82,7 +113,7 @@ export function usePinBook() {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "bonus", gameMode }),
+                body: JSON.stringify({ action: "bonus", gameMode, matchId: activeMatchIdRef.current }),
             });
             if (!res.ok) { console.error("pinbook bonus failed:", res.status); return false; }
             const data = await res.json();
@@ -107,10 +138,13 @@ export function usePinBook() {
             const data = await res.json();
             if (!data.opened) return null;
 
-            // Pick a random badge from the returned tier
+            // Server picks both tier AND specific badge (authoritative)
             const tier = data.tier as BadgeTier;
-            const tierBadges = BADGES.filter(b => b.tier === tier);
-            const badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+            const badge = BADGES.find(b => b.id === data.badgeId);
+            if (!badge) {
+                console.error("Server returned unknown badgeId:", data.badgeId);
+                return null;
+            }
 
             const existing = state.pins[badge.id];
             const reveal: CapsuleReveal = {
@@ -162,15 +196,26 @@ export function usePinBook() {
         } catch (e) { console.error("pinbook collect error:", e); }
     }, [pendingReveal]);
 
+    const setBonusPrizeGames = useCallback((bonus: number) => {
+        setState(prev => ({ ...prev, bonusPrizeGames: bonus }));
+    }, []);
+
+    // Exposed for consumers that need to read the latest match id in async flows
+    const getActiveMatchId = useCallback(() => activeMatchIdRef.current, []);
+
     return {
         state,
         pendingReveal,
+        activeMatchId,
+        getActiveMatchId,
         load,
         trackGame,
+        logGame,
         earnCapsule,
         earnBonusCapsule,
         openCapsule,
         collectReveal,
+        setBonusPrizeGames,
         totalCollected: Object.keys(state.pins).length,
         totalBadges: BADGES.length,
     };
