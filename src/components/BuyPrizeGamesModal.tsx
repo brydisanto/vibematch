@@ -216,13 +216,13 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
 
                             {success ? (
                                 <div className="text-center py-4">
-                                    <motion.div
-                                        className="text-5xl mb-4"
-                                        animate={{ rotate: [0, -15, 15, -10, 10, 0] }}
-                                        transition={{ duration: 1.5, repeat: 2 }}
-                                    >
-                                        🫧
-                                    </motion.div>
+                                    <motion.img
+                                        src="/assets/gvc_shaka.png"
+                                        alt=""
+                                        className="w-16 h-16 mx-auto mb-4 object-contain"
+                                        animate={{ rotate: [0, -12, 12, -8, 8, -4, 4, 0] }}
+                                        transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 2 }}
+                                    />
                                     <h2 className="font-display text-2xl font-black text-[#FFE048] mb-2">Purchase Complete!</h2>
                                     <p className="text-white/70 font-mundial text-sm mb-6">
                                         {selectedPkg.size} prize {selectedPkg.size === 1 ? 'game' : 'games'} added. Go crush it!
@@ -327,9 +327,25 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                     : 'bg-[#FFE048] text-black hover:bg-[#FFE858]'
                                             }`}
                                         >
-                                            {isSending ? 'Confirm in wallet...' :
-                                                verifying ? statusText :
-                                                cannotAfford ? 'Exceeds daily limit' :
+                                            {isSending ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <motion.span
+                                                        className="inline-block w-4 h-4 border-2 border-gray-500 border-t-white rounded-full"
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                    />
+                                                    Confirm in wallet...
+                                                </span>
+                                            ) : verifying ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <motion.span
+                                                        className="inline-block w-4 h-4 border-2 border-gray-500 border-t-[#FFE048] rounded-full"
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                    />
+                                                    {statusText}
+                                                </span>
+                                            ) : cannotAfford ? 'Exceeds daily limit' :
                                                 `Buy for ${selectedPkg.price} $VIBESTR`}
                                         </button>
                                     )}
