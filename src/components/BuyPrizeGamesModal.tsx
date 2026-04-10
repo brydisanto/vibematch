@@ -120,18 +120,43 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
         if (!isConnected || !address || cannotAfford) return;
         setError(null);
 
+        // Guard against missing env vars at runtime
+        if (!TREASURY_ADDRESS || !TREASURY_ADDRESS.startsWith('0x')) {
+            console.error('[BuyPrizeGames] Missing NEXT_PUBLIC_TREASURY_ADDRESS', { TREASURY_ADDRESS });
+            setError('Config error: treasury address not set. Please contact support.');
+            return;
+        }
+
         try {
+            console.log('[BuyPrizeGames] Sending tx', {
+                token: VIBESTR_ADDRESS,
+                treasury: TREASURY_ADDRESS,
+                amount: selectedPkg.price,
+                from: address,
+            });
             const hash = await writeContractAsync({
                 address: VIBESTR_ADDRESS,
                 abi: erc20Abi,
                 functionName: 'transfer',
                 args: [TREASURY_ADDRESS, parseEther(selectedPkg.price)],
             });
+            console.log('[BuyPrizeGames] Tx hash:', hash);
             startPolling(hash);
         } catch (err: any) {
-            setError(err.message?.includes('rejected')
-                ? 'Transaction was rejected.'
-                : 'Failed to send transaction. Please try again.');
+            // Log the full error so we can diagnose
+            console.error('[BuyPrizeGames] writeContractAsync failed:', err);
+            const raw = err?.shortMessage || err?.message || String(err);
+
+            if (raw.includes('rejected') || raw.includes('User denied') || raw.includes('User rejected')) {
+                setError('Transaction was rejected.');
+            } else if (raw.includes('insufficient funds') || raw.includes('exceeds the balance')) {
+                setError('Not enough VIBESTR in your wallet.');
+            } else if (raw.includes('chain') || raw.includes('network')) {
+                setError('Please switch your wallet to Ethereum mainnet.');
+            } else {
+                // Show the raw shortMessage so you can diagnose
+                setError(`Transaction failed: ${raw.slice(0, 100)}`);
+            }
         }
     };
 

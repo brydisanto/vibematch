@@ -54,29 +54,33 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                             </button>
 
                             <div className="relative z-10 text-center">
-                                {/* Icon */}
-                                <motion.div
-                                    className="text-5xl mb-3 inline-block"
-                                    animate={{ rotate: [0, -10, 10, -5, 5, 0] }}
-                                    transition={{ duration: 1.5, repeat: 1 }}
-                                >
-                                    🫧
-                                </motion.div>
+                                {/* Shaka icon with wiggle */}
+                                <motion.img
+                                    src="/assets/gvc_shaka.png"
+                                    alt=""
+                                    className="w-16 h-16 mx-auto mb-3 object-contain"
+                                    animate={{ rotate: [0, -12, 12, -8, 8, -4, 4, 0] }}
+                                    transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 2 }}
+                                />
 
                                 {/* Headline */}
                                 <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mb-2" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                                    {isCapped ? "Out of prize games!" : `Only ${remaining} prize ${remaining === 1 ? "game" : "games"} left today`}
+                                    {isCapped
+                                        ? "Don't stop the vibes"
+                                        : remaining === 1
+                                            ? "Down to your last stoke"
+                                            : `${remaining} prize runs left today`}
                                 </h2>
 
                                 {/* Body */}
                                 <p className="text-white/70 text-sm font-mundial leading-relaxed mb-5">
                                     {isCapped ? (
                                         <>
-                                            You've used all 10 of your free daily prize games. Keep collecting capsules today by buying more with <strong className="text-[#FFE048]">$VIBESTR</strong>.
+                                            You just maxed out your daily prize games. Cop a fresh pack with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep stacking pins all day.
                                         </>
                                     ) : (
                                         <>
-                                            Running low? You can buy more prize games with <strong className="text-[#FFE048]">$VIBESTR</strong> to keep earning capsules today.
+                                            Running low on prize games? Grab more with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep the pin drops flowing.
                                         </>
                                     )}
                                 </p>
@@ -85,15 +89,15 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                 <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-5 text-left space-y-1.5">
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
-                                        <span>1, 5, or 10-pack options</span>
+                                        <span>Grab a 1, 5, or 10-pack</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
-                                        <span>Best value: 10-pack saves 50%</span>
+                                        <span>10-pack is max value — save 50%</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
-                                        <span>Resets at midnight UTC</span>
+                                        <span>Free games refresh at midnight UTC</span>
                                     </div>
                                 </div>
 
@@ -108,7 +112,7 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                     onClick={onClose}
                                     className="w-full mt-2 py-2 text-white/40 hover:text-white/70 text-xs font-mundial tracking-wider uppercase transition-colors"
                                 >
-                                    Maybe later
+                                    Not right now
                                 </button>
                             </div>
                         </div>
