@@ -8,12 +8,12 @@ import { BADGES } from '@/lib/badges';
 const MAX_PLAUSIBLE_SCORE = 500_000;
 
 // Rarity weights for capsule drops
-// 73 total badges: 38 blue, 25 silver, 8 gold, 2 cosmic
+// 101 total badges: 16 blue, 56 silver, 21 gold, 8 cosmic
 const TIER_WEIGHTS = {
-    blue: 60,    // ~60%
-    silver: 25,  // ~25%
-    gold: 12,    // ~12%
-    cosmic: 3,   // ~3%
+    blue: 50,    // ~50%
+    silver: 30,  // ~30%
+    gold: 15,    // ~15%
+    cosmic: 5,   // ~5%
 } as const;
 
 const CAPSULE_SCORE_THRESHOLD = 15000;

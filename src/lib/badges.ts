@@ -6,6 +6,8 @@ export interface Badge {
     image: string;
     tier: BadgeTier;
     pointMultiplier: number;
+    /** If true, this badge only appears in capsule drops / pin book — not on the game board. */
+    collectOnly?: boolean;
 }
 
 export const BADGES: Badge[] = [
@@ -552,17 +554,224 @@ export const BADGES: Badge[] = [
         tier: "cosmic",
         pointMultiplier: 3,
     },
+
+    // ===== COLLECTION-ONLY BADGES (24) — capsule drops only, not on game board =====
+
+    // Common (1)
+    {
+        id: "highkeymoments_2",
+        name: "HighKey Moments II",
+        image: "/badges/highkeymoments_2.webp",
+        tier: "blue",
+        pointMultiplier: 1,
+        collectOnly: true,
+    },
+
+    // Rare (6) — Hatrick & High Five collection milestones
+    {
+        id: "gradient_hatrick",
+        name: "Gradient Hatrick",
+        image: "/badges/gradient_hatrick.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "gradient_high_five",
+        name: "Gradient High Five",
+        image: "/badges/gradient_high_five.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "plastic_hatrick",
+        name: "Plastic Hatrick",
+        image: "/badges/plastic_hatrick.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "plastic_high_five",
+        name: "Plastic High Five",
+        image: "/badges/plastic_high_five.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "robot_hatrick",
+        name: "Robot Hatrick",
+        image: "/badges/robot_hatrick.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "robot_high_five",
+        name: "Robot High Five",
+        image: "/badges/robot_high_five.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+
+    // $VIBESTR Tier Badges (8)
+    {
+        id: "vibestr_blue_tier",
+        name: "$VIBESTR Blue Tier",
+        image: "/badges/vibestr_blue_tier.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_bronze_tier",
+        name: "$VIBESTR Bronze Tier",
+        image: "/badges/vibestr_bronze_tier.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_silver_tier",
+        name: "$VIBESTR Silver Tier",
+        image: "/badges/vibestr_silver_tier.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_gold_tier",
+        name: "$VIBESTR Gold Tier",
+        image: "/badges/vibestr_gold_tier.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_pink_tier",
+        name: "$VIBESTR Pink Tier",
+        image: "/badges/vibestr_pink_tier.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_purple_tier",
+        name: "$VIBESTR Purple Tier",
+        image: "/badges/vibestr_purple_tier.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_diamond_tier",
+        name: "$VIBESTR Diamond Tier",
+        image: "/badges/vibestr_diamond_tier.webp",
+        tier: "cosmic",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "vibestr_cosmic_tier",
+        name: "$VIBESTR Cosmic Tier",
+        image: "/badges/vibestr_cosmic_tier.webp",
+        tier: "cosmic",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+
+    // Collector Milestone Badges (8)
+    {
+        id: "five_badges",
+        name: "Collector of Epic Vibes",
+        image: "/badges/five_badges.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "ten_badges",
+        name: "Collector of Exquisite Vibes",
+        image: "/badges/ten_badges.webp",
+        tier: "silver",
+        pointMultiplier: 2,
+        collectOnly: true,
+    },
+    {
+        id: "fifteen_badges",
+        name: "Collector of Legendary Vibes",
+        image: "/badges/fifteen_badges.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "twenty_badges",
+        name: "Collector of Pristine Vibes",
+        image: "/badges/twenty_badges.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "thirty_badges",
+        name: "Collector of Transcendent Vibes",
+        image: "/badges/thirty_badges.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "forty_badges",
+        name: "Collector of Immaculate Vibes",
+        image: "/badges/forty_badges.webp",
+        tier: "cosmic",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "fifty_badges",
+        name: "Collector of Magnificent Vibes",
+        image: "/badges/fifty_badges.webp",
+        tier: "cosmic",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+    {
+        id: "unfathomable_vibes",
+        name: "Collector of Unfathomable Vibes",
+        image: "/badges/unfathomable_vibes.webp",
+        tier: "cosmic",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
+
+    // Activity Badge (1)
+    {
+        id: "vibestr_bounty_hunter",
+        name: "VIBE Bounty Hunter",
+        image: "/badges/vibestr_bounty_hunter.webp",
+        tier: "gold",
+        pointMultiplier: 3,
+        collectOnly: true,
+    },
 ];
+
+// Game-board-eligible badges (excludes collection-only badges)
+const GAME_BADGES = BADGES.filter(b => !b.collectOnly);
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
 
     const byTier: Record<BadgeTier, Badge[]> = {
-        blue: shuffle(BADGES.filter((b) => b.tier === "blue"), rng),
-        silver: shuffle(BADGES.filter((b) => b.tier === "silver"), rng),
-        gold: shuffle(BADGES.filter((b) => b.tier === "gold"), rng),
-        cosmic: shuffle(BADGES.filter((b) => b.tier === "cosmic"), rng),
+        blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
+        silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
+        gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
+        cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
@@ -585,10 +794,10 @@ export function selectDraftPool(seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
 
     const byTier: Record<BadgeTier, Badge[]> = {
-        blue: shuffle(BADGES.filter((b) => b.tier === "blue"), rng),
-        silver: shuffle(BADGES.filter((b) => b.tier === "silver"), rng),
-        gold: shuffle(BADGES.filter((b) => b.tier === "gold"), rng),
-        cosmic: shuffle(BADGES.filter((b) => b.tier === "cosmic"), rng),
+        blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
+        silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
+        gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
+        cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
 
     const usedGroups = new Set<number>();
