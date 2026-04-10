@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { BADGES, BadgeTier } from '@/lib/badges';
 
 // Tier → point value for Pin Score
-const TIER_POINTS: Record<BadgeTier, number> = { blue: 1, silver: 2, gold: 3, cosmic: 4 };
+const TIER_POINTS: Record<BadgeTier, number> = { blue: 1, silver: 2, special: 3, gold: 4, cosmic: 5 };
 const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
 
 // Sorted set for ranking (zadd is atomic — no read-modify-write race)

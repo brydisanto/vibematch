@@ -124,6 +124,7 @@ function CosmicBlastOverlay() {
 const TIER_IDLE_CLASS: Record<BadgeTier, string> = {
     blue: "tile-tier-blue",
     silver: "tile-tier-silver",
+    special: "",
     gold: "tile-tier-gold",
     cosmic: "tile-tier-cosmic",
 };

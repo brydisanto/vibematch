@@ -21,11 +21,12 @@ interface PinBookProps {
     currentUsername?: string;
 }
 
-const TIER_ORDER: BadgeTier[] = ["cosmic", "gold", "silver", "blue"];
+const TIER_ORDER: BadgeTier[] = ["cosmic", "gold", "special", "silver", "blue"];
 
 const TIER_GLOW: Record<BadgeTier, string> = {
     cosmic: "0 0 12px rgba(179, 102, 255, 0.6), 0 0 24px rgba(179, 102, 255, 0.25)",
     gold: "0 0 12px rgba(255, 224, 72, 0.5), 0 0 24px rgba(255, 224, 72, 0.2)",
+    special: "rgba(255, 140, 66, 0.5)",
     silver: "0 0 12px rgba(74, 158, 255, 0.5), 0 0 24px rgba(74, 158, 255, 0.2)",
     blue: "0 0 10px rgba(224, 224, 224, 0.3), 0 0 20px rgba(224, 224, 224, 0.1)",
 };
@@ -164,7 +165,7 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
                                 ) : entry.username}
                             </div>
                             <div className="text-[10px] text-white/30 font-bold mt-0.5">
-                                {entry.uniqueCount}/77 pins collected ({entry.totalPins} total)
+                                {entry.uniqueCount}/{BADGES.length} pins collected ({entry.totalPins} total)
                             </div>
                         </div>
 
@@ -219,6 +220,7 @@ export default function PinBook({
         const groups: Record<BadgeTier, Badge[]> = {
             cosmic: [],
             gold: [],
+            special: [],
             silver: [],
             blue: [],
         };

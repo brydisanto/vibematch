@@ -943,11 +943,11 @@ export function playCapsuleAnticipateSound() {
 }
 
 // Capsule crack — explosive burst
-export function playCapsuleCrackSound(tier: 'blue' | 'silver' | 'gold' | 'cosmic' = 'blue') {
+export function playCapsuleCrackSound(tier: string = 'blue') {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    const isHigh = tier === 'gold' || tier === 'cosmic';
+    const isHigh = tier === 'gold' || tier === 'cosmic' || tier === 'special';
 
     // Deep explosive impact
     playNote(40, 0.4, "sine", 0.4);
@@ -991,7 +991,7 @@ export function playCapsuleCrackSound(tier: 'blue' | 'silver' | 'gold' | 'cosmic
 }
 
 // Capsule reveal — magical fanfare (tier-dependent richness)
-export function playCapsuleRevealSound(tier: 'blue' | 'silver' | 'gold' | 'cosmic' = 'blue') {
+export function playCapsuleRevealSound(tier: string = 'blue') {
     // Base reveal chime — ascending
     const baseNotes = [523, 659, 784]; // C5, E5, G5
     baseNotes.forEach((freq, i) => {

@@ -42,15 +42,17 @@ const CAPSULE_COLORS: Record<
     { shell: string; shellDark: string; shellDeep: string; glow: string; accent: string; rim: string; specularIntensity: number }
 > = {
     // Dark chrome / onyx / liquid mercury palette
-    blue:   { shell: "#2a2a30", shellDark: "#1a1a20", shellDeep: "#0e0e14", glow: "#555560", accent: "#70707a", rim: "#888890", specularIntensity: 0.7 },
-    silver: { shell: "#1a1a22", shellDark: "#121218", shellDeep: "#0a0a10", glow: "#C0D0E0", accent: "#D8E8F8", rim: "#E8F0FF", specularIntensity: 0.85 },
-    gold:   { shell: "#1a1508", shellDark: "#12100a", shellDeep: "#0a0806", glow: "#FFD700", accent: "#FFE878", rim: "#FFF0A0", specularIntensity: 0.9 },
-    cosmic: { shell: "#12081e", shellDark: "#0d0616", shellDeep: "#08030e", glow: "#B366FF", accent: "#DD88FF", rim: "#E0AAFF", specularIntensity: 0.92 },
+    blue:    { shell: "#2a2a30", shellDark: "#1a1a20", shellDeep: "#0e0e14", glow: "#555560", accent: "#70707a", rim: "#888890", specularIntensity: 0.7 },
+    silver:  { shell: "#1a1a22", shellDark: "#121218", shellDeep: "#0a0a10", glow: "#C0D0E0", accent: "#D8E8F8", rim: "#E8F0FF", specularIntensity: 0.85 },
+    special: { shell: "#1e1208", shellDark: "#140e06", shellDeep: "#0a0804", glow: "#FF8C42", accent: "#FFAA66", rim: "#FFC088", specularIntensity: 0.87 },
+    gold:    { shell: "#1a1508", shellDark: "#12100a", shellDeep: "#0a0806", glow: "#FFD700", accent: "#FFE878", rim: "#FFF0A0", specularIntensity: 0.9 },
+    cosmic:  { shell: "#12081e", shellDark: "#0d0616", shellDeep: "#08030e", glow: "#B366FF", accent: "#DD88FF", rim: "#E0AAFF", specularIntensity: 0.92 },
 };
 
 const TIER_INTENSITY: Record<BadgeTier, number> = {
     blue: 1,
     silver: 1.3,
+    special: 1.5,
     gold: 1.7,
     cosmic: 2.2,
 };

@@ -1,4 +1,4 @@
-export type BadgeTier = "blue" | "silver" | "gold" | "cosmic";
+export type BadgeTier = "blue" | "silver" | "special" | "gold" | "cosmic";
 
 export interface Badge {
     id: string;
@@ -8,6 +8,8 @@ export interface Badge {
     pointMultiplier: number;
     /** If true, this badge only appears in capsule drops / pin book — not on the game board. */
     collectOnly?: boolean;
+    /** Relative weight within the tier for capsule drops. Higher = more common. Server-side only. */
+    dropWeight?: number;
 }
 
 export const BADGES: Badge[] = [
@@ -562,32 +564,43 @@ export const BADGES: Badge[] = [
         id: "highkeymoments_2",
         name: "HighKey Moments II",
         image: "/badges/highkeymoments_2.webp",
-        tier: "blue",
-        pointMultiplier: 1,
+        tier: "gold",
+        pointMultiplier: 3,
         collectOnly: true,
     },
 
     // Rare (6) — Hatrick & High Five collection milestones
+    // Hatrick badges → Common
     {
         id: "gradient_hatrick",
         name: "Gradient Hatrick",
         image: "/badges/gradient_hatrick.webp",
-        tier: "silver",
-        pointMultiplier: 2,
-        collectOnly: true,
-    },
-    {
-        id: "gradient_high_five",
-        name: "Gradient High Five",
-        image: "/badges/gradient_high_five.webp",
-        tier: "silver",
-        pointMultiplier: 2,
+        tier: "blue",
+        pointMultiplier: 1,
         collectOnly: true,
     },
     {
         id: "plastic_hatrick",
         name: "Plastic Hatrick",
         image: "/badges/plastic_hatrick.webp",
+        tier: "blue",
+        pointMultiplier: 1,
+        collectOnly: true,
+    },
+    {
+        id: "robot_hatrick",
+        name: "Robot Hatrick",
+        image: "/badges/robot_hatrick.webp",
+        tier: "blue",
+        pointMultiplier: 1,
+        collectOnly: true,
+    },
+
+    // High Five badges → Rare
+    {
+        id: "gradient_high_five",
+        name: "Gradient High Five",
+        image: "/badges/gradient_high_five.webp",
         tier: "silver",
         pointMultiplier: 2,
         collectOnly: true,
@@ -601,14 +614,6 @@ export const BADGES: Badge[] = [
         collectOnly: true,
     },
     {
-        id: "robot_hatrick",
-        name: "Robot Hatrick",
-        image: "/badges/robot_hatrick.webp",
-        tier: "silver",
-        pointMultiplier: 2,
-        collectOnly: true,
-    },
-    {
         id: "robot_high_five",
         name: "Robot High Five",
         image: "/badges/robot_high_five.webp",
@@ -617,79 +622,99 @@ export const BADGES: Badge[] = [
         collectOnly: true,
     },
 
-    // $VIBESTR Tier Badges (8)
+    // ===== STRATEGIC SPECIALS — $VIBESTR Tier Badges + Bounty Hunter =====
+    // These sit between Rare and Legendary in drop weight.
+    // Within this tier, Diamond and Cosmic are much harder to find (handled
+    // by the dropWeight field on Badge — server uses it when selecting).
     {
         id: "vibestr_blue_tier",
         name: "$VIBESTR Blue Tier",
         image: "/badges/vibestr_blue_tier.webp",
-        tier: "silver",
+        tier: "special",
         pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 20,  // common within specials
     },
     {
         id: "vibestr_bronze_tier",
         name: "$VIBESTR Bronze Tier",
         image: "/badges/vibestr_bronze_tier.webp",
-        tier: "silver",
+        tier: "special",
         pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 20,
     },
     {
         id: "vibestr_silver_tier",
         name: "$VIBESTR Silver Tier",
         image: "/badges/vibestr_silver_tier.webp",
-        tier: "gold",
-        pointMultiplier: 3,
+        tier: "special",
+        pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 15,
     },
     {
         id: "vibestr_gold_tier",
         name: "$VIBESTR Gold Tier",
         image: "/badges/vibestr_gold_tier.webp",
-        tier: "gold",
-        pointMultiplier: 3,
+        tier: "special",
+        pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 12,
     },
     {
         id: "vibestr_pink_tier",
         name: "$VIBESTR Pink Tier",
         image: "/badges/vibestr_pink_tier.webp",
-        tier: "gold",
-        pointMultiplier: 3,
+        tier: "special",
+        pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 10,
     },
     {
         id: "vibestr_purple_tier",
         name: "$VIBESTR Purple Tier",
         image: "/badges/vibestr_purple_tier.webp",
-        tier: "gold",
-        pointMultiplier: 3,
+        tier: "special",
+        pointMultiplier: 2,
         collectOnly: true,
+        dropWeight: 8,
     },
     {
         id: "vibestr_diamond_tier",
         name: "$VIBESTR Diamond Tier",
         image: "/badges/vibestr_diamond_tier.webp",
-        tier: "cosmic",
+        tier: "special",
         pointMultiplier: 3,
         collectOnly: true,
+        dropWeight: 3,  // very rare within specials
     },
     {
         id: "vibestr_cosmic_tier",
         name: "$VIBESTR Cosmic Tier",
         image: "/badges/vibestr_cosmic_tier.webp",
-        tier: "cosmic",
+        tier: "special",
         pointMultiplier: 3,
         collectOnly: true,
+        dropWeight: 2,  // rarest within specials
+    },
+    {
+        id: "vibestr_bounty_hunter",
+        name: "VIBE Bounty Hunter",
+        image: "/badges/vibestr_bounty_hunter.webp",
+        tier: "special",
+        pointMultiplier: 2,
+        collectOnly: true,
+        dropWeight: 10,
     },
 
-    // Collector Milestone Badges (8)
+    // Collector Milestone Badges (8) — max at Legendary, none Cosmic
     {
         id: "five_badges",
         name: "Collector of Epic Vibes",
         image: "/badges/five_badges.webp",
-        tier: "silver",
-        pointMultiplier: 2,
+        tier: "blue",
+        pointMultiplier: 1,
         collectOnly: true,
     },
     {
@@ -704,8 +729,8 @@ export const BADGES: Badge[] = [
         id: "fifteen_badges",
         name: "Collector of Legendary Vibes",
         image: "/badges/fifteen_badges.webp",
-        tier: "gold",
-        pointMultiplier: 3,
+        tier: "silver",
+        pointMultiplier: 2,
         collectOnly: true,
     },
     {
@@ -728,7 +753,7 @@ export const BADGES: Badge[] = [
         id: "forty_badges",
         name: "Collector of Immaculate Vibes",
         image: "/badges/forty_badges.webp",
-        tier: "cosmic",
+        tier: "gold",
         pointMultiplier: 3,
         collectOnly: true,
     },
@@ -736,7 +761,7 @@ export const BADGES: Badge[] = [
         id: "fifty_badges",
         name: "Collector of Magnificent Vibes",
         image: "/badges/fifty_badges.webp",
-        tier: "cosmic",
+        tier: "gold",
         pointMultiplier: 3,
         collectOnly: true,
     },
@@ -744,16 +769,6 @@ export const BADGES: Badge[] = [
         id: "unfathomable_vibes",
         name: "Collector of Unfathomable Vibes",
         image: "/badges/unfathomable_vibes.webp",
-        tier: "cosmic",
-        pointMultiplier: 3,
-        collectOnly: true,
-    },
-
-    // Activity Badge (1)
-    {
-        id: "vibestr_bounty_hunter",
-        name: "VIBE Bounty Hunter",
-        image: "/badges/vibestr_bounty_hunter.webp",
         tier: "gold",
         pointMultiplier: 3,
         collectOnly: true,
@@ -770,14 +785,13 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const byTier: Record<BadgeTier, Badge[]> = {
         blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
         silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
+        special: shuffle(GAME_BADGES.filter((b) => b.tier === "special"), rng),
         gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
         cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
-    // Select cosmic FIRST so its conflict group is guaranteed reserved.
-    // Previously, blue/silver/gold could consume all 3 cosmic conflict groups
-    // (3, 4, 10), leaving zero valid cosmic picks → only 5 tiles on the board.
+    // "special" badges are collection-only so they don't appear on the board.
     const usedGroups = new Set<number>();
     const selected: Badge[] = [
         ...selectFromTier(byTier.cosmic, 1, usedGroups),
@@ -796,6 +810,7 @@ export function selectDraftPool(seed?: number): Badge[] {
     const byTier: Record<BadgeTier, Badge[]> = {
         blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
         silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
+        special: shuffle(GAME_BADGES.filter((b) => b.tier === "special"), rng),
         gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
         cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
     };
@@ -954,14 +969,16 @@ function selectFromTier(
 // Tier color map
 export const TIER_COLORS: Record<BadgeTier, string> = {
     blue: "#E0E0E0",     // Grey/White = Common
-    silver: "#4A9EFF",   // Blue = Uncommon
-    gold: "#FFE048",
-    cosmic: "#B366FF",
+    silver: "#4A9EFF",   // Blue = Rare
+    special: "#FF8C42",  // Orange = Strategic Special
+    gold: "#FFE048",     // Gold = Legendary
+    cosmic: "#B366FF",   // Purple = Cosmic
 };
 
 export const TIER_DISPLAY_NAMES: Record<BadgeTier, string> = {
     blue: "Common",
     silver: "Rare",
+    special: "Strategic Special",
     gold: "Legendary",
     cosmic: "Cosmic",
 };
@@ -969,6 +986,7 @@ export const TIER_DISPLAY_NAMES: Record<BadgeTier, string> = {
 export const TIER_BORDER_COLORS: Record<BadgeTier, string> = {
     blue: "rgba(224, 224, 224, 0.4)",
     silver: "rgba(74, 158, 255, 0.5)",
+    special: "rgba(255, 140, 66, 0.6)",
     gold: "rgba(255, 224, 72, 0.6)",
     cosmic: "rgba(179, 102, 255, 0.7)",
 };

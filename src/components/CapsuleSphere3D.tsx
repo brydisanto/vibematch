@@ -24,10 +24,11 @@ const TIER_MAP: Record<
   BadgeTier,
   { shell: number; glow: number; accent: number; seam: number; iridescence: number }
 > = {
-  blue:   { shell: 0x2a2a30, glow: 0x555560, accent: 0x70707a, seam: 0x444450, iridescence: 0.1 },
-  silver: { shell: 0x1a1a22, glow: 0xC0D0E0, accent: 0xD8E8F8, seam: 0x8899aa, iridescence: 0.25 },
-  gold:   { shell: 0x1a1508, glow: 0xFFD700, accent: 0xFFE878, seam: 0xCCA800, iridescence: 0.35 },
-  cosmic: { shell: 0x12081e, glow: 0xB366FF, accent: 0xDD88FF, seam: 0x8833CC, iridescence: 0.6 },
+  blue:    { shell: 0x2a2a30, glow: 0x555560, accent: 0x70707a, seam: 0x444450, iridescence: 0.1 },
+  silver:  { shell: 0x1a1a22, glow: 0xC0D0E0, accent: 0xD8E8F8, seam: 0x8899aa, iridescence: 0.25 },
+  special: { shell: 0x1e1208, glow: 0xFF8C42, accent: 0xFFAA66, seam: 0xCC6620, iridescence: 0.3 },
+  gold:    { shell: 0x1a1508, glow: 0xFFD700, accent: 0xFFE878, seam: 0xCCA800, iridescence: 0.35 },
+  cosmic:  { shell: 0x12081e, glow: 0xB366FF, accent: 0xDD88FF, seam: 0x8833CC, iridescence: 0.6 },
 };
 
 // ---------------------------------------------------------------------------

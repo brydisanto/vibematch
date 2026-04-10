@@ -353,6 +353,7 @@ function getRank(score: number) {
 const TIER_LABEL_CONFIG: Record<BadgeTier, { bg: string; text: string }> = {
     blue: { bg: "rgba(255, 255, 255, 0.1)", text: "#E0E0E0" }, // Grey/White
     silver: { bg: "rgba(74, 158, 255, 0.15)", text: "#4A9EFF" }, // Blue
+    special: { bg: "bg-[#FF8C42]/20", text: "text-[#FF8C42]" },
     gold: { bg: "rgba(255, 224, 72, 0.15)", text: "#FFE048" },
     cosmic: { bg: "rgba(179, 102, 255, 0.15)", text: "#B366FF" },
 };
@@ -864,7 +865,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                                 {[...gameBadges.slice(0, 6)]
                                     .sort((a, b) => {
-                                        const order = { cosmic: 0, gold: 1, silver: 2, blue: 3 };
+                                        const order: Record<string, number> = { cosmic: 0, gold: 1, special: 2, silver: 3, blue: 4 };
                                         return (order[a.tier] ?? 4) - (order[b.tier] ?? 4);
                                     })
                                     .map((badge, i) => (

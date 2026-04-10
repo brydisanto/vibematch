@@ -240,7 +240,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "📋",
         title: "Common Ground",
-        description: "Collect all 16 Common pins",
+        description: "Collect all 19 Common pins",
         capsules: 2,
         order: 12,
     },
@@ -249,7 +249,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🗂️",
         title: "Rare Breed",
-        description: "Collect all 56 Rare pins",
+        description: "Collect all 51 Rare pins",
         capsules: 3,
         order: 13,
     },
@@ -258,7 +258,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🏆",
         title: "Living Legend",
-        description: "Collect all 21 Legendary pins",
+        description: "Collect all 19 Legendary pins",
         capsules: 3,
         order: 14,
     },
@@ -267,7 +267,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🌌",
         title: "Cosmic Completionist",
-        description: "Collect all 8 Cosmic pins",
+        description: "Collect all 3 Cosmic pins",
         capsules: 5,
         order: 15,
     },
@@ -481,10 +481,10 @@ export function checkAchievements(
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
     check("tier_cosmic", context.hasCosmicPin);
-    check("all_common", context.commonPinCount >= 16);
-    check("all_rare", context.rarePinCount >= 56);
-    check("all_legendary", context.legendaryPinCount >= 21);
-    check("all_cosmic", context.cosmicPinCount >= 8);
+    check("all_common", context.commonPinCount >= 19);
+    check("all_rare", context.rarePinCount >= 51);
+    check("all_legendary", context.legendaryPinCount >= 19);
+    check("all_cosmic", context.cosmicPinCount >= 3);
     check("bombs_5", stats.bombsCreated >= 5);
     check("cascades_15", stats.totalCascades >= 15);
     check("score_50k", stats.score >= 50000);
@@ -534,10 +534,10 @@ export function checkRetroactiveAchievements(
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
     check("tier_cosmic", context.hasCosmicPin);
-    check("all_common", context.commonPinCount >= 16);
-    check("all_rare", context.rarePinCount >= 56);
-    check("all_legendary", context.legendaryPinCount >= 21);
-    check("all_cosmic", context.cosmicPinCount >= 8);
+    check("all_common", context.commonPinCount >= 19);
+    check("all_rare", context.rarePinCount >= 51);
+    check("all_legendary", context.legendaryPinCount >= 19);
+    check("all_cosmic", context.cosmicPinCount >= 3);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
 

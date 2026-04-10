@@ -2,18 +2,19 @@ import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
-import { BADGES } from '@/lib/badges';
+import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 
 // Maximum plausible score for a classic game — reject forged submissions above this.
 const MAX_PLAUSIBLE_SCORE = 500_000;
 
 // Rarity weights for capsule drops
-// 101 total badges: 16 blue, 56 silver, 21 gold, 8 cosmic
+// 101 total: 19 blue, 51 silver, 9 special, 19 gold, 3 cosmic
 const TIER_WEIGHTS = {
-    blue: 50,    // ~50%
-    silver: 30,  // ~30%
-    gold: 15,    // ~15%
-    cosmic: 5,   // ~5%
+    blue: 38,      // ~38% Common (19 badges)
+    silver: 30,    // ~30% Rare (51 badges)
+    special: 10,   // ~10% Strategic Special (9 badges, weighted drops within)
+    gold: 17,      // ~17% Legendary (19 badges)
+    cosmic: 5,     // ~5% Cosmic (3 badges)
 } as const;
 
 const CAPSULE_SCORE_THRESHOLD = 15000;
@@ -389,23 +390,34 @@ export async function POST(req: Request) {
 
             // Pick a random tier based on weights (server-side)
             const roll = Math.random() * 100;
-            let tier: 'blue' | 'silver' | 'gold' | 'cosmic';
-            if (roll < TIER_WEIGHTS.cosmic) {
-                tier = 'cosmic';
-            } else if (roll < TIER_WEIGHTS.cosmic + TIER_WEIGHTS.gold) {
-                tier = 'gold';
-            } else if (roll < TIER_WEIGHTS.cosmic + TIER_WEIGHTS.gold + TIER_WEIGHTS.silver) {
-                tier = 'silver';
-            } else {
-                tier = 'blue';
+            let cumulative = 0;
+            let tier: BadgeTier = 'blue';
+            for (const [t, w] of Object.entries(TIER_WEIGHTS) as [BadgeTier, number][]) {
+                cumulative += w;
+                if (roll < cumulative) { tier = t; break; }
             }
 
-            // Pick a specific badge from that tier (server-side, authoritative)
+            // Pick a specific badge from that tier.
+            // For the "special" tier, use per-badge dropWeight for weighted selection
+            // (Diamond/Cosmic VIBESTR badges are much rarer within this tier).
             const tierBadges = BADGES.filter(b => b.tier === tier);
             if (tierBadges.length === 0) {
                 return NextResponse.json({ error: 'No badges available for tier' }, { status: 500 });
             }
-            const badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+            let badge: Badge;
+            const hasWeights = tierBadges.some(b => b.dropWeight !== undefined);
+            if (hasWeights) {
+                // Weighted random selection within the tier
+                const totalWeight = tierBadges.reduce((s, b) => s + (b.dropWeight ?? 10), 0);
+                let weightRoll = Math.random() * totalWeight;
+                badge = tierBadges[tierBadges.length - 1]; // fallback
+                for (const b of tierBadges) {
+                    weightRoll -= (b.dropWeight ?? 10);
+                    if (weightRoll <= 0) { badge = b; break; }
+                }
+            } else {
+                badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+            }
 
             // Store pending reveal so collect can validate it
             await kv.set(pendingKey, {
