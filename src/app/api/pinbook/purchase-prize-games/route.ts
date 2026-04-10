@@ -54,7 +54,7 @@ const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address
 const erc20DecimalsAbi = parseAbi(['function decimals() view returns (uint8)']);
 
 // Minimum confirmations before accepting a tx (protects against chain reorgs)
-const REQUIRED_CONFIRMATIONS = BigInt(3);
+const REQUIRED_CONFIRMATIONS = BigInt(1);
 
 const client = createPublicClient({
     chain: mainnet,

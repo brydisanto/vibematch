@@ -100,7 +100,8 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                     return;
                 }
 
-                if (res.status === 404 || res.status >= 500) {
+                // Retry on: not found (404), server error (5xx), or awaiting confirmations (425)
+                if (res.status === 404 || res.status === 425 || res.status >= 500) {
                     timerRef.current = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
                     return;
                 }
