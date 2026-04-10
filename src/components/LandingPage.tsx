@@ -433,8 +433,8 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                 )}
                                             </div>
                                             {isLoggedIn && (
-                                                <p className="relative z-10 text-[9px] font-mundial tracking-wider mt-1" style={{ color: "rgba(255,224,72,0.6)" }}>
-                                                    {capped ? "Tap to buy more →" : "Tap to buy more"}
+                                                <p className="relative z-10 text-[9px] font-mundial font-bold tracking-wider mt-1 uppercase" style={{ color: "rgba(255,224,72,0.8)" }}>
+                                                    + Get More
                                                 </p>
                                             )}
                                         </div>
