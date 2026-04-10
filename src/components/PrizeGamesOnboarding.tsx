@@ -66,7 +66,7 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                 {/* Headline */}
                                 <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mb-2" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                                     {isCapped
-                                        ? "Don't stop the vibes"
+                                        ? "All out of prize runs!"
                                         : remaining === 1
                                             ? "Down to your last stoke"
                                             : `${remaining} prize runs left today`}
@@ -76,7 +76,7 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                 <p className="text-white/70 text-sm font-mundial leading-relaxed mb-5">
                                     {isCapped ? (
                                         <>
-                                            You just maxed out your daily prize games. Cop a fresh pack with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep stacking pins all day.
+                                            Bummer! You just maxed out your daily prize games. Grab more with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep stacking pins all day.
                                         </>
                                     ) : (
                                         <>
