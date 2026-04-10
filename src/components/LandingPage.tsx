@@ -456,7 +456,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                     boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                 }}
                             >
-                                <div className="rounded-[10px] px-4 py-3 h-full relative overflow-hidden" style={{
+                                <div className="rounded-[10px] px-4 py-3 h-full relative overflow-hidden flex flex-col items-center justify-center" style={{
                                     background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
                                 }}>
                                     {/* Gloss */}
@@ -464,7 +464,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                         background: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
                                     }} />
                                     <p className="relative z-10 text-[10px] font-mundial tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
-                                        Daily challenge & plays reset in
+                                        Daily prize games reset in
                                     </p>
                                     <p className="relative z-10 text-[18px] sm:text-[20px] font-display font-black" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                                         {dailyCountdown}
