@@ -408,12 +408,25 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                     <button
                                         onClick={isLoggedIn ? onOpenBuyPrizeGames : undefined}
                                         disabled={!isLoggedIn}
-                                        className="relative rounded-xl p-[2px] overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed"
+                                        className="relative rounded-xl p-[2px] overflow-visible text-left transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed"
                                         style={{
                                             background: "linear-gradient(180deg, #A0A0A8 0%, #707078 40%, #45454D 100%)",
                                             boxShadow: "0 2px 0 #2A2A30, 0 3px 6px rgba(0,0,0,0.5)",
                                         }}
                                     >
+                                        {/* Gold "+" badge in corner — Option A */}
+                                        {isLoggedIn && (
+                                            <div
+                                                className="absolute top-1 right-1 w-[18px] h-[18px] rounded-full flex items-center justify-center font-display font-black text-[14px] leading-none z-20"
+                                                style={{
+                                                    background: "#FFE048",
+                                                    color: "#1A0633",
+                                                    boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                                                }}
+                                            >
+                                                +
+                                            </div>
+                                        )}
                                         <div className="rounded-[10px] px-4 py-3 relative overflow-hidden text-center" style={{
                                             background: "linear-gradient(180deg, #1C1C22 0%, #131318 100%)",
                                         }}>
@@ -432,11 +445,6 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                                                     <span className="text-[10px] text-[#FFE048]/70 font-mundial font-bold">+{bonusPrizeGames}</span>
                                                 )}
                                             </div>
-                                            {isLoggedIn && (
-                                                <p className="relative z-10 text-[9px] font-mundial font-bold tracking-wider mt-1 uppercase" style={{ color: "rgba(255,224,72,0.8)" }}>
-                                                    + Get More
-                                                </p>
-                                            )}
                                         </div>
                                         {/* Bottom edge progress bar */}
                                         <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: "rgba(255,255,255,0.06)" }}>
