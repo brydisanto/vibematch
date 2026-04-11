@@ -720,6 +720,7 @@ export default function Home() {
       <PinBook
         isOpen={showPinBook}
         onClose={() => setShowPinBook(false)}
+        onStartGame={() => handleStartGame("classic", userProfile?.username, userProfile?.avatarUrl)}
         onOpenCapsule={async () => {
           const reveal = await pinBook.openCapsule();
           if (reveal) {
