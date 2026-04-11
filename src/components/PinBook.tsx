@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Gamepad2, Shapes, Zap, ShoppingBag } from "lucide-react";
+import { X, Trophy, Gamepad2, Shapes, Zap, ShoppingBag, Info } from "lucide-react";
 import {
     Badge,
     BADGES,
@@ -189,6 +189,167 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
 
 // --- Main PinBook Component ---
 
+/* ── Onboarding content — shared between empty state and info modal ── */
+function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; actionLabel?: string }) {
+    return (
+        <div className="space-y-5">
+            {/* Hero */}
+            <div className="text-center">
+                <div
+                    className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+                    style={{
+                        background: "linear-gradient(135deg, rgba(255,224,72,0.12), rgba(179,102,255,0.12))",
+                        border: "1px solid rgba(255,224,72,0.2)",
+                    }}
+                >
+                    <img src="/assets/gvc_shaka.png" alt="" className="w-9 h-9 object-contain" />
+                </div>
+                <h2
+                    className="font-display text-xl font-black uppercase tracking-wider mb-2"
+                    style={{
+                        background: "linear-gradient(135deg, #FFE048, #B366FF)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                    }}
+                >
+                    Collect 101 GVC Pins
+                </h2>
+                <p className="text-white/60 text-[13px] font-mundial leading-relaxed max-w-[300px] mx-auto">
+                    Every game is a chance to discover rare pins. Score big to earn capsules, then crack them open to see what&apos;s inside.
+                </p>
+            </div>
+
+            {/* Tier showcase */}
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center">
+                Pull Rates
+            </h3>
+            <div className="flex gap-1.5 justify-center">
+                {([
+                    { tier: "blue" as BadgeTier, label: "Common", pct: "~38%", count: 19 },
+                    { tier: "silver" as BadgeTier, label: "Rare", pct: "~30%", count: 51 },
+                    { tier: "special" as BadgeTier, label: "Specials", pct: "~10%", count: 9 },
+                    { tier: "gold" as BadgeTier, label: "Legend", pct: "~17%", count: 19 },
+                    { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "~5%", count: 3 },
+                ]).map(t => (
+                    <div
+                        key={t.tier}
+                        className="flex-1 min-w-0 rounded-xl p-2 text-center"
+                        style={{
+                            background: `${TIER_COLORS[t.tier]}08`,
+                            border: `1px solid ${TIER_COLORS[t.tier]}18`,
+                        }}
+                    >
+                        <div
+                            className="w-9 h-9 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[9px] font-black"
+                            style={{
+                                border: `2px solid ${TIER_COLORS[t.tier]}60`,
+                                color: TIER_COLORS[t.tier],
+                                background: `${TIER_COLORS[t.tier]}10`,
+                            }}
+                        >
+                            {t.label.charAt(0)}
+                        </div>
+                        <div className="text-[8px] font-bold uppercase tracking-wider" style={{ color: TIER_COLORS[t.tier] }}>
+                            {t.label}
+                        </div>
+                        <div className="text-[9px] text-white/40 font-semibold">{t.pct}</div>
+                        <div className="text-[8px] text-white/25">{t.count} pins</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Capsule scoring */}
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center">
+                Higher Scores, More Capsules
+            </h3>
+            <div
+                className="flex justify-center items-center gap-4 py-3 px-4 rounded-xl"
+                style={{
+                    background: "rgba(255,224,72,0.03)",
+                    border: "1px solid rgba(255,224,72,0.08)",
+                }}
+            >
+                {[
+                    { score: "15K+", reward: "1 capsule" },
+                    { score: "30K+", reward: "2 capsules" },
+                    { score: "50K+", reward: "3 capsules" },
+                ].map((c, i) => (
+                    <div key={c.score} className="flex items-center gap-4">
+                        <div className="text-center">
+                            <div className="text-[#FFE048] text-base font-display font-black">{c.score}</div>
+                            <div className="text-white/40 text-[9px] font-mundial">{c.reward}</div>
+                        </div>
+                        {i < 2 && <span className="text-white/15 text-lg">&rarr;</span>}
+                    </div>
+                ))}
+            </div>
+
+            {/* How to earn */}
+            <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
+                    How to Earn Capsules
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                    {[
+                        { icon: <Gamepad2 size={20} />, title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules</> },
+                        { icon: <Shapes size={20} />, title: "Land Shapes", desc: <>Make a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> for a bonus capsule</> },
+                        { icon: <Zap size={20} />, title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
+                        { icon: <ShoppingBag size={20} />, title: "Buy More", desc: <>Grab extra prize games with <strong className="text-white/70">$VIBESTR</strong></> },
+                    ].map(card => (
+                        <div
+                            key={card.title}
+                            className="rounded-xl p-3 text-center"
+                            style={{
+                                background: "rgba(255,255,255,0.03)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                            }}
+                        >
+                            <div className="text-[#FFE048] mb-1.5 flex justify-center">{card.icon}</div>
+                            <div className="text-[11px] font-bold text-[#FFE048] uppercase tracking-wider mb-1">{card.title}</div>
+                            <div className="text-[10px] text-white/45 leading-relaxed font-mundial">{card.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Daily prize games callout */}
+            <div
+                className="rounded-xl p-4 text-center"
+                style={{
+                    background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(255,224,72,0.05))",
+                    border: "1px solid rgba(179,102,255,0.15)",
+                }}
+            >
+                <p className="font-display font-black text-base text-white uppercase tracking-wide mb-1">
+                    10 Free Prize Games Per Day
+                </p>
+                <p className="text-white/50 text-[11px] font-mundial leading-relaxed">
+                    Plus the <strong className="text-[#B366FF] font-bold">Daily Challenge</strong> for bonus capsules.
+                    <br />
+                    Need more? Grab extra prize games with <strong className="text-[#FFE048] font-bold">$VIBESTR</strong>.
+                </p>
+            </div>
+
+            {/* CTA */}
+            {onAction && (
+                <div className="text-center">
+                    <button
+                        onClick={onAction}
+                        className="w-full py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest transition-all active:scale-95"
+                        style={{
+                            background: "linear-gradient(135deg, #FFE048 0%, #c9a84c 100%)",
+                            color: "#1A0633",
+                            boxShadow: "0 2px 0 #8B6914, 0 4px 12px rgba(255,224,72,0.3)",
+                        }}
+                    >
+                        {actionLabel || "Start Playing"}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function PinBook({
     isOpen,
     onClose,
@@ -199,6 +360,7 @@ export default function PinBook({
     currentUsername,
 }: PinBookProps) {
     const [tab, setTab] = useState<"collection" | "leaderboard">("collection");
+    const [showInfo, setShowInfo] = useState(false);
 
     const ownedCount = useMemo(
         () => Object.keys(pins).length,
@@ -233,6 +395,7 @@ export default function PinBook({
     }, []);
 
     return (
+        <>
         <AnimatePresence>
             {isOpen && (
                 <motion.div
@@ -318,6 +481,13 @@ export default function PinBook({
                                         </div>
                                     )}
                                     <button
+                                        onClick={() => setShowInfo(true)}
+                                        className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                                        title="How Pin Collection Works"
+                                    >
+                                        <Info size={14} className="text-white/60" />
+                                    </button>
+                                    <button
                                         onClick={onClose}
                                         className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
                                     >
@@ -390,159 +560,11 @@ export default function PinBook({
                         {tab === "leaderboard" ? (
                             <PinLeaderboard currentUsername={currentUsername} refreshKey={leaderboardRefreshKey} />
                         ) : ownedCount === 0 ? (
-                            /* ── Empty State: First-visit onboarding ── */
-                            <div className="px-5 sm:px-6 py-6 space-y-5">
-                                {/* Hero */}
-                                <div className="text-center">
-                                    <div
-                                        className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center"
-                                        style={{
-                                            background: "linear-gradient(135deg, rgba(255,224,72,0.12), rgba(179,102,255,0.12))",
-                                            border: "1px solid rgba(255,224,72,0.2)",
-                                        }}
-                                    >
-                                        <img src="/assets/gvc_shaka.png" alt="" className="w-9 h-9 object-contain" />
-                                    </div>
-                                    <h2
-                                        className="font-display text-xl font-black uppercase tracking-wider mb-2"
-                                        style={{
-                                            background: "linear-gradient(135deg, #FFE048, #B366FF)",
-                                            WebkitBackgroundClip: "text",
-                                            WebkitTextFillColor: "transparent",
-                                        }}
-                                    >
-                                        Collect 101 GVC Pins
-                                    </h2>
-                                    <p className="text-white/60 text-[13px] font-mundial leading-relaxed max-w-[300px] mx-auto">
-                                        Every game is a chance to discover rare pins. Score big to earn capsules, then crack them open to see what&apos;s inside.
-                                    </p>
-                                </div>
-
-                                {/* Tier showcase */}
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
-                                    Pull Rates
-                                </h3>
-                                <div className="flex gap-1.5 justify-center">
-                                    {([
-                                        { tier: "blue" as BadgeTier, label: "Common", pct: "~38%", count: 19 },
-                                        { tier: "silver" as BadgeTier, label: "Rare", pct: "~30%", count: 51 },
-                                        { tier: "special" as BadgeTier, label: "Specials", pct: "~10%", count: 9 },
-                                        { tier: "gold" as BadgeTier, label: "Legend", pct: "~17%", count: 19 },
-                                        { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "~5%", count: 3 },
-                                    ]).map(t => (
-                                        <div
-                                            key={t.tier}
-                                            className="flex-1 min-w-0 rounded-xl p-2 text-center"
-                                            style={{
-                                                background: `${TIER_COLORS[t.tier]}08`,
-                                                border: `1px solid ${TIER_COLORS[t.tier]}18`,
-                                            }}
-                                        >
-                                            <div
-                                                className="w-9 h-9 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[9px] font-black"
-                                                style={{
-                                                    border: `2px solid ${TIER_COLORS[t.tier]}60`,
-                                                    color: TIER_COLORS[t.tier],
-                                                    background: `${TIER_COLORS[t.tier]}10`,
-                                                }}
-                                            >
-                                                {t.label.charAt(0)}
-                                            </div>
-                                            <div className="text-[8px] font-bold uppercase tracking-wider" style={{ color: TIER_COLORS[t.tier] }}>
-                                                {t.label}
-                                            </div>
-                                            <div className="text-[9px] text-white/40 font-semibold">{t.pct}</div>
-                                            <div className="text-[8px] text-white/25">{t.count} pins</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Capsule scoring */}
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
-                                    Higher Scores, More Capsules
-                                </h3>
-                                <div
-                                    className="flex justify-center items-center gap-4 py-3 px-4 rounded-xl"
-                                    style={{
-                                        background: "rgba(255,224,72,0.03)",
-                                        border: "1px solid rgba(255,224,72,0.08)",
-                                    }}
-                                >
-                                    {[
-                                        { score: "15K+", reward: "1 capsule" },
-                                        { score: "30K+", reward: "2 capsules" },
-                                        { score: "50K+", reward: "3 capsules" },
-                                    ].map((c, i) => (
-                                        <div key={c.score} className="flex items-center gap-4">
-                                            <div className="text-center">
-                                                <div className="text-[#FFE048] text-base font-display font-black">{c.score}</div>
-                                                <div className="text-white/40 text-[9px] font-mundial">{c.reward}</div>
-                                            </div>
-                                            {i < 2 && <span className="text-white/15 text-lg">&rarr;</span>}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* How to earn */}
-                                <div>
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
-                                        How to Earn Capsules
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { icon: <Gamepad2 size={20} />, title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules</> },
-                                            { icon: <Shapes size={20} />, title: "Land Shapes", desc: <>Make a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> for a bonus capsule</> },
-                                            { icon: <Zap size={20} />, title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
-                                            { icon: <ShoppingBag size={20} />, title: "Buy More", desc: <>Grab extra prize games with <strong className="text-white/70">$VIBESTR</strong></> },
-                                        ].map(card => (
-                                            <div
-                                                key={card.title}
-                                                className="rounded-xl p-3 text-center"
-                                                style={{
-                                                    background: "rgba(255,255,255,0.03)",
-                                                    border: "1px solid rgba(255,255,255,0.06)",
-                                                }}
-                                            >
-                                                <div className="text-[#FFE048] mb-1.5 flex justify-center">{card.icon}</div>
-                                                <div className="text-[11px] font-bold text-[#FFE048] uppercase tracking-wider mb-1">{card.title}</div>
-                                                <div className="text-[10px] text-white/45 leading-relaxed font-mundial">{card.desc}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Daily prize games callout */}
-                                <div
-                                    className="rounded-xl p-4 text-center"
-                                    style={{
-                                        background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(255,224,72,0.05))",
-                                        border: "1px solid rgba(179,102,255,0.15)",
-                                    }}
-                                >
-                                    <p className="font-display font-black text-base text-white uppercase tracking-wide mb-1">
-                                        10 Free Prize Games Per Day
-                                    </p>
-                                    <p className="text-white/50 text-[11px] font-mundial leading-relaxed">
-                                        Plus the <strong className="text-[#B366FF] font-bold">Daily Challenge</strong> for bonus capsules.
-                                        <br />
-                                        Need more? Grab extra prize games with <strong className="text-[#FFE048] font-bold">$VIBESTR</strong>.
-                                    </p>
-                                </div>
-
-                                {/* CTA */}
-                                <div className="text-center">
-                                    <button
-                                        onClick={() => { onClose(); onStartGame?.(); }}
-                                        className="w-full py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest transition-all active:scale-95"
-                                        style={{
-                                            background: "linear-gradient(135deg, #FFE048 0%, #c9a84c 100%)",
-                                            color: "#1A0633",
-                                            boxShadow: "0 2px 0 #8B6914, 0 4px 12px rgba(255,224,72,0.3)",
-                                        }}
-                                    >
-                                        Start Playing
-                                    </button>
-                                </div>
+                            <div className="px-5 sm:px-6 py-6">
+                                <PinBookOnboarding
+                                    onAction={() => { onClose(); onStartGame?.(); }}
+                                    actionLabel="Start Playing"
+                                />
                             </div>
                         ) : (
                         <div className="px-5 sm:px-6 py-5 space-y-6">
@@ -754,5 +776,43 @@ export default function PinBook({
                 </motion.div>
             )}
         </AnimatePresence>
+
+        {/* Info modal overlay */}
+        <AnimatePresence>
+            {showInfo && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                    onClick={() => setShowInfo(false)}
+                >
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        onClick={e => e.stopPropagation()}
+                        className="relative bg-[#0D0520] border border-white/10 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto custom-scrollbar"
+                    >
+                        <div className="sticky top-0 z-10 flex justify-end p-3 bg-[#0D0520]">
+                            <button
+                                onClick={() => setShowInfo(false)}
+                                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                            >
+                                <X size={16} className="text-white/60" />
+                            </button>
+                        </div>
+                        <div className="px-5 pb-6">
+                            <PinBookOnboarding
+                                onAction={() => setShowInfo(false)}
+                                actionLabel="Got It"
+                            />
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+        </>
     );
 }
