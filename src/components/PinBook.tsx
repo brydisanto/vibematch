@@ -511,11 +511,22 @@ export default function PinBook({
                                     </div>
                                 </div>
 
-                                {/* Divider */}
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-1 h-px bg-white/[0.06]" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Ready?</span>
-                                    <div className="flex-1 h-px bg-white/[0.06]" />
+                                {/* Daily prize games callout */}
+                                <div
+                                    className="rounded-xl p-4 text-center"
+                                    style={{
+                                        background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(255,224,72,0.05))",
+                                        border: "1px solid rgba(179,102,255,0.15)",
+                                    }}
+                                >
+                                    <p className="font-display font-black text-base text-white uppercase tracking-wide mb-1">
+                                        10 Free Prize Games Per Day
+                                    </p>
+                                    <p className="text-white/50 text-[11px] font-mundial leading-relaxed">
+                                        Plus the <strong className="text-[#B366FF] font-bold">Daily Challenge</strong> for bonus capsules.
+                                        <br />
+                                        Need more? Grab extra prize games with <strong className="text-[#FFE048] font-bold">$VIBESTR</strong>.
+                                    </p>
                                 </div>
 
                                 {/* CTA */}
@@ -531,9 +542,6 @@ export default function PinBook({
                                     >
                                         Start Playing
                                     </button>
-                                    <p className="text-white/30 text-[10px] font-mundial mt-2.5">
-                                        10 free prize games per day, plus the Daily Challenge
-                                    </p>
                                 </div>
                             </div>
                         ) : (
