@@ -419,6 +419,9 @@ export default function PinBook({
                                 </div>
 
                                 {/* Tier showcase */}
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
+                                    Pull Rates
+                                </h3>
                                 <div className="flex gap-1.5 justify-center">
                                     {([
                                         { tier: "blue" as BadgeTier, label: "Common", pct: "~38%", count: 19 },
@@ -455,6 +458,9 @@ export default function PinBook({
                                 </div>
 
                                 {/* Capsule scoring */}
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-center mb-3">
+                                    Higher Scores, More Capsules
+                                </h3>
                                 <div
                                     className="flex justify-center items-center gap-4 py-3 px-4 rounded-xl"
                                     style={{
@@ -526,7 +532,7 @@ export default function PinBook({
                                         Start Playing
                                     </button>
                                     <p className="text-white/30 text-[10px] font-mundial mt-2.5">
-                                        Your first 10 games each day earn capsules for free
+                                        10 free prize games per day, plus the Daily Challenge
                                     </p>
                                 </div>
                             </div>
