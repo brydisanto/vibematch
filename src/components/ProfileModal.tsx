@@ -13,7 +13,7 @@ const WalletProvider = dynamic(
 );
 const RainbowConnectButton = dynamic(
     () => import("@rainbow-me/rainbowkit").then(m => m.ConnectButton),
-    { ssr: false }
+    { ssr: false, loading: () => <div className="text-white/30 text-xs text-center py-2">Loading wallet...</div> }
 );
 
 interface ProfileModalProps {
@@ -33,7 +33,6 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     const [trackIndex, setTrackIndex] = useState(getCurrentTrackIndex());
     const [referralStats, setReferralStats] = useState<{ totalReferrals: number; capsulesCredited: number; maxCapsules: number } | null>(null);
     const [copied, setCopied] = useState(false);
-    const [showWallet, setShowWallet] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -270,25 +269,11 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 Wallet
                             </span>
                         </div>
-                        {showWallet ? (
-                            <WalletProvider>
-                                <div className="flex justify-center">
-                                    <RainbowConnectButton />
-                                </div>
-                            </WalletProvider>
-                        ) : (
-                            <button
-                                onClick={() => setShowWallet(true)}
-                                className="w-full py-2.5 rounded-lg text-[12px] font-bold font-mundial uppercase tracking-wider transition-all hover:brightness-110"
-                                style={{
-                                    background: "linear-gradient(135deg, rgba(179,102,255,0.15), rgba(179,102,255,0.08))",
-                                    border: "1px solid rgba(179,102,255,0.3)",
-                                    color: "#B366FF",
-                                }}
-                            >
-                                Connect Wallet
-                            </button>
-                        )}
+                        <WalletProvider>
+                            <div className="flex justify-center">
+                                <RainbowConnectButton />
+                            </div>
+                        </WalletProvider>
                         <p className="text-white/30 text-[10px] font-mundial mt-2 text-center">
                             Link your wallet to buy prize games with $VIBESTR
                         </p>
