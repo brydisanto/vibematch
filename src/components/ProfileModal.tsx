@@ -228,7 +228,7 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             </span>
                         </div>
                         <p className="text-white/50 text-[11px] font-mundial leading-relaxed mb-3">
-                            Share your link and you both get a free capsule when they join.
+                            You and a friend both get 1 free capsule when they join using your referral link.
                         </p>
                         <div className="flex gap-2">
                             <div
