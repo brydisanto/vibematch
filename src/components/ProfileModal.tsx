@@ -156,44 +156,6 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         ))}
                     </div>
 
-                    {/* Wallet Connection */}
-                    <div
-                        className="w-full rounded-xl p-4 mb-4"
-                        style={{
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.06)",
-                        }}
-                    >
-                        <div className="flex items-center gap-2 mb-2">
-                            <Wallet size={14} className="text-[#B366FF]" />
-                            <span className="text-xs font-bold text-[#B366FF] uppercase tracking-wider">
-                                Wallet
-                            </span>
-                        </div>
-                        {showWallet ? (
-                            <WalletProvider>
-                                <div className="flex justify-center">
-                                    <RainbowConnectButton />
-                                </div>
-                            </WalletProvider>
-                        ) : (
-                            <button
-                                onClick={() => setShowWallet(true)}
-                                className="w-full py-2.5 rounded-lg text-[12px] font-bold font-mundial uppercase tracking-wider transition-all hover:brightness-110"
-                                style={{
-                                    background: "linear-gradient(135deg, rgba(179,102,255,0.15), rgba(179,102,255,0.08))",
-                                    border: "1px solid rgba(179,102,255,0.3)",
-                                    color: "#B366FF",
-                                }}
-                            >
-                                Connect Wallet
-                            </button>
-                        )}
-                        <p className="text-white/30 text-[10px] font-mundial mt-2 text-center">
-                            Link your wallet to buy prize games with $VIBESTR
-                        </p>
-                    </div>
-
                     {/* Music Settings */}
                     <div className="w-full mb-4 bg-[#1A1525] rounded-xl border border-[#3A3344] p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
                         <div className="flex items-center gap-2 mb-3">
@@ -292,6 +254,44 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 <span className="text-[#FFE048]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* Wallet Connection */}
+                    <div
+                        className="w-full rounded-xl p-4 mb-4"
+                        style={{
+                            background: "rgba(255,255,255,0.03)",
+                            border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <Wallet size={14} className="text-[#B366FF]" />
+                            <span className="text-xs font-bold text-[#B366FF] uppercase tracking-wider">
+                                Wallet
+                            </span>
+                        </div>
+                        {showWallet ? (
+                            <WalletProvider>
+                                <div className="flex justify-center">
+                                    <RainbowConnectButton />
+                                </div>
+                            </WalletProvider>
+                        ) : (
+                            <button
+                                onClick={() => setShowWallet(true)}
+                                className="w-full py-2.5 rounded-lg text-[12px] font-bold font-mundial uppercase tracking-wider transition-all hover:brightness-110"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(179,102,255,0.15), rgba(179,102,255,0.08))",
+                                    border: "1px solid rgba(179,102,255,0.3)",
+                                    color: "#B366FF",
+                                }}
+                            >
+                                Connect Wallet
+                            </button>
+                        )}
+                        <p className="text-white/30 text-[10px] font-mundial mt-2 text-center">
+                            Link your wallet to buy prize games with $VIBESTR
+                        </p>
                     </div>
 
                     {/* Save Button Enamel Pin */}
