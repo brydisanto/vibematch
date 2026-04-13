@@ -104,6 +104,7 @@ export async function POST(req: Request) {
             legendaryPinCount: 0,
             cosmicPinCount: 0,
             gamesPlayedToday: 0,
+            referralCount: 0,
         };
         for (const badgeId of Object.keys(pinbook.pins)) {
             const tier = badgeTierMap.get(badgeId);
@@ -114,16 +115,20 @@ export async function POST(req: Request) {
             if (tier === 'cosmic') { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
         }
 
-        // Fetch streak
-        const streakRaw = await kv.get(`streak:${username}`) as { streak: number; lastPlayed: string } | null;
-        if (streakRaw) {
+        // Fetch streak + referral count
+        const [streakRaw, referralRaw] = await Promise.all([
+            kv.get(`streak:${username}`) as Promise<{ streak: number; lastPlayed: string } | null>,
+            kv.get(`referral:${username}`) as Promise<{ totalReferrals?: number } | null>,
+        ]);
+        ctx.referralCount = referralRaw?.totalReferrals || 0;
+        const streakData = streakRaw;
+        if (streakData) {
             const today = new Date().toISOString().split('T')[0];
             const yesterday = new Date();
             yesterday.setUTCDate(yesterday.getUTCDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
-            // Only count streak as active if last played today or yesterday
-            if (streakRaw.lastPlayed === today || streakRaw.lastPlayed === yesterdayStr) {
-                ctx.streak = streakRaw.streak || 0;
+            if (streakData.lastPlayed === today || streakData.lastPlayed === yesterdayStr) {
+                ctx.streak = streakData.streak || 0;
             }
         }
 

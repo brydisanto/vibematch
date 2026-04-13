@@ -424,6 +424,33 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 3,
         order: 29,
     },
+    {
+        id: "refer_1",
+        category: "mastery",
+        icon: "🤝",
+        title: "Good Vibes Ambassador",
+        description: "Refer your first friend",
+        capsules: 1,
+        order: 30,
+    },
+    {
+        id: "refer_5",
+        category: "mastery",
+        icon: "🤙",
+        title: "Vibe Recruiter",
+        description: "Refer 5 friends",
+        capsules: 2,
+        order: 31,
+    },
+    {
+        id: "refer_10",
+        category: "mastery",
+        icon: "🏄",
+        title: "Vibe Commander",
+        description: "Refer 10 friends",
+        capsules: 3,
+        order: 32,
+    },
 ];
 
 export const ALL_ACHIEVEMENTS: AchievementDef[] = [
@@ -463,6 +490,7 @@ export interface PlayerContext {
     legendaryPinCount: number; // unique legendary pins collected
     cosmicPinCount: number;   // unique cosmic pins collected
     hasSpecialPin: boolean;
+    referralCount: number;
     gamesPlayedToday: number;
 }
 
@@ -533,6 +561,9 @@ export function checkAchievements(
     check("shape_trifecta", lCount > 0 && tCount > 0 && crossCount > 0);
     check("daily_cap", context.gamesPlayedToday >= 15);
     check("daily_30k", stats.gameMode === "daily" && stats.score >= 30000);
+    check("refer_1", context.referralCount >= 1);
+    check("refer_5", context.referralCount >= 5);
+    check("refer_10", context.referralCount >= 10);
 
     return newly;
 }
@@ -575,6 +606,9 @@ export function checkRetroactiveAchievements(
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
+    check("refer_1", context.referralCount >= 1);
+    check("refer_5", context.referralCount >= 5);
+    check("refer_10", context.referralCount >= 10);
 
     return newly;
 }

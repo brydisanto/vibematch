@@ -127,6 +127,7 @@ export default function Home() {
       legendaryPinCount: 0,
       cosmicPinCount: 0,
       gamesPlayedToday: 0,
+      referralCount: 0,
     };
 
     for (const badgeId of Object.keys(pinBook.state.pins)) {
@@ -138,19 +139,16 @@ export default function Home() {
       if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
     }
 
-    // Fetch streak then check
-    fetch(`/api/streak?username=${userProfile.username}`)
-      .then(r => r.json())
-      .then(s => {
-        ctx.streak = s.streak || 0;
-        const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-        if (ids.length > 0) achievements.unlock(ids);
-      })
-      .catch(() => {
-        // Check without streak data
-        const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-        if (ids.length > 0) achievements.unlock(ids);
-      });
+    // Fetch streak + referral count in parallel, then check retroactive achievements
+    Promise.all([
+      fetch(`/api/streak?username=${userProfile.username}`).then(r => r.json()).catch(() => ({ streak: 0 })),
+      fetch('/api/referral').then(r => r.json()).catch(() => ({ totalReferrals: 0 })),
+    ]).then(([streakData, referralData]) => {
+      ctx.streak = streakData.streak || 0;
+      ctx.referralCount = referralData.totalReferrals || 0;
+      const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
+      if (ids.length > 0) achievements.unlock(ids);
+    });
   }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unified game-end flow: trackGame → logGame → earnCapsule → achievements
@@ -217,6 +215,7 @@ export default function Home() {
         legendaryPinCount: 0,
         cosmicPinCount: 0,
         gamesPlayedToday: 0,
+        referralCount: 0,
       };
       const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
       for (const badgeId of Object.keys(pinBook.state.pins)) {
@@ -777,7 +776,7 @@ export default function Home() {
                 totalPinsOpened: pinBook.state.totalOpened || 0,
                 hasSilverPin: false, hasGoldPin: false, hasSpecialPin: false, hasCosmicPin: false,
                 commonPinCount: 0, rarePinCount: 0, specialPinCount: 0, legendaryPinCount: 0, cosmicPinCount: 0,
-                gamesPlayedToday: 0,
+                gamesPlayedToday: 0, referralCount: 0,
               };
               for (const badgeId of Object.keys(pinBook.state.pins)) {
                 const tier = badgeTierMap.get(badgeId);
