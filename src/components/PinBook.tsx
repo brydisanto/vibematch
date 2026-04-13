@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Gamepad2, Shapes, Zap, ShoppingBag, Info } from "lucide-react";
+import { X, Trophy, Info } from "lucide-react";
 import {
     Badge,
     BADGES,
@@ -225,11 +225,11 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
             </h3>
             <div className="flex gap-1.5 justify-center">
                 {([
-                    { tier: "blue" as BadgeTier, label: "Common", pct: "~38%", count: 19 },
-                    { tier: "silver" as BadgeTier, label: "Rare", pct: "~30%", count: 51 },
-                    { tier: "special" as BadgeTier, label: "Specials", pct: "~10%", count: 9 },
-                    { tier: "gold" as BadgeTier, label: "Legend", pct: "~17%", count: 19 },
-                    { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "~5%", count: 3 },
+                    { tier: "blue" as BadgeTier, label: "Common", pct: "38%" },
+                    { tier: "silver" as BadgeTier, label: "Rare", pct: "30%" },
+                    { tier: "special" as BadgeTier, label: "Specials", pct: "10%" },
+                    { tier: "gold" as BadgeTier, label: "Legend", pct: "17%" },
+                    { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "5%" },
                 ]).map(t => (
                     <div
                         key={t.tier}
@@ -252,8 +252,7 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                         <div className="text-[8px] font-bold uppercase tracking-wider" style={{ color: TIER_COLORS[t.tier] }}>
                             {t.label}
                         </div>
-                        <div className="text-[9px] text-white/40 font-semibold">{t.pct}</div>
-                        <div className="text-[8px] text-white/25">{t.count} pins</div>
+                        <div className="text-[10px] font-semibold mt-0.5" style={{ color: TIER_COLORS[t.tier] }}>{t.pct}</div>
                     </div>
                 ))}
             </div>
@@ -291,10 +290,10 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                     {[
-                        { icon: <Gamepad2 size={20} />, title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules</> },
-                        { icon: <Shapes size={20} />, title: "Land Shapes", desc: <>Make a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> for a bonus capsule</> },
-                        { icon: <Zap size={20} />, title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
-                        { icon: <ShoppingBag size={20} />, title: "Buy More", desc: <>Grab extra prize games with <strong className="text-white/70">$VIBESTR</strong></> },
+                        { title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules</> },
+                        { title: "Land Shapes", desc: <>Make a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> for a bonus capsule</> },
+                        { title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
+                        { title: "Buy More", desc: <>Grab extra prize games with <strong className="text-white/70">$VIBESTR</strong></> },
                     ].map(card => (
                         <div
                             key={card.title}
@@ -304,7 +303,6 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                                 border: "1px solid rgba(255,255,255,0.06)",
                             }}
                         >
-                            <div className="text-[#FFE048] mb-1.5 flex justify-center">{card.icon}</div>
                             <div className="text-[11px] font-bold text-[#FFE048] uppercase tracking-wider mb-1">{card.title}</div>
                             <div className="text-[10px] text-white/45 leading-relaxed font-mundial">{card.desc}</div>
                         </div>
