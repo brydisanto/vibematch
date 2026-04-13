@@ -403,6 +403,7 @@ export default function Home() {
               achievementCount={achievements.unseenCount}
               classicPlays={pinBook.state.classicPlays}
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
+              pinsCollected={Object.keys(pinBook.state.pins).length}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
               referralCode={referralCode}
               userProfile={userProfile}

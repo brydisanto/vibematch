@@ -11,9 +11,12 @@ interface ProfileModalProps {
     currentAvatarUrl: string;
     onSave: (username: string, avatarUrl: string) => void;
     onClose: () => void;
+    pinsCollected?: number;
+    streak?: number;
+    capsuleCount?: number;
 }
 
-export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave, onClose }: ProfileModalProps) {
+export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave, onClose, pinsCollected = 0, streak = 0, capsuleCount = 0 }: ProfileModalProps) {
     const [username, setUsername] = useState(currentUsername);
     const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
     const [soundEnabled, setSoundEnabled] = useState(!isMuted);
@@ -91,26 +94,20 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         <X size={16} className="text-white/60 hover:text-white transition-colors" />
                     </button>
 
-                    <h2 className="font-display text-2xl font-black text-white mb-6 tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                        Player Profile
-                    </h2>
-
-                    {/* Avatar Upload */}
+                    {/* Avatar + Username compact header */}
                     <div
-                        className="relative w-28 h-28 rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-1 mb-8 shadow-[0_8px_16px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.1)] cursor-pointer group"
+                        className="relative w-[72px] h-[72px] rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-[3px] mb-3 shadow-[0_6px_12px_rgba(0,0,0,0.6)] cursor-pointer group"
                         onClick={() => fileInputRef.current?.click()}
                     >
-                        <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] overflow-hidden relative">
+                        <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] overflow-hidden relative">
                             {avatarUrl ? (
                                 <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
                             ) : (
-                                <Upload size={32} className="text-white/20 group-hover:text-white/40 transition-colors" />
+                                <Upload size={24} className="text-white/20 group-hover:text-white/40 transition-colors" />
                             )}
-
-                            {/* Hover overlay */}
                             <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Upload size={20} className="text-white mb-1" />
-                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
+                                <Upload size={16} className="text-white mb-0.5" />
+                                <span className="text-[8px] font-bold text-white uppercase tracking-wider">Change</span>
                             </div>
                         </div>
                         <input
@@ -121,24 +118,35 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             onChange={handleFileChange}
                         />
                     </div>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="VibeMaster99"
+                        maxLength={20}
+                        className="w-full max-w-[200px] bg-[#1A1525] border border-[#3A3344] rounded-xl px-4 py-2 text-white font-bold placeholder:text-white/20 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] text-center text-base mb-4"
+                    />
 
-                    {/* Username Input */}
-                    <div className="w-full mb-6">
-                        <label className="block text-white/50 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
-                            Username
-                        </label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="VibeMaster99"
-                            maxLength={20}
-                            className="w-full bg-[#1A1525] border border-[#3A3344] rounded-xl px-4 py-3 text-white font-bold placeholder:text-white/20 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] text-center text-lg"
-                        />
+                    {/* Stats Row */}
+                    <div className="w-full flex gap-2 mb-4">
+                        {[
+                            { value: pinsCollected, label: "Pins", color: "text-white" },
+                            { value: streak, label: "Streak", color: "text-[#FFE048]" },
+                            { value: capsuleCount, label: "Capsules", color: "text-[#B366FF]" },
+                        ].map(s => (
+                            <div
+                                key={s.label}
+                                className="flex-1 rounded-xl py-2.5 text-center"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                            >
+                                <div className={`text-lg font-display font-black ${s.color}`}>{s.value}</div>
+                                <div className="text-[9px] text-white/35 font-bold uppercase tracking-wider mt-0.5">{s.label}</div>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Music Settings */}
-                    <div className="w-full mb-6 bg-[#1A1525] rounded-xl border border-[#3A3344] p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
+                    <div className="w-full mb-4 bg-[#1A1525] rounded-xl border border-[#3A3344] p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
                         <div className="flex items-center gap-2 mb-3">
                             <Music size={14} className="text-[#B366FF]" />
                             <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Music</span>
@@ -194,7 +202,7 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                     </div>
 
                     {/* Referral Section */}
-                    <div className="rounded-xl p-4" style={{
+                    <div className="w-full rounded-xl p-4 mb-4" style={{
                         background: "linear-gradient(135deg, rgba(255,224,72,0.05), rgba(179,102,255,0.05))",
                         border: "1px solid rgba(255,224,72,0.12)",
                     }}>

@@ -21,6 +21,7 @@ interface LandingPageProps {
     achievementCount?: number;
     classicPlays?: number;
     bonusPrizeGames?: number;
+    pinsCollected?: number;
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
@@ -148,7 +149,7 @@ function useDailyCountdown() {
     return countdown;
 }
 
-export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, onOpenBuyPrizeGames, capsuleCount = 0, achievementCount = 0, classicPlays = 0, bonusPrizeGames = 0, referralCode, userProfile }: LandingPageProps) {
+export default function LandingPage({ onStartGame, onShowInstructions, onLogout, onOpenPinBook, onOpenAchievements, onOpenBuyPrizeGames, capsuleCount = 0, achievementCount = 0, classicPlays = 0, bonusPrizeGames = 0, pinsCollected = 0, referralCode, userProfile }: LandingPageProps) {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -614,6 +615,9 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                     currentAvatarUrl={avatarUrl}
                     onSave={handleProfileSave}
                     onClose={() => setIsProfileModalOpen(false)}
+                    pinsCollected={pinsCollected}
+                    streak={streak || 0}
+                    capsuleCount={capsuleCount || 0}
                 />
             )}
 
