@@ -10,11 +10,11 @@ const MAX_PLAUSIBLE_SCORE = 500_000;
 // Rarity weights for capsule drops
 // 101 total: 19 blue, 51 silver, 9 special, 19 gold, 3 cosmic
 const TIER_WEIGHTS = {
-    blue: 38,      // ~38% Common (19 badges)
+    blue: 45,      // ~45% Common (19 badges)
     silver: 30,    // ~30% Rare (51 badges)
-    special: 10,   // ~10% Strategic Special (9 badges, weighted drops within)
-    gold: 17,      // ~17% Legendary (19 badges)
-    cosmic: 5,     // ~5% Cosmic (3 badges)
+    special: 13,   // ~13% Strategic Special (9 badges, weighted drops within)
+    gold: 9,       // ~9% Legendary (19 badges)
+    cosmic: 3,     // ~3% Cosmic (3 badges)
 } as const;
 
 const CAPSULE_SCORE_THRESHOLD = 15000;

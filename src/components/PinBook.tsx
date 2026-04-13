@@ -225,11 +225,11 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
             </h3>
             <div className="flex gap-1.5 justify-center">
                 {([
-                    { tier: "blue" as BadgeTier, label: "Common", pct: "38%" },
+                    { tier: "blue" as BadgeTier, label: "Common", pct: "45%" },
                     { tier: "silver" as BadgeTier, label: "Rare", pct: "30%" },
-                    { tier: "special" as BadgeTier, label: "Specials", pct: "10%" },
-                    { tier: "gold" as BadgeTier, label: "Legend", pct: "17%" },
-                    { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "5%" },
+                    { tier: "special" as BadgeTier, label: "Specials", pct: "13%" },
+                    { tier: "gold" as BadgeTier, label: "Legend", pct: "9%" },
+                    { tier: "cosmic" as BadgeTier, label: "Cosmic", pct: "3%" },
                 ]).map(t => (
                     <div
                         key={t.tier}
