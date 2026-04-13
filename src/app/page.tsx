@@ -40,6 +40,20 @@ export default function Home() {
   const [view, setView] = useState<AppView>("landing");
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSystemAuthModal, setShowSystemAuthModal] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Capture ?ref= query param on mount
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref && ref.trim()) {
+        setReferralCode(ref.trim());
+      }
+    } catch {
+      // SSR or URL parse error
+    }
+  }, []);
   const [isDealing, setIsDealing] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string, avatarUrl: string } | null>(null);
   const [muted, setMuted] = useState(isMuted);
@@ -385,6 +399,7 @@ export default function Home() {
               classicPlays={pinBook.state.classicPlays}
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
+              referralCode={referralCode}
               userProfile={userProfile}
             />
           </motion.div>
@@ -815,6 +830,7 @@ export default function Home() {
       <AuthModal
         isOpen={showSystemAuthModal}
         onClose={() => setShowSystemAuthModal(false)}
+        referralCode={referralCode}
         onSuccess={(username, avatarUrl) => {
           setUserProfile({ username, avatarUrl });
           localStorage.setItem('vibematch_username', username);

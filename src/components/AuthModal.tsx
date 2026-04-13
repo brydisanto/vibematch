@@ -10,9 +10,10 @@ interface AuthModalProps {
     onClose: () => void;
     onSuccess: (username: string, avatarUrl: string) => void;
     initialMode?: "login" | "register";
+    referralCode?: string | null;
 }
 
-export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "login" }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "login", referralCode }: AuthModalProps) {
     const [mode, setMode] = useState<"login" | "register">(initialMode);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -32,13 +33,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
             const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({
+                    username,
+                    password,
+                    ...(mode === "register" && referralCode ? { referralCode } : {}),
+                }),
             });
 
             const data = await res.json();
 
             if (res.ok) {
                 toast.success(mode === "login" ? "Logged in!" : "Account created!");
+                if (data.referralApplied) {
+                    setTimeout(() => toast.success("Referral bonus: 1 free capsule!"), 500);
+                }
                 onSuccess(username, data.user?.avatarUrl || "");
                 onClose();
             } else {

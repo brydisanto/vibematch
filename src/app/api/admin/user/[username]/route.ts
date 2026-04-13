@@ -27,13 +27,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         const { username: rawUsername } = await params;
         const username = rawUsername.toLowerCase();
 
-        const [authRaw, pinbookRaw, profileRaw, streakRaw, achievementsRaw, lbEntryRaw] = await Promise.all([
+        const [authRaw, pinbookRaw, profileRaw, streakRaw, achievementsRaw, lbEntryRaw, referralRaw, referredByRaw] = await Promise.all([
             kv.get(`user_auth:${username}`),
             kv.get(`pinbook:${username}`),
             kv.get(`user:${username}`),
             kv.get(`streak:${username}`),
             kv.get(`achievements:${username}`),
             kv.get(`pinbook:lb:entry:${username}`),
+            kv.get(`referral:${username}`),
+            kv.get(`referral:credited:${username}`),
         ]);
 
         // High score lookup: try canonical username first (from profile), then raw
@@ -126,6 +128,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             highScore: highScore ?? 0,
             dailyHighScore: dailyHighScore ?? 0,
             gameLog: gameLogWithFlags,
+            referralStats: referralRaw,
+            referredBy: referredByRaw,
         });
     } catch (e) {
         console.error("Admin user detail error:", e);

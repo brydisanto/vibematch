@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight, Copy, Check, Link } from "lucide-react";
 import { isMuted, toggleMute, BGM_TRACK_NAMES, getCurrentTrackIndex, selectBGMTrack, startBGM } from "@/lib/sounds";
 
 interface ProfileModalProps {
@@ -18,11 +18,15 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
     const [soundEnabled, setSoundEnabled] = useState(!isMuted);
     const [trackIndex, setTrackIndex] = useState(getCurrentTrackIndex());
+    const [referralStats, setReferralStats] = useState<{ totalReferrals: number; capsulesCredited: number; maxCapsules: number } | null>(null);
+    const [copied, setCopied] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setSoundEnabled(!isMuted);
         setTrackIndex(getCurrentTrackIndex());
+        // Fetch referral stats
+        fetch('/api/referral').then(r => r.json()).then(setReferralStats).catch(() => {});
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,6 +191,50 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 <ChevronRight size={14} className="text-white/50" />
                             </button>
                         </div>
+                    </div>
+
+                    {/* Referral Section */}
+                    <div className="rounded-xl p-4" style={{
+                        background: "linear-gradient(135deg, rgba(255,224,72,0.05), rgba(179,102,255,0.05))",
+                        border: "1px solid rgba(255,224,72,0.12)",
+                    }}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Link size={14} className="text-[#FFE048]" />
+                            <span className="text-xs font-bold text-[#FFE048] uppercase tracking-wider">
+                                Refer Friends
+                            </span>
+                        </div>
+                        <p className="text-white/50 text-[11px] font-mundial leading-relaxed mb-3">
+                            Share your link and you both get a free capsule when they join.
+                        </p>
+                        <div className="flex gap-2">
+                            <div
+                                className="flex-1 rounded-lg px-3 py-2 text-[11px] font-mono text-white/60 truncate"
+                                style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >
+                                vibematch.app?ref={currentUsername}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 2000);
+                                }}
+                                className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all"
+                                style={{
+                                    background: copied ? "rgba(46,234,136,0.2)" : "rgba(255,224,72,0.12)",
+                                    border: copied ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(255,224,72,0.3)",
+                                }}
+                            >
+                                {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-[#FFE048]" />}
+                            </button>
+                        </div>
+                        {referralStats && referralStats.totalReferrals > 0 && (
+                            <div className="mt-3 flex items-center justify-between text-[10px] text-white/40 font-mundial">
+                                <span>{referralStats.totalReferrals} {referralStats.totalReferrals === 1 ? 'friend' : 'friends'} referred</span>
+                                <span className="text-[#FFE048]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Save Button Enamel Pin */}

@@ -1,10 +1,11 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { hashPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { processReferral } from "@/app/api/referral/route";
 
 export async function POST(req: Request) {
     try {
-        const { username, password } = await req.json();
+        const { username, password, referralCode } = await req.json();
 
         if (!username || !password) {
             return NextResponse.json({ error: "Username and password required" }, { status: 400 });
@@ -66,9 +67,24 @@ export async function POST(req: Request) {
             await kv.set(profileKey, { username, avatarUrl: "" });
         }
 
+        // Process referral if a code was provided
+        let referralSuccess = false;
+        if (referralCode && typeof referralCode === 'string' && referralCode.trim()) {
+            try {
+                referralSuccess = await processReferral(referralCode.trim(), username);
+            } catch (e) {
+                console.error("Referral processing error:", e);
+                // Non-blocking — registration still succeeds even if referral fails
+            }
+        }
+
         // Log them in immediately
         const session = await encrypt({ username });
-        const res = NextResponse.json({ success: true, user: { username, avatarUrl: "" } });
+        const res = NextResponse.json({
+            success: true,
+            user: { username, avatarUrl: "" },
+            referralApplied: referralSuccess,
+        });
 
         res.cookies.set({
             name: SESSION_COOKIE_NAME,
