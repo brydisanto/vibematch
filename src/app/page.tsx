@@ -120,8 +120,10 @@ export default function Home() {
       hasSilverPin: false,
       hasGoldPin: false,
       hasCosmicPin: false,
+      hasSpecialPin: false,
       commonPinCount: 0,
       rarePinCount: 0,
+      specialPinCount: 0,
       legendaryPinCount: 0,
       cosmicPinCount: 0,
       gamesPlayedToday: 0,
@@ -132,6 +134,7 @@ export default function Home() {
       if (tier === "blue") ctx.commonPinCount++;
       if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
       if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
+      if (tier === "special") { ctx.hasSpecialPin = true; ctx.specialPinCount++; }
       if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
     }
 
@@ -206,9 +209,11 @@ export default function Home() {
         totalPinsOpened: pinBook.state.totalOpened || 0,
         hasSilverPin: false,
         hasGoldPin: false,
+        hasSpecialPin: false,
         hasCosmicPin: false,
         commonPinCount: 0,
         rarePinCount: 0,
+        specialPinCount: 0,
         legendaryPinCount: 0,
         cosmicPinCount: 0,
         gamesPlayedToday: 0,
@@ -219,6 +224,7 @@ export default function Home() {
         if (tier === "blue") playerCtx.commonPinCount++;
         if (tier === "silver") { playerCtx.hasSilverPin = true; playerCtx.rarePinCount++; }
         if (tier === "gold") { playerCtx.hasGoldPin = true; playerCtx.legendaryPinCount++; }
+        if (tier === "special") { playerCtx.hasSpecialPin = true; playerCtx.specialPinCount++; }
         if (tier === "cosmic") { playerCtx.hasCosmicPin = true; playerCtx.cosmicPinCount++; }
       }
       const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
@@ -769,8 +775,8 @@ export default function Home() {
                 streak: 0,
                 uniquePins: Object.keys(pinBook.state.pins).length,
                 totalPinsOpened: pinBook.state.totalOpened || 0,
-                hasSilverPin: false, hasGoldPin: false, hasCosmicPin: false,
-                commonPinCount: 0, rarePinCount: 0, legendaryPinCount: 0, cosmicPinCount: 0,
+                hasSilverPin: false, hasGoldPin: false, hasSpecialPin: false, hasCosmicPin: false,
+                commonPinCount: 0, rarePinCount: 0, specialPinCount: 0, legendaryPinCount: 0, cosmicPinCount: 0,
                 gamesPlayedToday: 0,
               };
               for (const badgeId of Object.keys(pinBook.state.pins)) {
@@ -778,7 +784,8 @@ export default function Home() {
                 if (tier === "blue") ctx.commonPinCount++;
                 if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
                 if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
-                if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
+                if (tier === "special") { ctx.hasSpecialPin = true; ctx.specialPinCount++; }
+      if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
               }
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) achievements.unlock(ids);

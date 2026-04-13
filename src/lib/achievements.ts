@@ -200,13 +200,22 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 7,
     },
     {
+        id: "pins_69",
+        category: "mastery",
+        icon: "🤙",
+        title: "Nice Pins!",
+        description: "Collect 69 unique badges",
+        capsules: 3,
+        order: 8,
+    },
+    {
         id: "pins_all",
         category: "mastery",
         icon: "💎",
         title: "Pin Completionist",
         description: "Collect all 101 badges",
         capsules: 3,
-        order: 8,
+        order: 9,
     },
     {
         id: "tier_silver",
@@ -227,13 +236,22 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 10,
     },
     {
+        id: "tier_special",
+        category: "mastery",
+        icon: "🔶",
+        title: "Strategic Find",
+        description: "Collect your first Strategic Specials pin",
+        capsules: 2,
+        order: 11,
+    },
+    {
         id: "tier_cosmic",
         category: "mastery",
         icon: "✨",
         title: "Cosmic Destiny",
         description: "Collect your first Cosmic pin",
         capsules: 3,
-        order: 11,
+        order: 12,
     },
     {
         id: "all_common",
@@ -260,7 +278,16 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Living Legend",
         description: "Collect all 19 Legendary pins",
         capsules: 3,
-        order: 14,
+        order: 15,
+    },
+    {
+        id: "all_special",
+        category: "mastery",
+        icon: "🔶",
+        title: "Strategist",
+        description: "Collect all 9 Strategic Specials pins",
+        capsules: 4,
+        order: 16,
     },
     {
         id: "all_cosmic",
@@ -269,7 +296,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cosmic Completionist",
         description: "Collect all 3 Cosmic pins",
         capsules: 5,
-        order: 15,
+        order: 17,
     },
     {
         id: "bombs_5",
@@ -432,8 +459,10 @@ export interface PlayerContext {
     hasCosmicPin: boolean;
     commonPinCount: number;   // unique common pins collected
     rarePinCount: number;     // unique rare pins collected
+    specialPinCount: number;  // unique special pins collected
     legendaryPinCount: number; // unique legendary pins collected
     cosmicPinCount: number;   // unique cosmic pins collected
+    hasSpecialPin: boolean;
     gamesPlayedToday: number;
 }
 
@@ -477,12 +506,15 @@ export function checkAchievements(
     check("pins_10", context.uniquePins >= 10);
     check("pins_25", context.uniquePins >= 25);
     check("pins_50", context.uniquePins >= 50);
+    check("pins_69", context.uniquePins >= 69);
     check("pins_all", context.uniquePins >= 101);
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
+    check("tier_special", context.hasSpecialPin);
     check("tier_cosmic", context.hasCosmicPin);
     check("all_common", context.commonPinCount >= 19);
     check("all_rare", context.rarePinCount >= 51);
+    check("all_special", context.specialPinCount >= 9);
     check("all_legendary", context.legendaryPinCount >= 19);
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("bombs_5", stats.bombsCreated >= 5);
@@ -530,12 +562,15 @@ export function checkRetroactiveAchievements(
     check("pins_10", context.uniquePins >= 10);
     check("pins_25", context.uniquePins >= 25);
     check("pins_50", context.uniquePins >= 50);
+    check("pins_69", context.uniquePins >= 69);
     check("pins_all", context.uniquePins >= 101);
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
+    check("tier_special", context.hasSpecialPin);
     check("tier_cosmic", context.hasCosmicPin);
     check("all_common", context.commonPinCount >= 19);
     check("all_rare", context.rarePinCount >= 51);
+    check("all_special", context.specialPinCount >= 9);
     check("all_legendary", context.legendaryPinCount >= 19);
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("streak_7", context.streak >= 7);
