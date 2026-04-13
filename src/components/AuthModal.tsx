@@ -45,7 +45,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
             if (res.ok) {
                 toast.success(mode === "login" ? "Logged in!" : "Account created!");
                 if (data.referralApplied) {
-                    setTimeout(() => toast.success("Referral bonus: 1 free capsule!"), 500);
+                    setTimeout(() => toast.success("Referral bonus: 2 free capsules!"), 500);
                 }
                 onSuccess(username, data.user?.avatarUrl || "");
                 onClose();

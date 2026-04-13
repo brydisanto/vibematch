@@ -77,16 +77,16 @@ export async function processReferral(referrerUsername: string, newUsername: str
     const referrerPinbookKey = `pinbook:${referrer}`;
     const referrerPinbook = (await kv.get(referrerPinbookKey)) as any;
     if (referrerPinbook) {
-        referrerPinbook.capsules = (referrerPinbook.capsules || 0) + 1;
-        referrerPinbook.totalEarned = (referrerPinbook.totalEarned || 0) + 1;
+        referrerPinbook.capsules = (referrerPinbook.capsules || 0) + 2;
+        referrerPinbook.totalEarned = (referrerPinbook.totalEarned || 0) + 2;
         await kv.set(referrerPinbookKey, referrerPinbook);
     } else {
         // Referrer has no pinbook yet — create one with 1 capsule
         await kv.set(referrerPinbookKey, {
             pins: {},
-            capsules: 1,
+            capsules: 2,
             totalOpened: 0,
-            totalEarned: 1,
+            totalEarned: 2,
         });
     }
 
@@ -95,15 +95,15 @@ export async function processReferral(referrerUsername: string, newUsername: str
     const newUserPinbookKey = `pinbook:${newUser}`;
     const newUserPinbook = (await kv.get(newUserPinbookKey)) as any;
     if (newUserPinbook) {
-        newUserPinbook.capsules = (newUserPinbook.capsules || 0) + 1;
-        newUserPinbook.totalEarned = (newUserPinbook.totalEarned || 0) + 1;
+        newUserPinbook.capsules = (newUserPinbook.capsules || 0) + 2;
+        newUserPinbook.totalEarned = (newUserPinbook.totalEarned || 0) + 2;
         await kv.set(newUserPinbookKey, newUserPinbook);
     } else {
         await kv.set(newUserPinbookKey, {
             pins: {},
-            capsules: 1,
+            capsules: 2,
             totalOpened: 0,
-            totalEarned: 1,
+            totalEarned: 2,
         });
     }
 
