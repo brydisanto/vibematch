@@ -29,7 +29,15 @@ export default function TransactionsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-baseline justify-between">
-                <h1 className="text-2xl font-display font-black text-[#FFE048] uppercase">Transactions</h1>
+                <div className="flex items-baseline gap-3">
+                    <h1 className="text-2xl font-display font-black text-[#FFE048] uppercase">Transactions</h1>
+                    <a
+                        href="/api/admin/export?type=transactions"
+                        className="text-[10px] text-[#FFE048] hover:text-[#FFE858] uppercase tracking-wider font-bold"
+                    >
+                        Export CSV
+                    </a>
+                </div>
                 <div className="flex gap-6 text-sm text-white/60">
                     <div>
                         <span className="text-white/40">Total:</span>{" "}

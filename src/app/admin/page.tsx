@@ -18,6 +18,7 @@ interface User {
     lowercaseUsername: string;
     createdAt: string | null;
     avatarUrl: string;
+    walletAddress: string | null;
     capsules: number;
     totalEarned: number;
     totalOpened: number;
@@ -78,6 +79,12 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-display font-black text-[#FFE048] uppercase">
                         Users <span className="text-white/40 text-sm font-normal">({shown} of {total})</span>
+                        <a
+                            href="/api/admin/export?type=users"
+                            className="ml-3 text-[10px] text-[#FFE048] hover:text-[#FFE858] uppercase tracking-wider font-bold"
+                        >
+                            Export CSV
+                        </a>
                     </h2>
                     <input
                         type="text"
@@ -93,6 +100,7 @@ export default function AdminDashboard() {
                         <thead className="bg-white/5 border-b border-white/10">
                             <tr className="text-left text-white/60">
                                 <th className="px-4 py-3">Username</th>
+                                <th className="px-4 py-3">Wallet</th>
                                 <th className="px-4 py-3">Created</th>
                                 <th className="px-4 py-3 text-right">High Score</th>
                                 <th className="px-4 py-3 text-right">Unique Pins</th>
@@ -106,14 +114,17 @@ export default function AdminDashboard() {
                         </thead>
                         <tbody>
                             {loading && users.length === 0 && (
-                                <tr><td colSpan={10} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
+                                <tr><td colSpan={11} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
                             )}
                             {!loading && users.length === 0 && (
-                                <tr><td colSpan={10} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
+                                <tr><td colSpan={11} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
                             )}
                             {users.map(u => (
                                 <tr key={u.lowercaseUsername} className="border-b border-white/5 hover:bg-white/[0.02]">
                                     <td className="px-4 py-3 font-bold whitespace-nowrap">{u.username}</td>
+                                    <td className="px-4 py-3 text-white/40 text-xs font-mono whitespace-nowrap">
+                                        {u.walletAddress ? `${u.walletAddress.slice(0, 6)}...${u.walletAddress.slice(-4)}` : "---"}
+                                    </td>
                                     <td className="px-4 py-3 text-white/60 text-xs whitespace-nowrap">
                                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
                                     </td>

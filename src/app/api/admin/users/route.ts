@@ -69,7 +69,6 @@ export async function GET(req: Request) {
             const profile = profileRaw as any;
 
             const canonicalUsername = profile?.username || auth?.username || username;
-            // High score — check canonical first, fall back to raw
             let highScore = await kv.zscore('classic_leaderboard', canonicalUsername) as number | null;
             if (highScore == null) {
                 highScore = await kv.zscore('classic_leaderboard', username) as number | null;
@@ -82,6 +81,7 @@ export async function GET(req: Request) {
                 lowercaseUsername: username,
                 createdAt: auth?.createdAt || null,
                 avatarUrl: profile?.avatarUrl || "",
+                walletAddress: profile?.walletAddress || null,
                 capsules: pinbook?.capsules || 0,
                 totalEarned: pinbook?.totalEarned || 0,
                 totalOpened: pinbook?.totalOpened || 0,

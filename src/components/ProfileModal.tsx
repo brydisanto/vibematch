@@ -11,6 +11,11 @@ const WalletProvider = dynamic(
     () => import("@/components/WalletProvider").then(m => m.WalletProvider),
     { ssr: false }
 );
+const WalletTracker = dynamic(
+    () => import("@/components/WalletTracker"),
+    { ssr: false }
+);
+
 const RainbowConnectButton = dynamic(
     () => import("@rainbow-me/rainbowkit").then(m => m.ConnectButton),
     { ssr: false, loading: () => <div className="text-white/30 text-xs text-center py-2">Loading wallet...</div> }
@@ -211,14 +216,14 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         </div>
                     </div>
 
-                    {/* Referral Section */}
+                    {/* Referral Section — purple themed */}
                     <div className="w-full rounded-xl p-4 mb-4" style={{
-                        background: "linear-gradient(135deg, rgba(255,224,72,0.05), rgba(179,102,255,0.05))",
-                        border: "1px solid rgba(255,224,72,0.12)",
+                        background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(179,102,255,0.03))",
+                        border: "1px solid rgba(179,102,255,0.15)",
                     }}>
                         <div className="flex items-center gap-2 mb-2">
-                            <Link size={14} className="text-[#FFE048]" />
-                            <span className="text-xs font-bold text-[#FFE048] uppercase tracking-wider">
+                            <Link size={14} className="text-[#B366FF]" />
+                            <span className="text-xs font-bold text-[#B366FF] uppercase tracking-wider">
                                 Refer Friends
                             </span>
                         </div>
@@ -240,42 +245,43 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 }}
                                 className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all"
                                 style={{
-                                    background: copied ? "rgba(46,234,136,0.2)" : "rgba(255,224,72,0.12)",
-                                    border: copied ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(255,224,72,0.3)",
+                                    background: copied ? "rgba(46,234,136,0.2)" : "rgba(179,102,255,0.12)",
+                                    border: copied ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(179,102,255,0.3)",
                                 }}
                             >
-                                {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-[#FFE048]" />}
+                                {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-[#B366FF]" />}
                             </button>
                         </div>
                         {referralStats && referralStats.totalReferrals > 0 && (
                             <div className="mt-3 flex items-center justify-between text-[10px] text-white/40 font-mundial">
                                 <span>{referralStats.totalReferrals} {referralStats.totalReferrals === 1 ? 'friend' : 'friends'} referred</span>
-                                <span className="text-[#FFE048]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
+                                <span className="text-[#B366FF]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Wallet Connection */}
+                    {/* Wallet Connection — gold themed */}
                     <div
                         className="w-full rounded-xl p-4 mb-4"
                         style={{
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "linear-gradient(135deg, rgba(255,224,72,0.08), rgba(255,224,72,0.03))",
+                            border: "1px solid rgba(255,224,72,0.15)",
                         }}
                     >
                         <div className="flex items-center gap-2 mb-2">
-                            <Wallet size={14} className="text-[#B366FF]" />
-                            <span className="text-xs font-bold text-[#B366FF] uppercase tracking-wider">
+                            <Wallet size={14} className="text-[#FFE048]" />
+                            <span className="text-xs font-bold text-[#FFE048] uppercase tracking-wider">
                                 Wallet
                             </span>
                         </div>
                         <WalletProvider>
+                            <WalletTracker />
                             <div className="flex justify-center">
                                 <RainbowConnectButton />
                             </div>
                         </WalletProvider>
                         <p className="text-white/30 text-[10px] font-mundial mt-2 text-center">
-                            Link your wallet to buy prize games with $VIBESTR
+                            Link your wallet to be eligible for onchain prizes.
                         </p>
                     </div>
 

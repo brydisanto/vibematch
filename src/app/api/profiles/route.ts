@@ -11,19 +11,31 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { username, avatarUrl } = await req.json();
+        const body = await req.json();
+        const { username, avatarUrl, walletAddress } = body;
+
+        const sessionUsername = (session.username as string).toLowerCase();
+
+        // Wallet-only update: just save the wallet address to the existing profile
+        if (walletAddress && !username) {
+            const key = `user:${sessionUsername}`;
+            const existing = (await kv.get(key)) as any || {};
+            await kv.set(key, { ...existing, walletAddress: walletAddress.toLowerCase() });
+            return NextResponse.json({ success: true, walletLinked: true });
+        }
 
         if (!username) {
             return NextResponse.json({ error: 'Username required' }, { status: 400 });
         }
 
         // Prevent users from updating other people's profiles
-        if (username.toLowerCase() !== session.username.toLowerCase()) {
+        if (username.toLowerCase() !== sessionUsername) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const key = `user:${username.toLowerCase()}`;
-        await kv.set(key, { username, avatarUrl });
+        const existing = (await kv.get(key)) as any || {};
+        await kv.set(key, { ...existing, username, avatarUrl });
 
         // Bust score leaderboard cache so updated avatar shows immediately
         invalidateLeaderboardCache();
