@@ -96,10 +96,9 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-md rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                className="relative w-full max-w-[540px] rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
             >
-                {/* Enamel Tray Base */}
-                <div className="relative bg-[#110D17] rounded-[21px] p-6 pb-8 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex flex-col items-center">
+                <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex min-h-[420px]">
 
                     {/* Close Button */}
                     <button
@@ -109,198 +108,176 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         <X size={16} className="text-white/60 hover:text-white transition-colors" />
                     </button>
 
-                    {/* Avatar + Username compact header */}
-                    <div
-                        className="relative w-[100px] h-[100px] rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-[3px] mb-3 shadow-[0_8px_16px_rgba(0,0,0,0.6)] cursor-pointer group"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] overflow-hidden relative">
-                            {avatarUrl ? (
-                                <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
-                            ) : (
-                                <Upload size={24} className="text-white/20 group-hover:text-white/40 transition-colors" />
-                            )}
-                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Upload size={16} className="text-white mb-0.5" />
-                                <span className="text-[8px] font-bold text-white uppercase tracking-wider">Change</span>
-                            </div>
-                        </div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
-                    </div>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="VibeMaster99"
-                        maxLength={20}
-                        className="w-full max-w-[200px] bg-[#1A1525] border border-[#3A3344] rounded-xl px-4 py-2 text-white font-bold placeholder:text-white/20 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] text-center text-base mb-4"
-                    />
-
-                    {/* Stats Row */}
-                    <div className="w-full flex gap-2 mb-4">
-                        {[
-                            { value: pinsCollected, label: "Pins", color: "text-white" },
-                            { value: streak, label: "Streak", color: "text-[#FFE048]" },
-                            { value: capsuleCount, label: "Capsules", color: "text-[#B366FF]" },
-                        ].map(s => (
-                            <div
-                                key={s.label}
-                                className="flex-1 rounded-xl py-2.5 text-center"
-                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                            >
-                                <div className={`text-lg font-display font-black ${s.color}`}>{s.value}</div>
-                                <div className="text-[9px] text-white/35 font-bold uppercase tracking-wider mt-0.5">{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Music Settings */}
-                    <div className="w-full mb-4 bg-[#1A1525] rounded-xl border border-[#3A3344] p-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Music size={14} className="text-[#B366FF]" />
-                            <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Music</span>
-                        </div>
-
-                        {/* Sound Toggle */}
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                {soundEnabled ? (
-                                    <Volume2 size={16} className="text-[#B366FF]" />
+                    {/* ── Left Panel: Avatar + Stats ── */}
+                    <div className="w-[180px] flex-shrink-0 p-6 pt-7 text-center border-r border-white/[0.06] bg-white/[0.02] flex flex-col items-center">
+                        {/* Avatar */}
+                        <div
+                            className="relative w-[80px] h-[80px] rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-[3px] mb-3 shadow-[0_6px_12px_rgba(0,0,0,0.6)] cursor-pointer group"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] overflow-hidden relative">
+                                {avatarUrl ? (
+                                    <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
                                 ) : (
-                                    <VolumeX size={16} className="text-white/30" />
+                                    <Upload size={20} className="text-white/20 group-hover:text-white/40 transition-colors" />
                                 )}
-                                <span className="text-white/70 text-sm font-bold font-mundial">
-                                    {soundEnabled ? "On" : "Off"}
-                                </span>
+                                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Upload size={14} className="text-white mb-0.5" />
+                                    <span className="text-[7px] font-bold text-white uppercase tracking-wider">Change</span>
+                                </div>
                             </div>
-                            <button
-                                onClick={handleSoundToggle}
-                                className={`relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none ${soundEnabled ? "bg-[#B366FF]" : "bg-white/20"}`}
-                            >
-                                <motion.div
-                                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md"
-                                    animate={{ left: soundEnabled ? "calc(100% - 22px)" : "2px" }}
-                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                />
-                            </button>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
                         </div>
 
-                        {/* Track Selector */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleTrackChange(-1)}
-                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
-                            >
-                                <ChevronLeft size={14} className="text-white/50" />
-                            </button>
-                            <div className="flex-1 text-center min-w-0">
-                                <div className="text-white/80 text-sm font-black font-mundial truncate">
-                                    {BGM_TRACK_NAMES[trackIndex]}
+                        {/* Username */}
+                        <div className="font-display font-black text-base text-white mb-4 truncate max-w-full">{username}</div>
+
+                        {/* Stats */}
+                        <div className="w-full space-y-1">
+                            {[
+                                { value: pinsCollected, label: "Pins", color: "text-white" },
+                                { value: streak, label: "Streak", color: "text-[#FFE048]" },
+                                { value: capsuleCount, label: "Capsules", color: "text-[#B366FF]" },
+                            ].map(s => (
+                                <div key={s.label} className="flex justify-between items-center py-1.5 border-b border-white/[0.05] last:border-0">
+                                    <span className="text-[10px] text-white/40 font-mundial">{s.label}</span>
+                                    <span className={`text-sm font-display font-black ${s.color}`}>{s.value}</span>
                                 </div>
-                                <div className="text-white/25 text-[9px] font-bold font-mundial uppercase tracking-wider">
-                                    Track {trackIndex + 1} / {BGM_TRACK_NAMES.length}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleTrackChange(1)}
-                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
-                            >
-                                <ChevronRight size={14} className="text-white/50" />
-                            </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Referral Section — purple themed */}
-                    <div className="w-full rounded-xl p-4 mb-4" style={{
-                        background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(179,102,255,0.03))",
-                        border: "1px solid rgba(179,102,255,0.15)",
-                    }}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Link size={14} className="text-[#B366FF]" />
-                            <span className="text-xs font-bold text-[#B366FF] uppercase tracking-wider">
-                                Refer Friends
-                            </span>
-                        </div>
-                        <p className="text-white/50 text-[11px] font-mundial leading-relaxed mb-3">
-                            You and a friend both get 2 free capsules when they join using your referral link.
-                        </p>
-                        <div className="flex gap-2">
-                            <div
-                                className="flex-1 rounded-lg px-3 py-2 text-[11px] font-mono text-white/60 truncate"
-                                style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
-                            >
-                                vibematch.app?ref={currentUsername}
-                            </div>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
-                                    setCopied(true);
-                                    setTimeout(() => setCopied(false), 2000);
-                                }}
-                                className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all"
-                                style={{
-                                    background: copied ? "rgba(46,234,136,0.2)" : "rgba(179,102,255,0.12)",
-                                    border: copied ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(179,102,255,0.3)",
-                                }}
-                            >
-                                {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-[#B366FF]" />}
-                            </button>
-                        </div>
-                        {referralStats && referralStats.totalReferrals > 0 && (
-                            <div className="mt-3 flex items-center justify-between text-[10px] text-white/40 font-mundial">
-                                <span>{referralStats.totalReferrals} {referralStats.totalReferrals === 1 ? 'friend' : 'friends'} referred</span>
-                                <span className="text-[#B366FF]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
-                            </div>
-                        )}
-                    </div>
+                    {/* ── Right Panel: Settings ── */}
+                    <div className="flex-1 p-5 overflow-y-auto flex flex-col">
+                        <h2 className="font-display text-lg font-black text-white mb-4 tracking-wide">Settings</h2>
 
-                    {/* Wallet Connection — gold themed */}
-                    <div
-                        className="w-full rounded-xl p-4 mb-4"
-                        style={{
+                        {/* Username Input */}
+                        <div className="mb-4">
+                            <label className="block text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1.5">Username</label>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="VibeMaster99"
+                                maxLength={20}
+                                className="w-full bg-[#1A1525] border border-[#3A3344] rounded-lg px-3 py-2 text-white font-bold placeholder:text-white/20 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] text-sm"
+                            />
+                        </div>
+
+                        {/* Music Settings */}
+                        <div className="rounded-xl p-3.5 mb-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Music size={13} className="text-[#B366FF]" />
+                                    <span className="text-[10px] font-bold text-[#B366FF] uppercase tracking-wider">Music</span>
+                                </div>
+                                <button
+                                    onClick={handleSoundToggle}
+                                    className={`relative w-10 h-[22px] rounded-full transition-colors duration-300 focus:outline-none ${soundEnabled ? "bg-[#B366FF]" : "bg-white/20"}`}
+                                >
+                                    <motion.div
+                                        className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-md"
+                                        animate={{ left: soundEnabled ? "calc(100% - 20px)" : "2px" }}
+                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    />
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => handleTrackChange(-1)} className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0">
+                                    <ChevronLeft size={12} className="text-white/50" />
+                                </button>
+                                <div className="flex-1 text-center min-w-0">
+                                    <div className="text-white/80 text-xs font-black font-mundial truncate">{BGM_TRACK_NAMES[trackIndex]}</div>
+                                    <div className="text-white/25 text-[8px] font-bold font-mundial uppercase tracking-wider">Track {trackIndex + 1} / {BGM_TRACK_NAMES.length}</div>
+                                </div>
+                                <button onClick={() => handleTrackChange(1)} className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0">
+                                    <ChevronRight size={12} className="text-white/50" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Referral Section */}
+                        <div className="rounded-xl p-3.5 mb-3" style={{
+                            background: "linear-gradient(135deg, rgba(179,102,255,0.08), rgba(179,102,255,0.03))",
+                            border: "1px solid rgba(179,102,255,0.15)",
+                        }}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Link size={13} className="text-[#B366FF]" />
+                                <span className="text-[10px] font-bold text-[#B366FF] uppercase tracking-wider">Refer Friends</span>
+                            </div>
+                            <p className="text-white/50 text-[10px] font-mundial leading-relaxed mb-2">
+                                You and a friend both get 2 free capsules when they join using your referral link.
+                            </p>
+                            <div className="flex gap-2">
+                                <div className="flex-1 rounded-lg px-2.5 py-1.5 text-[10px] font-mono text-white/60 truncate" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    vibematch.app?ref={currentUsername}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                                    style={{
+                                        background: copied ? "rgba(46,234,136,0.2)" : "rgba(179,102,255,0.12)",
+                                        border: copied ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(179,102,255,0.3)",
+                                    }}
+                                >
+                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-[#B366FF]" />}
+                                </button>
+                            </div>
+                            {referralStats && referralStats.totalReferrals > 0 && (
+                                <div className="mt-2 flex items-center justify-between text-[9px] text-white/40 font-mundial">
+                                    <span>{referralStats.totalReferrals} {referralStats.totalReferrals === 1 ? 'friend' : 'friends'} referred</span>
+                                    <span className="text-[#B366FF]">{referralStats.capsulesCredited} / {referralStats.maxCapsules} capsules earned</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Wallet Connection */}
+                        <div className="rounded-xl p-3.5 mb-4" style={{
                             background: "linear-gradient(135deg, rgba(255,224,72,0.08), rgba(255,224,72,0.03))",
                             border: "1px solid rgba(255,224,72,0.15)",
-                        }}
-                    >
-                        <div className="flex items-center gap-2 mb-2">
-                            <Wallet size={14} className="text-[#FFE048]" />
-                            <span className="text-xs font-bold text-[#FFE048] uppercase tracking-wider">
-                                Wallet
-                            </span>
-                        </div>
-                        <WalletProvider>
-                            <WalletTracker />
-                            <div className="flex justify-center">
-                                <RainbowConnectButton />
+                        }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Wallet size={13} className="text-[#FFE048]" />
+                                <span className="text-[10px] font-bold text-[#FFE048] uppercase tracking-wider">Wallet</span>
                             </div>
-                        </WalletProvider>
-                        <p className="text-white/30 text-[10px] font-mundial mt-2 text-center">
-                            Link your wallet to be eligible for onchain prizes.
-                        </p>
-                    </div>
-
-                    {/* Save Button Enamel Pin */}
-                    <button
-                        onClick={() => {
-                            onSave(username, avatarUrl);
-                            onClose();
-                        }}
-                        className="group relative w-full mt-2 overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-xl bg-gradient-to-b from-[#25B869] to-[#168E4D] p-[3px] shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
-                    >
-                        <div className="relative bg-[#2EEA88] rounded-lg py-3 flex items-center justify-center gap-2 overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(255,255,255,0.3)]">
-                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent mix-blend-overlay pointer-events-none" />
-                            <Save size={18} className="relative z-10 text-[#0E542D] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
-                            <span className="relative z-10 text-sm font-black tracking-widest text-[#0E542D] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
-                                Save Profile
-                            </span>
+                            <WalletProvider>
+                                <WalletTracker />
+                                <div className="flex justify-center">
+                                    <RainbowConnectButton />
+                                </div>
+                            </WalletProvider>
+                            <p className="text-white/25 text-[9px] font-mundial mt-2 text-center">
+                                Link your wallet to be eligible for onchain prizes.
+                            </p>
                         </div>
-                    </button>
+
+                        {/* Save Button */}
+                        <button
+                            onClick={() => {
+                                onSave(username, avatarUrl);
+                                onClose();
+                            }}
+                            className="group relative w-full mt-auto overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-xl bg-gradient-to-b from-[#25B869] to-[#168E4D] p-[3px] shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
+                        >
+                            <div className="relative bg-[#2EEA88] rounded-lg py-3 flex items-center justify-center gap-2 overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(255,255,255,0.3)]">
+                                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent mix-blend-overlay pointer-events-none" />
+                                <Save size={16} className="relative z-10 text-[#0E542D] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors" />
+                                <span className="relative z-10 text-sm font-black tracking-widest text-[#0E542D] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)] group-hover:text-black transition-colors uppercase">
+                                    Save Profile
+                                </span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </div>
