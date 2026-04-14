@@ -11,7 +11,7 @@ import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type BadgeTier } from '@/lib/b
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS as `0x${string}`;
 const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const erc20Abi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
-const VIBESTR_PER_REROLL = 5;
+const VIBESTR_PER_REROLL = 1;
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 3000;
 

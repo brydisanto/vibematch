@@ -25,7 +25,7 @@ const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 
 // VIBESTR cost per reroll (small fixed fee regardless of tier burned)
-const VIBESTR_PER_REROLL = 5; // 5 VIBESTR per reroll, scales with quantity
+const VIBESTR_PER_REROLL = 1; // 1 VIBESTR per reroll, scales with quantity
 const MAX_REROLLS_PER_TX = 20; // safety cap
 
 // Pins to burn per capsule by tier
