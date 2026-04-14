@@ -694,6 +694,8 @@ export default function Home() {
         onClose={() => setShowPinBook(false)}
         onStartGame={() => handleStartGame("classic", userProfile?.username, userProfile?.avatarUrl)}
         onOpenReroll={() => { setShowPinBook(false); setShowReroll(true); }}
+        onOpenBuyPrizeGames={() => { setShowPinBook(false); setShowBuyPrizeGames(true); }}
+        prizeGamesRemaining={Math.max(0, (10 + pinBook.state.bonusPrizeGames) - pinBook.state.classicPlays)}
         onOpenCapsule={async () => {
           const reveal = await pinBook.openCapsule();
           if (reveal) {

@@ -17,9 +17,11 @@ interface PinBookProps {
     onClose: () => void;
     onOpenCapsule: () => void;
     onOpenReroll?: () => void;
+    onOpenBuyPrizeGames?: () => void;
     onStartGame?: () => void;
     pins: Record<string, { count: number; firstEarned: string }>;
     unopenedCapsules: number;
+    prizeGamesRemaining?: number;
     currentUsername?: string;
 }
 
@@ -354,16 +356,23 @@ export default function PinBook({
     onClose,
     onOpenCapsule,
     onOpenReroll,
+    onOpenBuyPrizeGames,
     onStartGame,
     pins,
     unopenedCapsules,
+    prizeGamesRemaining = 10,
     currentUsername,
 }: PinBookProps) {
-    const [tab, setTab] = useState<"collection" | "leaderboard">("collection");
+    const [tab, setTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
     const [showInfo, setShowInfo] = useState(false);
 
     const ownedCount = useMemo(
         () => Object.keys(pins).length,
+        [pins]
+    );
+
+    const duplicateCount = useMemo(
+        () => Object.values(pins).reduce((sum, p) => sum + Math.max(0, p.count - 1), 0),
         [pins]
     );
 
@@ -510,18 +519,22 @@ export default function PinBook({
                             </div>
 
                             {/* Tab Bar */}
-                            <div className="flex bg-white/5 p-1 rounded-xl w-full mt-3">
-                                {(["collection", "leaderboard"] as const).map(t => (
+                            <div className="flex bg-white/5 p-1 rounded-xl w-full mt-3 gap-0.5">
+                                {([
+                                    { id: "collection" as const, label: "Collection" },
+                                    { id: "leaderboard" as const, label: "Leaderboard" },
+                                    { id: "capsules" as const, label: `Capsules${unopenedCapsules > 0 ? ` (${unopenedCapsules})` : ""}` },
+                                ]).map(t => (
                                     <button
-                                        key={t}
-                                        onClick={() => setTab(t)}
-                                        className={`flex-1 py-2 text-center text-xs font-bold uppercase transition-all rounded-lg ${
-                                            tab === t
-                                                ? "bg-white text-black shadow-sm"
+                                        key={t.id}
+                                        onClick={() => setTab(t.id)}
+                                        className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase transition-all rounded-lg ${
+                                            tab === t.id
+                                                ? t.id === "capsules" ? "bg-[#B366FF] text-white shadow-sm" : "bg-white text-black shadow-sm"
                                                 : "text-white/40 hover:text-white/80"
                                         }`}
                                     >
-                                        {t === "collection" ? "My Collection" : "Leaderboard"}
+                                        {t.label}
                                     </button>
                                 ))}
                             </div>
@@ -529,7 +542,130 @@ export default function PinBook({
 
                         {/* ── Scrollable Content ── */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {tab === "leaderboard" ? (
+                        {tab === "capsules" ? (
+                            /* ── Capsules Tab ── */
+                            <div className="px-5 sm:px-6 py-5 space-y-3">
+                                {/* Capsules Card */}
+                                <div
+                                    className="flex justify-between items-center p-4 rounded-xl"
+                                    style={{
+                                        background: "rgba(179,102,255,0.08)",
+                                        border: "1px solid rgba(179,102,255,0.15)",
+                                    }}
+                                >
+                                    <div>
+                                        <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">Capsules Ready</div>
+                                    </div>
+                                    <button
+                                        onClick={onOpenCapsule}
+                                        disabled={unopenedCapsules <= 0}
+                                        className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        style={{
+                                            background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
+                                            border: "2px solid rgba(179,102,255,0.6)",
+                                            color: "#fff",
+                                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                        }}
+                                    >
+                                        Open
+                                    </button>
+                                </div>
+
+                                {/* Duplicates / Reroll Card */}
+                                <div
+                                    className="flex justify-between items-center p-4 rounded-xl"
+                                    style={{
+                                        background: "rgba(255,140,66,0.08)",
+                                        border: "1px solid rgba(255,140,66,0.15)",
+                                    }}
+                                >
+                                    <div>
+                                        <div className="text-2xl font-display font-black text-[#FF8C42]">{duplicateCount}</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">Duplicate Pins</div>
+                                    </div>
+                                    <button
+                                        onClick={onOpenReroll}
+                                        disabled={!onOpenReroll || duplicateCount <= 0}
+                                        className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        style={{
+                                            background: "linear-gradient(180deg, #FF8C42 0%, #CC6A20 100%)",
+                                            border: "2px solid rgba(255,140,66,0.6)",
+                                            color: "#fff",
+                                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                        }}
+                                    >
+                                        Reroll
+                                    </button>
+                                </div>
+
+                                {/* Prize Games Card */}
+                                <div
+                                    className="flex justify-between items-center p-4 rounded-xl"
+                                    style={{
+                                        background: "rgba(255,224,72,0.06)",
+                                        border: "1px solid rgba(255,224,72,0.12)",
+                                    }}
+                                >
+                                    <div>
+                                        <div className="text-2xl font-display font-black text-[#FFE048]">{prizeGamesRemaining}</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">Prize Games Left</div>
+                                    </div>
+                                    <button
+                                        onClick={onOpenBuyPrizeGames}
+                                        disabled={!onOpenBuyPrizeGames}
+                                        className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        style={{
+                                            background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 100%)",
+                                            border: "2px solid rgba(255,224,72,0.6)",
+                                            color: "#1A0633",
+                                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                        }}
+                                    >
+                                        Buy More
+                                    </button>
+                                </div>
+
+                                {/* Referral Card */}
+                                <div
+                                    className="p-4 rounded-xl"
+                                    style={{
+                                        background: "rgba(179,102,255,0.05)",
+                                        border: "1px solid rgba(179,102,255,0.12)",
+                                    }}
+                                >
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div>
+                                            <div className="text-sm font-display font-black text-[#B366FF]">Refer Friends</div>
+                                            <div className="text-[10px] text-white/40 font-mundial">You both get 2 free capsules</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div
+                                            className="flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono text-white/50 truncate"
+                                            style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
+                                        >
+                                            vibematch.app?ref={currentUsername}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (currentUsername) {
+                                                    navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
+                                                }
+                                            }}
+                                            className="shrink-0 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
+                                            style={{
+                                                background: "rgba(179,102,255,0.12)",
+                                                border: "1px solid rgba(179,102,255,0.3)",
+                                                color: "#B366FF",
+                                            }}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : tab === "leaderboard" ? (
                             <PinLeaderboard currentUsername={currentUsername} refreshKey={leaderboardRefreshKey} />
                         ) : ownedCount === 0 ? (
                             <div className="px-5 sm:px-6 py-6">
@@ -732,56 +868,14 @@ export default function PinBook({
                         )}
                         </div>
 
-                        {/* ── Floating Bottom Action Bar ── */}
-                        <div className="px-5 sm:px-6 py-3 border-t border-white/10 bg-[#110321] flex items-center gap-2">
-                            {unopenedCapsules > 0 && (
-                                <div className="relative flex-1">
-                                    <button
-                                        onClick={onOpenCapsule}
-                                        className="group relative overflow-hidden w-full py-2.5 rounded-[14px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5"
-                                        style={{
-                                            background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
-                                            boxShadow: "0 4px 12px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25)",
-                                            border: "2px solid rgba(179,102,255,0.6)",
-                                            color: "#fff",
-                                            textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                                        }}
-                                    >
-                                        <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                                        Open Capsule!
-                                    </button>
-                                    <span
-                                        className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5F1F] text-white text-[10px] font-black font-mundial flex items-center justify-center"
-                                        style={{ boxShadow: "0 0 10px rgba(255, 95, 31, 0.6)" }}
-                                    >
-                                        {unopenedCapsules}
-                                    </span>
-                                </div>
-                            )}
-                            {ownedCount > 0 && onOpenReroll && (
-                                <button
-                                    onClick={onOpenReroll}
-                                    className={`group relative overflow-hidden py-2.5 rounded-[14px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5 ${unopenedCapsules > 0 ? 'px-5' : 'flex-1'}`}
-                                    style={{
-                                        background: "linear-gradient(180deg, #FF8C42 0%, #CC6A20 100%)",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25)",
-                                        border: "2px solid rgba(255,140,66,0.6)",
-                                        color: "#fff",
-                                        textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                                    }}
-                                >
-                                    <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                                    Reroll
-                                </button>
-                            )}
-                            {unopenedCapsules === 0 && !(ownedCount > 0 && onOpenReroll) && (
-                                <span className="text-white/25 text-[10px] font-mundial uppercase tracking-widest flex-1">
-                                    {totalCount} Total Pins
-                                </span>
-                            )}
+                        {/* ── Footer ── */}
+                        <div className="px-5 sm:px-6 py-3 border-t border-white/10 bg-[#110321] flex items-center justify-between">
+                            <span className="text-white/25 text-[10px] font-mundial uppercase tracking-widest">
+                                {totalCount} Total Pins
+                            </span>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-black font-mundial transition-colors flex-shrink-0"
+                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-black font-mundial transition-colors"
                             >
                                 Done
                             </button>
