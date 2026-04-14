@@ -21,6 +21,7 @@ import dynamic from "next/dynamic";
 
 // Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
 const BuyPrizeGamesModal = dynamic(() => import("@/components/BuyPrizeGamesModal"), { ssr: false });
+const RerollModal = dynamic(() => import("@/components/RerollModal"), { ssr: false });
 const WalletProvider = dynamic(
   () => import("@/components/WalletProvider").then(m => m.WalletProvider),
   { ssr: false, loading: () => <>{/* placeholder */}</> }
@@ -68,6 +69,7 @@ export default function Home() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const [prizeOnboarding, setPrizeOnboarding] = useState<null | { variant: "running-low" | "capped"; remaining: number }>(null);
+  const [showReroll, setShowReroll] = useState(false);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -742,6 +744,7 @@ export default function Home() {
         isOpen={showPinBook}
         onClose={() => setShowPinBook(false)}
         onStartGame={() => handleStartGame("classic", userProfile?.username, userProfile?.avatarUrl)}
+        onOpenReroll={() => { setShowPinBook(false); setShowReroll(true); }}
         onOpenCapsule={async () => {
           const reveal = await pinBook.openCapsule();
           if (reveal) {
@@ -792,6 +795,18 @@ export default function Home() {
             }
           }}
         />
+      )}
+
+      {/* Reroll Modal */}
+      {showReroll && (
+        <WalletProvider>
+          <RerollModal
+            isOpen={showReroll}
+            onClose={() => setShowReroll(false)}
+            pins={pinBook.state.pins}
+            onSuccess={() => pinBook.load()}
+          />
+        </WalletProvider>
       )}
 
       {/* Buy Prize Games Modal — only mount when open (keeps wallet context scoped) */}

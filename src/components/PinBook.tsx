@@ -16,6 +16,7 @@ interface PinBookProps {
     isOpen: boolean;
     onClose: () => void;
     onOpenCapsule: () => void;
+    onOpenReroll?: () => void;
     onStartGame?: () => void;
     pins: Record<string, { count: number; firstEarned: string }>;
     unopenedCapsules: number;
@@ -352,6 +353,7 @@ export default function PinBook({
     isOpen,
     onClose,
     onOpenCapsule,
+    onOpenReroll,
     onStartGame,
     pins,
     unopenedCapsules,
@@ -477,6 +479,19 @@ export default function PinBook({
                                                 {unopenedCapsules}
                                             </span>
                                         </div>
+                                    )}
+                                    {ownedCount > 0 && onOpenReroll && (
+                                        <button
+                                            onClick={onOpenReroll}
+                                            className="px-3 py-2 rounded-lg text-[10px] font-black font-mundial uppercase tracking-wider transition-all hover:brightness-110"
+                                            style={{
+                                                background: "rgba(255,140,66,0.15)",
+                                                border: "1px solid rgba(255,140,66,0.3)",
+                                                color: "#FF8C42",
+                                            }}
+                                        >
+                                            Reroll
+                                        </button>
                                     )}
                                     <button
                                         onClick={() => setShowInfo(true)}
