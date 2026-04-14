@@ -530,20 +530,31 @@ export function processTurn(
     // Detect geometric shapes from initial matches
     const shapeBonus = detectShapes(initialMatches);
 
+    // Track which positions have pending specials (prevents overwrites)
+    const pendingSpecials = new Map<string, SpecialTileType>();
+
     // Process cascades (cap at 50 to prevent infinite loops from 2x2 gravity fills)
     const MAX_CASCADES = 50;
     let matches = initialMatches;
     while (matches.length > 0 && cascadeCount < MAX_CASCADES) {
         totalMatches = [...totalMatches, ...matches];
 
-        // Check for special tiles to create
+        // Determine which specials to create from this iteration's matches.
+        // Store them by a stable cell ID so they survive gravity shifts.
+        const iterationSpecials: { cellId: string; type: SpecialTileType }[] = [];
         for (const match of matches) {
             const specialType = getSpecialTileForMatch(match);
             if (specialType) {
-                // Place special tile at the midpoint of the match
                 const midIdx = Math.floor(match.positions.length / 2);
-                const specialPos = match.positions[midIdx];
-                specialTilesCreated.push({ pos: specialPos, type: specialType });
+                const midPos = match.positions[midIdx];
+                const cellId = currentBoard[midPos.row][midPos.col].id;
+                // Only keep the highest-tier special per cell
+                const posKey = `${midPos.row},${midPos.col}`;
+                if (!pendingSpecials.has(posKey)) {
+                    iterationSpecials.push({ cellId, type: specialType });
+                    pendingSpecials.set(posKey, specialType);
+                    specialTilesCreated.push({ pos: midPos, type: specialType });
+                }
             }
         }
 
@@ -559,46 +570,83 @@ export function processTurn(
             }
         }
 
-        // Check for special tile activations in matched cells
-        for (const posKey of matchedPositions) {
+        // Check for special tile activations in matched cells (pre-existing specials)
+        // Use a queue to handle chain reactions (special triggers another special)
+        const detonationQueue = [...matchedPositions];
+        const detonated = new Set<string>();
+        while (detonationQueue.length > 0) {
+            const posKey = detonationQueue.shift()!;
+            if (detonated.has(posKey)) continue;
             const [r, c] = posKey.split(",").map(Number);
             const cell = currentBoard[r][c];
             if (cell.isSpecial) {
+                detonated.add(posKey);
                 const affected = applySpecialTile(currentBoard, { row: r, col: c }, cell.isSpecial);
                 for (const aPos of affected) {
-                    matchedPositions.add(`${aPos.row},${aPos.col}`);
+                    const aKey = `${aPos.row},${aPos.col}`;
+                    matchedPositions.add(aKey);
+                    // If the affected cell also has a special, queue it for chain detonation
+                    if (!detonated.has(aKey) && currentBoard[aPos.row]?.[aPos.col]?.isSpecial) {
+                        detonationQueue.push(aKey);
+                    }
                 }
-                // Bonus for special activation, scaled by type
                 totalScore += calculateSpecialTileScore(cell.isSpecial, affected.length);
             }
         }
 
-        // Remove matched tiles
+        // Remove matched tiles (clear isSpecial on matched cells too)
         currentBoard = currentBoard.map((row, r) =>
-            row.map((cell, c) => ({
-                ...cell,
-                isMatched: matchedPositions.has(`${r},${c}`),
-            }))
+            row.map((cell, c) => {
+                if (matchedPositions.has(`${r},${c}`)) {
+                    return { ...cell, isMatched: true, isSpecial: undefined };
+                }
+                return { ...cell, isMatched: false };
+            })
         );
 
         // Apply gravity and fill
         currentBoard = applyGravity(currentBoard, gameBadges);
 
-        // Place special tiles that were earned
-        for (const special of specialTilesCreated) {
-            if (
-                special.pos.row < BOARD_SIZE &&
-                special.pos.col < BOARD_SIZE
-            ) {
-                currentBoard[special.pos.row][special.pos.col] = {
-                    ...currentBoard[special.pos.row][special.pos.col],
-                    isSpecial: special.type,
-                };
+        // Place earned specials by finding their cell IDs on the post-gravity board.
+        // Cell IDs are stable through gravity — the cell moves but keeps its ID.
+        for (const special of iterationSpecials) {
+            let placed = false;
+            for (let r = 0; r < BOARD_SIZE && !placed; r++) {
+                for (let c = 0; c < BOARD_SIZE && !placed; c++) {
+                    if (currentBoard[r][c].id === special.cellId && !currentBoard[r][c].isSpecial) {
+                        currentBoard[r][c] = {
+                            ...currentBoard[r][c],
+                            isSpecial: special.type,
+                            isMatched: false,
+                        };
+                        placed = true;
+                    }
+                }
+            }
+            // If the cell was consumed (matched away), place on the midpoint of the match area
+            // This handles the edge case where the earning cell was also part of another match
+            if (!placed) {
+                // Find an empty non-special cell near the top (newly filled) to place it
+                for (let r = 0; r < BOARD_SIZE && !placed; r++) {
+                    for (let c = 0; c < BOARD_SIZE && !placed; c++) {
+                        if (!currentBoard[r][c].isSpecial && !currentBoard[r][c].isMatched) {
+                            currentBoard[r][c] = {
+                                ...currentBoard[r][c],
+                                isSpecial: special.type,
+                                isMatched: false,
+                            };
+                            placed = true;
+                        }
+                    }
+                }
             }
         }
 
-        // Check for new matches from cascade
+        // Check for new matches from cascade (including newly placed specials)
         matches = findAllMatches(currentBoard);
+
+        // Also check if any newly-placed specials are part of the new matches
+        // and trigger them immediately in the next iteration
         if (matches.length > 0) cascadeCount++;
     }
 
