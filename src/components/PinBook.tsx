@@ -454,7 +454,7 @@ export default function PinBook({
                                             My Pin Book
                                         </h2>
                                         <p className="text-white/40 text-[11px] font-mundial mt-0.5">
-                                            {ownedCount}/{totalCount} collected ({progressPercent}%)
+                                            Collect &apos;em all for immaculate vibes!
                                         </p>
                                     </div>
                                 </div>
@@ -492,7 +492,7 @@ export default function PinBook({
                                             Collected
                                         </span>
                                     </span>
-                                    <span className="text-white/30 text-[10px] font-mundial font-bold">
+                                    <span className="text-white/50 text-lg font-display font-black">
                                         {progressPercent}%
                                     </span>
                                 </div>
