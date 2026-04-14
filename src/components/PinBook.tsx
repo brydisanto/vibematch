@@ -528,13 +528,24 @@ export default function PinBook({
                                     <button
                                         key={t.id}
                                         onClick={() => setTab(t.id)}
-                                        className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase transition-all rounded-lg ${
+                                        className={`relative flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase transition-all rounded-lg ${
                                             tab === t.id
                                                 ? t.id === "capsules" ? "bg-[#B366FF] text-white shadow-sm" : "bg-white text-black shadow-sm"
                                                 : "text-white/40 hover:text-white/80"
                                         }`}
                                     >
-                                        {t.label}
+                                        {t.id === "capsules" ? "Capsules" : t.label}
+                                        {t.id === "capsules" && unopenedCapsules > 0 && (
+                                            <span
+                                                className="absolute -top-1.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-white text-[9px] font-black flex items-center justify-center"
+                                                style={{
+                                                    background: "#FF5F1F",
+                                                    boxShadow: "0 0 8px rgba(255,95,31,0.6)",
+                                                }}
+                                            >
+                                                {unopenedCapsules}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -649,14 +660,15 @@ export default function PinBook({
                                         </div>
                                         <button
                                             onClick={() => {
-                                                if (currentUsername) {
-                                                    navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
-                                                }
+                                                navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername || ''}`);
+                                                // Brief visual feedback
+                                                const btn = document.activeElement as HTMLButtonElement;
+                                                if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }
                                             }}
-                                            className="shrink-0 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
+                                            className="shrink-0 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer hover:brightness-125 active:scale-95"
                                             style={{
-                                                background: "rgba(179,102,255,0.12)",
-                                                border: "1px solid rgba(179,102,255,0.3)",
+                                                background: "rgba(179,102,255,0.15)",
+                                                border: "1px solid rgba(179,102,255,0.4)",
                                                 color: "#B366FF",
                                             }}
                                         >
