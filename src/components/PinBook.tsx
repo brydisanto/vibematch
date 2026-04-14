@@ -566,7 +566,7 @@ export default function PinBook({
                                 >
                                     <div>
                                         <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
-                                        <div className="text-[10px] text-white/40 font-mundial">Capsules Ready</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">{unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready</div>
                                     </div>
                                     <button
                                         onClick={onOpenCapsule}
@@ -593,7 +593,7 @@ export default function PinBook({
                                 >
                                     <div>
                                         <div className="text-2xl font-display font-black text-[#FF8C42]">{duplicateCount}</div>
-                                        <div className="text-[10px] text-white/40 font-mundial">Duplicate Pins</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">Duplicate {duplicateCount === 1 ? 'Pin' : 'Pins'}</div>
                                     </div>
                                     <button
                                         onClick={onOpenReroll}
@@ -620,7 +620,7 @@ export default function PinBook({
                                 >
                                     <div>
                                         <div className="text-2xl font-display font-black text-[#FFE048]">{prizeGamesRemaining}</div>
-                                        <div className="text-[10px] text-white/40 font-mundial">Prize Games Left</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">Prize {prizeGamesRemaining === 1 ? 'Game' : 'Games'} Left</div>
                                     </div>
                                     <button
                                         onClick={onOpenBuyPrizeGames}
