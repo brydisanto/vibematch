@@ -281,27 +281,28 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                     </div>
 
                                     {/* Cost summary */}
-                                    {totalCapsules > 0 && (
-                                        <div
-                                            className="rounded-xl p-3 mb-4"
-                                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                                        >
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-white/40 font-mundial">Total burned</span>
-                                                <span className="text-white font-bold">
-                                                    {TIER_ORDER.filter(t => burns[t] > 0).map(t => `${BURN_COST[t] * burns[t]} ${TIER_DISPLAY_NAMES[t].split(' ')[0]}`).join(' + ')}
-                                                </span>
+                                    {totalCapsules > 0 && (() => {
+                                        const totalPinsBurned = TIER_ORDER.reduce((s, t) => s + BURN_COST[t] * burns[t], 0);
+                                        return (
+                                            <div
+                                                className="rounded-xl p-3 mb-4"
+                                                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                                            >
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-white/40 font-mundial">Total Burned</span>
+                                                    <span className="text-white font-bold">{totalPinsBurned} Duplicate {totalPinsBurned === 1 ? 'Pin' : 'Pins'}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-sm mt-1">
+                                                    <span className="text-white/40 font-mundial">Cost</span>
+                                                    <span className="font-bold text-[#FFE048]">{totalVibestr} $VIBESTR</span>
+                                                </div>
+                                                <div className="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-sm">
+                                                    <span className="text-white/40 font-mundial">You Get</span>
+                                                    <span className="font-bold text-white text-[15px]">{totalCapsules} Random Pin {totalCapsules === 1 ? 'Capsule' : 'Capsules'}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between items-center text-sm mt-1">
-                                                <span className="text-white/40 font-mundial">Fee</span>
-                                                <span className="font-bold text-[#FFE048]">{totalVibestr} $VIBESTR</span>
-                                            </div>
-                                            <div className="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-sm">
-                                                <span className="text-white/40 font-mundial">You get</span>
-                                                <span className="font-bold text-white text-[15px]">{totalCapsules} Random {totalCapsules === 1 ? 'Capsule' : 'Capsules'}</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     {error && (
                                         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-red-400 text-xs text-center">
