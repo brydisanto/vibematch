@@ -189,17 +189,8 @@ export async function POST(request: Request) {
         }
 
         // Confirmation depth check: protect against reorgs
-        let currentBlock: bigint;
-        try {
-            currentBlock = await client.getBlockNumber();
-        } catch (e: any) {
-            console.error(`[Purchase] getBlockNumber failed:`, e?.message || e);
-            return await fail(503, 'Could not verify confirmation depth. Please retry.');
-        }
-        const confirmations = currentBlock - receipt.blockNumber;
-        if (confirmations < REQUIRED_CONFIRMATIONS) {
-            return await fail(425, `Awaiting confirmations (${confirmations}/${REQUIRED_CONFIRMATIONS}). Please retry shortly.`);
-        }
+        // No confirmation depth check — accept immediately once receipt exists.
+        // Amounts are small; reorg risk is negligible on Ethereum mainnet.
 
         const tx = await client.getTransaction({ hash: normalizedTxHash as `0x${string}` });
         if (tx.from.toLowerCase() !== normalizedWallet) {

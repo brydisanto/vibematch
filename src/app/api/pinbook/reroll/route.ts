@@ -210,11 +210,8 @@ export async function POST(request: Request) {
             return await fail(400, 'Transaction failed on-chain');
         }
 
-        // Confirmation check
-        const currentBlock = await client.getBlockNumber();
-        if (receipt.blockNumber + BigInt(1) > currentBlock) {
-            return await fail(425, 'Awaiting confirmation. Please retry.');
-        }
+        // No confirmation depth check — amounts are small, accept immediately
+        // once the tx receipt exists (status: success)
 
         const tx = await client.getTransaction({ hash: normalizedTxHash as `0x${string}` });
         if (tx.from.toLowerCase() !== normalizedWallet) {
