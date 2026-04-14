@@ -249,8 +249,8 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                         <div className="text-[10px] font-bold uppercase tracking-wider w-16" style={{ color: TIER_COLORS[tier] }}>
                                                             {TIER_DISPLAY_NAMES[tier].split(' ')[0]}
                                                         </div>
-                                                        <div className="text-[9px] text-white/30">{cost}/cap</div>
-                                                        <div className="text-[9px] text-white/20">{dupes} avail</div>
+                                                        <div className="text-[10px] text-white/50 font-mundial">{cost} per capsule</div>
+                                                        <div className="text-[10px] font-mundial font-bold" style={{ color: TIER_COLORS[tier] }}>{dupes} available</div>
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
                                                         <button
