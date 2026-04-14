@@ -450,52 +450,8 @@ export default function PinBook({
                                     </div>
                                 </div>
 
-                                {/* Close + Capsule Badge */}
+                                {/* Close + Info */}
                                 <div className="flex items-center gap-2">
-                                    {unopenedCapsules > 0 && (
-                                        <div className="relative">
-                                            <button
-                                                onClick={onOpenCapsule}
-                                                className="group relative overflow-hidden px-4 py-2.5 rounded-[16px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5"
-                                                style={{
-                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
-                                                    boxShadow: "0 6px 16px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25), 0 0 20px rgba(179,102,255,0.4)",
-                                                    border: "2px solid rgba(179,102,255,0.6)",
-                                                    color: "#fff",
-                                                    textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                                                }}
-                                            >
-                                                <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                                                Open Capsule!
-                                            </button>
-                                            {/* Notification Badge */}
-                                            <span
-                                                className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5F1F] text-white text-[10px] font-black font-mundial flex items-center justify-center"
-                                                style={{
-                                                    boxShadow:
-                                                        "0 0 10px rgba(255, 95, 31, 0.6)",
-                                                }}
-                                            >
-                                                {unopenedCapsules}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {ownedCount > 0 && onOpenReroll && (
-                                        <button
-                                            onClick={onOpenReroll}
-                                            className="group relative overflow-hidden px-4 py-2.5 rounded-[16px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5"
-                                            style={{
-                                                background: "linear-gradient(180deg, #FF8C42 0%, #CC6A20 100%)",
-                                                boxShadow: "0 6px 16px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25), 0 0 20px rgba(255,140,66,0.3)",
-                                                border: "2px solid rgba(255,140,66,0.6)",
-                                                color: "#fff",
-                                                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
-                                            }}
-                                        >
-                                            <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                                            Reroll
-                                        </button>
-                                    )}
                                     <button
                                         onClick={() => setShowInfo(true)}
                                         className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
@@ -514,6 +470,52 @@ export default function PinBook({
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Action Buttons Row */}
+                            {(unopenedCapsules > 0 || (ownedCount > 0 && onOpenReroll)) && (
+                                <div className="flex gap-2 mt-1">
+                                    {unopenedCapsules > 0 && (
+                                        <div className="relative flex-1">
+                                            <button
+                                                onClick={onOpenCapsule}
+                                                className="group relative overflow-hidden w-full py-2.5 rounded-[14px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5"
+                                                style={{
+                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25)",
+                                                    border: "2px solid rgba(179,102,255,0.6)",
+                                                    color: "#fff",
+                                                    textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                                                }}
+                                            >
+                                                <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+                                                Open Capsule!
+                                            </button>
+                                            <span
+                                                className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5F1F] text-white text-[10px] font-black font-mundial flex items-center justify-center"
+                                                style={{ boxShadow: "0 0 10px rgba(255, 95, 31, 0.6)" }}
+                                            >
+                                                {unopenedCapsules}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {ownedCount > 0 && onOpenReroll && (
+                                        <button
+                                            onClick={onOpenReroll}
+                                            className={`group relative overflow-hidden py-2.5 rounded-[14px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5 ${unopenedCapsules > 0 ? 'px-5' : 'flex-1'}`}
+                                            style={{
+                                                background: "linear-gradient(180deg, #FF8C42 0%, #CC6A20 100%)",
+                                                boxShadow: "0 4px 12px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25)",
+                                                border: "2px solid rgba(255,140,66,0.6)",
+                                                color: "#fff",
+                                                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                                            }}
+                                        >
+                                            <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+                                            Reroll
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Progress Bar */}
                             <div>
