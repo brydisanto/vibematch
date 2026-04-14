@@ -13,7 +13,7 @@ const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const erc20Abi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
 const VIBESTR_PER_REROLL = 1;
 const MAX_POLL_ATTEMPTS = 60;
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 1500;
 
 const BURN_COST: Record<string, number> = {
     blue: 5,
