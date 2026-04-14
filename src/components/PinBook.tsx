@@ -466,7 +466,7 @@ export default function PinBook({
                                                 }}
                                             >
                                                 <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                                                Open Pin Capsule!
+                                                Open Capsule!
                                             </button>
                                             {/* Notification Badge */}
                                             <span
@@ -483,13 +483,16 @@ export default function PinBook({
                                     {ownedCount > 0 && onOpenReroll && (
                                         <button
                                             onClick={onOpenReroll}
-                                            className="px-3 py-2 rounded-lg text-[10px] font-black font-mundial uppercase tracking-wider transition-all hover:brightness-110"
+                                            className="group relative overflow-hidden px-4 py-2.5 rounded-[16px] text-[11px] font-black font-mundial tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0.5"
                                             style={{
-                                                background: "rgba(255,140,66,0.15)",
-                                                border: "1px solid rgba(255,140,66,0.3)",
-                                                color: "#FF8C42",
+                                                background: "linear-gradient(180deg, #FF8C42 0%, #CC6A20 100%)",
+                                                boxShadow: "0 6px 16px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.25), 0 0 20px rgba(255,140,66,0.3)",
+                                                border: "2px solid rgba(255,140,66,0.6)",
+                                                color: "#fff",
+                                                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
                                             }}
                                         >
+                                            <span className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
                                             Reroll
                                         </button>
                                     )}

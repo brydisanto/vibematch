@@ -45,8 +45,8 @@ function getBurnableDuplicates(pins: Record<string, { count: number }>, tier: Ba
 
 export default function RerollModal({ isOpen, onClose, pins, onSuccess }: RerollModalProps) {
     const { address, isConnected } = useAccount();
-    const [selectedTier, setSelectedTier] = useState<BadgeTier>('blue');
-    const [quantity, setQuantity] = useState(1);
+    // burns = how many capsules to reroll from each tier
+    const [burns, setBurns] = useState<Record<BadgeTier, number>>({ blue: 0, silver: 0, special: 0, gold: 0, cosmic: 0 });
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -54,21 +54,21 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const pollingRef = useRef(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const addressRef = useRef(address);
-    const selectedTierRef = useRef(selectedTier);
-    const quantityRef = useRef(quantity);
+    const burnsRef = useRef(burns);
 
     useEffect(() => { addressRef.current = address; }, [address]);
-    useEffect(() => { selectedTierRef.current = selectedTier; }, [selectedTier]);
-    useEffect(() => { quantityRef.current = quantity; }, [quantity]);
+    useEffect(() => { burnsRef.current = burns; }, [burns]);
 
     const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
 
-    const burnPerReroll = BURN_COST[selectedTier];
-    const available = getBurnableDuplicates(pins, selectedTier);
-    const totalBurn = burnPerReroll * quantity;
-    const totalVibestr = VIBESTR_PER_REROLL * quantity;
-    const maxQuantity = Math.min(20, Math.floor(available / burnPerReroll));
-    const canBurn = available >= totalBurn && quantity >= 1;
+    // Computed values across all tiers
+    const totalCapsules = Object.values(burns).reduce((s, v) => s + v, 0);
+    const totalVibestr = VIBESTR_PER_REROLL * totalCapsules;
+    const canBurn = totalCapsules > 0 && TIER_ORDER.every(tier => {
+        const qty = burns[tier];
+        if (qty <= 0) return true;
+        return getBurnableDuplicates(pins, tier) >= BURN_COST[tier] * qty;
+    });
 
     const startPolling = (hash: string) => {
         setVerifying(true);
@@ -92,8 +92,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                     body: JSON.stringify({
                         txHash: hash,
                         walletAddress: addressRef.current,
-                        burnTier: selectedTierRef.current,
-                        quantity: quantityRef.current,
+                        burns: burnsRef.current,
                     }),
                 });
                 const data = await res.json();
@@ -212,7 +211,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                     />
                                     <h2 className="font-display text-2xl font-black text-[#FF8C42] mb-2">Reroll Complete!</h2>
                                     <p className="text-white/70 font-mundial text-sm mb-6">
-                                        Burned {totalBurn} {TIER_DISPLAY_NAMES[selectedTier]} {totalBurn === 1 ? 'pin' : 'pins'} and got {quantity} new {quantity === 1 ? 'capsule' : 'capsules'}. Open them from your Pin Book!
+                                        Burned your duplicates and got {totalCapsules} new {totalCapsules === 1 ? 'capsule' : 'capsules'}. Open them from your Pin Book!
                                     </p>
                                     <button
                                         onClick={handleClose}
@@ -229,97 +228,74 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                         Burn duplicate pins + {VIBESTR_PER_REROLL} $VIBESTR for a new random capsule.
                                     </p>
 
-                                    {/* Tier selector */}
-                                    <div className="flex gap-1.5 mb-4">
+                                    {/* Per-tier burn controls */}
+                                    <div className="space-y-2 mb-4">
                                         {TIER_ORDER.map(tier => {
                                             const dupes = getBurnableDuplicates(pins, tier);
                                             const cost = BURN_COST[tier];
-                                            const enough = dupes >= cost;
-                                            const isSelected = selectedTier === tier;
+                                            const maxForTier = Math.min(20, Math.floor(dupes / cost));
+                                            const qty = burns[tier];
 
                                             return (
-                                                <button
+                                                <div
                                                     key={tier}
-                                                    onClick={() => { setSelectedTier(tier); setQuantity(1); }}
-                                                    className={`flex-1 min-w-0 rounded-lg p-2 text-center transition-all ${!enough ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                    disabled={!enough}
+                                                    className={`flex items-center justify-between rounded-lg px-3 py-2 ${maxForTier === 0 ? 'opacity-30' : ''}`}
                                                     style={{
-                                                        background: isSelected ? `${TIER_COLORS[tier]}15` : 'rgba(255,255,255,0.03)',
-                                                        border: isSelected ? `2px solid ${TIER_COLORS[tier]}60` : '2px solid rgba(255,255,255,0.06)',
+                                                        background: qty > 0 ? `${TIER_COLORS[tier]}10` : 'rgba(255,255,255,0.02)',
+                                                        border: qty > 0 ? `1px solid ${TIER_COLORS[tier]}40` : '1px solid rgba(255,255,255,0.05)',
                                                     }}
                                                 >
-                                                    <div className="text-[9px] font-bold uppercase tracking-wider" style={{ color: TIER_COLORS[tier] }}>
-                                                        {TIER_DISPLAY_NAMES[tier].split(' ')[0]}
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className="text-[10px] font-bold uppercase tracking-wider w-16" style={{ color: TIER_COLORS[tier] }}>
+                                                            {TIER_DISPLAY_NAMES[tier].split(' ')[0]}
+                                                        </div>
+                                                        <div className="text-[9px] text-white/30">{cost}/cap</div>
+                                                        <div className="text-[9px] text-white/20">{dupes} avail</div>
                                                     </div>
-                                                    <div className="text-[11px] font-black text-white mt-0.5">
-                                                        {cost}
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button
+                                                            onClick={() => setBurns(b => ({ ...b, [tier]: Math.max(0, b[tier] - 1) }))}
+                                                            disabled={qty <= 0}
+                                                            className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 text-xs font-bold disabled:opacity-20 transition-colors"
+                                                        >-</button>
+                                                        <span className="text-white font-display font-black text-sm w-5 text-center">{qty}</span>
+                                                        <button
+                                                            onClick={() => setBurns(b => ({ ...b, [tier]: Math.min(maxForTier, b[tier] + 1) }))}
+                                                            disabled={qty >= maxForTier}
+                                                            className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 text-xs font-bold disabled:opacity-20 transition-colors"
+                                                        >+</button>
                                                     </div>
-                                                    <div className="text-[8px] text-white/30 mt-0.5">
-                                                        {dupes} avail
-                                                    </div>
-                                                </button>
+                                                </div>
                                             );
                                         })}
                                     </div>
-
-                                    {/* Quantity selector */}
-                                    {maxQuantity > 1 && (
-                                        <div className="flex items-center justify-between mb-4">
-                                            <span className="text-white/50 text-xs font-mundial font-bold uppercase tracking-wider">Quantity</span>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                                    disabled={quantity <= 1}
-                                                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 font-bold disabled:opacity-30 transition-colors"
-                                                >
-                                                    -
-                                                </button>
-                                                <span className="text-white font-display font-black text-lg w-8 text-center">{quantity}</span>
-                                                <button
-                                                    onClick={() => setQuantity(q => Math.min(maxQuantity, q + 1))}
-                                                    disabled={quantity >= maxQuantity}
-                                                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 font-bold disabled:opacity-30 transition-colors"
-                                                >
-                                                    +
-                                                </button>
-                                                {maxQuantity > 2 && (
-                                                    <button
-                                                        onClick={() => setQuantity(maxQuantity)}
-                                                        className="text-[9px] text-[#FF8C42] font-bold uppercase tracking-wider hover:text-[#FFAA66] transition-colors ml-1"
-                                                    >
-                                                        Max
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Cost summary */}
                                     <div
                                         className="rounded-xl p-3 mb-4"
                                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-white/50 font-mundial">Burn</span>
-                                            <span className="font-bold" style={{ color: TIER_COLORS[selectedTier] }}>
-                                                {totalBurn} {TIER_DISPLAY_NAMES[selectedTier]} {totalBurn === 1 ? 'pin' : 'pins'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm mt-1">
-                                            <span className="text-white/50 font-mundial">Fee</span>
-                                            <span className="font-bold text-[#FFE048]">{totalVibestr} $VIBESTR</span>
-                                        </div>
-                                        <div className="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-sm">
-                                            <span className="text-white/50 font-mundial">You get</span>
-                                            <span className="font-bold text-white">{quantity} Random {quantity === 1 ? 'Capsule' : 'Capsules'}</span>
-                                        </div>
+                                        {TIER_ORDER.filter(t => burns[t] > 0).map(tier => (
+                                            <div key={tier} className="flex justify-between items-center text-xs mb-1">
+                                                <span className="text-white/40 font-mundial">Burn {BURN_COST[tier] * burns[tier]}</span>
+                                                <span className="font-bold" style={{ color: TIER_COLORS[tier] }}>
+                                                    {TIER_DISPLAY_NAMES[tier]}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        {totalCapsules > 0 && (
+                                            <>
+                                                <div className="flex justify-between items-center text-sm mt-1">
+                                                    <span className="text-white/50 font-mundial">Fee</span>
+                                                    <span className="font-bold text-[#FFE048]">{totalVibestr} $VIBESTR</span>
+                                                </div>
+                                                <div className="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-sm">
+                                                    <span className="text-white/50 font-mundial">You get</span>
+                                                    <span className="font-bold text-white">{totalCapsules} Random {totalCapsules === 1 ? 'Capsule' : 'Capsules'}</span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-
-                                    {!canBurn && (
-                                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-3 text-red-400 text-xs text-center">
-                                            Not enough duplicates. Need {totalBurn} burnable {TIER_DISPLAY_NAMES[selectedTier]} pins ({burnPerReroll} x {quantity}).
-                                        </div>
-                                    )}
 
                                     {error && (
                                         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-3 text-red-400 text-xs text-center">
@@ -360,7 +336,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                     />
                                                     {statusText}
                                                 </span>
-                                            ) : quantity > 1 ? `Reroll ${quantity}x for ${totalVibestr} $VIBESTR` : `Reroll for ${totalVibestr} $VIBESTR`}
+                                            ) : totalCapsules > 1 ? `Reroll ${totalCapsules}x for ${totalVibestr} $VIBESTR` : `Reroll for ${totalVibestr} $VIBESTR`}
                                         </button>
                                     )}
 

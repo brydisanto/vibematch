@@ -28,7 +28,7 @@ const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 const VIBESTR_PER_REROLL = 5; // 5 VIBESTR per reroll, scales with quantity
 const MAX_REROLLS_PER_TX = 20; // safety cap
 
-// Pins to burn per reroll by tier
+// Pins to burn per capsule by tier
 const BURN_COST: Record<string, number> = {
     blue: 5,
     silver: 4,
@@ -79,7 +79,9 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { txHash, walletAddress, burnTier, quantity: rawQuantity } = body;
+        const { txHash, walletAddress, burns } = body;
+        // burns: Record<BadgeTier, number> — e.g. { blue: 2, silver: 1 } means
+        // 2 capsules from Common (burns 10 pins) + 1 capsule from Rare (burns 4 pins)
 
         // Validate inputs
         if (!txHash || typeof txHash !== 'string' || !TX_HASH_REGEX.test(txHash)) {
@@ -88,17 +90,29 @@ export async function POST(request: Request) {
         if (!walletAddress || typeof walletAddress !== 'string' || !WALLET_REGEX.test(walletAddress)) {
             return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 });
         }
-        if (!burnTier || !BURN_COST[burnTier]) {
-            return NextResponse.json({ error: 'Invalid burn tier' }, { status: 400 });
+        if (!burns || typeof burns !== 'object') {
+            return NextResponse.json({ error: 'Missing burns object' }, { status: 400 });
         }
 
-        const quantity = Math.min(Math.max(1, Math.floor(Number(rawQuantity) || 1)), MAX_REROLLS_PER_TX);
+        // Parse and validate burns per tier
+        let totalCapsules = 0;
+        const parsedBurns: { tier: string; capsules: number; pinsNeeded: number }[] = [];
+        for (const [tier, qty] of Object.entries(burns)) {
+            if (!BURN_COST[tier]) continue;
+            const capsules = Math.min(Math.max(0, Math.floor(Number(qty) || 0)), MAX_REROLLS_PER_TX);
+            if (capsules <= 0) continue;
+            parsedBurns.push({ tier, capsules, pinsNeeded: BURN_COST[tier] * capsules });
+            totalCapsules += capsules;
+        }
+
+        if (totalCapsules <= 0 || totalCapsules > MAX_REROLLS_PER_TX) {
+            return NextResponse.json({ error: 'Invalid burn quantities' }, { status: 400 });
+        }
+
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
         const normalizedTxHash = txHash.toLowerCase();
-        const burnPerReroll = BURN_COST[burnTier];
-        const totalBurnCount = burnPerReroll * quantity;
-        const totalVibestrCost = String(VIBESTR_PER_REROLL * quantity);
+        const totalVibestrCost = String(VIBESTR_PER_REROLL * totalCapsules);
 
         // Get token decimals
         let decimals: number;
@@ -147,24 +161,36 @@ export async function POST(request: Request) {
             return await fail(400, 'No pins to burn');
         }
 
-        // Count burnable duplicates in the chosen tier
+        // Validate each tier has enough burnable duplicates
         const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-        let burnableDuplicates = 0;
-        const burnCandidates: { id: string; burnableCount: number }[] = [];
+        const burnPlan: { id: string; toBurn: number }[] = [];
 
-        for (const [badgeId, pinData] of Object.entries(pinbook.pins)) {
-            const tier = badgeTierMap.get(badgeId);
-            if (tier !== burnTier) continue;
-            // Only burn duplicates: keep at least 1
-            const burnable = Math.max(0, pinData.count - 1);
-            if (burnable > 0) {
-                burnableDuplicates += burnable;
-                burnCandidates.push({ id: badgeId, burnableCount: burnable });
+        for (const burn of parsedBurns) {
+            // Collect candidates for this tier
+            const candidates: { id: string; burnable: number }[] = [];
+            let available = 0;
+            for (const [badgeId, pinData] of Object.entries(pinbook.pins)) {
+                if (badgeTierMap.get(badgeId) !== burn.tier) continue;
+                const burnable = Math.max(0, pinData.count - 1);
+                if (burnable > 0) {
+                    candidates.push({ id: badgeId, burnable });
+                    available += burnable;
+                }
             }
-        }
 
-        if (burnableDuplicates < totalBurnCount) {
-            return await fail(400, `Not enough duplicates. Need ${totalBurnCount} burnable ${burnTier} pins (${burnPerReroll} x ${quantity}), have ${burnableDuplicates}.`);
+            if (available < burn.pinsNeeded) {
+                const tierName = burn.tier.charAt(0).toUpperCase() + burn.tier.slice(1);
+                return await fail(400, `Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}.`);
+            }
+
+            // Plan which specific pins to burn from this tier
+            let remaining = burn.pinsNeeded;
+            for (const c of candidates) {
+                if (remaining <= 0) break;
+                const take = Math.min(remaining, c.burnable);
+                burnPlan.push({ id: c.id, toBurn: take });
+                remaining -= take;
+            }
         }
 
         // Verify VIBESTR payment
@@ -215,19 +241,14 @@ export async function POST(request: Request) {
 
         // --- All verified: burn pins + grant capsule ---
 
-        // Burn pins from duplicates (spread across candidates)
-        let remaining = totalBurnCount;
-        for (const candidate of burnCandidates) {
-            if (remaining <= 0) break;
-            const pin = pinbook.pins[candidate.id];
-            const toBurn = Math.min(remaining, candidate.burnableCount);
-            pin.count -= toBurn;
-            remaining -= toBurn;
+        // Execute the burn plan
+        for (const { id, toBurn } of burnPlan) {
+            pinbook.pins[id].count -= toBurn;
         }
 
         // Grant capsules
-        pinbook.capsules += quantity;
-        pinbook.totalEarned += quantity;
+        pinbook.capsules += totalCapsules;
+        pinbook.totalEarned += totalCapsules;
 
         await kv.set(pinbookKey, pinbook);
 
@@ -237,22 +258,21 @@ export async function POST(request: Request) {
             type: 'reroll',
             username,
             wallet: normalizedWallet,
-            burnTier,
-            quantity,
-            totalBurned: totalBurnCount,
+            burns: parsedBurns,
+            totalCapsules,
             amount: formatUnits(actualAmount, decimals),
             timestamp: Date.now(),
         }));
 
         await kv.del(lockKey);
 
-        console.log(`[Reroll] SUCCESS user=${username} burned=${totalBurnCount}x${burnTier} qty=${quantity} amount=${formatUnits(actualAmount, decimals)}`);
+        const burnSummary = parsedBurns.map(b => `${b.pinsNeeded}x${b.tier}`).join('+');
+        console.log(`[Reroll] SUCCESS user=${username} burned=${burnSummary} capsules=${totalCapsules} amount=${formatUnits(actualAmount, decimals)}`);
 
         return NextResponse.json({
             success: true,
-            burnTier,
-            quantity,
-            totalBurned: totalBurnCount,
+            burns: parsedBurns,
+            totalCapsules,
             capsules: pinbook.capsules,
         });
 
