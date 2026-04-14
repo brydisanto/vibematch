@@ -594,10 +594,23 @@ export function processTurn(
             }
         }
 
-        // Remove matched tiles (clear isSpecial on matched cells too)
+        // Build set of cells that should be preserved (not cleared) because
+        // they're earning a special tile. These cells survive gravity and become
+        // the power-up instead of being removed.
+        const preservedCells = new Set<string>();
+        for (const special of iterationSpecials) {
+            preservedCells.add(special.cellId);
+        }
+
+        // Remove matched tiles — but preserve cells that are earning specials
         currentBoard = currentBoard.map((row, r) =>
             row.map((cell, c) => {
                 if (matchedPositions.has(`${r},${c}`)) {
+                    // If this cell is earning a special, don't mark it as matched
+                    // so gravity keeps it alive
+                    if (preservedCells.has(cell.id)) {
+                        return { ...cell, isMatched: false, isSpecial: undefined };
+                    }
                     return { ...cell, isMatched: true, isSpecial: undefined };
                 }
                 return { ...cell, isMatched: false };
@@ -607,36 +620,18 @@ export function processTurn(
         // Apply gravity and fill
         currentBoard = applyGravity(currentBoard, gameBadges);
 
-        // Place earned specials by finding their cell IDs on the post-gravity board.
-        // Cell IDs are stable through gravity — the cell moves but keeps its ID.
+        // Now place specials on the preserved cells (which survived gravity)
         for (const special of iterationSpecials) {
             let placed = false;
             for (let r = 0; r < BOARD_SIZE && !placed; r++) {
                 for (let c = 0; c < BOARD_SIZE && !placed; c++) {
-                    if (currentBoard[r][c].id === special.cellId && !currentBoard[r][c].isSpecial) {
+                    if (currentBoard[r][c].id === special.cellId) {
                         currentBoard[r][c] = {
                             ...currentBoard[r][c],
                             isSpecial: special.type,
                             isMatched: false,
                         };
                         placed = true;
-                    }
-                }
-            }
-            // If the cell was consumed (matched away), place on the midpoint of the match area
-            // This handles the edge case where the earning cell was also part of another match
-            if (!placed) {
-                // Find an empty non-special cell near the top (newly filled) to place it
-                for (let r = 0; r < BOARD_SIZE && !placed; r++) {
-                    for (let c = 0; c < BOARD_SIZE && !placed; c++) {
-                        if (!currentBoard[r][c].isSpecial && !currentBoard[r][c].isMatched) {
-                            currentBoard[r][c] = {
-                                ...currentBoard[r][c],
-                                isSpecial: special.type,
-                                isMatched: false,
-                            };
-                            placed = true;
-                        }
                     }
                 }
             }
