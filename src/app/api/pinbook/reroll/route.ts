@@ -107,8 +107,11 @@ export async function POST(request: Request) {
         }
 
         if (totalCapsules <= 0 || totalCapsules > MAX_REROLLS_PER_TX) {
+            console.error(`[Reroll] Invalid burn quantities. burns=${JSON.stringify(burns)} parsed=${JSON.stringify(parsedBurns)} totalCapsules=${totalCapsules}`);
             return NextResponse.json({ error: 'Invalid burn quantities' }, { status: 400 });
         }
+
+        console.log(`[Reroll] Processing: burns=${JSON.stringify(burns)} totalCapsules=${totalCapsules}`);
 
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
@@ -181,6 +184,7 @@ export async function POST(request: Request) {
 
             if (available < burn.pinsNeeded) {
                 const tierName = burn.tier.charAt(0).toUpperCase() + burn.tier.slice(1);
+                console.error(`[Reroll] Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}. user=${username}`);
                 return await fail(400, `Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}.`);
             }
 
@@ -237,6 +241,7 @@ export async function POST(request: Request) {
         }
 
         if (!validTransfer || actualAmount < requiredAmount) {
+            console.error(`[Reroll] Payment verification failed. validTransfer=${validTransfer} actualAmount=${actualAmount} requiredAmount=${requiredAmount} tx=${normalizedTxHash}`);
             return await fail(400, 'Payment verification failed');
         }
 
