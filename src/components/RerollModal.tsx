@@ -70,9 +70,12 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         return getBurnableDuplicates(pins, tier) >= BURN_COST[tier] * qty;
     });
 
-    const startPolling = (hash: string) => {
+    const startPolling = (hash: string, capturedBurns: Record<BadgeTier, number>) => {
         setVerifying(true);
         pollingRef.current = true;
+
+        // Capture the wallet address at poll start too
+        const wallet = addressRef.current;
 
         const poll = async (attempt: number) => {
             if (!pollingRef.current) return;
@@ -91,8 +94,8 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         txHash: hash,
-                        walletAddress: addressRef.current,
-                        burns: burnsRef.current,
+                        walletAddress: wallet,
+                        burns: capturedBurns,
                     }),
                 });
                 const data = await res.json();
@@ -105,6 +108,8 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                     return;
                 }
 
+                // Retry on: not found (404), awaiting confirmation (425), server error (5xx)
+                // Don't retry on: 400 (bad request), 409 (already processed)
                 if (res.status === 404 || res.status === 425 || res.status >= 500) {
                     timerRef.current = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
                     return;
@@ -130,6 +135,10 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
             return;
         }
 
+        // Capture burns at click time — don't rely on refs during async polling
+        const capturedBurns = { ...burns };
+        console.log('[Reroll] Starting with burns:', capturedBurns, 'totalVibestr:', totalVibestr);
+
         try {
             const hash = await writeContractAsync({
                 address: VIBESTR_ADDRESS,
@@ -137,7 +146,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                 functionName: 'transfer',
                 args: [TREASURY_ADDRESS, parseEther(String(totalVibestr))],
             });
-            startPolling(hash);
+            startPolling(hash, capturedBurns);
         } catch (err: any) {
             const raw = err?.shortMessage || err?.message || String(err);
             if (raw.includes('rejected') || raw.includes('User denied')) {
