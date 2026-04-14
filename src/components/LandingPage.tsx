@@ -182,18 +182,26 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
     }, [userProfile]);
 
     // SILENT PRELOADER: aggressively fetch all game piece images into browser cache 
-    // while the user is sitting on the landing page so the board loads instantly!
+    // Preload game-board badge images while on the landing page.
+    // Only preload non-collectOnly badges (the ones that appear on the board),
+    // and preload both raw + Next.js optimized URLs for cache warmth.
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            // Slight delay so we don't block the initial HTML page render
-            const timer = setTimeout(() => {
-                BADGES.forEach(badge => {
-                    const img = new window.Image();
-                    img.src = badge.image;
-                });
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
+        if (typeof window === "undefined") return;
+        const timer = setTimeout(() => {
+            const gameBadges = BADGES.filter(b => !b.collectOnly);
+            const seen = new Set<string>();
+            gameBadges.forEach(badge => {
+                if (seen.has(badge.image)) return;
+                seen.add(badge.image);
+                // Raw URL
+                const img1 = new window.Image();
+                img1.src = badge.image;
+                // Next.js optimized URL (matches what GameBoard renders at ~96px)
+                const img2 = new window.Image();
+                img2.src = `/_next/image?url=${encodeURIComponent(badge.image)}&w=96&q=75`;
+            });
+        }, 800);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleAuthSuccess = (newUsername: string, newAvatarUrl: string) => {

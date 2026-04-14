@@ -31,6 +31,7 @@ import { isMuted, toggleMute, startBGM, stopBGM, switchBGMTrack, unlockAudio, pl
 import { usePinBook } from "@/lib/usePinBook";
 import { useAchievements } from "@/lib/useAchievements";
 import { checkAchievements, checkMidGameAchievements, checkRetroactiveAchievements, type GameEndStats, type PlayerContext } from "@/lib/achievements";
+import { buildPlayerContext } from "@/lib/playerContext";
 import AchievementToast from "@/components/AchievementToast";
 import AchievementsPanel from "@/components/AchievementsPanel";
 import Image from "next/image";
@@ -111,35 +112,7 @@ export default function Home() {
     if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username || retroChecked.current) return;
     retroChecked.current = true;
 
-    // Build badge tier lookup
-    const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-
-    // Build player context from pinbook
-    const ctx: PlayerContext = {
-      streak: 0,
-      uniquePins: Object.keys(pinBook.state.pins).length,
-      totalPinsOpened: pinBook.state.totalOpened || 0,
-      hasSilverPin: false,
-      hasGoldPin: false,
-      hasCosmicPin: false,
-      hasSpecialPin: false,
-      commonPinCount: 0,
-      rarePinCount: 0,
-      specialPinCount: 0,
-      legendaryPinCount: 0,
-      cosmicPinCount: 0,
-      gamesPlayedToday: 0,
-      referralCount: 0,
-    };
-
-    for (const badgeId of Object.keys(pinBook.state.pins)) {
-      const tier = badgeTierMap.get(badgeId);
-      if (tier === "blue") ctx.commonPinCount++;
-      if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
-      if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
-      if (tier === "special") { ctx.hasSpecialPin = true; ctx.specialPinCount++; }
-      if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
-    }
+    const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
 
     // Fetch streak + referral count in parallel, then check retroactive achievements
     Promise.all([
@@ -203,31 +176,7 @@ export default function Home() {
         crossCount: stats.crossCount,
         gameMode: gs.gameMode,
       };
-      const playerCtx: PlayerContext = {
-        streak: 0,
-        uniquePins: Object.keys(pinBook.state.pins).length,
-        totalPinsOpened: pinBook.state.totalOpened || 0,
-        hasSilverPin: false,
-        hasGoldPin: false,
-        hasSpecialPin: false,
-        hasCosmicPin: false,
-        commonPinCount: 0,
-        rarePinCount: 0,
-        specialPinCount: 0,
-        legendaryPinCount: 0,
-        cosmicPinCount: 0,
-        gamesPlayedToday: 0,
-        referralCount: 0,
-      };
-      const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-      for (const badgeId of Object.keys(pinBook.state.pins)) {
-        const tier = badgeTierMap.get(badgeId);
-        if (tier === "blue") playerCtx.commonPinCount++;
-        if (tier === "silver") { playerCtx.hasSilverPin = true; playerCtx.rarePinCount++; }
-        if (tier === "gold") { playerCtx.hasGoldPin = true; playerCtx.legendaryPinCount++; }
-        if (tier === "special") { playerCtx.hasSpecialPin = true; playerCtx.specialPinCount++; }
-        if (tier === "cosmic") { playerCtx.hasCosmicPin = true; playerCtx.cosmicPinCount++; }
-      }
+      const playerCtx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
       const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
       if (ids.length > 0) {
         await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
@@ -773,23 +722,7 @@ export default function Home() {
 
             // Re-check achievements after new pin collected (tier completions, etc.)
             if (userProfile?.username) {
-              const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-              const ctx: PlayerContext = {
-                streak: 0,
-                uniquePins: Object.keys(pinBook.state.pins).length,
-                totalPinsOpened: pinBook.state.totalOpened || 0,
-                hasSilverPin: false, hasGoldPin: false, hasSpecialPin: false, hasCosmicPin: false,
-                commonPinCount: 0, rarePinCount: 0, specialPinCount: 0, legendaryPinCount: 0, cosmicPinCount: 0,
-                gamesPlayedToday: 0, referralCount: 0,
-              };
-              for (const badgeId of Object.keys(pinBook.state.pins)) {
-                const tier = badgeTierMap.get(badgeId);
-                if (tier === "blue") ctx.commonPinCount++;
-                if (tier === "silver") { ctx.hasSilverPin = true; ctx.rarePinCount++; }
-                if (tier === "gold") { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
-                if (tier === "special") { ctx.hasSpecialPin = true; ctx.specialPinCount++; }
-      if (tier === "cosmic") { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
-              }
+              const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) achievements.unlock(ids);
             }

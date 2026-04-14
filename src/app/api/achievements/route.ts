@@ -5,10 +5,10 @@ import {
     ACHIEVEMENTS_BY_ID,
     checkAchievements,
     checkRetroactiveAchievements,
-    type PlayerContext,
     type GameEndStats,
 } from '@/lib/achievements';
 import { BADGES } from '@/lib/badges';
+import { buildPlayerContext } from '@/lib/playerContext';
 
 export interface AchievementsData {
     unlocked: Record<string, { unlockedAt: string }>;
@@ -87,33 +87,8 @@ export async function POST(req: Request) {
             totalEarned: number;
         };
 
-        // Build authoritative PlayerContext from stored pinbook state.
-        // This is the same logic as page.tsx's tier counting, but server-side.
-        const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-        const ctx: PlayerContext = {
-            streak: 0,
-            uniquePins: Object.keys(pinbook.pins).length,
-            totalPinsOpened: pinbook.totalOpened || 0,
-            hasSilverPin: false,
-            hasGoldPin: false,
-            hasSpecialPin: false,
-            hasCosmicPin: false,
-            commonPinCount: 0,
-            rarePinCount: 0,
-            specialPinCount: 0,
-            legendaryPinCount: 0,
-            cosmicPinCount: 0,
-            gamesPlayedToday: 0,
-            referralCount: 0,
-        };
-        for (const badgeId of Object.keys(pinbook.pins)) {
-            const tier = badgeTierMap.get(badgeId);
-            if (tier === 'blue') ctx.commonPinCount++;
-            if (tier === 'silver') { ctx.hasSilverPin = true; ctx.rarePinCount++; }
-            if (tier === 'special') { ctx.hasSpecialPin = true; ctx.specialPinCount++; }
-            if (tier === 'gold') { ctx.hasGoldPin = true; ctx.legendaryPinCount++; }
-            if (tier === 'cosmic') { ctx.hasCosmicPin = true; ctx.cosmicPinCount++; }
-        }
+        // Build authoritative PlayerContext from stored pinbook state
+        const ctx = buildPlayerContext(pinbook.pins, { totalPinsOpened: pinbook.totalOpened });
 
         // Fetch streak + referral count
         const [streakRaw, referralRaw] = await Promise.all([

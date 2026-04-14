@@ -17,6 +17,7 @@ import { mainnet } from 'viem/chains';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { BADGES, type BadgeTier } from '@/lib/badges';
+import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -251,6 +252,15 @@ export async function POST(request: Request) {
         pinbook.totalEarned += totalCapsules;
 
         await kv.set(pinbookKey, pinbook);
+
+        // Recalculate leaderboard entry (pin counts changed due to burn)
+        const profile = await kv.get(`user:${username}`) as { username?: string; avatarUrl?: string } | null;
+        const entry = computeUserEntry(
+            profile?.username || username,
+            profile?.avatarUrl || '',
+            pinbook.pins,
+        );
+        updateLeaderboardEntry(entry).catch(() => {});
 
         // Finalize tx record
         await kv.set(txKey, JSON.stringify({
