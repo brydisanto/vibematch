@@ -594,23 +594,25 @@ export function processTurn(
             }
         }
 
-        // Build set of cells that should be preserved (not cleared) because
-        // they're earning a special tile. These cells survive gravity and become
-        // the power-up instead of being removed.
-        const preservedCells = new Set<string>();
+        // Track where specials should be placed (by position before gravity).
+        // We record the row/col of each special so we can place it on the
+        // NEW cell that fills that position after gravity.
+        const specialPlacements: { row: number; col: number; type: SpecialTileType }[] = [];
         for (const special of iterationSpecials) {
-            preservedCells.add(special.cellId);
+            // Find the current position of this cell
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (currentBoard[r][c].id === special.cellId) {
+                        specialPlacements.push({ row: r, col: c, type: special.type });
+                    }
+                }
+            }
         }
 
-        // Remove matched tiles — but preserve cells that are earning specials
+        // Remove ALL matched tiles (including those earning specials — full gravity fill)
         currentBoard = currentBoard.map((row, r) =>
             row.map((cell, c) => {
                 if (matchedPositions.has(`${r},${c}`)) {
-                    // If this cell is earning a special, don't mark it as matched
-                    // so gravity keeps it alive
-                    if (preservedCells.has(cell.id)) {
-                        return { ...cell, isMatched: false, isSpecial: undefined };
-                    }
                     return { ...cell, isMatched: true, isSpecial: undefined };
                 }
                 return { ...cell, isMatched: false };
@@ -620,20 +622,15 @@ export function processTurn(
         // Apply gravity and fill
         currentBoard = applyGravity(currentBoard, gameBadges);
 
-        // Now place specials on the preserved cells (which survived gravity)
-        for (const special of iterationSpecials) {
-            let placed = false;
-            for (let r = 0; r < BOARD_SIZE && !placed; r++) {
-                for (let c = 0; c < BOARD_SIZE && !placed; c++) {
-                    if (currentBoard[r][c].id === special.cellId) {
-                        currentBoard[r][c] = {
-                            ...currentBoard[r][c],
-                            isSpecial: special.type,
-                            isMatched: false,
-                        };
-                        placed = true;
-                    }
-                }
+        // Place specials on the cells that now occupy the original positions.
+        // After gravity, these positions have new tiles — assign the special to them.
+        for (const sp of specialPlacements) {
+            if (sp.row < BOARD_SIZE && sp.col < BOARD_SIZE) {
+                currentBoard[sp.row][sp.col] = {
+                    ...currentBoard[sp.row][sp.col],
+                    isSpecial: sp.type,
+                    isMatched: false,
+                };
             }
         }
 
