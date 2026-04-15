@@ -157,12 +157,14 @@ export function findAllMatches(board: Cell[][]): Match[] {
     const matches: Match[] = [];
     const matched = new Set<string>();
 
-    // Horizontal matches
+    // Horizontal matches (special tiles break runs — they sit on the board until activated)
     for (let row = 0; row < BOARD_SIZE; row++) {
         let runStart = 0;
         for (let col = 1; col <= BOARD_SIZE; col++) {
             if (
                 col < BOARD_SIZE &&
+                !board[row][col].isSpecial &&
+                !board[row][runStart].isSpecial &&
                 board[row][col].badge.id === board[row][runStart].badge.id
             ) {
                 continue;
@@ -188,12 +190,14 @@ export function findAllMatches(board: Cell[][]): Match[] {
         }
     }
 
-    // Vertical matches
+    // Vertical matches (special tiles break runs — they sit on the board until activated)
     for (let col = 0; col < BOARD_SIZE; col++) {
         let runStart = 0;
         for (let row = 1; row <= BOARD_SIZE; row++) {
             if (
                 row < BOARD_SIZE &&
+                !board[row][col].isSpecial &&
+                !board[runStart][col].isSpecial &&
                 board[row][col].badge.id === board[runStart][col].badge.id
             ) {
                 continue;
