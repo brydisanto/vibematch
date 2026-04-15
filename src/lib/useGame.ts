@@ -202,7 +202,17 @@ export function useGame(): UseGameReturn {
         // Play match sounds (escalated)
         playMatchSound(result.scoreGained, result.combo, maxMatchSize);
 
-        // Play special tile sounds
+        // Play sounds for special tiles that detonated (chain reactions)
+        for (let i = 0; i < result.specialTilesTriggered.length; i++) {
+            const special = result.specialTilesTriggered[i];
+            setTimeout(() => {
+                if (special.type === "bomb") playBombSound();
+                else if (special.type === "cosmic_blast") playCosmicBlastSound();
+                else if (special.type === "vibestreak") playVibestreakSound();
+            }, 100 + i * 200);
+        }
+
+        // Play special tile creation sounds
         for (const special of result.specialTilesCreated) {
             setTimeout(() => {
                 if (special.type === "bomb") playBombSound();

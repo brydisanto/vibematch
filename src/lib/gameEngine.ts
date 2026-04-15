@@ -500,6 +500,7 @@ export interface TurnResult {
     combo: number;
     comboCarry: number;
     specialTilesCreated: { pos: Position; type: SpecialTileType }[];
+    specialTilesTriggered: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
     shapeBonus: ShapeBonus;
 }
@@ -525,6 +526,7 @@ export function processTurn(
     let combo = comboCarryIn;
     let totalMatches: Match[] = [];
     const specialTilesCreated: { pos: Position; type: SpecialTileType }[] = [];
+    const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [];
     let cascadeCount = 0;
 
     // Detect geometric shapes from initial matches
@@ -581,6 +583,7 @@ export function processTurn(
             const cell = currentBoard[r][c];
             if (cell.isSpecial) {
                 detonated.add(posKey);
+                specialTilesTriggered.push({ pos: { row: r, col: c }, type: cell.isSpecial });
                 const affected = applySpecialTile(currentBoard, { row: r, col: c }, cell.isSpecial);
                 for (const aPos of affected) {
                     const aKey = `${aPos.row},${aPos.col}`;
@@ -662,6 +665,7 @@ export function processTurn(
         combo,
         comboCarry: comboCarryOut,
         specialTilesCreated,
+        specialTilesTriggered,
         cascadeCount,
         shapeBonus,
     };
@@ -693,12 +697,16 @@ export function triggerSpecialTile(
 
     // Chain: any special tile caught in the blast also activates
     const chainedSpecials = new Set<string>([`${pos.row},${pos.col}`]);
+    const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [
+        { pos, type: specialType },
+    ];
     for (const posKey of matchedPositions) {
         const [r, c] = posKey.split(",").map(Number);
         const affectedCell = currentBoard[r][c];
         const key = `${r},${c}`;
         if (affectedCell.isSpecial && !chainedSpecials.has(key)) {
             chainedSpecials.add(key);
+            specialTilesTriggered.push({ pos: { row: r, col: c }, type: affectedCell.isSpecial });
             const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, affectedCell.isSpecial);
             for (const chainPos of chainAffected) {
                 matchedPositions.add(`${chainPos.row},${chainPos.col}`);
@@ -748,9 +756,12 @@ export function triggerSpecialTile(
         }
 
         // Check special tile activations in cascade
+        const cascadeDetonated = new Set<string>();
         for (const posKey of cascadeMatched) {
             const [r, c] = posKey.split(",").map(Number);
-            if (currentBoard[r][c].isSpecial) {
+            if (currentBoard[r][c].isSpecial && !cascadeDetonated.has(posKey)) {
+                cascadeDetonated.add(posKey);
+                specialTilesTriggered.push({ pos: { row: r, col: c }, type: currentBoard[r][c].isSpecial! });
                 const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, currentBoard[r][c].isSpecial!);
                 for (const chainPos of chainAffected) {
                     cascadeMatched.add(`${chainPos.row},${chainPos.col}`);
@@ -791,6 +802,7 @@ export function triggerSpecialTile(
         combo,
         comboCarry: comboCarryOut,
         specialTilesCreated: [],
+        specialTilesTriggered,
         cascadeCount,
         shapeBonus: null,
     };
