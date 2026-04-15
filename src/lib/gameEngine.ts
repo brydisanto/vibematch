@@ -297,7 +297,7 @@ export function detectShapes(matches: Match[]): ShapeBonus {
 
 export function getSpecialTileForMatch(match: Match): SpecialTileType | null {
     const len = match.positions.length;
-    if (len === 4) return "bomb";
+    if (len === 4) return match.badge.tier === "cosmic" ? "vibestreak" : "bomb";
     if (len === 5) return match.badge.tier === "cosmic" ? "cosmic_blast" : "vibestreak";
     if (len >= 6) return "cosmic_blast";
     return null;
