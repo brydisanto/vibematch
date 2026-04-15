@@ -57,7 +57,11 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "earn", score, gameMode, matchId: activeMatchIdRef.current }),
             });
-            if (!res.ok) { console.error("pinbook earn failed:", res.status); return false; }
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error("pinbook earn failed:", res.status, errData, "matchId:", activeMatchIdRef.current);
+                return false;
+            }
             const data = await res.json();
             if (data.earned) {
                 const amount = gameMode === 'daily' ? 2 : 1;
@@ -75,7 +79,11 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "trackGame" }),
             });
-            if (!res.ok) { console.error("pinbook trackGame failed:", res.status); return; }
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error("pinbook trackGame failed:", res.status, errData);
+                return;
+            }
             const data = await res.json();
             if (data.classicPlays != null) {
                 setState(prev => ({ ...prev, classicPlays: data.classicPlays }));
@@ -83,6 +91,9 @@ export function usePinBook() {
             if (data.matchId) {
                 activeMatchIdRef.current = data.matchId;
                 setActiveMatchId(data.matchId);
+                console.log("[usePinBook] trackGame matchId:", data.matchId);
+            } else {
+                console.warn("[usePinBook] trackGame response missing matchId:", data);
             }
         } catch (e) { console.error("pinbook trackGame error:", e); }
     }, []);
@@ -115,7 +126,11 @@ export function usePinBook() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "bonus", gameMode, matchId: activeMatchIdRef.current }),
             });
-            if (!res.ok) { console.error("pinbook bonus failed:", res.status); return false; }
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error("pinbook bonus failed:", res.status, errData, "matchId:", activeMatchIdRef.current);
+                return false;
+            }
             const data = await res.json();
             if (data.earned) {
                 const amount = gameMode === 'daily' ? 2 : 1;

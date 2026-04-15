@@ -138,12 +138,10 @@ export default function Home() {
     const stats = gameSessionStats.current;
 
     (async () => {
-      // 1. Track classic game + issue match token
-      if (mode === 'classic') {
-        await pinBook.trackGame();
-      }
+      // Match token was already issued at game START (handleStartGame).
+      // No need to call trackGame here — just use the existing token.
 
-      // 2. Log game stats (persists authoritative stats keyed by matchId for achievements)
+      // 1. Log game stats (persists authoritative stats keyed by matchId for achievements)
       await pinBook.logGame({
         score: gs.score || 0,
         matchCount: gs.matchCount || 0,
@@ -287,6 +285,11 @@ export default function Home() {
     gameSessionStats.current = { bombsCreated: 0, vibestreaksCreated: 0, cosmicBlastsCreated: 0, crossCount: 0, shapesLanded: [] };
     setIsDealing(true);
     setView("playing");
+
+    // Issue match token at game START so it exists for mid-game bonus capsules
+    if (mode === 'classic' && username) {
+      pinBook.trackGame();
+    }
     startBGM();
   };
 
@@ -315,6 +318,10 @@ export default function Home() {
   const handlePlayAgain = () => {
     setIsDealing(true);
     game.resetGame();
+    // Issue fresh match token for the new game
+    if (game.state?.gameMode === 'classic' && userProfile?.username) {
+      pinBook.trackGame();
+    }
   };
 
   // Record streak when any game ends (daily or classic)

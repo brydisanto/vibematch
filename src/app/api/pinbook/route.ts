@@ -291,11 +291,13 @@ export async function POST(req: Request) {
             if (gameMode === 'classic') {
                 // Classic: require a valid single-use match token from trackGame
                 if (!matchId || typeof matchId !== 'string') {
+                    console.error(`[earn] Missing matchId for user=${username} score=${score} mode=${gameMode}`);
                     return NextResponse.json({ error: 'Missing matchId' }, { status: 400 });
                 }
                 const matchKey = `pinbook:${username}:match:${matchId}`;
                 const match = await kv.get(matchKey) as any;
                 if (!match || match.username !== username) {
+                    console.error(`[earn] Invalid match token for user=${username} matchId=${matchId} match=${JSON.stringify(match)}`);
                     return NextResponse.json({ error: 'Invalid or expired match token' }, { status: 400 });
                 }
                 if (match.earnedCapsule) {
