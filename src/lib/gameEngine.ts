@@ -298,7 +298,7 @@ export function detectShapes(matches: Match[]): ShapeBonus {
 export function getSpecialTileForMatch(match: Match): SpecialTileType | null {
     const len = match.positions.length;
     if (len === 4) return "bomb";
-    if (len === 5) return "vibestreak";
+    if (len === 5) return match.badge.tier === "cosmic" ? "cosmic_blast" : "vibestreak";
     if (len >= 6) return "cosmic_blast";
     return null;
 }
@@ -430,8 +430,8 @@ export function calculateMatchScore(
         // Apply tier multiplier (use the highest tier in the match)
         const tierMultiplier = match.badge.pointMultiplier;
 
-        // Apply combo multiplier
-        const comboMultiplier = 1 + (combo * 0.5);
+        // Apply combo multiplier (0.75x per combo level — deep cascades are very rewarding)
+        const comboMultiplier = 1 + (combo * 0.75);
 
         total += Math.floor(baseScore * tierMultiplier * comboMultiplier);
     }
@@ -642,13 +642,18 @@ export function processTurn(
         if (matches.length > 0) cascadeCount++;
     }
 
+    // Chain reaction bonus — flat reward for deep cascades
+    if (cascadeCount >= 8) totalScore += 2500;
+    else if (cascadeCount >= 5) totalScore += 1000;
+    else if (cascadeCount >= 3) totalScore += 500;
+
     // Apply shape bonus multiplier to total score
     if (shapeBonus) {
         totalScore = Math.floor(totalScore * shapeBonus.multiplier);
     }
 
-    // Combo decay: carry over up to 2 for next turn (rewards big cascades without snowballing)
-    const comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
+    // Combo carry: momentum from big combos persists across turns
+    const comboCarryOut = combo >= 5 ? 3 : combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
 
     return {
         board: currentBoard,
@@ -776,8 +781,8 @@ export function triggerSpecialTile(
         isHorizontal: true,
     };
 
-    // Combo decay: carry over up to 2 for next turn (rewards big cascades without snowballing)
-    const comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
+    // Combo carry: momentum from big combos persists across turns
+    const comboCarryOut = combo >= 5 ? 3 : combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
 
     return {
         board: currentBoard,
