@@ -52,8 +52,20 @@ function write(next: FtueState) {
 export function useFtue() {
     const [state, setState] = useState<FtueState>(EMPTY);
 
-    // Hydrate from localStorage after mount (avoids SSR hydration mismatch)
+    // Hydrate from localStorage after mount (avoids SSR hydration mismatch).
+    // If `?resetFtue=1` is in the URL, wipe the FTUE state first so the player
+    // sees the first-run flow again. Useful for previewing / demos.
     useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get("resetFtue") === "1") {
+                    window.localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch {
+                // ignore URL parse errors
+            }
+        }
         setState(read());
     }, []);
 
