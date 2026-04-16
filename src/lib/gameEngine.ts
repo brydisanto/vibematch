@@ -14,6 +14,10 @@ export interface Cell {
     isNew?: boolean;
     isMatched?: boolean;
     dropDistance?: number; // rows this tile dropped during gravity (for animation)
+    // Set when a special tile is created this turn — prevents it from being matched
+    // (and thus consumed) in the same turn's cascade loop. Cleared before the turn
+    // returns so the player can match the special on their next move.
+    suppressMatch?: boolean;
 }
 
 export type SpecialTileType = "bomb" | "vibestreak" | "cosmic_blast";
@@ -157,14 +161,16 @@ export function findAllMatches(board: Cell[][]): Match[] {
     const matches: Match[] = [];
     const matched = new Set<string>();
 
-    // Horizontal matches (special tiles break runs — they sit on the board until activated)
+    // Horizontal matches. Specials participate in matches (matching into a special
+    // also detonates it), EXCEPT specials freshly placed this turn — those carry
+    // `suppressMatch` so they survive the turn's cascade loop.
     for (let row = 0; row < BOARD_SIZE; row++) {
         let runStart = 0;
         for (let col = 1; col <= BOARD_SIZE; col++) {
             if (
                 col < BOARD_SIZE &&
-                !board[row][col].isSpecial &&
-                !board[row][runStart].isSpecial &&
+                !board[row][col].suppressMatch &&
+                !board[row][runStart].suppressMatch &&
                 board[row][col].badge.id === board[row][runStart].badge.id
             ) {
                 continue;
@@ -190,14 +196,14 @@ export function findAllMatches(board: Cell[][]): Match[] {
         }
     }
 
-    // Vertical matches (special tiles break runs — they sit on the board until activated)
+    // Vertical matches. Same rule — suppressMatch (not isSpecial) breaks runs.
     for (let col = 0; col < BOARD_SIZE; col++) {
         let runStart = 0;
         for (let row = 1; row <= BOARD_SIZE; row++) {
             if (
                 row < BOARD_SIZE &&
-                !board[row][col].isSpecial &&
-                !board[runStart][col].isSpecial &&
+                !board[row][col].suppressMatch &&
+                !board[runStart][col].suppressMatch &&
                 board[row][col].badge.id === board[runStart][col].badge.id
             ) {
                 continue;
@@ -631,17 +637,20 @@ export function processTurn(
 
         // Place specials on the cells that now occupy the original positions.
         // After gravity, these positions have new tiles — assign the special to them.
+        // Mark `suppressMatch: true` so these specials aren't immediately consumed
+        // by the next cascade iteration. Flag is cleared before processTurn returns.
         for (const sp of specialPlacements) {
             if (sp.row < BOARD_SIZE && sp.col < BOARD_SIZE) {
                 currentBoard[sp.row][sp.col] = {
                     ...currentBoard[sp.row][sp.col],
                     isSpecial: sp.type,
                     isMatched: false,
+                    suppressMatch: true,
                 };
             }
         }
 
-        // Check for new matches from cascade (including newly placed specials)
+        // Check for new matches from cascade. Suppressed specials won't participate.
         matches = findAllMatches(currentBoard);
 
         // Also check if any newly-placed specials are part of the new matches
@@ -661,6 +670,12 @@ export function processTurn(
 
     // Combo carry: momentum from big combos persists across turns
     const comboCarryOut = combo >= 5 ? 3 : combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
+
+    // Clear suppressMatch on every cell so specials placed this turn can be
+    // matched normally on the player's next move.
+    currentBoard = currentBoard.map(row =>
+        row.map(cell => (cell.suppressMatch ? { ...cell, suppressMatch: false } : cell))
+    );
 
     return {
         board: currentBoard,
