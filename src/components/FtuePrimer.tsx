@@ -1,16 +1,99 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface FtuePrimerProps {
     onContinue: () => void;
     onSkip: () => void;
 }
 
-const CITIZEN_BADGE = "/badges/any_gvc_1759173799963.webp";
+// Badges chosen for visual distinctiveness in the demo grid.
+const CITIZEN = { id: "citizen", src: "/badges/any_gvc_1759173799963.webp" };
+const DOGE = { id: "doge", src: "/badges/doge_1759173842640.webp" };
+const ASTRO = { id: "astro", src: "/badges/astro_balls_1759173838889.webp" };
+const CAPTAIN = { id: "captain", src: "/badges/captain_1759173895611.webp" };
+
+type Tile = { id: number; badge: { id: string; src: string } };
+type Phase = "idle" | "swapping" | "matched";
+
+const TILE_SIZE = 64;
+const GAP = 6;
+
+// 3×3 starting layout. Swapping (0,2) with (1,2) creates 3 Citizens in row 0.
+const INITIAL_GRID: Tile[][] = [
+    [
+        { id: 1, badge: CITIZEN },
+        { id: 2, badge: CITIZEN },
+        { id: 3, badge: DOGE },
+    ],
+    [
+        { id: 4, badge: ASTRO },
+        { id: 5, badge: CAPTAIN },
+        { id: 6, badge: CITIZEN },
+    ],
+    [
+        { id: 7, badge: DOGE },
+        { id: 8, badge: ASTRO },
+        { id: 9, badge: CAPTAIN },
+    ],
+];
+
+// The two tiles the user should swap to make the match.
+const SWAP_A = { row: 0, col: 2 };
+const SWAP_B = { row: 1, col: 2 };
 
 export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
+    const [grid, setGrid] = useState<Tile[][]>(INITIAL_GRID);
+    const [phase, setPhase] = useState<Phase>("idle");
+    const [score, setScore] = useState(0);
+    const [scorePop, setScorePop] = useState<number | null>(null);
+
+    const matchedPositions = phase === "matched"
+        ? [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }]
+        : [];
+
+    const isHintTile = (r: number, c: number) =>
+        phase === "idle" && ((r === SWAP_A.row && c === SWAP_A.col) || (r === SWAP_B.row && c === SWAP_B.col));
+
+    const isMatchedTile = (r: number, c: number) =>
+        matchedPositions.some((p) => p.row === r && p.col === c);
+
+    const handleTap = (r: number, c: number) => {
+        if (phase !== "idle") return;
+        const isSwappable = (r === SWAP_A.row && c === SWAP_A.col) || (r === SWAP_B.row && c === SWAP_B.col);
+        if (!isSwappable) return;
+
+        // Animate swap: clone grid and swap the two cells.
+        setPhase("swapping");
+        const newGrid = grid.map((row) => [...row]);
+        const a = newGrid[SWAP_A.row][SWAP_A.col];
+        const b = newGrid[SWAP_B.row][SWAP_B.col];
+        newGrid[SWAP_A.row][SWAP_A.col] = b;
+        newGrid[SWAP_B.row][SWAP_B.col] = a;
+        setGrid(newGrid);
+
+        // After swap animation, trigger match
+        setTimeout(() => {
+            setPhase("matched");
+            setScorePop(300);
+            setScore(300);
+            setTimeout(() => setScorePop(null), 1400);
+        }, 320);
+    };
+
+    // Auto-reset after match so the user can try again if they missed it.
+    useEffect(() => {
+        if (phase !== "matched") return;
+        const t = setTimeout(() => {
+            setGrid(INITIAL_GRID);
+            setScore(0);
+            setPhase("idle");
+        }, 2400);
+        return () => clearTimeout(t);
+    }, [phase]);
+
     return (
         <motion.div
             className="fixed inset-0 z-[60] flex items-center justify-center p-4"
@@ -42,46 +125,153 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                 </div>
 
                 <h2
-                    className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mt-2 mb-2"
+                    className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mt-2 mb-3"
                     style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
                 >
                     Here&apos;s the Loop
                 </h2>
 
-                {/* Match-3 demo scene — three Citizen of Vibetown badges */}
-                <div className="relative my-4 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-4 overflow-hidden">
+                {/* Interactive match-3 demo */}
+                <div className="relative mx-auto mb-4 rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden"
+                    style={{
+                        width: TILE_SIZE * 3 + GAP * 2 + 32,
+                        padding: "16px",
+                    }}
+                >
                     <div
                         className="absolute inset-0 pointer-events-none"
                         style={{
-                            background: "radial-gradient(circle at 50% 50%, rgba(255,224,72,0.12), transparent 65%)",
+                            background: "radial-gradient(circle at 50% 50%, rgba(255,224,72,0.1), transparent 65%)",
                         }}
                     />
-                    <div className="relative flex justify-center gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                            <motion.div
-                                key={i}
-                                className="relative w-[54px] h-[54px] rounded-[10px] overflow-hidden"
-                                style={{
-                                    background: "rgba(255,255,255,0.04)",
-                                    border: "1.5px solid rgba(255,224,72,0.5)",
-                                    boxShadow: "0 0 16px rgba(255,224,72,0.3)",
-                                }}
-                                initial={{ scale: 0.85, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.15 + i * 0.08, type: "spring", stiffness: 400, damping: 22 }}
-                            >
-                                <Image
-                                    src={CITIZEN_BADGE}
-                                    alt="Citizen of Vibetown"
-                                    fill
-                                    sizes="54px"
-                                    className="object-cover"
-                                />
-                            </motion.div>
-                        ))}
+
+                    {/* Score pill — top-right */}
+                    <div className="relative flex justify-between items-center mb-3 text-left">
+                        <div className="text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/40">
+                            Demo
+                        </div>
+                        <motion.div
+                            key={score}
+                            className="flex items-baseline gap-1 text-[#FFE048] font-display font-black"
+                            initial={{ scale: 1 }}
+                            animate={score > 0 ? { scale: [1.18, 1] } : { scale: 1 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                        >
+                            <span className="text-[16px]">{score.toLocaleString()}</span>
+                        </motion.div>
                     </div>
-                    <div className="relative mt-2.5 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] text-[#FFE048]/70">
-                        Match 3+ to score
+
+                    {/* Tile grid */}
+                    <div
+                        className="relative grid mx-auto"
+                        style={{
+                            gridTemplateColumns: `repeat(3, ${TILE_SIZE}px)`,
+                            gap: `${GAP}px`,
+                            width: TILE_SIZE * 3 + GAP * 2,
+                        }}
+                    >
+                        {grid.map((row, r) =>
+                            row.map((tile, c) => {
+                                const hinted = isHintTile(r, c);
+                                const matched = isMatchedTile(r, c);
+                                return (
+                                    <motion.button
+                                        key={tile.id}
+                                        onClick={() => handleTap(r, c)}
+                                        layout
+                                        layoutId={`ftue-tile-${tile.id}`}
+                                        className="relative rounded-[12px] overflow-hidden"
+                                        style={{
+                                            width: TILE_SIZE,
+                                            height: TILE_SIZE,
+                                            background: "rgba(255,255,255,0.04)",
+                                            border: hinted
+                                                ? "2px solid #FFE048"
+                                                : matched
+                                                    ? "2px solid #FFE048"
+                                                    : "1.5px solid rgba(255,255,255,0.08)",
+                                            boxShadow: hinted
+                                                ? "0 0 18px rgba(255,224,72,0.55)"
+                                                : matched
+                                                    ? "0 0 24px rgba(255,224,72,0.8)"
+                                                    : "none",
+                                            cursor: hinted ? "pointer" : "default",
+                                        }}
+                                        animate={
+                                            matched
+                                                ? { scale: [1, 1.12, 0.7], opacity: [1, 1, 0] }
+                                                : hinted
+                                                    ? { scale: [1, 1.06, 1] }
+                                                    : { scale: 1 }
+                                        }
+                                        transition={
+                                            matched
+                                                ? { duration: 0.8, times: [0, 0.35, 1] }
+                                                : hinted
+                                                    ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+                                                    : { type: "spring", stiffness: 400, damping: 28 }
+                                        }
+                                        whileTap={hinted ? { scale: 0.94 } : undefined}
+                                    >
+                                        <Image
+                                            src={tile.badge.src}
+                                            alt=""
+                                            fill
+                                            sizes={`${TILE_SIZE}px`}
+                                            className="object-cover pointer-events-none"
+                                        />
+                                    </motion.button>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    {/* Score popup */}
+                    <AnimatePresence>
+                        {scorePop != null && (
+                            <motion.div
+                                className="absolute left-0 right-0 top-[58%] flex justify-center pointer-events-none"
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: -20, scale: 1.1 }}
+                                exit={{ opacity: 0, y: -32, scale: 1 }}
+                                transition={{ duration: 1.2 }}
+                            >
+                                <div
+                                    className="font-display font-black text-[32px] text-[#FFE048]"
+                                    style={{ textShadow: "0 2px 12px rgba(255,224,72,0.6), 0 0 18px rgba(255,224,72,0.8)" }}
+                                >
+                                    +300
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Instruction caption */}
+                    <div className="relative mt-3 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px]">
+                        <AnimatePresence mode="wait">
+                            {phase === "idle" && (
+                                <motion.div
+                                    key="idle"
+                                    className="absolute inset-0 text-[#FFE048]/80"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                >
+                                    Tap a glowing tile to swap
+                                </motion.div>
+                            )}
+                            {phase === "matched" && (
+                                <motion.div
+                                    key="matched"
+                                    className="absolute inset-0 text-[#FFE048]"
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                >
+                                    Match!
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
