@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeMatch — Share + FTUE Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0114;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      padding: 40px 20px 120px;
+      min-height: 100vh;
+    }
+
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(179,102,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(179,102,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #FFD700;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 64px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto 80px;
+      padding-bottom: 60px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      max-width: 600px;
+      margin: 8px auto 0;
+      line-height: 1.6;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(179,102,255,0.7);
+      margin-bottom: 6px;
+    }
+
+    .option-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .option-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .option-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .phone-frame {
+      width: 340px;
+      max-width: 100%;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #110321 0%, #0a0114 100%);
+      border-radius: 24px;
+      padding: 24px 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(179,102,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(179,102,255,0.025) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+    }
+
+    .phone-frame::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 80px;
+      background: linear-gradient(180deg, transparent, rgba(255,200,50,0.06));
+      pointer-events: none;
+    }
+
+    .phone-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Score sharing ===================== */
+    .gameover-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .gameover-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 8px;
+    }
+
+    .score-display {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: #FFD700;
+      line-height: 1;
+      margin-bottom: 8px;
+      text-shadow: 0 0 30px rgba(255,215,0,0.4);
+    }
+
+    .score-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .stars-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 20px 0;
+    }
+
+    .star {
+      width: 28px;
+      height: 28px;
+    }
+
+    .capsule-earned-pill {
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: inline-block;
+      margin: 12px 0 24px;
+      box-shadow: 0 4px 20px rgba(179,102,255,0.4);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #2A1810;
+      box-shadow: 0 4px 14px rgba(255,165,0,0.25);
+    }
+
+    .btn-secondary {
+      background: rgba(179,102,255,0.15);
+      color: #E8D5FF;
+      border: 1px solid rgba(179,102,255,0.3);
+    }
+
+    .btn-share-x {
+      background: #000;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .btn-inline {
+      width: auto;
+      padding: 10px 18px;
+      font-size: 12px;
+      display: inline-flex;
+    }
+
+    .btn-share-x svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .divider-label {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.3);
+      margin: 20px 0 10px;
+    }
+
+    /* Tweet preview ===================== */
+    .tweet-mock {
+      background: #15202B;
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      max-width: 420px;
+      margin: 0 auto;
+      font-family: system-ui, sans-serif;
+    }
+
+    .tweet-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tweet-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #B366FF, #FFD700);
+    }
+
+    .tweet-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+
+    .tweet-handle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .tweet-body {
+      font-size: 15px;
+      color: white;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      white-space: pre-line;
+    }
+
+    .tweet-card {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .tweet-card-preview-wrap {
+      width: 100%;
+      aspect-ratio: 1200 / 630;
+      position: relative;
+    }
+
+    .tweet-card-meta {
+      padding: 10px 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* OG IMAGE options ================== */
+    .og-preview {
+      width: 100%;
+      aspect-ratio: 1200 / 630;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      background: #0a0114;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .og-preview-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      padding: 40px;
+    }
+
+    /* OG A — minimalist score-hero */
+    .og-a {
+      background: radial-gradient(circle at 20% 30%, rgba(179,102,255,0.3), transparent 50%),
+                  radial-gradient(circle at 80% 70%, rgba(255,215,0,0.2), transparent 50%),
+                  #0a0114;
+    }
+
+    .og-a .og-preview-inner {
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .og-a-brand {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #B366FF;
+    }
+
+    .og-a-score {
+      font-size: 92px;
+      font-weight: 900;
+      color: #FFD700;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+
+    .og-a-label {
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+    }
+
+    .og-a-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .og-a-capsules {
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .og-a-user {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* OG B — pin-forward */
+    .og-b {
+      background:
+        linear-gradient(180deg, #1a0428 0%, #0a0114 100%);
+    }
+
+    .og-b .og-preview-inner {
+      flex-direction: row;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .og-b-pins {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .og-b-pin {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      box-shadow: 0 4px 12px rgba(179,102,255,0.3);
+    }
+
+    .og-b-pin.gold { background: linear-gradient(135deg, #FFD700, #B8860B); }
+    .og-b-pin.silver { background: linear-gradient(135deg, #F8FAFC, #94A3B8); }
+    .og-b-pin.cosmic { background: linear-gradient(135deg, #D8A0FF, #B366FF); }
+
+    .og-b-info {
+      flex: 1;
+    }
+
+    .og-b-label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .og-b-score {
+      font-size: 62px;
+      font-weight: 900;
+      color: #FFD700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .og-b-tagline {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .og-b-brand {
+      position: absolute;
+      bottom: 32px;
+      right: 40px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #B366FF;
+    }
+
+    /* OG C — bold vibes */
+    .og-c {
+      background: linear-gradient(135deg, #6C5CE7 0%, #B366FF 50%, #FFD700 100%);
+    }
+
+    .og-c .og-preview-inner {
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .og-c-user {
+      font-size: 20px;
+      font-weight: 700;
+      color: rgba(0,0,0,0.6);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .og-c-score {
+      font-size: 120px;
+      font-weight: 900;
+      color: #2A1810;
+      line-height: 1;
+      letter-spacing: -4px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .og-c-label {
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #2A1810;
+      margin-top: 6px;
+    }
+
+    .og-c-brand {
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: rgba(0,0,0,0.7);
+    }
+
+    /* FTUE ===================== */
+    .ftue-modal {
+      background: linear-gradient(180deg, #1a0428 0%, #0a0114 100%);
+      border: 1px solid rgba(179,102,255,0.3);
+      border-radius: 20px;
+      padding: 28px 24px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+
+    .ftue-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: white;
+      padding: 4px 14px;
+      border-radius: 24px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .ftue-title {
+      font-size: 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 8px 0 8px;
+      color: #FFD700;
+      text-align: center;
+    }
+
+    .ftue-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .ftue-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .ftue-step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .ftue-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .ftue-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.4;
+    }
+
+    .ftue-step-text strong {
+      color: #FFD700;
+      font-weight: 700;
+    }
+
+    /* Contextual hint ================ */
+    .game-board-mock {
+      background: #1a0428;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 16px;
+      position: relative;
+      aspect-ratio: 1;
+    }
+
+    .game-tiles {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tile {
+      background: rgba(179,102,255,0.2);
+      border-radius: 6px;
+    }
+
+    .tile.bomb {
+      background: radial-gradient(circle, #FF6B35, #8B2500);
+      box-shadow: 0 0 20px rgba(255,107,53,0.6);
+    }
+
+    .hint-callout {
+      position: absolute;
+      top: 45%;
+      left: 10%;
+      right: 10%;
+      background: rgba(10,1,20,0.97);
+      border: 1px solid #FFD700;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+    }
+
+    .hint-arrow {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 16px;
+      height: 16px;
+      background: rgba(10,1,20,0.97);
+      border-top: 1px solid #FFD700;
+      border-left: 1px solid #FFD700;
+    }
+
+    .hint-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: white;
+      line-height: 1.4;
+    }
+
+    /* Score flash ================== */
+    .score-flash {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: white;
+      padding: 16px 28px;
+      border-radius: 16px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(179,102,255,0.5);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.05); }
+    }
+
+    .score-flash-title {
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .score-flash-sub {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* Capsule share ================ */
+    .capsule-reveal {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .capsule-pin {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      background: linear-gradient(135deg, #FFD700, #B8860B);
+      box-shadow: 0 0 60px rgba(255,215,0,0.5), 0 10px 30px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    .capsule-pin::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 50%);
+    }
+
+    .capsule-tier {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #FFD700;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .capsule-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    /* Helpers */
+    .spacer { height: 14px; }
+    .caption {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .pick-me {
+      display: inline-block;
+      background: rgba(255,215,0,0.15);
+      color: #FFD700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    code {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #FFD700;
+    }
+  </style>
+</head>
+<body>
+  <h1>Share + FTUE — Design Preview</h1>
+  <div class="page-subtitle">
+    Mockups for Score Sharing (X only) and First-Time User Experience.
+    Pick an option per section; I'll ship the selected.
+  </div>
+
+  <!-- ============ SCORE SHARING ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Score Sharing (X only)</h2>
+      <div class="section-desc">
+        Share button appears on Game Over when score ≥ 15K. Every share includes a referral URL so virality + referral fire together.
+      </div>
+    </div>
+
+    <!-- Button placement options -->
+    <div class="option-label">Option A — Inline on Game Over (recommended)</div>
+    <div class="option-title">Share button lives with the other game-over actions</div>
+    <div class="option-note">One extra button below Play Again / Home. Low friction. Auto-opens X compose window in a new tab.</div>
+
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="gameover-header">
+          <div class="gameover-title">Final Score</div>
+          <div class="score-display">27,450</div>
+          <div class="score-label">2 capsules earned</div>
+        </div>
+        <div class="stars-row">
+          <svg class="star" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+          <svg class="star" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+          <svg class="star" viewBox="0 0 24 24" fill="rgba(255,255,255,0.15)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+        </div>
+        <button class="btn btn-primary">Play Again</button>
+        <button class="btn btn-share-x">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share on X
+        </button>
+        <button class="btn btn-ghost">Home</button>
+      </div>
+    </div>
+    <div class="caption"><span class="pick-me">Recommended</span></div>
+
+    <div class="spacer"></div>
+    <div class="spacer"></div>
+
+    <div class="option-label">Option B — Share CTA tied to capsule earned state</div>
+    <div class="option-title">Only shows when score ≥ 30K (2+ capsules) — "worth bragging about" gate</div>
+    <div class="option-note">More selective. Makes the share moment feel more special but hides it from ~40% of players who hit 15K but not 30K. Tradeoff: fewer shares, more meaningful ones.</div>
+
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="gameover-header">
+          <div class="gameover-title">Final Score</div>
+          <div class="score-display">27,450</div>
+          <div class="score-label">2 capsules earned</div>
+        </div>
+        <div class="capsule-earned-pill">Brag-worthy score</div>
+        <button class="btn btn-primary">Play Again</button>
+        <button class="btn btn-share-x">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share on X
+        </button>
+        <button class="btn btn-ghost">Home</button>
+      </div>
+    </div>
+    <div class="caption">B is gated; A is always-on at 15K+.</div>
+
+    <div class="spacer"></div>
+    <div class="spacer"></div>
+
+    <!-- Tweet preview -->
+    <h2 style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 16px; margin-top: 40px;">What the tweet looks like</h2>
+    <div class="section-desc" style="margin-bottom: 24px;">Twitter auto-renders the OG image and hides the URL. Copy is short on purpose — the image is the hero.</div>
+
+    <div class="tweet-mock">
+      <div class="tweet-header">
+        <div class="tweet-avatar"></div>
+        <div>
+          <div class="tweet-name">bryan</div>
+          <div class="tweet-handle">@bryandisanto · 2m</div>
+        </div>
+      </div>
+      <div class="tweet-body">Scored 27,450 on VibeMatch.
+2 capsules earned — cosmic tier, let's ride.
+
+vibematch.gvc.xyz?ref=bryan</div>
+      <div class="tweet-card">
+        <div class="tweet-card-preview-wrap">
+          <div class="og-preview" style="margin: 0; border-radius: 0; aspect-ratio: 1200 / 630; height: 100%;">
+            <div class="og-a" style="position: absolute; inset: 0;">
+              <div class="og-preview-inner">
+                <div class="og-a-brand">VIBEMATCH</div>
+                <div>
+                  <div class="og-a-score">27,450</div>
+                  <div class="og-a-label">bryan's run</div>
+                </div>
+                <div class="og-a-bottom">
+                  <div class="og-a-capsules">2 capsules earned</div>
+                  <div class="og-a-user">Good Vibes Club Game</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tweet-card-meta">vibematch.gvc.xyz</div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="spacer"></div>
+
+    <!-- OG image options -->
+    <h2 style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 16px; margin-top: 40px;">OG image — pick a style</h2>
+    <div class="section-desc" style="margin-bottom: 24px;">Generated dynamically per share at <code>/api/og/score?score=X&user=Y&capsules=Z</code>. The image is what makes the tweet scroll-stopping.</div>
+
+    <div class="option-grid">
+      <div class="option-card">
+        <div class="option-label">Option A — Minimalist (recommended)</div>
+        <div class="option-title">Big score, clean brand mark, capsule pill</div>
+        <div class="option-note">Dark, on-brand, score is the hero. Works at small sizes on mobile timelines.</div>
+        <div class="og-preview og-a">
+          <div class="og-preview-inner">
+            <div class="og-a-brand">VIBEMATCH</div>
+            <div>
+              <div class="og-a-score">27,450</div>
+              <div class="og-a-label">bryan's run</div>
+            </div>
+            <div class="og-a-bottom">
+              <div class="og-a-capsules">2 capsules earned</div>
+              <div class="og-a-user">Good Vibes Club Game</div>
+            </div>
+          </div>
+        </div>
+        <div class="caption"><span class="pick-me">Recommended</span></div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-label">Option B — Pin-forward</div>
+        <div class="option-title">Shows pins earned this session</div>
+        <div class="option-note">Highlights the collection angle. Stronger if a rare pin was earned; weaker if no capsule was opened from this session.</div>
+        <div class="og-preview og-b">
+          <div class="og-preview-inner">
+            <div class="og-b-pins">
+              <div class="og-b-pin gold"></div>
+              <div class="og-b-pin cosmic"></div>
+              <div class="og-b-pin"></div>
+              <div class="og-b-pin silver"></div>
+              <div class="og-b-pin gold"></div>
+              <div class="og-b-pin"></div>
+            </div>
+            <div class="og-b-info">
+              <div class="og-b-label">2 capsules</div>
+              <div class="og-b-score">27,450</div>
+              <div class="og-b-tagline">bryan earned Gold + Cosmic</div>
+            </div>
+          </div>
+          <div class="og-b-brand">VIBEMATCH</div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-label">Option C — Bold vibes</div>
+        <div class="option-title">Lavender-gold gradient, full-bleed</div>
+        <div class="option-note">Eye-catching on light/dark timelines but visually loud. Strong with the GVC brand but less legible on small mobile preview.</div>
+        <div class="og-preview og-c">
+          <div class="og-preview-inner">
+            <div class="og-c-user">bryan</div>
+            <div class="og-c-score">27,450</div>
+            <div class="og-c-label">2 capsules</div>
+            <div class="og-c-brand">VIBEMATCH</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Capsule opening share -->
+    <h2 style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 16px; margin-top: 40px;">Capsule-opening share (rare pins only)</h2>
+    <div class="section-desc" style="margin-bottom: 24px;">Secondary share moment. Only shows after opening a gold / cosmic / special tier capsule.</div>
+
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="capsule-reveal">
+          <div class="capsule-pin"></div>
+          <div class="capsule-tier">Gold Tier</div>
+          <div class="capsule-name">Craig Dreams</div>
+          <button class="btn btn-primary">Add to Pin Book</button>
+          <button class="btn btn-share-x">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Share this pin
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Only surfaces for silver+ tiers. Avoids spam-share moments on common blue pins.</div>
+  </div>
+
+  <!-- ============ FTUE ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>First-Time User Experience</h2>
+      <div class="section-desc">
+        Surface only on first Classic game. Teaches the capsule → pin → collection loop without a scripted tutorial.
+      </div>
+    </div>
+
+    <!-- Primer card options -->
+    <div class="option-label">Pre-game primer card (shown once before first game)</div>
+
+    <div class="option-grid">
+      <div class="option-card">
+        <div class="option-title" style="color: #FFD700;">Option A — Direct copy</div>
+        <div class="option-note">Minimal copy. Assumes NFT-native audience. Three numbered steps. Gets out of the way.</div>
+        <div class="phone-frame">
+          <div class="phone-inner">
+            <div class="ftue-modal">
+              <div class="ftue-badge">Welcome</div>
+              <div class="ftue-title">Here's the loop</div>
+              <div class="ftue-subtitle">Three things to know before you play.</div>
+              <div class="ftue-steps">
+                <div class="ftue-step">
+                  <div class="ftue-step-num">1</div>
+                  <div class="ftue-step-text">Match badges to rack up <strong>score</strong></div>
+                </div>
+                <div class="ftue-step">
+                  <div class="ftue-step-num">2</div>
+                  <div class="ftue-step-text">Hit <strong>15K+</strong> to earn capsules</div>
+                </div>
+                <div class="ftue-step">
+                  <div class="ftue-step-num">3</div>
+                  <div class="ftue-step-text">Open capsules to collect <strong>pins</strong></div>
+                </div>
+              </div>
+              <button class="btn btn-primary">Let's go</button>
+              <button class="btn btn-ghost" style="font-size: 11px;">Skip</button>
+            </div>
+          </div>
+        </div>
+        <div class="caption"><span class="pick-me">Recommended</span></div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-title" style="color: #FFD700;">Option B — Community-voiced</div>
+        <div class="option-note">Same structure, copy leans into GVC vibe. More distinctive but slightly longer. Risk: too wordy on small screens.</div>
+        <div class="phone-frame">
+          <div class="phone-inner">
+            <div class="ftue-modal">
+              <div class="ftue-badge">GM GVC</div>
+              <div class="ftue-title">The Vibe is a Loop</div>
+              <div class="ftue-subtitle">Match. Score. Collect. Repeat.</div>
+              <div class="ftue-steps">
+                <div class="ftue-step">
+                  <div class="ftue-step-num">1</div>
+                  <div class="ftue-step-text">Match badges to stack <strong>score</strong></div>
+                </div>
+                <div class="ftue-step">
+                  <div class="ftue-step-num">2</div>
+                  <div class="ftue-step-text">Cross <strong>15K</strong> — a capsule hits your book</div>
+                </div>
+                <div class="ftue-step">
+                  <div class="ftue-step-num">3</div>
+                  <div class="ftue-step-text">Pop it open — collect <strong>pins</strong>, flex the rack</div>
+                </div>
+              </div>
+              <button class="btn btn-primary">Ready</button>
+              <button class="btn btn-ghost" style="font-size: 11px;">Skip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Contextual hints -->
+    <div class="option-label" style="margin-top: 40px;">Contextual first-time hints (in-game)</div>
+    <div class="option-title">Appears once each, the first time the condition is met</div>
+    <div class="option-note">Non-blocking callout. Auto-dismisses after 3 seconds OR when player taps anywhere.</div>
+
+    <div class="option-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <div class="option-card">
+        <div class="option-title" style="color: #FFD700; font-size: 15px;">First 4-match (bomb)</div>
+        <div class="phone-frame" style="width: 280px;">
+          <div class="phone-inner">
+            <div class="game-board-mock">
+              <div class="game-tiles">
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile bomb"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+              </div>
+              <div class="hint-callout">
+                <div class="hint-arrow"></div>
+                <div class="hint-label">New! Bomb</div>
+                <div class="hint-text">Tap twice to detonate. Clears a 3×3 area.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-title" style="color: #FFD700; font-size: 15px;">First 5-match (vibestreak)</div>
+        <div class="phone-frame" style="width: 280px;">
+          <div class="phone-inner">
+            <div class="game-board-mock">
+              <div class="game-tiles">
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile bomb" style="background: linear-gradient(135deg, #B366FF, #6C5CE7); box-shadow: 0 0 20px rgba(179,102,255,0.6);"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+              </div>
+              <div class="hint-callout">
+                <div class="hint-arrow"></div>
+                <div class="hint-label">New! Vibestreak</div>
+                <div class="hint-text">Tap twice — clears the whole row and column.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-title" style="color: #FFD700; font-size: 15px;">First 15K reached (capsule flash)</div>
+        <div class="phone-frame" style="width: 280px;">
+          <div class="phone-inner">
+            <div class="game-board-mock">
+              <div class="game-tiles">
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+                <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+              </div>
+              <div class="score-flash">
+                <div class="score-flash-title">Capsule!</div>
+                <div class="score-flash-sub">Check your Pin Book after</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="spacer"></div>
+
+    <!-- Post-game modal -->
+    <div class="option-label" style="margin-top: 40px;">Post-game first-game modal</div>
+    <div class="option-title">One-time, shown after the first game ends regardless of score</div>
+    <div class="option-note">Two variants: one for success (≥15K), one for "try again" (&lt;15K). Routes to Pin Book CTA or Play Again.</div>
+
+    <div class="option-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <div class="option-card">
+        <div class="option-label">When they scored ≥ 15K</div>
+        <div class="phone-frame">
+          <div class="phone-inner">
+            <div class="ftue-modal">
+              <div class="ftue-badge" style="background: linear-gradient(135deg, #FFD700, #B8860B); color: #2A1810;">First Capsule</div>
+              <div class="ftue-title">You earned a Capsule</div>
+              <div class="ftue-subtitle">Open it to reveal your first pin. It lives in your Pin Book forever.</div>
+              <button class="btn btn-primary">Show Me</button>
+              <button class="btn btn-ghost" style="font-size: 11px;">Play Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-label">When they scored &lt; 15K</div>
+        <div class="phone-frame">
+          <div class="phone-inner">
+            <div class="ftue-modal">
+              <div class="ftue-badge">So close</div>
+              <div class="ftue-title">You scored 12,320</div>
+              <div class="ftue-subtitle">Hit 15K next time — that's where capsules start dropping. Special tiles (4-match, 5-match) compound your score fast.</div>
+              <button class="btn btn-primary">Play Again</button>
+              <button class="btn btn-ghost" style="font-size: 11px;">Home</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; color: rgba(255,255,255,0.4); font-size: 13px; max-width: 700px; margin: 0 auto; line-height: 1.6;">
+    <strong style="color: #B366FF;">Once you pick, reply with the selections</strong> (e.g. "Share: A + OG A. FTUE: Primer A + all hints + both post-game modals") and I'll implement exactly that. If anything needs tweaks first, flag it.
+  </div>
+</body>
+</html>

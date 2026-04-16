@@ -584,15 +584,23 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
         }
     }, [score, gameMode, userProfile?.username]);
 
+    // Capsule count derived from score thresholds (mirrors server logic in /api/pinbook/earn).
+    const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0;
+    const canShare = score >= 15000 && !!userProfile?.username;
+
     const handleShareX = () => {
-        const modeLabel = gameMode === "daily" ? "Daily Challenge" : "Classic";
-        const text = `🎮 I scored ${score.toLocaleString()} on VibeMatch ${modeLabel}!\n🏆 Rank: ${rank.label}\n🔥 Best Combo: ×${maxCombo}\n\nCan you beat me? 🤙\n\n#VibeMatch`;
-        const url = "https://vibematch.gg";
-        const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        if (!canShare) return;
+        const user = userProfile!.username;
+        const shareUrl = `https://vibematch.app/share?user=${encodeURIComponent(user)}&score=${score}&capsules=${capsuleCount}`;
+        const capsuleLine = capsuleCount > 0
+            ? `${capsuleCount} ${capsuleCount === 1 ? "capsule" : "capsules"} earned.`
+            : "";
+        const text = `Scored ${score.toLocaleString()} on VibeMatch.${capsuleLine ? `\n${capsuleLine}` : ""}`;
+        const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
 
         const win = window.open(intentUrl, "_blank", "noopener,noreferrer");
         if (!win) {
-            navigator.clipboard.writeText(`${text}\n\n${url}`).then(() => {
+            navigator.clipboard.writeText(`${text}\n\n${shareUrl}`).then(() => {
                 toast.success("Copied to clipboard!", {
                     style: { background: "#1a1a1a", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" },
                     iconTheme: { primary: "#FFE048", secondary: "#000" },
@@ -912,16 +920,18 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                 HOME
                             </button>
 
-                            {/* Share on X button */}
-                            <button
-                                onClick={handleShareX}
-                                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group"
-                            >
-                                <div className="text-white/50 group-hover:text-white/80 transition-colors">
-                                    <XIcon size={14} />
-                                </div>
-                                SHARE
-                            </button>
+                            {/* Share on X button — only when score >= 15K and user is logged in */}
+                            {canShare && (
+                                <button
+                                    onClick={handleShareX}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.1] hover:text-white font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group"
+                                >
+                                    <div className="text-white/50 group-hover:text-white/80 transition-colors">
+                                        <XIcon size={14} />
+                                    </div>
+                                    SHARE
+                                </button>
+                            )}
 
                             {/* Rematch button — Classic only */}
                             {gameMode === "classic" && (
