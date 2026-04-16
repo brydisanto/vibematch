@@ -72,17 +72,17 @@ export function usePinBook() {
         return false;
     }, []);
 
-    const trackGame = useCallback(async (): Promise<void> => {
+    const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{ ok: boolean; error?: string }> => {
         try {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "trackGame" }),
+                body: JSON.stringify({ action: "trackGame", gameMode }),
             });
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
                 console.error("pinbook trackGame failed:", res.status, errData);
-                return;
+                return { ok: false, error: errData.error || `HTTP ${res.status}` };
             }
             const data = await res.json();
             if (data.classicPlays != null) {
@@ -91,11 +91,15 @@ export function usePinBook() {
             if (data.matchId) {
                 activeMatchIdRef.current = data.matchId;
                 setActiveMatchId(data.matchId);
-                console.log("[usePinBook] trackGame matchId:", data.matchId);
+                console.log("[usePinBook] trackGame matchId:", data.matchId, "mode:", gameMode, "abandonedPrevious:", data.abandonedPrevious);
             } else {
                 console.warn("[usePinBook] trackGame response missing matchId:", data);
             }
-        } catch (e) { console.error("pinbook trackGame error:", e); }
+            return { ok: true };
+        } catch (e) {
+            console.error("pinbook trackGame error:", e);
+            return { ok: false, error: String(e) };
+        }
     }, []);
 
     const logGame = useCallback(async (stats: {

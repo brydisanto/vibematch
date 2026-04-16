@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { GameMode } from "@/lib/gameEngine";
 import { useGame } from "@/lib/useGame";
@@ -270,13 +271,28 @@ export default function Home() {
     trackLabelTimeout.current = setTimeout(() => setTrackLabel(null), 2500);
   };
 
-  const handleStartGame = (mode: GameMode, username?: string, avatarUrl?: string) => {
+  const handleStartGame = async (mode: GameMode, username?: string, avatarUrl?: string) => {
     if (username) {
       setUserProfile({ username, avatarUrl: avatarUrl || "" });
     }
 
     // Crucial for iOS/Safari: MUST interact with AudioContext during a direct click/tap event
     unlockAudio();
+
+    // Issue match token at game START. For daily, the server atomically sets
+    // the daily_played marker here — if it's already set (e.g. user refreshed
+    // mid-daily), the server rejects and we route back to landing.
+    if (username) {
+      const result = await pinBook.trackGame(mode);
+      if (!result.ok) {
+        if (result.error === 'Daily already played today') {
+          toast.error("You already played the Daily Challenge today! Come back tomorrow.");
+        } else {
+          toast.error("Could not start game. Try again.");
+        }
+        return;
+      }
+    }
 
     // Vibe Draft disabled for now — slows down replayability
     // To re-enable: route classic mode to drafting view with selectDraftPool()
@@ -285,11 +301,6 @@ export default function Home() {
     gameSessionStats.current = { bombsCreated: 0, vibestreaksCreated: 0, cosmicBlastsCreated: 0, crossCount: 0, shapesLanded: [] };
     setIsDealing(true);
     setView("playing");
-
-    // Issue match token at game START so it exists for mid-game bonus capsules
-    if (mode === 'classic' && username) {
-      pinBook.trackGame();
-    }
     startBGM();
   };
 
@@ -315,13 +326,19 @@ export default function Home() {
     setView("landing");
   };
 
-  const handlePlayAgain = () => {
+  const handlePlayAgain = async () => {
+    // Only classic supports "play again" — daily is one per day. If we're here
+    // for a classic game, issue a fresh match token at the new game's start.
+    const mode = game.state?.gameMode;
+    if (mode === 'classic' && userProfile?.username) {
+      const result = await pinBook.trackGame(mode);
+      if (!result.ok) {
+        toast.error("Could not start game. Try again.");
+        return;
+      }
+    }
     setIsDealing(true);
     game.resetGame();
-    // Issue fresh match token for the new game
-    if (game.state?.gameMode === 'classic' && userProfile?.username) {
-      pinBook.trackGame();
-    }
   };
 
   // Record streak when any game ends (daily or classic)

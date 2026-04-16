@@ -152,28 +152,73 @@ export async function POST(req: Request) {
         const data = (await kv.get(key)) as PinBookData | null ?? emptyPinBook();
 
         if (body.action === 'trackGame') {
-            // Track a classic game played (win or lose) toward the daily cap.
-            // Issue a one-shot match token that earn/bonus must present to get capsules.
-            // Each token represents exactly one physical game the client has started.
-            const tracker = await incrementClassicPlays(username);
-            const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
-            const capped = tracker.classicPlays > effectiveCap;
+            // Track a game started (classic or daily). Issue a one-shot match token
+            // that earn/bonus must present to get capsules. Each token represents
+            // exactly one physical game the client has started.
+            const gameMode = (body.gameMode as string) || 'classic';
+            const today = new Date().toISOString().slice(0, 10);
+
+            // Daily: atomically set the daily_played marker at game START, not game END.
+            // This prevents the "refresh mid-daily to get a fresh board" exploit.
+            if (gameMode === 'daily') {
+                const playedKey = `daily_played:${username}:${today}`;
+                const acquired = await kv.set(playedKey, '1', { nx: true, ex: 86400 * 2 });
+                if (!acquired) {
+                    return NextResponse.json({ error: 'Daily already played today' }, { status: 400 });
+                }
+            }
+
+            // Mid-game refresh penalty: if the previous match was created <5 min ago
+            // and never received a logGame, mark it abandoned AND make the new match
+            // ineligible for capsules. Prevents board-shopping via refresh.
+            const ABANDON_WINDOW_MS = 5 * 60 * 1000;
+            const activePointerKey = `pinbook:${username}:activeMatch`;
+            const previousMatchId = await kv.get(activePointerKey) as string | null;
+            let abandonedPrevious = false;
+            if (previousMatchId) {
+                const prevMatchKey = `pinbook:${username}:match:${previousMatchId}`;
+                const prev = await kv.get(prevMatchKey) as any;
+                if (prev && !prev.logged && Date.now() - (prev.createdAt ?? 0) < ABANDON_WINDOW_MS) {
+                    // Burn the previous match — no capsules from it retroactively.
+                    await kv.set(prevMatchKey, { ...prev, abandoned: true, prizeEligible: false }, { ex: 60 * 60 * 2 });
+                    abandonedPrevious = true;
+                }
+            }
+
+            // Classic: count plays toward the daily cap. Daily games don't count.
+            let capped = false;
+            let classicPlays = 0;
+            if (gameMode === 'classic') {
+                const tracker = await incrementClassicPlays(username);
+                const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
+                capped = tracker.classicPlays > effectiveCap;
+                classicPlays = tracker.classicPlays;
+            }
 
             // Generate match token. Bound to user and single-use.
             const matchId = crypto.randomUUID();
             const matchKey = `pinbook:${username}:match:${matchId}`;
+            // prizeEligible: false if capped OR if this is a refresh within 5 min of a prior game.
+            const prizeEligible = !capped && !abandonedPrevious;
             await kv.set(matchKey, {
                 username,
+                gameMode,
                 createdAt: Date.now(),
                 earnedCapsule: false,
                 earnedBonus: false,
-                prizeEligible: !capped,
+                logged: false,
+                prizeEligible,
+                abandonedPrevious,
             }, { ex: 60 * 60 * 2 }); // 2 hour window
+
+            // Point the active match pointer at the new matchId.
+            await kv.set(activePointerKey, matchId, { ex: 60 * 60 * 2 });
 
             return NextResponse.json({
                 tracked: true,
-                classicPlays: tracker.classicPlays,
+                classicPlays,
                 capped,
+                abandonedPrevious,
                 matchId,
             });
 
@@ -232,13 +277,21 @@ export async function POST(req: Request) {
                 gameOverReason: typeof stats.gameOverReason === 'string' ? stats.gameOverReason.slice(0, 50) : 'unknown',
             };
 
-            // If a matchId is provided, validate it (classic mode only)
+            // If a matchId is provided, validate it and mark the match as logged
+            // (so a subsequent trackGame within 5min doesn't treat it as abandoned).
+            // Also clear the activeMatch pointer for this user.
             let validatedMatch = false;
-            if (matchId && typeof matchId === 'string' && gameMode === 'classic') {
+            if (matchId && typeof matchId === 'string') {
                 const matchKey = `pinbook:${username}:match:${matchId}`;
                 const match = await kv.get(matchKey) as any;
                 if (match && match.username === username) {
-                    validatedMatch = true;
+                    validatedMatch = gameMode === 'classic';
+                    await kv.set(matchKey, { ...match, logged: true }, { ex: 60 * 60 * 2 });
+                    const activePointerKey = `pinbook:${username}:activeMatch`;
+                    const activePointer = await kv.get(activePointerKey);
+                    if (activePointer === matchId) {
+                        await kv.del(activePointerKey);
+                    }
                 }
             }
 
