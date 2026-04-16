@@ -36,6 +36,10 @@ import { buildPlayerContext } from "@/lib/playerContext";
 import AchievementToast from "@/components/AchievementToast";
 import AchievementsPanel from "@/components/AchievementsPanel";
 import Image from "next/image";
+import { useFtue } from "@/lib/useFtue";
+import FtuePrimer from "@/components/FtuePrimer";
+import FtueHint, { type HintKind } from "@/components/FtueHint";
+import FtuePostGame from "@/components/FtuePostGame";
 
 type AppView = "landing" | "drafting" | "playing";
 
@@ -76,6 +80,13 @@ export default function AppClient() {
   const game = useGame();
   const pinBook = usePinBook();
   const achievements = useAchievements();
+  const ftue = useFtue();
+
+  // FTUE UI state — primer card before first Classic game, in-game hints, post-game modal
+  const [ftuePending, setFtuePending] = useState<null | { mode: GameMode; username?: string; avatarUrl?: string }>(null);
+  const [ftueHint, setFtueHint] = useState<HintKind | null>(null);
+  const [ftueShowPostGame, setFtueShowPostGame] = useState(false);
+  const ftuePostGameFiredRef = useRef(false);
 
   // Per-game session stats for achievements (not in GameState)
   const gameSessionStats = useRef({
@@ -126,6 +137,19 @@ export default function AppClient() {
       if (ids.length > 0) achievements.unlock(ids);
     });
   }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // FTUE post-game modal — fires once, after the very first Classic game ends.
+  // Separate from the logging effect below so the modal can show even before logGame resolves.
+  useEffect(() => {
+    if (game.state?.gamePhase !== "gameover") return;
+    if (game.state?.gameMode !== "classic") return;
+    if (ftue.has("postGameShown")) return;
+    if (ftuePostGameFiredRef.current) return;
+    ftuePostGameFiredRef.current = true;
+    // Small delay so the gameover screen animates in before the modal stacks on top
+    const t = setTimeout(() => setFtueShowPostGame(true), 800);
+    return () => clearTimeout(t);
+  }, [game.state?.gamePhase, game.state?.gameMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unified game-end flow: trackGame → logGame → earnCapsule → achievements
   // Must run sequentially so each step has the state it depends on:
@@ -233,6 +257,22 @@ export default function AppClient() {
       else if (s.type === "cosmic_blast") stats.cosmicBlastsCreated++;
     }
 
+    // FTUE contextual hints — fire once per flag, only for Classic mode.
+    // Priority: capsule > vibestreak > bomb (rarest feels most rewarding).
+    if (game.state?.gameMode === "classic") {
+      const createdTypes = new Set(result.specialTilesCreated.map(s => s.type));
+      if (!ftue.has("capsuleFlashShown") && game.state.score >= 15000) {
+        ftue.mark("capsuleFlashShown");
+        setFtueHint("capsule");
+      } else if (!ftue.has("vibestreakHintShown") && createdTypes.has("vibestreak")) {
+        ftue.mark("vibestreakHintShown");
+        setFtueHint("vibestreak");
+      } else if (!ftue.has("bombHintShown") && createdTypes.has("bomb")) {
+        ftue.mark("bombHintShown");
+        setFtueHint("bomb");
+      }
+    }
+
     // Accumulate shape bonuses
     if (result.shapeBonus?.type) {
       if (result.shapeBonus.type === "cross") stats.crossCount++;
@@ -272,6 +312,18 @@ export default function AppClient() {
   };
 
   const handleStartGame = async (mode: GameMode, username?: string, avatarUrl?: string) => {
+    // First-time Classic player: show the primer card before kicking off.
+    // Daily games skip the primer (one-shot players shouldn't be gated).
+    if (mode === "classic" && !ftue.has("primerShown")) {
+      // iOS Safari: unlock audio synchronously during this tap so later BGM starts work.
+      unlockAudio();
+      setFtuePending({ mode, username, avatarUrl });
+      return;
+    }
+    await actuallyStartGame(mode, username, avatarUrl);
+  };
+
+  const actuallyStartGame = async (mode: GameMode, username?: string, avatarUrl?: string) => {
     if (username) {
       setUserProfile({ username, avatarUrl: avatarUrl || "" });
     }
@@ -294,6 +346,10 @@ export default function AppClient() {
       }
     }
 
+    // Reset FTUE per-game flags
+    ftuePostGameFiredRef.current = false;
+    setFtueHint(null);
+
     // Vibe Draft disabled for now — slows down replayability
     // To re-enable: route classic mode to drafting view with selectDraftPool()
     game.startGame(mode);
@@ -302,6 +358,21 @@ export default function AppClient() {
     setIsDealing(true);
     setView("playing");
     startBGM();
+  };
+
+  const handleFtuePrimerContinue = async () => {
+    ftue.mark("primerShown");
+    const pending = ftuePending;
+    setFtuePending(null);
+    if (pending) {
+      await actuallyStartGame(pending.mode, pending.username, pending.avatarUrl);
+    }
+  };
+
+  const handleFtuePrimerSkip = () => {
+    ftue.mark("primerShown");
+    setFtuePending(null);
+    // Don't start the game — user asked to skip. They land back where they were.
   };
 
   const handleDraftComplete = (drafted: Badge[]) => {
@@ -337,6 +408,10 @@ export default function AppClient() {
         return;
       }
     }
+    // Reset FTUE per-game flags so hints / post-game can still fire on future games
+    ftuePostGameFiredRef.current = false;
+    setFtueHint(null);
+    setFtueShowPostGame(false);
     setIsDealing(true);
     game.resetGame();
   };
@@ -820,6 +895,74 @@ export default function AppClient() {
           achievements.load(); // Load achievements after login
         }}
       />
+
+      {/* FTUE: pre-game primer card (first Classic game only) */}
+      <AnimatePresence>
+        {ftuePending && (
+          <FtuePrimer
+            onContinue={handleFtuePrimerContinue}
+            onSkip={handleFtuePrimerSkip}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* FTUE: in-game contextual hints (one-shot each, auto-dismiss) */}
+      <AnimatePresence>
+        {ftueHint && view === "playing" && (
+          <FtueHint kind={ftueHint} onDismiss={() => setFtueHint(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* FTUE: post-game first-game modal (one-shot, only while game is actually over) */}
+      <AnimatePresence>
+        {ftueShowPostGame && game.state?.gamePhase === "gameover" && (
+          <FtuePostGame
+            score={game.state.score}
+            onPrimary={() => {
+              ftue.mark("postGameShown");
+              setFtueShowPostGame(false);
+              if (game.state && game.state.score >= 15000) {
+                // "Show Me" → open pin book
+                setShowPinBook(true);
+              } else {
+                // "Play Again" on try-again variant
+                if (game.state?.gameMode === "classic" && userProfile?.username) {
+                  pinBook.trackGame("classic").then(result => {
+                    if (result.ok) {
+                      ftuePostGameFiredRef.current = false;
+                      setFtueHint(null);
+                      setIsDealing(true);
+                      game.resetGame();
+                    }
+                  });
+                }
+              }
+            }}
+            onSecondary={() => {
+              ftue.mark("postGameShown");
+              setFtueShowPostGame(false);
+              if (game.state && game.state.score >= 15000) {
+                // "Play Again" secondary on success variant
+                if (game.state?.gameMode === "classic" && userProfile?.username) {
+                  pinBook.trackGame("classic").then(result => {
+                    if (result.ok) {
+                      ftuePostGameFiredRef.current = false;
+                      setFtueHint(null);
+                      setIsDealing(true);
+                      game.resetGame();
+                    }
+                  });
+                }
+              } else {
+                // "Home" secondary on try-again variant
+                stopBGM();
+                pinBook.load();
+                setView("landing");
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main >
   );
 }
