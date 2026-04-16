@@ -11,6 +11,7 @@ const STORAGE_KEY = "vm_ftue_v1";
 
 export type FtueFlag =
     | "primerShown"       // pre-game primer card dismissed
+    | "firstMoveShown"    // idle-in-playing-view nudge to make first swap
     | "bombHintShown"     // first 4-match / bomb callout
     | "vibestreakHintShown" // first 5-match / vibestreak callout
     | "capsuleFlashShown"  // first time score crossed 15K
@@ -20,6 +21,7 @@ type FtueState = Record<FtueFlag, boolean>;
 
 const EMPTY: FtueState = {
     primerShown: false,
+    firstMoveShown: false,
     bombHintShown: false,
     vibestreakHintShown: false,
     capsuleFlashShown: false,

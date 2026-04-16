@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 
-export type HintKind = "bomb" | "vibestreak" | "capsule";
+export type HintKind = "firstMove" | "bomb" | "vibestreak" | "capsule";
 
 interface FtueHintProps {
     kind: HintKind;
@@ -11,6 +11,12 @@ interface FtueHintProps {
 }
 
 const CONFIG: Record<HintKind, { label: string; title: string; body: string; gradient: string }> = {
+    firstMove: {
+        label: "Tip",
+        title: "Swap two adjacent badges",
+        body: "Line up 3 of the same badge — horizontal or vertical — to make a match.",
+        gradient: "linear-gradient(135deg, #4A9EFF, #B366FF)",
+    },
     bomb: {
         label: "New! Bomb",
         title: "Bomb tile earned",
@@ -53,7 +59,7 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
                 className="pointer-events-auto max-w-[320px] w-full rounded-[14px] border px-4 py-3 text-left flex items-start gap-3"
                 style={{
                     background: "rgba(10,1,20,0.97)",
-                    borderColor: kind === "capsule" ? "#FFD700" : kind === "bomb" ? "#FF5722" : "#B366FF",
+                    borderColor: kind === "capsule" ? "#FFD700" : kind === "bomb" ? "#FF5722" : kind === "firstMove" ? "#4A9EFF" : "#B366FF",
                     boxShadow: "0 10px 36px rgba(0,0,0,0.7)",
                 }}
                 whileTap={{ scale: 0.98 }}
@@ -65,7 +71,7 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
                 <div className="flex-1">
                     <div
                         className="text-[10px] font-display font-extrabold tracking-[0.2em] uppercase mb-0.5"
-                        style={{ color: kind === "capsule" ? "#FFD700" : kind === "bomb" ? "#FF8A4C" : "#B366FF" }}
+                        style={{ color: kind === "capsule" ? "#FFD700" : kind === "bomb" ? "#FF8A4C" : kind === "firstMove" ? "#4A9EFF" : "#B366FF" }}
                     >
                         {cfg.label}
                     </div>

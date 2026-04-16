@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeMatch — Primer Card Upgrade Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0114;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      padding: 40px 20px 120px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 64px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 48px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .option-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px 24px;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(179,102,255,0.75);
+      margin-bottom: 6px;
+    }
+
+    .option-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 6px;
+    }
+
+    .option-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 24px;
+      line-height: 1.55;
+    }
+
+    .pick-me {
+      display: inline-block;
+      background: rgba(255,215,0,0.15);
+      color: #FFD700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-top: 12px;
+    }
+
+    /* Phone frame w/ bg to show modal-on-game context */
+    .phone-frame {
+      width: 380px;
+      max-width: 100%;
+      margin: 0 auto;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(179,102,255,0.08), transparent 55%),
+        radial-gradient(circle at 70% 75%, rgba(255,215,0,0.06), transparent 55%),
+        linear-gradient(180deg, #110321 0%, #0a0114 100%);
+      border-radius: 24px;
+      padding: 18px 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      min-height: 640px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(179,102,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(179,102,255,0.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+      border-radius: 24px;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .modal-shell {
+      width: 100%;
+      background: linear-gradient(180deg, #1a0428 0%, #0a0114 100%);
+      border-radius: 22px;
+      padding: 28px 22px 22px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(179,102,255,0.3);
+      z-index: 2;
+    }
+
+    .modal-badge-pill {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 5px 16px;
+      border-radius: 30px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: white;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+    }
+
+    .modal-title {
+      color: #FFD700;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 28px;
+      line-height: 1.05;
+      margin-top: 6px;
+    }
+
+    .modal-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #2A1810;
+      box-shadow: 0 6px 18px rgba(255,165,0,0.28);
+    }
+
+    .btn-skip {
+      margin-top: 8px;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      font-size: 11px;
+    }
+
+    /* ============ OPTION A: BADGE SCENE ============ */
+    .opt-a-scene {
+      margin: 22px 0 18px;
+      padding: 20px 16px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .opt-a-scene::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,215,0,0.12), transparent 60%);
+      pointer-events: none;
+    }
+
+    .opt-a-tiles {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .opt-a-tile {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,215,0,0.5);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 16px rgba(255,215,0,0.3);
+    }
+
+    .opt-a-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .opt-a-caption {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,215,0,0.7);
+      font-weight: 700;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .opt-a-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .opt-a-step {
+      font-size: 13px;
+      color: rgba(255,255,255,0.88);
+      text-align: left;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .opt-a-step-num {
+      color: #B366FF;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: 2px;
+      min-width: 24px;
+    }
+
+    .opt-a-step strong { color: #FFD700; }
+
+    /* ============ OPTION B: CAPSULE HERO ============ */
+    .opt-b-capsule-wrap {
+      margin: 18px auto 20px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
+
+    .opt-b-capsule {
+      width: 120px;
+      height: 140px;
+      position: relative;
+      filter: drop-shadow(0 10px 30px rgba(179,102,255,0.5));
+    }
+
+    .opt-b-capsule-top {
+      position: absolute;
+      top: 0;
+      left: 8px;
+      right: 8px;
+      height: 46%;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      border-radius: 70px 70px 0 0 / 80px 80px 0 0;
+      box-shadow: inset 0 -3px 12px rgba(0,0,0,0.35), inset 6px 8px 16px rgba(255,255,255,0.35);
+    }
+
+    .opt-b-capsule-bot {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 58%;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 70px 70px 68px 68px / 22px 22px 70px 70px;
+      box-shadow: inset 0 3px 12px rgba(0,0,0,0.2), inset -6px 10px 20px rgba(255,255,255,0.3);
+    }
+
+    .opt-b-capsule-band {
+      position: absolute;
+      top: 46%;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: rgba(0,0,0,0.4);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
+    }
+
+    .opt-b-capsule-shine {
+      position: absolute;
+      top: 8px;
+      left: 22px;
+      width: 16px;
+      height: 36px;
+      background: white;
+      opacity: 0.4;
+      border-radius: 50%;
+      filter: blur(4px);
+    }
+
+    .opt-b-sparkles {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 260px;
+      pointer-events: none;
+    }
+
+    .opt-b-sparkle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #FFD700;
+      border-radius: 50%;
+      box-shadow: 0 0 12px 2px #FFD700;
+    }
+
+    .opt-b-tagline {
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
+      margin: 14px 0 20px;
+      padding: 0 10px;
+      line-height: 1.5;
+    }
+
+    .opt-b-bullets {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .opt-b-bullet {
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+      background: rgba(179,102,255,0.08);
+      border: 1px solid rgba(179,102,255,0.2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .opt-b-bullet-check {
+      color: #FFD700;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .opt-b-bullet strong { color: #FFD700; }
+
+    /* ============ OPTION C: STORYBOARD ============ */
+    .opt-c-scenes {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .opt-c-scene {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(179,102,255,0.06), rgba(255,215,0,0.04));
+      border: 1px solid rgba(179,102,255,0.15);
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .opt-c-visual {
+      width: 58px;
+      height: 58px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .opt-c-visual.match {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,215,0,0.2), transparent 70%),
+        rgba(255,255,255,0.04);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 4px;
+    }
+
+    .opt-c-mini-tile {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 3px;
+    }
+
+    .opt-c-visual.capsule {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(179,102,255,0.25), transparent 70%),
+        rgba(255,255,255,0.04);
+    }
+
+    .opt-c-mini-capsule {
+      width: 30px;
+      height: 38px;
+      position: relative;
+    }
+
+    .opt-c-mini-capsule-top {
+      position: absolute;
+      top: 0; left: 2px; right: 2px; height: 46%;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      border-radius: 20px 20px 0 0;
+    }
+
+    .opt-c-mini-capsule-bot {
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 58%;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 0 0 18px 18px;
+    }
+
+    .opt-c-visual.pin {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,215,0,0.2), transparent 70%),
+        rgba(255,255,255,0.04);
+    }
+
+    .opt-c-mini-pin {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFD700, #B8860B);
+      box-shadow: 0 0 16px rgba(255,215,0,0.4);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .opt-c-text {
+      flex: 1;
+    }
+
+    .opt-c-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #B366FF;
+      margin-bottom: 2px;
+    }
+
+    .opt-c-desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 600;
+    }
+
+    .opt-c-desc strong { color: #FFD700; }
+
+    .opt-c-arrow {
+      display: flex;
+      justify-content: center;
+      color: rgba(179,102,255,0.3);
+      margin: -4px 0;
+      font-size: 18px;
+    }
+
+    /* ============ OPTION D: POSTER / MANIFESTO ============ */
+    .opt-d-hero {
+      position: relative;
+      padding: 10px 0 24px;
+    }
+
+    .opt-d-title {
+      font-size: 54px;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #FFD700 0%, #B366FF 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .opt-d-manifesto {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.92);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .opt-d-manifesto em {
+      font-style: normal;
+      color: #FFD700;
+    }
+
+    .opt-d-floating-badges {
+      position: absolute;
+      inset: -10px;
+      pointer-events: none;
+    }
+
+    .opt-d-badge {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    .opt-d-badge.tl { top: -8px; left: -12px; background: linear-gradient(135deg, #B366FF, #6C5CE7); transform: rotate(-15deg); }
+    .opt-d-badge.tr { top: -4px; right: -10px; background: linear-gradient(135deg, #FFD700, #FFA500); transform: rotate(18deg); }
+    .opt-d-badge.bl { bottom: 20px; left: -14px; background: linear-gradient(135deg, #FF6B35, #B8860B); transform: rotate(12deg); }
+    .opt-d-badge.br { bottom: 28px; right: -8px; background: linear-gradient(135deg, #4A9EFF, #B366FF); transform: rotate(-20deg); }
+
+    .opt-d-core {
+      margin: 24px 0 18px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(179,102,255,0.08));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 12px;
+    }
+
+    .opt-d-core-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .opt-d-core-item + .opt-d-core-item {
+      border-top: 1px dashed rgba(255,255,255,0.08);
+    }
+
+    .opt-d-core-label {
+      font-weight: 700;
+    }
+
+    .opt-d-core-value {
+      color: #FFD700;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Primer Card — Upgrade Options</h1>
+  <p class="page-subtitle">
+    Each option takes the current "Welcome / Here's the loop" modal and dials up the brand feel.
+    Pick one (or mix elements) — I'll implement exactly.
+  </p>
+
+  <div class="option-grid">
+
+    <!-- ============ OPTION A ============ -->
+    <div class="option-card">
+      <div class="option-label">Option A</div>
+      <div class="option-title">Badge-Forward Match Demo</div>
+      <div class="option-note">
+        Shows three actual GVC badges in a match arrangement. The player sees the game before they play.
+        Still keeps the 3-step copy, just as supporting context under the scene.
+      </div>
+
+      <div class="phone-frame">
+        <div class="modal-shell">
+          <div class="modal-badge-pill">Welcome</div>
+          <h2 class="modal-title">Here&apos;s the Loop</h2>
+
+          <div class="opt-a-scene">
+            <div class="opt-a-tiles">
+              <div class="opt-a-tile"><img src="/badges/cosmic_guardian1759173818340.webp" alt=""></div>
+              <div class="opt-a-tile"><img src="/badges/cosmic_guardian1759173818340.webp" alt=""></div>
+              <div class="opt-a-tile"><img src="/badges/cosmic_guardian1759173818340.webp" alt=""></div>
+            </div>
+            <div class="opt-a-caption">Match 3+ to score</div>
+          </div>
+
+          <div class="opt-a-steps">
+            <div class="opt-a-step"><span class="opt-a-step-num">01</span><span>Match badges to rack up <strong>score</strong></span></div>
+            <div class="opt-a-step"><span class="opt-a-step-num">02</span><span>Hit <strong>15K+</strong> to earn capsules</span></div>
+            <div class="opt-a-step"><span class="opt-a-step-num">03</span><span>Open capsules to collect <strong>pins</strong></span></div>
+          </div>
+
+          <button class="btn btn-primary">Let&apos;s go</button>
+          <button class="btn btn-skip">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ OPTION B ============ -->
+    <div class="option-card">
+      <div class="option-label">Option B</div>
+      <div class="option-title">Capsule-Hero Reveal</div>
+      <div class="option-note">
+        Capsule image is the hero. Leads with the reward, not the mechanic. Three concise bullets as
+        supporting info. Feels premium/collectible.
+      </div>
+
+      <div class="phone-frame">
+        <div class="modal-shell">
+          <div class="modal-badge-pill" style="background: linear-gradient(135deg, #FFD700, #B8860B); color: #2A1810;">Welcome</div>
+
+          <div class="opt-b-capsule-wrap">
+            <div class="opt-b-sparkles">
+              <div class="opt-b-sparkle" style="top: 18%; left: 15%;"></div>
+              <div class="opt-b-sparkle" style="top: 8%; left: 58%;"></div>
+              <div class="opt-b-sparkle" style="top: 72%; left: 82%;"></div>
+              <div class="opt-b-sparkle" style="top: 85%; left: 22%;"></div>
+              <div class="opt-b-sparkle" style="top: 48%; left: 92%;"></div>
+            </div>
+            <div class="opt-b-capsule">
+              <div class="opt-b-capsule-top"></div>
+              <div class="opt-b-capsule-band"></div>
+              <div class="opt-b-capsule-bot"></div>
+              <div class="opt-b-capsule-shine"></div>
+            </div>
+          </div>
+
+          <h2 class="modal-title">Collect Pins</h2>
+          <div class="opt-b-tagline">Match badges. Score big. Every 15K unlocks a capsule with a random pin.</div>
+
+          <div class="opt-b-bullets">
+            <div class="opt-b-bullet"><span class="opt-b-bullet-check">✦</span><span>Match <strong>3+</strong> of the same badge</span></div>
+            <div class="opt-b-bullet"><span class="opt-b-bullet-check">✦</span><span><strong>15K / 30K / 50K</strong> = 1 / 2 / 3 capsules</span></div>
+            <div class="opt-b-bullet"><span class="opt-b-bullet-check">✦</span><span>Pin Book tracks your whole collection</span></div>
+          </div>
+
+          <button class="btn btn-primary">Let&apos;s go</button>
+          <button class="btn btn-skip">Skip</button>
+        </div>
+      </div>
+      <div style="text-align: center;"><span class="pick-me">Recommended</span></div>
+    </div>
+
+    <!-- ============ OPTION C ============ -->
+    <div class="option-card">
+      <div class="option-label">Option C</div>
+      <div class="option-title">Three-Scene Storyboard</div>
+      <div class="option-note">
+        Each of the three steps gets its own mini-visual (match, capsule, pin). Arrow chevrons between
+        scenes imply flow. More visual than A, less reward-focused than B.
+      </div>
+
+      <div class="phone-frame">
+        <div class="modal-shell">
+          <div class="modal-badge-pill">Welcome</div>
+          <h2 class="modal-title">The Loop</h2>
+          <div class="modal-subtitle">Three steps to your first pin.</div>
+
+          <div class="opt-c-scenes">
+            <div class="opt-c-scene">
+              <div class="opt-c-visual match">
+                <div class="opt-c-mini-tile"></div>
+                <div class="opt-c-mini-tile"></div>
+                <div class="opt-c-mini-tile"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+                <div class="opt-c-mini-tile" style="opacity: 0.25;"></div>
+              </div>
+              <div class="opt-c-text">
+                <div class="opt-c-label">Step 1</div>
+                <div class="opt-c-desc">Match <strong>3+ badges</strong> to score</div>
+              </div>
+            </div>
+            <div class="opt-c-arrow">↓</div>
+            <div class="opt-c-scene">
+              <div class="opt-c-visual capsule">
+                <div class="opt-c-mini-capsule">
+                  <div class="opt-c-mini-capsule-top"></div>
+                  <div class="opt-c-mini-capsule-bot"></div>
+                </div>
+              </div>
+              <div class="opt-c-text">
+                <div class="opt-c-label">Step 2</div>
+                <div class="opt-c-desc">Hit <strong>15K+</strong> to earn a capsule</div>
+              </div>
+            </div>
+            <div class="opt-c-arrow">↓</div>
+            <div class="opt-c-scene">
+              <div class="opt-c-visual pin">
+                <div class="opt-c-mini-pin"></div>
+              </div>
+              <div class="opt-c-text">
+                <div class="opt-c-label">Step 3</div>
+                <div class="opt-c-desc">Open it to collect a <strong>pin</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary">Let&apos;s go</button>
+          <button class="btn btn-skip">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ OPTION D ============ -->
+    <div class="option-card">
+      <div class="option-label">Option D</div>
+      <div class="option-title">Vibe Manifesto (Poster)</div>
+      <div class="option-note">
+        Poster-style. Big stylized title, short manifesto copy, badge details in a summary block.
+        Least tutorial, most brand attitude. For a community that's already game-literate.
+      </div>
+
+      <div class="phone-frame">
+        <div class="modal-shell">
+          <div class="modal-badge-pill">A Good Vibes Club Game</div>
+
+          <div class="opt-d-hero">
+            <div class="opt-d-floating-badges">
+              <div class="opt-d-badge tl"></div>
+              <div class="opt-d-badge tr"></div>
+              <div class="opt-d-badge bl"></div>
+              <div class="opt-d-badge br"></div>
+            </div>
+            <div class="opt-d-title">Match.<br>Earn.<br>Collect.</div>
+            <div class="opt-d-manifesto">
+              Match GVC badges. Earn <em>capsules</em>. Open them. Collect <em>pins</em>. Build your rack.
+            </div>
+          </div>
+
+          <div class="opt-d-core">
+            <div class="opt-d-core-item">
+              <span class="opt-d-core-label">Score threshold</span>
+              <span class="opt-d-core-value">15K · 30K · 50K</span>
+            </div>
+            <div class="opt-d-core-item">
+              <span class="opt-d-core-label">Capsules earned</span>
+              <span class="opt-d-core-value">1 · 2 · 3</span>
+            </div>
+            <div class="opt-d-core-item">
+              <span class="opt-d-core-label">Total pins to collect</span>
+              <span class="opt-d-core-value">101</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary">Start Playing</button>
+          <button class="btn btn-skip">Skip</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="text-align: center; color: rgba(255,255,255,0.4); font-size: 13px; max-width: 700px; margin: 56px auto 0; line-height: 1.6;">
+    <strong style="color: #B366FF;">Reply with your pick</strong> (e.g. "Ship Option B" or "A with D's number card"). I'll also fix the hints not firing and add the first-match nudge in the same batch.
+  </div>
+</body>
+</html>

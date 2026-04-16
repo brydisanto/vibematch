@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
-import { GameMode } from "@/lib/gameEngine";
+import { GameMode, Position } from "@/lib/gameEngine";
 import { useGame } from "@/lib/useGame";
 import { Badge, BADGES, selectDraftPool, getDailySeed } from "@/lib/badges";
+import { CINEMATIC_SCRIPT, cinematicCapsuleBadge, isCinematicMode } from "@/lib/cinematic";
 import GameBoard from "@/components/GameBoard";
 import GameHUD from "@/components/GameHUD";
 import GameOver from "@/components/GameOver";
@@ -61,6 +62,13 @@ export default function AppClient() {
       // SSR or URL parse error
     }
   }, []);
+
+  // Cinematic mode flags and independent capsule render for trailer capture.
+  // Activated via `?cinematic=1`. Bypasses landing, auth, FTUE, and pinBook.
+  const cinematicRef = useRef(isCinematicMode());
+  const [cinematicCapsuleOpen, setCinematicCapsuleOpen] = useState(false);
+  const cinematicStartedRef = useRef(false);
+  const cinematicDirectorRef = useRef(false);
   const [isDealing, setIsDealing] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string, avatarUrl: string } | null>(null);
   const [muted, setMuted] = useState(isMuted);
@@ -103,6 +111,52 @@ export default function AppClient() {
       document.documentElement.classList.add("reduce-motion");
     }
   }, []);
+
+  // Cinematic bootstrap — skip landing and start the scripted trailer game
+  useEffect(() => {
+    if (!cinematicRef.current || cinematicStartedRef.current) return;
+    cinematicStartedRef.current = true;
+    setView("playing");
+    game.startCinematicGame();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cinematic director — runs the scripted move sequence once the game state
+  // is ready. Uses a ref to game so timer closures always read current state.
+  const gameRefForDirector = useRef(game);
+  gameRefForDirector.current = game;
+  useEffect(() => {
+    if (!cinematicRef.current) return;
+    if (!game.state) return;
+    if (cinematicDirectorRef.current) return;
+    cinematicDirectorRef.current = true;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const step of CINEMATIC_SCRIPT) {
+      timers.push(setTimeout(() => {
+        const g = gameRefForDirector.current;
+        if (!g.state) return;
+        if (step.kind === "swipe" && step.from && step.to) {
+          g.swipeTiles(step.from, step.to);
+        } else if (step.kind === "tap-special") {
+          let specialPos: Position | null = null;
+          for (let r = 0; r < 8 && !specialPos; r++) {
+            for (let c = 0; c < 8 && !specialPos; c++) {
+              if (g.state.board[r][c].isSpecial) specialPos = { row: r, col: c };
+            }
+          }
+          if (specialPos) {
+            const target = specialPos;
+            g.selectTile(target);
+            setTimeout(() => gameRefForDirector.current.selectTile(target), 220);
+          }
+        } else if (step.kind === "show-capsule") {
+          g.forceScore(18500);
+          setCinematicCapsuleOpen(true);
+        }
+      }, step.tMs));
+    }
+    return () => { timers.forEach(clearTimeout); };
+  }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Sync profile on mount
@@ -244,6 +298,41 @@ export default function AppClient() {
     }
   }, [game.matchEffect?.timestamp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // FTUE contextual hints — fire once per flag, only for Classic mode.
+  // Kept separate from the stats/achievements effect below so hints fire for
+  // guests too (not gated on userProfile.username).
+  // Priority: capsule > vibestreak > bomb (rarest feels most rewarding).
+  useEffect(() => {
+    if (!game.lastTurnResult) return;
+    if (game.state?.gameMode !== "classic") return;
+    const result = game.lastTurnResult;
+    const createdTypes = new Set(result.specialTilesCreated.map(s => s.type));
+    if (!ftue.has("capsuleFlashShown") && (game.state.score ?? 0) >= 15000) {
+      ftue.mark("capsuleFlashShown");
+      setFtueHint("capsule");
+    } else if (!ftue.has("vibestreakHintShown") && createdTypes.has("vibestreak")) {
+      ftue.mark("vibestreakHintShown");
+      setFtueHint("vibestreak");
+    } else if (!ftue.has("bombHintShown") && createdTypes.has("bomb")) {
+      ftue.mark("bombHintShown");
+      setFtueHint("bomb");
+    }
+  }, [game.lastTurnResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // FTUE first-move nudge — if a first-time classic player sits on the board
+  // for 5s without making a move, show a gentle "swap two adjacent badges" hint.
+  useEffect(() => {
+    if (ftue.has("firstMoveShown")) return;
+    if (view !== "playing") return;
+    if (game.state?.gameMode !== "classic") return;
+    if (game.lastTurnResult) return; // they've already moved
+    const t = setTimeout(() => {
+      ftue.mark("firstMoveShown");
+      setFtueHint("firstMove");
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [view, game.state?.gameMode, game.lastTurnResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Accumulate per-game stats + check mid-game achievements after each turn
   useEffect(() => {
     if (!game.lastTurnResult || !userProfile?.username) return;
@@ -255,22 +344,6 @@ export default function AppClient() {
       if (s.type === "bomb") stats.bombsCreated++;
       else if (s.type === "vibestreak") stats.vibestreaksCreated++;
       else if (s.type === "cosmic_blast") stats.cosmicBlastsCreated++;
-    }
-
-    // FTUE contextual hints — fire once per flag, only for Classic mode.
-    // Priority: capsule > vibestreak > bomb (rarest feels most rewarding).
-    if (game.state?.gameMode === "classic") {
-      const createdTypes = new Set(result.specialTilesCreated.map(s => s.type));
-      if (!ftue.has("capsuleFlashShown") && game.state.score >= 15000) {
-        ftue.mark("capsuleFlashShown");
-        setFtueHint("capsule");
-      } else if (!ftue.has("vibestreakHintShown") && createdTypes.has("vibestreak")) {
-        ftue.mark("vibestreakHintShown");
-        setFtueHint("vibestreak");
-      } else if (!ftue.has("bombHintShown") && createdTypes.has("bomb")) {
-        ftue.mark("bombHintShown");
-        setFtueHint("bomb");
-      }
     }
 
     // Accumulate shape bonuses
@@ -830,6 +903,26 @@ export default function AppClient() {
           }}
         />
       )}
+
+      {/* Cinematic capsule — bypasses pinBook for trailer capture. Loops so
+          the director can keep recording after the reveal settles. */}
+      {cinematicRef.current && (() => {
+        const cap = cinematicCapsuleBadge();
+        return (
+          <VibeCapsule
+            isOpen={cinematicCapsuleOpen}
+            badge={cap.badge}
+            tier={cap.tier}
+            isDuplicate={false}
+            duplicateCount={1}
+            quickOpen={false}
+            onComplete={() => {
+              // Keep capsule mounted post-reveal so the capture harness can
+              // grab the "collected" frame. No-op close so it stays visible.
+            }}
+          />
+        );
+      })()}
 
       {/* Reroll Modal */}
       {showReroll && (
