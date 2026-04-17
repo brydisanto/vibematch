@@ -233,19 +233,20 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                         )}
                     </div>
 
-                    {/* Score popup */}
+                    {/* Score popup — spawns at the matched row, floats up to the SCORE header */}
                     <AnimatePresence>
                         {scorePop != null && (
                             <motion.div
-                                className="absolute left-0 right-0 top-[58%] flex justify-center pointer-events-none"
-                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                animate={{ opacity: 1, y: -20, scale: 1.1 }}
-                                exit={{ opacity: 0, y: -32, scale: 1 }}
-                                transition={{ duration: 1.2 }}
+                                className="absolute left-0 right-0 flex justify-center pointer-events-none"
+                                style={{ top: 86 }}
+                                initial={{ opacity: 0, y: 0, scale: 0.7 }}
+                                animate={{ opacity: 1, y: -68, scale: 1.05 }}
+                                exit={{ opacity: 0, y: -76, scale: 0.95 }}
+                                transition={{ duration: 1.1, ease: "easeOut" }}
                             >
                                 <div
-                                    className="font-display font-black text-[32px] text-[#FFE048]"
-                                    style={{ textShadow: "0 2px 12px rgba(255,224,72,0.6), 0 0 18px rgba(255,224,72,0.8)" }}
+                                    className="font-display font-black text-[28px] text-[#FFE048]"
+                                    style={{ textShadow: "0 2px 12px rgba(255,224,72,0.7), 0 0 18px rgba(255,224,72,0.9)" }}
                                 >
                                     +300
                                 </div>
