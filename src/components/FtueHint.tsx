@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import { ArrowLeftRight, Bomb, Zap, Sparkles } from "lucide-react";
+import { ArrowLeftRight, Bomb, Zap, Sparkles, X } from "lucide-react";
 
 export type HintKind = "firstMove" | "bomb" | "vibestreak" | "capsule";
 
@@ -61,9 +61,9 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
     const cfg = CONFIG[kind];
     const Icon = cfg.Icon;
 
-    // Auto-dismiss after 3.5s (slightly longer now that there's more to read)
+    // Auto-dismiss after 3s. Player can also tap the X to close immediately.
     useEffect(() => {
-        const t = setTimeout(onDismiss, 3500);
+        const t = setTimeout(onDismiss, 3000);
         return () => clearTimeout(t);
     }, [onDismiss]);
 
@@ -75,15 +75,13 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
             exit={{ opacity: 0, y: -12, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
         >
-            <motion.button
-                onClick={onDismiss}
-                className="pointer-events-auto w-full max-w-[380px] rounded-2xl border-2 px-4 py-4 text-left flex items-center gap-4"
+            <motion.div
+                className="pointer-events-auto relative w-full max-w-[380px] rounded-2xl border-2 px-4 py-4 flex items-center gap-4"
                 style={{
                     background: "rgba(10,1,20,0.97)",
                     borderColor: cfg.accent,
                     boxShadow: `0 14px 40px rgba(0,0,0,0.7), 0 0 24px ${cfg.accent}33`,
                 }}
-                whileTap={{ scale: 0.98 }}
             >
                 <div
                     className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -94,7 +92,7 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
                 >
                     <Icon size={22} color="white" strokeWidth={2.2} />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-5">
                     <div
                         className="text-[10px] font-mundial font-black tracking-[0.22em] uppercase mb-0.5"
                         style={{ color: cfg.accent }}
@@ -108,7 +106,14 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
                         {cfg.body}
                     </div>
                 </div>
-            </motion.button>
+                <button
+                    onClick={onDismiss}
+                    aria-label="Dismiss hint"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-white/40 hover:text-white/90 hover:bg-white/10 active:scale-90 transition-all"
+                >
+                    <X size={14} strokeWidth={2.4} />
+                </button>
+            </motion.div>
         </motion.div>
     );
 }

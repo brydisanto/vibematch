@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeMatch — Primer Step Layouts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0114;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      padding: 40px 20px 120px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 56px;
+      max-width: 580px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 40px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .option-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(179,102,255,0.75);
+      margin-bottom: 6px;
+    }
+
+    .option-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 4px;
+    }
+
+    .option-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+
+    .pick-me {
+      display: inline-block;
+      background: rgba(255,215,0,0.15);
+      color: #FFE048;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .steps-frame {
+      max-width: 380px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #1a0428 0%, #0a0114 100%);
+      border-radius: 14px;
+      padding: 22px 20px;
+      border: 1px solid rgba(179,102,255,0.15);
+    }
+
+    /* Shared step pieces */
+    .step-strong { color: #FFE048; font-weight: 700; }
+
+    .num-bubble {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: white;
+      font-weight: 900;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* =========== OPTION A: LEFT-ALIGNED INLINE (ORIGINAL) =========== */
+    .opt-a-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .opt-a-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .opt-a-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    /* =========== OPTION B: STACKED CARDS =========== */
+    .opt-b-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .opt-b-step {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 16px 14px 14px;
+      text-align: center;
+      position: relative;
+    }
+
+    .opt-b-step .num-bubble {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      font-size: 11px;
+      box-shadow: 0 2px 10px rgba(179,102,255,0.4);
+    }
+
+    .opt-b-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      padding-top: 6px;
+    }
+
+    /* =========== OPTION C: INLINE NUMERALS (NO BUBBLE) =========== */
+    .opt-c-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .opt-c-step {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      padding: 12px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .opt-c-step:last-child { border-bottom: none; }
+
+    .opt-c-step-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: #B366FF;
+      letter-spacing: -1px;
+      line-height: 1;
+      width: 44px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .opt-c-step-text {
+      font-size: 14px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      text-align: left;
+      flex: 1;
+    }
+
+    /* =========== OPTION D: LEFT ACCENT BAR =========== */
+    .opt-d-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .opt-d-step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 12px 10px 0;
+      background: rgba(255,255,255,0.02);
+      border-left: 3px solid;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .opt-d-step-1 { border-color: #B366FF; }
+    .opt-d-step-2 { border-color: #E080FF; }
+    .opt-d-step-3 { border-color: #FFE048; }
+
+    .opt-d-step-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding-left: 14px;
+      width: 68px;
+      flex-shrink: 0;
+    }
+
+    .opt-d-step-1 .opt-d-step-num { color: #B366FF; }
+    .opt-d-step-2 .opt-d-step-num { color: #E080FF; }
+    .opt-d-step-3 .opt-d-step-num { color: #FFE048; }
+
+    .opt-d-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      text-align: left;
+      flex: 1;
+      padding-right: 12px;
+    }
+
+    /* =========== OPTION E: ICON-LED =========== */
+    .opt-e-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .opt-e-step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .opt-e-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+      color: white;
+    }
+
+    .opt-e-step-1 .opt-e-icon { background: linear-gradient(135deg, #B366FF, #6C5CE7); }
+    .opt-e-step-2 .opt-e-icon { background: linear-gradient(135deg, #FFE048, #FFA500); color: #2A1810; }
+    .opt-e-step-3 .opt-e-icon { background: linear-gradient(135deg, #FF8A4C, #E080FF); }
+
+    .opt-e-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      text-align: left;
+      flex: 1;
+    }
+
+    /* icon SVG sizing */
+    .opt-e-icon svg { width: 18px; height: 18px; }
+
+    /* =========== OPTION F: COMPACT PILL =========== */
+    .opt-f-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .opt-f-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 6px;
+    }
+
+    .opt-f-pill {
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: white;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      padding: 4px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      min-width: 52px;
+      text-align: center;
+    }
+
+    .opt-f-step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.4;
+      text-align: left;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Primer Steps — Layout Options</h1>
+  <p class="page-subtitle">
+    Only the three numbered-step rows change between options. Everything else (pill, title, interactive demo, CTA) stays the same.
+  </p>
+
+  <div class="option-grid">
+
+    <!-- OPTION A -->
+    <div class="option-card">
+      <div class="option-label">Option A — Left-aligned inline</div>
+      <div class="option-title">Original layout (pre-centering)</div>
+      <div class="option-note">Bubble left, text left-aligned. Clean, familiar, easy to read.</div>
+      <div class="steps-frame">
+        <div class="opt-a-steps">
+          <div class="opt-a-step">
+            <div class="num-bubble">1</div>
+            <div class="opt-a-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-a-step">
+            <div class="num-bubble">2</div>
+            <div class="opt-a-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-a-step">
+            <div class="num-bubble">3</div>
+            <div class="opt-a-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION B -->
+    <div class="option-card">
+      <div class="option-label">Option B — Stacked cards</div>
+      <div class="option-title">Number bubble on top, text centered below</div>
+      <div class="option-note">Each step becomes a mini card. More visual weight, taller overall. Good if you want each step to feel distinct.</div>
+      <div class="steps-frame">
+        <div class="opt-b-steps">
+          <div class="opt-b-step">
+            <div class="num-bubble">1</div>
+            <div class="opt-b-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-b-step">
+            <div class="num-bubble">2</div>
+            <div class="opt-b-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-b-step">
+            <div class="num-bubble">3</div>
+            <div class="opt-b-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION C -->
+    <div class="option-card">
+      <div class="option-label">Option C — Oversized numerals, no bubble</div>
+      <div class="option-title">Big typography as the visual anchor</div>
+      <div class="option-note">Drops the bubble entirely. The number itself is the ornament. Editorial / clean. Lighter visual weight.</div>
+      <div class="steps-frame">
+        <div class="opt-c-steps">
+          <div class="opt-c-step">
+            <div class="opt-c-step-num">1</div>
+            <div class="opt-c-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-c-step">
+            <div class="opt-c-step-num">2</div>
+            <div class="opt-c-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-c-step">
+            <div class="opt-c-step-num">3</div>
+            <div class="opt-c-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION D -->
+    <div class="option-card">
+      <div class="option-label">Option D — Left accent bar + label</div>
+      <div class="option-title">Color-graded step with tag label</div>
+      <div class="option-note">No bubble. Colored accent bar on the left, short "STEP 01" label, then the copy. Each step shifts color purple → gold, echoing the progression from match → score → pin.</div>
+      <div class="steps-frame">
+        <div class="opt-d-steps">
+          <div class="opt-d-step opt-d-step-1">
+            <div class="opt-d-step-num">Step 01</div>
+            <div class="opt-d-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-d-step opt-d-step-2">
+            <div class="opt-d-step-num">Step 02</div>
+            <div class="opt-d-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-d-step opt-d-step-3">
+            <div class="opt-d-step-num">Step 03</div>
+            <div class="opt-d-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center;"><span class="pick-me">Recommended</span></div>
+    </div>
+
+    <!-- OPTION E -->
+    <div class="option-card">
+      <div class="option-label">Option E — Icon-led</div>
+      <div class="option-title">Each step gets a themed icon</div>
+      <div class="option-note">Target for match, gift for capsule, sparkles for pins. Numbers implied by order. More visually rich but trades the pedagogical "1, 2, 3" for "here are the three things."</div>
+      <div class="steps-frame">
+        <div class="opt-e-steps">
+          <div class="opt-e-step opt-e-step-1">
+            <div class="opt-e-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+              </svg>
+            </div>
+            <div class="opt-e-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-e-step opt-e-step-2">
+            <div class="opt-e-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="8" width="18" height="4"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>
+              </svg>
+            </div>
+            <div class="opt-e-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-e-step opt-e-step-3">
+            <div class="opt-e-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+              </svg>
+            </div>
+            <div class="opt-e-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION F -->
+    <div class="option-card">
+      <div class="option-label">Option F — Tag pills (no card)</div>
+      <div class="option-title">STEP pill + inline copy, no row background</div>
+      <div class="option-note">Minimal. The row is just a pill + text, no container. Lightest visual weight. Good if the interactive demo should dominate.</div>
+      <div class="steps-frame">
+        <div class="opt-f-steps">
+          <div class="opt-f-step">
+            <div class="opt-f-pill">Step 1</div>
+            <div class="opt-f-step-text">Match 3+ badges to score points.</div>
+          </div>
+          <div class="opt-f-step">
+            <div class="opt-f-pill">Step 2</div>
+            <div class="opt-f-step-text">Score <span class="step-strong">15K+</span> to win <span class="step-strong">Pin Capsules</span>.</div>
+          </div>
+          <div class="opt-f-step">
+            <div class="opt-f-pill">Step 3</div>
+            <div class="opt-f-step-text">Rip Capsules to find Pins and <span class="step-strong">build your collection.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="text-align: center; color: rgba(255,255,255,0.45); font-size: 13px; max-width: 700px; margin: 56px auto 0; line-height: 1.6;">
+    <strong style="color: #B366FF;">Reply with your pick</strong> (e.g. "Ship D" or "A with D's accent bar"). I'll swap it in. The toast X-button fix is rolling out separately.
+  </div>
+</body>
+</html>
