@@ -32,15 +32,15 @@ type PanelIndex = 0 | 1 | 2;
 const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
     0: {
         title: "Match 3 to Score",
-        body: "Line up 3 of the same badge to score points. Matches go horizontal or vertical.",
+        body: "Line up 3+ of the same badge in a row to score points. Matches can go horizontal or vertical.",
     },
     1: {
         title: "Unlock Power-Ups",
-        body: "Match 4+ in a row to unlock special tiles. Double-tap to set off cascades and hit massive scores.",
+        body: "Match 4+ in a row to unlock special tiles. Double-tap them to set off cascades and hit massive scores.",
     },
     2: {
         title: "Collect Pins",
-        body: "Score 15K+ in a game to win Pin Capsules. Rip capsule to find Pins and build your collection.",
+        body: "Score 15K+ in a game to win a Pin Capsule. Rip capsules to find rare Pins and build your collection.",
     },
 };
 
@@ -686,35 +686,63 @@ function CapsulePanel() {
                     )}
                 </AnimatePresence>
 
-                {/* Revealed pin */}
+                {/* Revealed pin — mirrors the live VibeCapsule reveal UI */}
                 <AnimatePresence>
                     {phase === "revealed" && (
                         <motion.div
                             key={`${cycleKey}-pin`}
-                            className="absolute inset-0 flex items-center justify-center"
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 220, damping: 18 }}
                         >
-                            <div
+                            {/* Pin image with cosmic glow ring */}
+                            <motion.div
                                 className="relative rounded-full overflow-hidden"
                                 style={{
-                                    width: 96,
-                                    height: 96,
+                                    width: 80,
+                                    height: 80,
                                     boxShadow:
-                                        "0 0 30px rgba(255,215,0,0.85), 0 0 60px rgba(255,215,0,0.45)",
-                                    border: "3px solid #FFE048",
+                                        "0 0 30px rgba(179,102,255,0.85), 0 0 60px rgba(179,102,255,0.45)",
+                                    border: "3px solid #B366FF",
                                 }}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 220, damping: 18 }}
                             >
                                 <Image
                                     src={COSMIC.src}
                                     alt=""
                                     fill
-                                    sizes="96px"
+                                    sizes="80px"
                                     className="object-cover pointer-events-none"
                                 />
-                            </div>
+                            </motion.div>
+                            {/* Pin name */}
+                            <motion.div
+                                className="font-display font-black text-white text-[15px] leading-tight text-center"
+                                style={{ textShadow: "0 0 16px rgba(179,102,255,0.5)" }}
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 25 }}
+                            >
+                                Cosmic Guardian
+                            </motion.div>
+                            {/* New Pin Collected pill (same green as live reveal) */}
+                            <motion.div
+                                className="px-3 py-1 rounded-full text-[9px] font-display font-black uppercase tracking-[0.15em]"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(46,255,46,0.18), rgba(46,255,46,0.06))",
+                                    color: "#2EFF2E",
+                                    border: "1px solid rgba(46,255,46,0.3)",
+                                    boxShadow: "0 0 14px rgba(46,255,46,0.2)",
+                                }}
+                                initial={{ y: 12, opacity: 0, scale: 0.7 }}
+                                animate={{ y: 0, opacity: 1, scale: [0.7, 1.1, 1] }}
+                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.35 }}
+                            >
+                                New Pin Collected!
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -722,7 +750,7 @@ function CapsulePanel() {
 
             <PanelCaption
                 idle={phase === "idle" ? "Tap the capsule to open" : null}
-                active={phase === "cracking" ? "Cracking..." : phase === "revealed" ? "New Pin!" : null}
+                active={phase === "cracking" ? "Cracking..." : null}
             />
         </motion.div>
     );
