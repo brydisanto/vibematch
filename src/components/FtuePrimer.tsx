@@ -839,6 +839,25 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     }}
                 />
             </div>
+            {/* GVC Shaka decal — mirrors the live capsule's center badge overlay */}
+            <div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full overflow-hidden"
+                style={{
+                    width: SIZE * 0.55,
+                    height: SIZE * 0.55,
+                    opacity: cracking ? 0 : 0.85,
+                    transition: "opacity 0.15s ease",
+                    filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+                }}
+            >
+                <Image
+                    src="/badges/any_gvc_1759173799963.webp"
+                    alt=""
+                    fill
+                    sizes="66px"
+                    className="object-contain"
+                />
+            </div>
         </div>
     );
 }
