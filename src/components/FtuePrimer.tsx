@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
     playMatchSound,
     playBombSound,
@@ -24,10 +24,25 @@ const ASTRO = { id: "astro", src: "/badges/astro_balls_1759173838889.webp" };
 const CAPTAIN = { id: "captain", src: "/badges/captain_1759173895611.webp" };
 const COSMIC = { id: "cosmic", src: "/badges/cosmic_guardian1759173818340.webp" };
 
-const TILE_SIZE = 60;
+const TILE_SIZE = 64;
 const GAP = 6;
 
 type PanelIndex = 0 | 1 | 2;
+
+const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
+    0: {
+        title: "Match to Score",
+        body: "Line up 3 of the same badge — horizontal or vertical — to score points.",
+    },
+    1: {
+        title: "Create Power-Ups",
+        body: "Match 4+ in a row to unlock special tiles. Double-tap to unleash massive score.",
+    },
+    2: {
+        title: "Collect Pins",
+        body: "Score 15K+ to win Pin Capsules. Rip them open to build your collection.",
+    },
+};
 
 export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
     const [panelIndex, setPanelIndex] = useState<PanelIndex>(0);
@@ -38,9 +53,11 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
         setPanelIndex(i);
     };
 
+    const copy = PANEL_COPY[panelIndex];
+
     return (
         <motion.div
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -52,7 +69,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                 animate={{ opacity: 1 }}
             />
             <motion.div
-                className="relative w-full max-w-md rounded-2xl border border-[#B366FF]/30 px-6 pt-8 pb-6 text-center"
+                className="relative w-full max-w-md rounded-2xl border border-[#B366FF]/30 px-3 pt-8 pb-5 text-center"
                 style={{
                     background: "linear-gradient(180deg, #1a0428 0%, #0a0114 100%)",
                     boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
@@ -69,38 +86,38 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                 </div>
 
                 <h2
-                    className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mt-2 mb-3"
+                    className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mt-2 mb-4"
                     style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
                 >
                     Here&apos;s the Loop
                 </h2>
 
-                {/* Carousel */}
-                <div className="relative mb-4">
+                {/* Carousel frame */}
+                <div className="relative mb-3">
                     {/* Prev arrow */}
                     <button
                         onClick={() => panelIndex > 0 && goTo((panelIndex - 1) as PanelIndex)}
                         disabled={panelIndex === 0}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 z-10 w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                        className="absolute left-[-4px] top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white disabled:opacity-15 disabled:cursor-not-allowed transition-all active:scale-90"
                         aria-label="Previous"
                     >
-                        <ChevronLeft size={22} strokeWidth={2.5} />
+                        <ChevronLeft size={24} strokeWidth={2.5} />
                     </button>
                     {/* Next arrow */}
                     <button
                         onClick={() => panelIndex < 2 && goTo((panelIndex + 1) as PanelIndex)}
                         disabled={panelIndex === 2}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 z-10 w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                        className="absolute right-[-4px] top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white disabled:opacity-15 disabled:cursor-not-allowed transition-all active:scale-90"
                         aria-label="Next"
                     >
-                        <ChevronRight size={22} strokeWidth={2.5} />
+                        <ChevronRight size={24} strokeWidth={2.5} />
                     </button>
 
                     <div
                         className="relative mx-auto rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden"
                         style={{
                             width: TILE_SIZE * 3 + GAP * 2 + 32,
-                            minHeight: 284,
+                            minHeight: 296,
                             padding: "14px 16px 16px",
                         }}
                     >
@@ -125,7 +142,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                                 key={i}
                                 onClick={() => goTo(i as PanelIndex)}
                                 className="transition-all active:scale-90"
-                                aria-label={`Go to step ${i + 1}`}
+                                aria-label={`Go to panel ${i + 1}`}
                             >
                                 <div
                                     className="rounded-full transition-all"
@@ -143,19 +160,27 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                     </div>
                 </div>
 
-                {/* Step cards with chevrons between */}
-                <div className="flex flex-col items-stretch gap-1.5 mb-5">
-                    <StepCard>
-                        Match 3+ badges to score points.
-                    </StepCard>
-                    <ChevronSep />
-                    <StepCard>
-                        Score <Strong>15K+</Strong> to win <Strong>Pin Capsules</Strong>.
-                    </StepCard>
-                    <ChevronSep />
-                    <StepCard>
-                        Rip Capsules to find Pins and <Strong>build your collection.</Strong>
-                    </StepCard>
+                {/* Panel-specific copy (switches with carousel) */}
+                <div className="min-h-[78px] mb-4 px-2">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={panelIndex}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <div
+                                className="font-display text-[20px] font-black text-[#FFE048] uppercase leading-tight tracking-wide mb-1.5"
+                                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
+                            >
+                                {copy.title}
+                            </div>
+                            <div className="text-[13px] font-mundial text-white/70 leading-relaxed">
+                                {copy.body}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
 
                 <button
@@ -170,7 +195,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
 }
 
 /* =====================================================================
-   PANEL 1 — Match-3 demo (unchanged mechanic, wrapped in panel fade)
+   PANEL 1 — Match-3 demo
    ===================================================================== */
 
 type MatchTile = { id: number; badge: { id: string; src: string } };
@@ -323,16 +348,17 @@ function MatchPanel() {
 }
 
 /* =====================================================================
-   PANEL 2 — Bomb demo (double-tap the bomb to detonate)
+   PANEL 2 — Bomb demo (matches the in-game BombOverlay look)
    ===================================================================== */
 
-const BOMB_LAYOUT = [
+type BombPhase = "idle" | "selected" | "detonated";
+
+// Layout: bomb at center, 8 surrounding badges.
+const BOMB_SURROUND = [
     [DOGE, CAPTAIN, ASTRO],
-    [ASTRO, null, DOGE], // center is bomb
+    [ASTRO, null, DOGE],
     [CAPTAIN, ASTRO, DOGE],
 ];
-
-type BombPhase = "idle" | "selected" | "detonated";
 
 function BombPanel() {
     const [phase, setPhase] = useState<BombPhase>("idle");
@@ -383,7 +409,7 @@ function BombPanel() {
                     width: TILE_SIZE * 3 + GAP * 2,
                 }}
             >
-                {BOMB_LAYOUT.map((row, r) =>
+                {BOMB_SURROUND.map((row, r) =>
                     row.map((badge, c) => {
                         const isBomb = badge === null;
                         return (
@@ -394,38 +420,29 @@ function BombPanel() {
                                 style={{
                                     width: TILE_SIZE,
                                     height: TILE_SIZE,
-                                    background: isBomb
-                                        ? "radial-gradient(circle, #4A1010, #1A0404)"
-                                        : "rgba(255,255,255,0.04)",
-                                    border: isBomb
-                                        ? "2px solid #FF5722"
-                                        : "1.5px solid rgba(255,255,255,0.08)",
-                                    boxShadow: isBomb
-                                        ? "0 0 22px rgba(255,87,34,0.7)"
-                                        : "none",
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: isBomb ? "none" : "1.5px solid rgba(255,255,255,0.08)",
                                     cursor: isBomb ? "pointer" : "default",
                                 }}
                                 initial={{ scale: 1, opacity: 1 }}
                                 animate={
                                     phase === "detonated"
                                         ? { scale: [1, 1.2, 0], opacity: [1, 1, 0] }
-                                        : isBomb && phase === "idle"
-                                            ? { scale: [1, 1.07, 1], opacity: 1 }
-                                            : isBomb && phase === "selected"
-                                                ? { scale: [1, 1.12, 1], opacity: 1 }
-                                                : { scale: 1, opacity: 1 }
+                                        : isBomb && phase === "selected"
+                                            ? { scale: [1, 1.04, 1], opacity: 1 }
+                                            : { scale: 1, opacity: 1 }
                                 }
                                 transition={
                                     phase === "detonated"
                                         ? { duration: 0.6, times: [0, 0.3, 1] }
-                                        : isBomb
-                                            ? { duration: 1, repeat: Infinity, ease: "easeInOut" }
+                                        : isBomb && phase === "selected"
+                                            ? { duration: 0.35, repeat: Infinity, ease: "easeInOut" }
                                             : { type: "spring", stiffness: 400, damping: 28 }
                                 }
-                                whileTap={isBomb ? { scale: 0.92 } : undefined}
+                                whileTap={isBomb ? { scale: 0.94 } : undefined}
                             >
                                 {isBomb ? (
-                                    <BombGlyph selected={phase === "selected"} />
+                                    <BombTile pulsing={phase === "idle"} selected={phase === "selected"} />
                                 ) : badge ? (
                                     <Image
                                         src={badge.src}
@@ -445,15 +462,15 @@ function BombPanel() {
             {phase === "detonated" && (
                 <motion.div
                     className="absolute left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                    initial={{ opacity: 0.9, scale: 0 }}
-                    animate={{ opacity: 0, scale: 3 }}
+                    initial={{ opacity: 0.95, scale: 0 }}
+                    animate={{ opacity: 0, scale: 3.2 }}
                     transition={{ duration: 0.7, ease: "easeOut" }}
                 >
                     <div
                         className="w-32 h-32 rounded-full"
                         style={{
                             background:
-                                "radial-gradient(circle, rgba(255,224,72,0.9) 0%, rgba(255,87,34,0.6) 40%, transparent 75%)",
+                                "radial-gradient(circle, rgba(255,224,72,0.95) 0%, rgba(255,51,51,0.7) 40%, transparent 75%)",
                         }}
                     />
                 </motion.div>
@@ -469,37 +486,71 @@ function BombPanel() {
     );
 }
 
-function BombGlyph({ selected }: { selected: boolean }) {
+/**
+ * BombTile — visually mirrors the in-game BombOverlay:
+ * red border + inset red shadow + yellow crosshairs + red center core.
+ */
+function BombTile({ pulsing, selected }: { pulsing: boolean; selected: boolean }) {
     return (
-        <motion.div
-            animate={{ rotate: selected ? [0, -6, 6, -6, 0] : 0 }}
-            transition={selected ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
-            className="relative flex items-center justify-center"
+        <div
+            className="absolute inset-0 rounded-[10px] overflow-hidden"
+            style={{
+                background: "radial-gradient(circle at 50% 50%, #3A0A0A, #1A0404)",
+                border: "3px solid #FF3333",
+                boxShadow: "inset 0 0 16px rgba(255,51,51,0.85), 0 0 20px rgba(255,51,51,0.5)",
+            }}
         >
-            <div
-                className="w-7 h-7 rounded-full"
+            {/* Crosshairs */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-90">
+                <div
+                    className="absolute"
+                    style={{
+                        width: "78%",
+                        height: 2,
+                        background: "#FFE048",
+                        boxShadow: "0 0 8px #FFE048",
+                    }}
+                />
+                <div
+                    className="absolute"
+                    style={{
+                        height: "78%",
+                        width: 2,
+                        background: "#FFE048",
+                        boxShadow: "0 0 8px #FFE048",
+                    }}
+                />
+            </div>
+            {/* Core dot */}
+            <motion.div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
                 style={{
-                    background: "radial-gradient(circle at 30% 30%, #FF8A4C, #5A1010)",
-                    boxShadow: "0 2px 8px rgba(255,87,34,0.6), inset -2px -2px 4px rgba(0,0,0,0.5)",
+                    width: 12,
+                    height: 12,
+                    background: "#FF3333",
+                    boxShadow: "0 0 14px #FF3333",
                 }}
+                animate={
+                    selected
+                        ? { scale: [1, 1.35, 1], opacity: [1, 0.7, 1] }
+                        : pulsing
+                            ? { scale: [1, 1.15, 1], opacity: [1, 0.9, 1] }
+                            : { scale: 1, opacity: 1 }
+                }
+                transition={
+                    selected
+                        ? { duration: 0.4, repeat: Infinity, ease: "easeInOut" }
+                        : pulsing
+                            ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+                            : { duration: 0.2 }
+                }
             />
-            <div
-                className="absolute top-[2px] left-[50%] w-1 h-2 -translate-x-1/2"
-                style={{ background: "rgba(255,224,72,0.9)", borderRadius: 2 }}
-            />
-            <div
-                className="absolute top-[-2px] left-[50%] w-1.5 h-1.5 -translate-x-1/2 rounded-full"
-                style={{
-                    background: "#FFE048",
-                    boxShadow: "0 0 8px #FFE048, 0 0 14px #FF5722",
-                }}
-            />
-        </motion.div>
+        </div>
     );
 }
 
 /* =====================================================================
-   PANEL 3 — Capsule opens to reveal a pin
+   PANEL 3 — Capsule opens to reveal a pin (mirrors real capsule shape)
    ===================================================================== */
 
 type CapsulePhase = "idle" | "cracking" | "revealed";
@@ -545,7 +596,23 @@ function CapsulePanel() {
                     height: TILE_SIZE * 3 + GAP * 2,
                 }}
             >
-                {/* Sparkles behind */}
+                {/* Gold halo behind capsule */}
+                {phase !== "revealed" && (
+                    <motion.div
+                        className="absolute rounded-full pointer-events-none"
+                        style={{
+                            width: 180,
+                            height: 180,
+                            background:
+                                "radial-gradient(circle, rgba(255,215,0,0.35) 0%, rgba(255,215,0,0.08) 50%, transparent 75%)",
+                            filter: "blur(6px)",
+                        }}
+                        animate={{ opacity: [0.6, 1, 0.6], scale: [0.95, 1.05, 0.95] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                )}
+
+                {/* Orbit sparkles */}
                 {phase !== "revealed" && (
                     <div className="absolute inset-0 pointer-events-none">
                         {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -555,24 +622,29 @@ function CapsulePanel() {
                                 style={{
                                     background: "#FFE048",
                                     boxShadow: "0 0 6px #FFE048",
-                                    top: `${15 + (i * 13) % 70}%`,
-                                    left: `${10 + (i * 19) % 80}%`,
+                                    top: `${18 + (i * 17) % 64}%`,
+                                    left: `${12 + (i * 23) % 76}%`,
                                 }}
-                                animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
-                                transition={{ duration: 1.8, delay: i * 0.2, repeat: Infinity, ease: "easeInOut" }}
+                                animate={{ opacity: [0, 1, 0], scale: [0.5, 1.3, 0.5] }}
+                                transition={{
+                                    duration: 1.6,
+                                    delay: i * 0.25,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
                             />
                         ))}
                     </div>
                 )}
 
-                {/* The capsule */}
+                {/* Capsule */}
                 <AnimatePresence>
                     {phase !== "revealed" && (
                         <motion.button
                             key={`${cycleKey}-capsule`}
                             onClick={handleTap}
                             className="relative cursor-pointer"
-                            style={{ width: 100, height: 128 }}
+                            style={{ width: 96, height: 140 }}
                             initial={{ scale: 0.92, opacity: 1 }}
                             animate={
                                 phase === "idle"
@@ -585,13 +657,13 @@ function CapsulePanel() {
                             }
                             transition={
                                 phase === "idle"
-                                    ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                                    ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
                                     : { duration: 0.6 }
                             }
                             whileTap={{ scale: 0.94 }}
                             exit={{ opacity: 0 }}
                         >
-                            <CapsuleGraphic />
+                            <RealisticCapsule />
                         </motion.button>
                     )}
                 </AnimatePresence>
@@ -612,7 +684,8 @@ function CapsulePanel() {
                                 style={{
                                     width: 96,
                                     height: 96,
-                                    boxShadow: "0 0 30px rgba(255,224,72,0.8), 0 0 60px rgba(255,224,72,0.4)",
+                                    boxShadow:
+                                        "0 0 30px rgba(255,215,0,0.85), 0 0 60px rgba(255,215,0,0.45)",
                                     border: "3px solid #FFE048",
                                 }}
                             >
@@ -637,51 +710,85 @@ function CapsulePanel() {
     );
 }
 
-function CapsuleGraphic() {
+/**
+ * RealisticCapsule — simplified 2D approximation of the live VibeCapsule.
+ * Key cues from the real capsule: dark chrome/onyx body with a colored rim
+ * and glow (gold tier here). Pill shape with a seam at the midpoint.
+ */
+function RealisticCapsule() {
+    const CAPSULE_W = 96;
+    const CAPSULE_H = 140;
+    const HALF = CAPSULE_H / 2;
+
     return (
-        <div className="absolute inset-0">
-            {/* Top half */}
+        <div
+            className="absolute inset-0"
+            style={{ filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.5))" }}
+        >
+            {/* Top half — dark onyx/chrome, rounded top */}
             <div
                 className="absolute"
                 style={{
                     top: 0,
-                    left: "8%",
-                    right: "8%",
-                    height: "46%",
-                    background: "linear-gradient(135deg, #B366FF, #6C5CE7)",
-                    borderRadius: "50% 50% 0 0 / 80% 80% 0 0",
-                    boxShadow: "inset 0 -3px 10px rgba(0,0,0,0.35), inset 6px 8px 14px rgba(255,255,255,0.35)",
+                    left: 0,
+                    width: CAPSULE_W,
+                    height: HALF + 2,
+                    borderRadius: `${CAPSULE_W / 2}px ${CAPSULE_W / 2}px 0 0 / ${HALF}px ${HALF}px 0 0`,
+                    background:
+                        "radial-gradient(ellipse at 35% 30%, #3a3528 0%, #1a1508 55%, #0a0806 100%)",
+                    border: "1.5px solid rgba(255,216,72,0.25)",
+                    borderBottom: "none",
+                    boxShadow: "inset 0 2px 8px rgba(255,255,255,0.15), inset 4px -4px 12px rgba(0,0,0,0.6)",
                 }}
             />
-            {/* Seam */}
+            {/* Specular highlight (top-left) */}
+            <div
+                className="absolute"
+                style={{
+                    top: 10,
+                    left: 18,
+                    width: 26,
+                    height: 42,
+                    background:
+                        "radial-gradient(ellipse at 50% 40%, rgba(255,240,160,0.55) 0%, rgba(255,216,72,0.2) 45%, transparent 75%)",
+                    filter: "blur(2px)",
+                    borderRadius: "50%",
+                }}
+            />
+            {/* Seam — gold accent line */}
             <div
                 className="absolute left-0 right-0"
-                style={{ top: "46%", height: 6, background: "rgba(0,0,0,0.45)" }}
+                style={{
+                    top: HALF - 1,
+                    height: 3,
+                    background:
+                        "linear-gradient(90deg, transparent 0%, #FFE048 20%, #FFD700 50%, #FFE048 80%, transparent 100%)",
+                    boxShadow: "0 0 8px #FFD700",
+                }}
             />
-            {/* Bottom half */}
+            {/* Bottom half — dark onyx with gold tint */}
             <div
                 className="absolute"
                 style={{
                     bottom: 0,
                     left: 0,
-                    right: 0,
-                    height: "54%",
-                    background: "linear-gradient(135deg, #FFE048, #FFA500)",
-                    borderRadius: "50% 50% 60% 60% / 18% 18% 80% 80%",
-                    boxShadow: "inset 0 3px 10px rgba(0,0,0,0.2), inset -6px 10px 16px rgba(255,255,255,0.3)",
+                    width: CAPSULE_W,
+                    height: HALF + 2,
+                    borderRadius: `0 0 ${CAPSULE_W / 2}px ${CAPSULE_W / 2}px / 0 0 ${HALF}px ${HALF}px`,
+                    background:
+                        "radial-gradient(ellipse at 35% 65%, #2a2010 0%, #14100a 55%, #0a0806 100%)",
+                    border: "1.5px solid rgba(255,216,72,0.3)",
+                    borderTop: "none",
+                    boxShadow: "inset 0 -2px 10px rgba(0,0,0,0.7), inset 4px 4px 10px rgba(255,216,72,0.12)",
                 }}
             />
-            {/* Shine */}
+            {/* Gold rim glow (subtle outer halo via radial gradient fade) */}
             <div
-                className="absolute"
+                className="absolute pointer-events-none"
                 style={{
-                    top: 10,
-                    left: 22,
-                    width: 12,
-                    height: 32,
-                    background: "rgba(255,255,255,0.4)",
-                    borderRadius: "50%",
-                    filter: "blur(3px)",
+                    inset: -4,
+                    borderRadius: `${CAPSULE_W / 2 + 4}px`,
+                    background: "radial-gradient(ellipse at center, transparent 70%, rgba(255,216,72,0.18) 85%, transparent 100%)",
                 }}
             />
         </div>
@@ -764,32 +871,6 @@ function PanelCaption({ idle, active }: { idle: string | null; active: string | 
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
-    );
-}
-
-/* =====================================================================
-   STEP CARDS (Option B layout, chevrons between)
-   ===================================================================== */
-
-function Strong({ children }: { children: React.ReactNode }) {
-    return <strong className="text-[#FFE048] font-bold">{children}</strong>;
-}
-
-function StepCard({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            <div className="text-[13px] font-mundial text-white/92 leading-snug text-center">
-                {children}
-            </div>
-        </div>
-    );
-}
-
-function ChevronSep() {
-    return (
-        <div className="flex justify-center text-[#B366FF]/60">
-            <ChevronDown size={18} strokeWidth={2.4} />
         </div>
     );
 }
