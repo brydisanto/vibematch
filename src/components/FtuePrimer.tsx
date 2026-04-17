@@ -285,7 +285,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
 
                 <div className="flex flex-col gap-2.5 mb-5">
                     <PrimerStep num={1}>
-                        Match badges to score points.
+                        Match 3+ badges to score points.
                     </PrimerStep>
                     <PrimerStep num={2}>
                         Score <Strong>15K+</Strong> to win <Strong>Pin Capsules</Strong>.
