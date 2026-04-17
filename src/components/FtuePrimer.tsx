@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
     playMatchSound,
     playBombSound,
+    playCapsuleAnticipateSound,
     playCapsuleCrackSound,
     playCapsuleRevealSound,
     playNewPinSound,
@@ -567,7 +568,13 @@ function BombOverlay({ pulsing, selected }: { pulsing: boolean; selected: boolea
    PANEL 3 — Capsule opens to reveal a pin (mirrors real capsule shape)
    ===================================================================== */
 
-type CapsulePhase = "idle" | "cracking" | "revealed";
+type CapsulePhase = "idle" | "anticipating" | "cracking" | "revealed";
+
+// Timing mirrors the live VibeCapsule: ~1.8s of escalating wobble, then a
+// quick crack, then the reveal. Shorter than the live 2.8s because we're in
+// a demo that auto-resets, but long enough to build the same tension.
+const ANTICIPATE_MS = 1800;
+const CRACK_MS = 400;
 
 function CapsulePanel() {
     const [phase, setPhase] = useState<CapsulePhase>("idle");
@@ -575,13 +582,17 @@ function CapsulePanel() {
 
     const handleTap = () => {
         if (phase !== "idle") return;
-        setPhase("cracking");
-        playCapsuleCrackSound("gold");
+        setPhase("anticipating");
+        playCapsuleAnticipateSound();
         setTimeout(() => {
-            setPhase("revealed");
-            playCapsuleRevealSound("gold");
-            playNewPinSound();
-        }, 600);
+            setPhase("cracking");
+            playCapsuleCrackSound("cosmic");
+            setTimeout(() => {
+                setPhase("revealed");
+                playCapsuleRevealSound("cosmic");
+                playNewPinSound();
+            }, CRACK_MS);
+        }, ANTICIPATE_MS);
     };
 
     useEffect(() => {
@@ -667,21 +678,53 @@ function CapsulePanel() {
                                           rotate: [-2, 2, -2],
                                           opacity: 1,
                                       }
-                                    : {
-                                          scale: [1, 1.08, 0],
-                                          rotate: [0, -10, 10, -15, 15, 0],
-                                          opacity: [1, 1, 0],
-                                      }
+                                    : phase === "anticipating"
+                                        ? {
+                                              // Escalating wobble: slow build → medium → frantic finale
+                                              rotate: [
+                                                  0, -1.5, 1.5, -2, 2.5, -3, 3.5,
+                                                  0, 0, // pause
+                                                  -5, 5, -7, 7, -9, 10,
+                                                  0, 0, // pause
+                                                  -13, 15, -17, 18, -20, 22, 0,
+                                              ],
+                                              x: [
+                                                  0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0,
+                                                  -0.5, 0.6, -0.8, 1, -1.2, 1.5,
+                                                  0, 0,
+                                                  -1.8, 2, -2.2, 2.4, -2.6, 3, 0,
+                                              ],
+                                              scale: [
+                                                  1, 1, 1, 1.01, 1.01, 1.02, 1.02,
+                                                  1, 1,
+                                                  1.03, 1.02, 1.04, 1.03, 1.05, 1.06,
+                                                  1, 1,
+                                                  1.07, 1.08, 1.09, 1.1, 1.12, 1.15, 1.18,
+                                              ],
+                                              opacity: 1,
+                                          }
+                                        : {
+                                              // cracking — quick pop + fade
+                                              scale: [1.18, 1.25, 0],
+                                              rotate: [0, 0, 0],
+                                              opacity: [1, 1, 0],
+                                          }
                             }
                             transition={
                                 phase === "idle"
                                     ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
-                                    : { duration: 0.6 }
+                                    : phase === "anticipating"
+                                        ? { duration: ANTICIPATE_MS / 1000, ease: "easeIn" }
+                                        : { duration: CRACK_MS / 1000, times: [0, 0.3, 1] }
                             }
                             whileTap={{ scale: 0.94 }}
                             exit={{ opacity: 0 }}
                         >
-                            <SphericalCapsule cracking={phase === "cracking"} />
+                            <SphericalCapsule
+                                anticipating={phase === "anticipating"}
+                                cracking={phase === "cracking"}
+                            />
                         </motion.button>
                     )}
                 </AnimatePresence>
@@ -724,9 +767,24 @@ function CapsulePanel() {
                                 style={{ textShadow: "0 0 16px rgba(179,102,255,0.5)" }}
                                 initial={{ y: 10, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 25 }}
+                                transition={{ delay: 0.15, type: "spring", stiffness: 500, damping: 25 }}
                             >
                                 Cosmic Guardian
+                            </motion.div>
+                            {/* Tier pill — mirrors live reveal (cosmic color) */}
+                            <motion.div
+                                className="px-3 py-0.5 rounded-full text-[9px] font-mundial font-bold uppercase tracking-[0.2em]"
+                                style={{
+                                    background: "rgba(179,102,255,0.18)",
+                                    color: "#B366FF",
+                                    border: "1px solid rgba(179,102,255,0.35)",
+                                    boxShadow: "0 0 10px rgba(179,102,255,0.15)",
+                                }}
+                                initial={{ y: 10, opacity: 0, scale: 0.8 }}
+                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25, delay: 0.28 }}
+                            >
+                                Cosmic
                             </motion.div>
                             {/* New Pin Collected pill (same green as live reveal) */}
                             <motion.div
@@ -739,7 +797,7 @@ function CapsulePanel() {
                                 }}
                                 initial={{ y: 12, opacity: 0, scale: 0.7 }}
                                 animate={{ y: 0, opacity: 1, scale: [0.7, 1.1, 1] }}
-                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.35 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.42 }}
                             >
                                 New Pin Collected!
                             </motion.div>
@@ -750,7 +808,7 @@ function CapsulePanel() {
 
             <PanelCaption
                 idle={phase === "idle" ? "Tap the capsule to open" : null}
-                active={phase === "cracking" ? "Cracking..." : null}
+                active={phase === "anticipating" ? "Shaking..." : phase === "cracking" ? "Cracking..." : null}
             />
         </motion.div>
     );
@@ -762,7 +820,13 @@ function CapsulePanel() {
  * with a gold-glowing seam, specular highlight, gold halo, and a subsurface
  * light leak that ramps up during the "cracking" phase before detonation.
  */
-function SphericalCapsule({ cracking }: { cracking: boolean }) {
+function SphericalCapsule({
+    anticipating,
+    cracking,
+}: {
+    anticipating: boolean;
+    cracking: boolean;
+}) {
     const SIZE = 120;
     const HALF = SIZE / 2;
     const GOLD = "#FFD700";
@@ -813,7 +877,8 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     boxShadow: `0 0 12px ${GOLD}70, inset 0 0 8px ${GOLD}33`,
                 }}
             />
-            {/* Subsurface scattering at seam — light leaking through plastic */}
+            {/* Subsurface scattering at seam — light leaking through plastic.
+                Ramps up through anticipation, peaks at crack. */}
             <motion.div
                 className="absolute pointer-events-none"
                 style={{
@@ -825,8 +890,20 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     filter: "blur(3px)",
                     mixBlendMode: "screen",
                 }}
-                animate={cracking ? { opacity: [0.3, 0.9, 1] } : { opacity: 0.25 }}
-                transition={cracking ? { duration: 0.6 } : {}}
+                animate={
+                    anticipating
+                        ? { opacity: [0.2, 0.2, 0.35, 0.55, 0.8, 1] }
+                        : cracking
+                            ? { opacity: [1, 1, 1] }
+                            : { opacity: 0.25 }
+                }
+                transition={
+                    anticipating
+                        ? { duration: 1.8, ease: "easeIn" }
+                        : cracking
+                            ? { duration: 0.4 }
+                            : {}
+                }
             />
             {/* Seam — gold accent line across center */}
             <motion.div
@@ -837,8 +914,20 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     background: `linear-gradient(90deg, transparent 0%, ${GLOW} 20%, ${GOLD} 50%, ${GLOW} 80%, transparent 100%)`,
                     boxShadow: `0 0 10px ${GOLD}`,
                 }}
-                animate={cracking ? { scaleX: [1, 1.05, 1.1], opacity: [1, 1, 1] } : { scaleX: 1, opacity: 1 }}
-                transition={cracking ? { duration: 0.6 } : {}}
+                animate={
+                    anticipating
+                        ? { scaleX: [1, 1, 1.02, 1.04, 1.06, 1.1], opacity: [0.9, 1, 1, 1, 1, 1] }
+                        : cracking
+                            ? { scaleX: [1.1, 1.15, 1.2], opacity: 1 }
+                            : { scaleX: 1, opacity: 1 }
+                }
+                transition={
+                    anticipating
+                        ? { duration: 1.8, ease: "easeIn" }
+                        : cracking
+                            ? { duration: 0.4 }
+                            : {}
+                }
             />
             {/* Specular highlight (top-left) */}
             <div
@@ -867,16 +956,29 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     }}
                 />
             </div>
-            {/* GVC Shaka decal — mirrors the live capsule's center badge overlay */}
-            <div
+            {/* GVC Shaka decal — mirrors the live capsule's center badge overlay.
+                Dims slightly during anticipation, fades out on crack. */}
+            <motion.div
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full overflow-hidden"
                 style={{
                     width: SIZE * 0.55,
                     height: SIZE * 0.55,
-                    opacity: cracking ? 0 : 0.85,
-                    transition: "opacity 0.15s ease",
                     filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
                 }}
+                animate={
+                    anticipating
+                        ? { opacity: [0.85, 0.8, 0.7, 0.55, 0.4, 0.25] }
+                        : cracking
+                            ? { opacity: 0 }
+                            : { opacity: 0.85 }
+                }
+                transition={
+                    anticipating
+                        ? { duration: 1.8, ease: "easeIn" }
+                        : cracking
+                            ? { duration: 0.2 }
+                            : { duration: 0.15 }
+                }
             >
                 <Image
                     src="/badges/any_gvc_1759173799963.webp"
@@ -885,7 +987,7 @@ function SphericalCapsule({ cracking }: { cracking: boolean }) {
                     sizes="66px"
                     className="object-contain"
                 />
-            </div>
+            </motion.div>
         </div>
     );
 }
