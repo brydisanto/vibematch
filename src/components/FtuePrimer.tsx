@@ -291,7 +291,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                         Score <Strong>15K+</Strong> to win <Strong>Pin Capsules</Strong>.
                     </PrimerStep>
                     <PrimerStep num={3}>
-                        Rip Capsules to find <Strong>Pins</Strong> <Strong>and build your collection</Strong>.
+                        Rip Capsules to find Pins and <Strong>build your collection.</Strong>
                     </PrimerStep>
                 </div>
 
@@ -312,14 +312,14 @@ function Strong({ children }: { children: React.ReactNode }) {
 
 function PrimerStep({ num, children }: { num: number; children: React.ReactNode }) {
     return (
-        <div className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5">
+        <div className="flex items-center justify-center gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5">
             <div
                 className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 font-display font-black text-[13px] text-white"
                 style={{ background: "linear-gradient(135deg, #B366FF, #6C5CE7)" }}
             >
                 {num}
             </div>
-            <div className="text-[13px] font-mundial text-white/90 leading-snug text-left">
+            <div className="text-[13px] font-mundial text-white/90 leading-snug text-center">
                 {children}
             </div>
         </div>
