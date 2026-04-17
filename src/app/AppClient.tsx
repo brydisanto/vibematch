@@ -257,6 +257,9 @@ export default function AppClient() {
     if (!ftue.has("capsuleFlashShown") && (game.state.score ?? 0) >= 15000) {
       ftue.mark("capsuleFlashShown");
       setFtueHint("capsule");
+    } else if (!ftue.has("cosmicBlastHintShown") && createdTypes.has("cosmic_blast")) {
+      ftue.mark("cosmicBlastHintShown");
+      setFtueHint("cosmicBlast");
     } else if (!ftue.has("vibestreakHintShown") && createdTypes.has("vibestreak")) {
       ftue.mark("vibestreakHintShown");
       setFtueHint("vibestreak");

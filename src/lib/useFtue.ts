@@ -14,6 +14,7 @@ export type FtueFlag =
     | "firstMoveShown"    // idle-in-playing-view nudge to make first swap
     | "bombHintShown"     // first 4-match / bomb callout
     | "vibestreakHintShown" // first 5-match / vibestreak callout
+    | "cosmicBlastHintShown" // first 6-match / cosmic blast callout
     | "capsuleFlashShown"  // first time score crossed 15K
     | "postGameShown";    // first-game post-game modal
 
@@ -24,6 +25,7 @@ const EMPTY: FtueState = {
     firstMoveShown: false,
     bombHintShown: false,
     vibestreakHintShown: false,
+    cosmicBlastHintShown: false,
     capsuleFlashShown: false,
     postGameShown: false,
 };

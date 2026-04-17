@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import { ArrowLeftRight, Bomb, Zap, Sparkles, X } from "lucide-react";
+import { ArrowLeftRight, Bomb, Zap, Sparkles, Stars, X } from "lucide-react";
 
-export type HintKind = "firstMove" | "bomb" | "vibestreak" | "capsule";
+export type HintKind = "firstMove" | "bomb" | "vibestreak" | "cosmicBlast" | "capsule";
 
 interface FtueHintProps {
     kind: HintKind;
@@ -14,7 +14,7 @@ interface FtueHintProps {
 const CONFIG: Record<
     HintKind,
     {
-        label: string;
+        label: string | null;
         title: string;
         body: string;
         gradient: string;
@@ -24,32 +24,40 @@ const CONFIG: Record<
     }
 > = {
     firstMove: {
-        label: "Tip",
+        label: null,
         title: "Swap two adjacent badges",
-        body: "Line up 3 of the same badge — horizontal or vertical.",
+        body: "Line up 3 of the same badge in a row to make a match, either horizontal or vertical.",
         gradient: "linear-gradient(135deg, #4A9EFF, #B366FF)",
         accent: "#4A9EFF",
         Icon: ArrowLeftRight,
     },
     bomb: {
-        label: "New! Bomb",
-        title: "Bomb tile earned",
-        body: "Tap twice to detonate. Clears a 3×3 area.",
+        label: "New!",
+        title: "Bomb Tile Unlocked",
+        body: "For matching 4 in a row. Tap twice to detonate, it clears a 3×3 area.",
         gradient: "linear-gradient(135deg, #FF8A4C, #FF5722)",
         accent: "#FF8A4C",
         Icon: Bomb,
     },
     vibestreak: {
-        label: "New! Vibestreak",
-        title: "Vibestreak tile earned",
-        body: "Tap twice to clear the whole row and column.",
+        label: "New!",
+        title: "Vibestreak Tile Unlocked",
+        body: "For matching 5 in a row. Tap twice to clear the whole row and column.",
         gradient: "linear-gradient(135deg, #B366FF, #6C5CE7)",
         accent: "#B366FF",
         Icon: Zap,
     },
+    cosmicBlast: {
+        label: "New!",
+        title: "Cosmic Blast Tile Unlocked",
+        body: "For matching 6 in a row. Tap twice to clear every tile of the same type on the board.",
+        gradient: "linear-gradient(135deg, #FF6BCB, #B366FF)",
+        accent: "#E080FF",
+        Icon: Stars,
+    },
     capsule: {
         label: "Capsule!",
-        title: "Pin capsule earned",
+        title: "Pin Capsule Earned",
         body: "Keep scoring — or check your Pin Book after.",
         gradient: "linear-gradient(135deg, #FFD700, #B8860B)",
         accent: "#FFD700",
@@ -93,12 +101,14 @@ export default function FtueHint({ kind, onDismiss }: FtueHintProps) {
                     <Icon size={22} color="white" strokeWidth={2.2} />
                 </div>
                 <div className="flex-1 min-w-0 pr-5">
-                    <div
-                        className="text-[10px] font-mundial font-black tracking-[0.22em] uppercase mb-0.5"
-                        style={{ color: cfg.accent }}
-                    >
-                        {cfg.label}
-                    </div>
+                    {cfg.label && (
+                        <div
+                            className="text-[10px] font-mundial font-black tracking-[0.22em] uppercase mb-0.5"
+                            style={{ color: cfg.accent }}
+                        >
+                            {cfg.label}
+                        </div>
+                    )}
                     <div className="text-white text-[15px] font-mundial font-bold leading-tight">
                         {cfg.title}
                     </div>
