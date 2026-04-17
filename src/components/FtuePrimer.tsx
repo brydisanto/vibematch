@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 interface FtuePrimerProps {
     onContinue: () => void;
-    onSkip: () => void;
 }
 
 // Badges chosen for visual distinctiveness in the demo grid.
@@ -44,7 +43,7 @@ const INITIAL_GRID: Tile[][] = [
 const SWAP_A = { row: 0, col: 2 };
 const SWAP_B = { row: 1, col: 2 };
 
-export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
+export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
     const [grid, setGrid] = useState<Tile[][]>(INITIAL_GRID);
     const [phase, setPhase] = useState<Phase>("idle");
     const [score, setScore] = useState(0);
@@ -126,7 +125,7 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                     className="absolute top-[-12px] left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-[10px] font-mundial font-black tracking-[0.2em] uppercase text-white"
                     style={{ background: "linear-gradient(135deg, #B366FF, #6C5CE7)" }}
                 >
-                    Welcome
+                    The Basics
                 </div>
 
                 <h2
@@ -153,7 +152,7 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                     {/* Score pill — top-right */}
                     <div className="relative flex justify-between items-center mb-3 text-left">
                         <div className="text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/40">
-                            Demo
+                            Score
                         </div>
                         <motion.div
                             key={score}
@@ -284,29 +283,33 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                 </div>
 
                 <div className="flex flex-col gap-2.5 mb-5">
-                    <PrimerStep num={1} text="Match badges to rack up" strong="score" />
-                    <PrimerStep num={2} text="Hit" strong="15K+" tail="to earn capsules" />
-                    <PrimerStep num={3} text="Open capsules to collect" strong="pins" />
+                    <PrimerStep num={1}>
+                        Match badges to score points.
+                    </PrimerStep>
+                    <PrimerStep num={2}>
+                        Score <Strong>15K+</Strong> to win <Strong>Pin Capsules</Strong>.
+                    </PrimerStep>
+                    <PrimerStep num={3}>
+                        Rip Capsules to find <Strong>Pins</Strong> <Strong>and build your collection</Strong>.
+                    </PrimerStep>
                 </div>
 
                 <button
                     onClick={onContinue}
                     className="w-full py-3 rounded-lg font-black font-mundial uppercase tracking-wider transition-all bg-[#FFE048] text-black hover:bg-[#FFE858] active:scale-95"
                 >
-                    Let&apos;s go
-                </button>
-                <button
-                    onClick={onSkip}
-                    className="w-full mt-2 py-2 text-white/40 hover:text-white/70 text-xs font-mundial tracking-wider uppercase transition-colors"
-                >
-                    Skip
+                    Let&apos;s Freaking Go!
                 </button>
             </motion.div>
         </motion.div>
     );
 }
 
-function PrimerStep({ num, text, strong, tail }: { num: number; text: string; strong: string; tail?: string }) {
+function Strong({ children }: { children: React.ReactNode }) {
+    return <strong className="text-[#FFE048] font-bold">{children}</strong>;
+}
+
+function PrimerStep({ num, children }: { num: number; children: React.ReactNode }) {
     return (
         <div className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5">
             <div
@@ -316,8 +319,7 @@ function PrimerStep({ num, text, strong, tail }: { num: number; text: string; st
                 {num}
             </div>
             <div className="text-[13px] font-mundial text-white/90 leading-snug text-left">
-                {text} <strong className="text-[#FFE048] font-bold">{strong}</strong>
-                {tail ? ` ${tail}` : null}
+                {children}
             </div>
         </div>
     );

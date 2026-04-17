@@ -389,12 +389,6 @@ export default function AppClient() {
     }
   };
 
-  const handleFtuePrimerSkip = () => {
-    ftue.mark("primerShown");
-    setFtuePending(null);
-    // Don't start the game — user asked to skip. They land back where they were.
-  };
-
   const handleDraftComplete = (drafted: Badge[]) => {
     game.startGameWithBadges(draftMode, drafted);
     setIsDealing(true);
@@ -920,10 +914,7 @@ export default function AppClient() {
       {/* FTUE: pre-game primer card (first Classic game only) */}
       <AnimatePresence>
         {ftuePending && (
-          <FtuePrimer
-            onContinue={handleFtuePrimerContinue}
-            onSkip={handleFtuePrimerSkip}
-          />
+          <FtuePrimer onContinue={handleFtuePrimerContinue} />
         )}
       </AnimatePresence>
 
