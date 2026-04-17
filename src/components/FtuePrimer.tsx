@@ -31,16 +31,16 @@ type PanelIndex = 0 | 1 | 2;
 
 const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
     0: {
-        title: "Match to Score",
-        body: "Line up 3 of the same badge — horizontal or vertical — to score points.",
+        title: "Match 3 to Score",
+        body: "Line up 3 of the same badge, either horizontal or vertical, to score points.",
     },
     1: {
-        title: "Create Power-Ups",
-        body: "Match 4+ in a row to unlock special tiles. Double-tap to unleash massive score.",
+        title: "Unlock Power-Ups",
+        body: "Match 4+ in a row to unlock special tiles. Double-tap to set off cascades and hit massive scores.",
     },
     2: {
         title: "Collect Pins",
-        body: "Score 15K+ to win Pin Capsules. Rip them open to build your collection.",
+        body: "Score 15K+ in a game to win Pin Capsules. Rip capsule to find Pins and build your collection.",
     },
 };
 
@@ -412,16 +412,20 @@ function BombPanel() {
                 {BOMB_SURROUND.map((row, r) =>
                     row.map((badge, c) => {
                         const isBomb = badge === null;
+                        // Every tile renders an underlying badge image. The bomb cell
+                        // additionally gets the in-game BombOverlay stacked on top —
+                        // exactly how the live game paints it.
+                        const underlyingBadge = isBomb ? CAPTAIN : badge;
                         return (
                             <motion.button
                                 key={`${cycleKey}-${r}-${c}`}
                                 onClick={isBomb ? handleBombTap : undefined}
-                                className="relative rounded-[12px] overflow-hidden flex items-center justify-center"
+                                className="relative rounded-[12px] overflow-hidden"
                                 style={{
                                     width: TILE_SIZE,
                                     height: TILE_SIZE,
                                     background: "rgba(255,255,255,0.04)",
-                                    border: isBomb ? "none" : "1.5px solid rgba(255,255,255,0.08)",
+                                    border: "1.5px solid rgba(255,255,255,0.08)",
                                     cursor: isBomb ? "pointer" : "default",
                                 }}
                                 initial={{ scale: 1, opacity: 1 }}
@@ -441,17 +445,21 @@ function BombPanel() {
                                 }
                                 whileTap={isBomb ? { scale: 0.94 } : undefined}
                             >
-                                {isBomb ? (
-                                    <BombTile pulsing={phase === "idle"} selected={phase === "selected"} />
-                                ) : badge ? (
+                                {underlyingBadge && (
                                     <Image
-                                        src={badge.src}
+                                        src={underlyingBadge.src}
                                         alt=""
                                         fill
                                         sizes={`${TILE_SIZE}px`}
                                         className="object-cover pointer-events-none"
                                     />
-                                ) : null}
+                                )}
+                                {isBomb && (
+                                    <BombOverlay
+                                        pulsing={phase === "idle"}
+                                        selected={phase === "selected"}
+                                    />
+                                )}
                             </motion.button>
                         );
                     })
@@ -487,25 +495,31 @@ function BombPanel() {
 }
 
 /**
- * BombTile — visually mirrors the in-game BombOverlay:
- * red border + inset red shadow + yellow crosshairs + red center core.
+ * BombOverlay — mirrors the in-game BombOverlay from GameBoard.tsx.
+ * Transparent over the underlying badge; adds a red border + inset red
+ * shadow, yellow crosshairs with gold glow, and a pulsing red core dot.
  */
-function BombTile({ pulsing, selected }: { pulsing: boolean; selected: boolean }) {
+function BombOverlay({ pulsing, selected }: { pulsing: boolean; selected: boolean }) {
     return (
         <div
-            className="absolute inset-0 rounded-[10px] overflow-hidden"
+            className="absolute inset-0 rounded-[10px] overflow-hidden pointer-events-none"
             style={{
-                background: "radial-gradient(circle at 50% 50%, #3A0A0A, #1A0404)",
-                border: "3px solid #FF3333",
-                boxShadow: "inset 0 0 16px rgba(255,51,51,0.85), 0 0 20px rgba(255,51,51,0.5)",
+                boxShadow: "inset 0 0 18px rgba(255,0,0,0.8)",
             }}
         >
-            {/* Crosshairs */}
+            {/* Red border ring */}
+            <div
+                className="absolute inset-0 rounded-[10px]"
+                style={{
+                    border: "3px solid #FF3333",
+                }}
+            />
+            {/* Crosshairs — horizontal + vertical gold bars */}
             <div className="absolute inset-0 flex items-center justify-center opacity-90">
                 <div
                     className="absolute"
                     style={{
-                        width: "78%",
+                        width: "80%",
                         height: 2,
                         background: "#FFE048",
                         boxShadow: "0 0 8px #FFE048",
@@ -514,37 +528,37 @@ function BombTile({ pulsing, selected }: { pulsing: boolean; selected: boolean }
                 <div
                     className="absolute"
                     style={{
-                        height: "78%",
+                        height: "80%",
                         width: 2,
                         background: "#FFE048",
                         boxShadow: "0 0 8px #FFE048",
                     }}
                 />
+                {/* Red core dot at center */}
+                <motion.div
+                    className="absolute rounded-full"
+                    style={{
+                        width: 14,
+                        height: 14,
+                        background: "#FF3333",
+                        boxShadow: "0 0 15px #FF3333",
+                    }}
+                    animate={
+                        selected
+                            ? { scale: [1, 1.35, 1], opacity: [1, 0.7, 1] }
+                            : pulsing
+                                ? { scale: [1, 1.15, 1], opacity: [1, 0.9, 1] }
+                                : { scale: 1, opacity: 1 }
+                    }
+                    transition={
+                        selected
+                            ? { duration: 0.4, repeat: Infinity, ease: "easeInOut" }
+                            : pulsing
+                                ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+                                : { duration: 0.2 }
+                    }
+                />
             </div>
-            {/* Core dot */}
-            <motion.div
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{
-                    width: 12,
-                    height: 12,
-                    background: "#FF3333",
-                    boxShadow: "0 0 14px #FF3333",
-                }}
-                animate={
-                    selected
-                        ? { scale: [1, 1.35, 1], opacity: [1, 0.7, 1] }
-                        : pulsing
-                            ? { scale: [1, 1.15, 1], opacity: [1, 0.9, 1] }
-                            : { scale: 1, opacity: 1 }
-                }
-                transition={
-                    selected
-                        ? { duration: 0.4, repeat: Infinity, ease: "easeInOut" }
-                        : pulsing
-                            ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
-                            : { duration: 0.2 }
-                }
-            />
         </div>
     );
 }
@@ -644,26 +658,30 @@ function CapsulePanel() {
                             key={`${cycleKey}-capsule`}
                             onClick={handleTap}
                             className="relative cursor-pointer"
-                            style={{ width: 96, height: 140 }}
+                            style={{ width: 120, height: 120 }}
                             initial={{ scale: 0.92, opacity: 1 }}
                             animate={
                                 phase === "idle"
-                                    ? { scale: [0.98, 1.04, 0.98], opacity: 1 }
+                                    ? {
+                                          scale: [0.98, 1.04, 0.98],
+                                          rotate: [-2, 2, -2],
+                                          opacity: 1,
+                                      }
                                     : {
                                           scale: [1, 1.08, 0],
-                                          rotate: [0, -6, 6, 0],
+                                          rotate: [0, -10, 10, -15, 15, 0],
                                           opacity: [1, 1, 0],
                                       }
                             }
                             transition={
                                 phase === "idle"
-                                    ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
+                                    ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
                                     : { duration: 0.6 }
                             }
                             whileTap={{ scale: 0.94 }}
                             exit={{ opacity: 0 }}
                         >
-                            <RealisticCapsule />
+                            <SphericalCapsule cracking={phase === "cracking"} />
                         </motion.button>
                     )}
                 </AnimatePresence>
@@ -711,86 +729,116 @@ function CapsulePanel() {
 }
 
 /**
- * RealisticCapsule — simplified 2D approximation of the live VibeCapsule.
- * Key cues from the real capsule: dark chrome/onyx body with a colored rim
- * and glow (gold tier here). Pill shape with a seam at the midpoint.
+ * SphericalCapsule — simplified 2D approximation of the live VibeCapsule.
+ * Matches the key cues of the gold-tier capsule: dark chrome/onyx sphere
+ * with a gold-glowing seam, specular highlight, gold halo, and a subsurface
+ * light leak that ramps up during the "cracking" phase before detonation.
  */
-function RealisticCapsule() {
-    const CAPSULE_W = 96;
-    const CAPSULE_H = 140;
-    const HALF = CAPSULE_H / 2;
+function SphericalCapsule({ cracking }: { cracking: boolean }) {
+    const SIZE = 120;
+    const HALF = SIZE / 2;
+    const GOLD = "#FFD700";
+    const GLOW = "#FFE048";
 
     return (
         <div
             className="absolute inset-0"
-            style={{ filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.5))" }}
+            style={{
+                filter: `drop-shadow(0 0 22px ${GOLD}55) drop-shadow(0 6px 18px rgba(0,0,0,0.6))`,
+            }}
         >
-            {/* Top half — dark onyx/chrome, rounded top */}
+            {/* Top hemisphere */}
             <div
                 className="absolute"
                 style={{
                     top: 0,
                     left: 0,
-                    width: CAPSULE_W,
-                    height: HALF + 2,
-                    borderRadius: `${CAPSULE_W / 2}px ${CAPSULE_W / 2}px 0 0 / ${HALF}px ${HALF}px 0 0`,
+                    width: SIZE,
+                    height: HALF,
+                    borderRadius: `${HALF}px ${HALF}px 0 0 / ${HALF}px ${HALF}px 0 0`,
                     background:
-                        "radial-gradient(ellipse at 35% 30%, #3a3528 0%, #1a1508 55%, #0a0806 100%)",
-                    border: "1.5px solid rgba(255,216,72,0.25)",
-                    borderBottom: "none",
-                    boxShadow: "inset 0 2px 8px rgba(255,255,255,0.15), inset 4px -4px 12px rgba(0,0,0,0.6)",
+                        "radial-gradient(ellipse at 35% 30%, #3a3222 0%, #1a1508 55%, #0a0806 100%)",
+                    boxShadow:
+                        "inset 0 2px 6px rgba(255,255,255,0.18), inset 0 -3px 10px rgba(0,0,0,0.45)",
                 }}
             />
-            {/* Specular highlight (top-left) */}
-            <div
-                className="absolute"
-                style={{
-                    top: 10,
-                    left: 18,
-                    width: 26,
-                    height: 42,
-                    background:
-                        "radial-gradient(ellipse at 50% 40%, rgba(255,240,160,0.55) 0%, rgba(255,216,72,0.2) 45%, transparent 75%)",
-                    filter: "blur(2px)",
-                    borderRadius: "50%",
-                }}
-            />
-            {/* Seam — gold accent line */}
-            <div
-                className="absolute left-0 right-0"
-                style={{
-                    top: HALF - 1,
-                    height: 3,
-                    background:
-                        "linear-gradient(90deg, transparent 0%, #FFE048 20%, #FFD700 50%, #FFE048 80%, transparent 100%)",
-                    boxShadow: "0 0 8px #FFD700",
-                }}
-            />
-            {/* Bottom half — dark onyx with gold tint */}
+            {/* Bottom hemisphere */}
             <div
                 className="absolute"
                 style={{
                     bottom: 0,
                     left: 0,
-                    width: CAPSULE_W,
-                    height: HALF + 2,
-                    borderRadius: `0 0 ${CAPSULE_W / 2}px ${CAPSULE_W / 2}px / 0 0 ${HALF}px ${HALF}px`,
+                    width: SIZE,
+                    height: HALF,
+                    borderRadius: `0 0 ${HALF}px ${HALF}px / 0 0 ${HALF}px ${HALF}px`,
                     background:
-                        "radial-gradient(ellipse at 35% 65%, #2a2010 0%, #14100a 55%, #0a0806 100%)",
-                    border: "1.5px solid rgba(255,216,72,0.3)",
-                    borderTop: "none",
-                    boxShadow: "inset 0 -2px 10px rgba(0,0,0,0.7), inset 4px 4px 10px rgba(255,216,72,0.12)",
+                        "radial-gradient(ellipse at 35% 70%, #2a2010 0%, #14100a 55%, #0a0806 100%)",
+                    boxShadow:
+                        "inset 0 -3px 10px rgba(0,0,0,0.7), inset 4px 4px 12px rgba(255,216,72,0.1)",
                 }}
             />
-            {/* Gold rim glow (subtle outer halo via radial gradient fade) */}
+            {/* Outer rim — gold border ring */}
             <div
+                className="absolute inset-0 rounded-full pointer-events-none"
+                style={{
+                    border: `1.5px solid ${GOLD}`,
+                    boxShadow: `0 0 12px ${GOLD}70, inset 0 0 8px ${GOLD}33`,
+                }}
+            />
+            {/* Subsurface scattering at seam — light leaking through plastic */}
+            <motion.div
                 className="absolute pointer-events-none"
                 style={{
-                    inset: -4,
-                    borderRadius: `${CAPSULE_W / 2 + 4}px`,
-                    background: "radial-gradient(ellipse at center, transparent 70%, rgba(255,216,72,0.18) 85%, transparent 100%)",
+                    top: HALF - 6,
+                    left: "8%",
+                    width: "84%",
+                    height: 12,
+                    background: `radial-gradient(ellipse at center, ${GLOW} 0%, transparent 70%)`,
+                    filter: "blur(3px)",
+                    mixBlendMode: "screen",
+                }}
+                animate={cracking ? { opacity: [0.3, 0.9, 1] } : { opacity: 0.25 }}
+                transition={cracking ? { duration: 0.6 } : {}}
+            />
+            {/* Seam — gold accent line across center */}
+            <motion.div
+                className="absolute left-0 right-0"
+                style={{
+                    top: HALF - 1,
+                    height: 2,
+                    background: `linear-gradient(90deg, transparent 0%, ${GLOW} 20%, ${GOLD} 50%, ${GLOW} 80%, transparent 100%)`,
+                    boxShadow: `0 0 10px ${GOLD}`,
+                }}
+                animate={cracking ? { scaleX: [1, 1.05, 1.1], opacity: [1, 1, 1] } : { scaleX: 1, opacity: 1 }}
+                transition={cracking ? { duration: 0.6 } : {}}
+            />
+            {/* Specular highlight (top-left) */}
+            <div
+                className="absolute"
+                style={{
+                    top: 14,
+                    left: 20,
+                    width: 30,
+                    height: 22,
+                    background:
+                        "radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.6) 0%, rgba(255,240,160,0.25) 45%, transparent 75%)",
+                    filter: "blur(2px)",
+                    borderRadius: "50%",
                 }}
             />
+            {/* Environment reflection arc (subtle) */}
+            <div
+                className="absolute pointer-events-none rounded-full overflow-hidden"
+                style={{ inset: 0, mixBlendMode: "screen", opacity: 0.5 }}
+            >
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background:
+                            "conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.08) 15%, transparent 32%, rgba(255,255,255,0.12) 48%, transparent 65%)",
+                    }}
+                />
+            </div>
         </div>
     );
 }
