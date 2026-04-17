@@ -49,6 +49,10 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [score, setScore] = useState(0);
     const [scorePop, setScorePop] = useState<number | null>(null);
+    // Incremented each time the demo resets. Keyed into every tile so framer
+    // remounts them cleanly — otherwise the matched tiles' final opacity:0
+    // persists across cycles and the row stays visually empty.
+    const [cycleKey, setCycleKey] = useState(0);
 
     const matchedPositions = phase === "matched"
         ? [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }]
@@ -90,7 +94,8 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
             setGrid(INITIAL_GRID);
             setScore(0);
             setPhase("idle");
-        }, 2400);
+            setCycleKey((k) => k + 1);
+        }, 1500);
         return () => clearTimeout(t);
     }, [phase]);
 
@@ -176,10 +181,12 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                                 const matched = isMatchedTile(r, c);
                                 return (
                                     <motion.button
-                                        key={tile.id}
+                                        // cycleKey forces remount on reset — frees framer from the
+                                        // previous cycle's opacity:0 / scale:0 final state.
+                                        key={`${cycleKey}-${tile.id}`}
                                         onClick={() => handleTap(r, c)}
                                         layout
-                                        layoutId={`ftue-tile-${tile.id}`}
+                                        layoutId={`ftue-tile-${cycleKey}-${tile.id}`}
                                         className="relative rounded-[12px] overflow-hidden"
                                         style={{
                                             width: TILE_SIZE,
@@ -197,16 +204,17 @@ export default function FtuePrimer({ onContinue, onSkip }: FtuePrimerProps) {
                                                     : "none",
                                             cursor: hinted ? "pointer" : "default",
                                         }}
+                                        initial={{ scale: 1, opacity: 1 }}
                                         animate={
                                             matched
-                                                ? { scale: [1, 1.12, 0.7], opacity: [1, 1, 0] }
+                                                ? { scale: [1, 1.15, 0], opacity: [1, 1, 0] }
                                                 : hinted
-                                                    ? { scale: [1, 1.06, 1] }
-                                                    : { scale: 1 }
+                                                    ? { scale: [1, 1.06, 1], opacity: 1 }
+                                                    : { scale: 1, opacity: 1 }
                                         }
                                         transition={
                                             matched
-                                                ? { duration: 0.8, times: [0, 0.35, 1] }
+                                                ? { duration: 0.7, times: [0, 0.35, 1] }
                                                 : hinted
                                                     ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
                                                     : { type: "spring", stiffness: 400, damping: 28 }
