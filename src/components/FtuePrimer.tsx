@@ -32,7 +32,7 @@ type PanelIndex = 0 | 1 | 2;
 const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
     0: {
         title: "Match 3 to Score",
-        body: "Line up 3 of the same badge, either horizontal or vertical, to score points.",
+        body: "Line up 3 of the same badge to score points. Matches go horizontal or vertical.",
     },
     1: {
         title: "Unlock Power-Ups",
