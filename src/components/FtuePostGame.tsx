@@ -52,10 +52,10 @@ export default function FtuePostGame({ variant, score, onPrimary, onSecondary }:
                 {isCapsule ? (
                     <>
                         <h2 className="text-[#FFD700] text-[22px] font-display font-extrabold uppercase tracking-wide mt-2 mb-2">
-                            You earned a Capsule
+                            You just earned a Capsule!
                         </h2>
                         <p className="text-white/60 text-[13px] font-mundial leading-relaxed mb-6">
-                            Open it to reveal your first pin. It lives in your Pin Book forever.
+                            Rip it open to reveal your first pin. It lives in your Pin Book forever.
                         </p>
                         <button
                             onClick={onPrimary}
@@ -77,11 +77,11 @@ export default function FtuePostGame({ variant, score, onPrimary, onSecondary }:
                 ) : (
                     <>
                         <h2 className="text-[#FFD700] text-[22px] font-display font-extrabold uppercase tracking-wide mt-2 mb-2">
-                            You scored {score.toLocaleString()}
+                            You scored {score.toLocaleString()}!
                         </h2>
                         <p className="text-white/60 text-[13px] font-mundial leading-relaxed mb-6">
-                            Hit 15K next time — that&apos;s where capsules start dropping.
-                            Special tiles (4-match, 5-match) compound your score fast.
+                            Hit 15K+ next time, that&rsquo;s when Pin Capsules start dropping!
+                            Special tiles (4-match, 5-match) boost your score fast.
                         </p>
                         <button
                             onClick={onPrimary}
