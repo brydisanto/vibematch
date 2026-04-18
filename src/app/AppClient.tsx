@@ -88,6 +88,12 @@ export default function AppClient() {
   const [ftueHint, setFtueHint] = useState<HintKind | null>(null);
   const [ftueShowPostGame, setFtueShowPostGame] = useState(false);
   const ftuePostGameFiredRef = useRef(false);
+  // Holds the in-flight logGame → earnCapsule → achievements promise so that
+  // handlePlayAgain can wait for it before issuing a new trackGame. Without
+  // this, trackGame can race logGame at the server and the pinbook route's
+  // "abandoned previous match" guard wrongly burns the new match's prize
+  // eligibility, causing 15K+ runs to yield zero capsules.
+  const gameEndPromiseRef = useRef<Promise<void> | null>(null);
 
   // Per-game session stats for achievements (not in GameState)
   const gameSessionStats = useRef({
@@ -163,7 +169,7 @@ export default function AppClient() {
     const gs = game.state;
     const stats = gameSessionStats.current;
 
-    (async () => {
+    gameEndPromiseRef.current = (async () => {
       // Match token was already issued at game START (handleStartGame).
       // No need to call trackGame here — just use the existing token.
 
@@ -230,6 +236,8 @@ export default function AppClient() {
         }
       }
     })();
+    // Swallow unhandled errors on the promise itself so awaiters don't crash
+    gameEndPromiseRef.current.catch(() => {});
   }, [game.state?.gamePhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Award bonus capsule when T/cross shape is made (1 per game)
@@ -419,6 +427,14 @@ export default function AppClient() {
     // for a classic game, issue a fresh match token at the new game's start.
     const mode = game.state?.gameMode;
     if (mode === 'classic' && userProfile?.username) {
+      // CRITICAL: wait for the prior game's end flow (logGame + earnCapsule +
+      // achievements) to finish before issuing a new trackGame. Otherwise the
+      // server sees the previous match as "unlogged + <5min old" and burns
+      // the new match's prizeEligible flag — which silently kills capsule
+      // rewards even on 15K+ runs.
+      if (gameEndPromiseRef.current) {
+        await gameEndPromiseRef.current.catch(() => {});
+      }
       const result = await pinBook.trackGame(mode);
       if (!result.ok) {
         toast.error("Could not start game. Try again.");

@@ -14,10 +14,6 @@ export interface Cell {
     isNew?: boolean;
     isMatched?: boolean;
     dropDistance?: number; // rows this tile dropped during gravity (for animation)
-    // Set when a special tile is created this turn — prevents it from being matched
-    // (and thus consumed) in the same turn's cascade loop. Cleared before the turn
-    // returns so the player can match the special on their next move.
-    suppressMatch?: boolean;
 }
 
 export type SpecialTileType = "bomb" | "vibestreak" | "cosmic_blast";
@@ -139,6 +135,43 @@ function wouldCreateMatch(
     return false;
 }
 
+/**
+ * Checks all 3-tile windows (horizontal and vertical) that pass through
+ * (row, col) to see if placing `badgeId` there would form a 3-in-a-row.
+ * Used when placing a freshly-created special to avoid it being eaten by
+ * an immediate match on the same turn.
+ */
+function wouldFormMatchAt(
+    board: Cell[][],
+    row: number,
+    col: number,
+    badgeId: string
+): boolean {
+    // Horizontal: each length-3 window containing col
+    const hStart = Math.max(0, col - 2);
+    const hEnd = Math.min(BOARD_SIZE - 3, col);
+    for (let start = hStart; start <= hEnd; start++) {
+        let allMatch = true;
+        for (let c = start; c < start + 3; c++) {
+            const id = c === col ? badgeId : board[row]?.[c]?.badge?.id;
+            if (id !== badgeId) { allMatch = false; break; }
+        }
+        if (allMatch) return true;
+    }
+    // Vertical: each length-3 window containing row
+    const vStart = Math.max(0, row - 2);
+    const vEnd = Math.min(BOARD_SIZE - 3, row);
+    for (let start = vStart; start <= vEnd; start++) {
+        let allMatch = true;
+        for (let r = start; r < start + 3; r++) {
+            const id = r === row ? badgeId : board[r]?.[col]?.badge?.id;
+            if (id !== badgeId) { allMatch = false; break; }
+        }
+        if (allMatch) return true;
+    }
+    return false;
+}
+
 // ===== SWAP =====
 
 export function isAdjacentSwap(a: Position, b: Position): boolean {
@@ -161,16 +194,14 @@ export function findAllMatches(board: Cell[][]): Match[] {
     const matches: Match[] = [];
     const matched = new Set<string>();
 
-    // Horizontal matches. Specials participate in matches (matching into a special
-    // also detonates it), EXCEPT specials freshly placed this turn — those carry
-    // `suppressMatch` so they survive the turn's cascade loop.
+    // Horizontal matches. Specials participate in matches normally — matching
+    // a special also detonates it. Freshly placed specials get a non-matching
+    // badge at placement time (see processTurn) so they don't get instantly eaten.
     for (let row = 0; row < BOARD_SIZE; row++) {
         let runStart = 0;
         for (let col = 1; col <= BOARD_SIZE; col++) {
             if (
                 col < BOARD_SIZE &&
-                !board[row][col].suppressMatch &&
-                !board[row][runStart].suppressMatch &&
                 board[row][col].badge.id === board[row][runStart].badge.id
             ) {
                 continue;
@@ -196,14 +227,12 @@ export function findAllMatches(board: Cell[][]): Match[] {
         }
     }
 
-    // Vertical matches. Same rule — suppressMatch (not isSpecial) breaks runs.
+    // Vertical matches — same logic as horizontal.
     for (let col = 0; col < BOARD_SIZE; col++) {
         let runStart = 0;
         for (let row = 1; row <= BOARD_SIZE; row++) {
             if (
                 row < BOARD_SIZE &&
-                !board[row][col].suppressMatch &&
-                !board[runStart][col].suppressMatch &&
                 board[row][col].badge.id === board[runStart][col].badge.id
             ) {
                 continue;
@@ -637,20 +666,33 @@ export function processTurn(
 
         // Place specials on the cells that now occupy the original positions.
         // After gravity, these positions have new tiles — assign the special to them.
-        // Mark `suppressMatch: true` so these specials aren't immediately consumed
-        // by the next cascade iteration. Flag is cleared before processTurn returns.
+        // Pick a badge that does NOT form an immediate 3-in-a-row at the special's
+        // position so the special isn't eaten in the next cascade iteration.
+        // (It can still be matched deliberately on a later turn.)
         for (const sp of specialPlacements) {
             if (sp.row < BOARD_SIZE && sp.col < BOARD_SIZE) {
+                const currentCell = currentBoard[sp.row][sp.col];
+                let chosenBadge = currentCell.badge;
+                if (wouldFormMatchAt(currentBoard, sp.row, sp.col, chosenBadge.id)) {
+                    // Try the other game badges until one doesn't form a match.
+                    for (const candidate of gameBadges) {
+                        if (candidate.id === chosenBadge.id) continue;
+                        if (!wouldFormMatchAt(currentBoard, sp.row, sp.col, candidate.id)) {
+                            chosenBadge = candidate;
+                            break;
+                        }
+                    }
+                }
                 currentBoard[sp.row][sp.col] = {
-                    ...currentBoard[sp.row][sp.col],
+                    ...currentCell,
+                    badge: chosenBadge,
                     isSpecial: sp.type,
                     isMatched: false,
-                    suppressMatch: true,
                 };
             }
         }
 
-        // Check for new matches from cascade. Suppressed specials won't participate.
+        // Check for new matches from cascade.
         matches = findAllMatches(currentBoard);
 
         // Also check if any newly-placed specials are part of the new matches
@@ -670,12 +712,6 @@ export function processTurn(
 
     // Combo carry: momentum from big combos persists across turns
     const comboCarryOut = combo >= 5 ? 3 : combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
-
-    // Clear suppressMatch on every cell so specials placed this turn can be
-    // matched normally on the player's next move.
-    currentBoard = currentBoard.map(row =>
-        row.map(cell => (cell.suppressMatch ? { ...cell, suppressMatch: false } : cell))
-    );
 
     return {
         board: currentBoard,
