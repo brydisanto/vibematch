@@ -56,19 +56,26 @@ export function useFtue() {
 
     // Hydrate from localStorage after mount (avoids SSR hydration mismatch).
     // If `?resetFtue=1` is in the URL, wipe the FTUE state first so the player
-    // sees the first-run flow again. Useful for previewing / demos.
+    // sees the first-run flow again — then strip the param from the URL so a
+    // subsequent reload doesn't re-clear (was causing hints to re-fire every
+    // session when the param was left in place).
     useEffect(() => {
         if (typeof window !== "undefined") {
             try {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get("resetFtue") === "1") {
+                const url = new URL(window.location.href);
+                if (url.searchParams.get("resetFtue") === "1") {
                     window.localStorage.removeItem(STORAGE_KEY);
+                    url.searchParams.delete("resetFtue");
+                    window.history.replaceState({}, "", url.toString());
+                    console.log("[useFtue] resetFtue=1 — cleared localStorage and stripped param");
                 }
             } catch {
                 // ignore URL parse errors
             }
         }
-        setState(read());
+        const loaded = read();
+        console.log("[useFtue] hydrated:", loaded);
+        setState(loaded);
     }, []);
 
     const mark = useCallback((flag: FtueFlag) => {
@@ -76,6 +83,7 @@ export function useFtue() {
             if (prev[flag]) return prev;
             const next = { ...prev, [flag]: true };
             write(next);
+            console.log(`[useFtue] marked ${flag} — state now:`, next);
             return next;
         });
     }, []);

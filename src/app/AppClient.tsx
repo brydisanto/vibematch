@@ -189,8 +189,20 @@ export default function AppClient() {
 
       // 3. Award capsule if score threshold met
       if (gs.score >= 15000) {
-        const earned = await pinBook.earnCapsule(gs.score, mode);
-        if (earned) setCapsuleEarned(true);
+        const result = await pinBook.earnCapsule(gs.score, mode);
+        if (result.earned) {
+          setCapsuleEarned(true);
+        } else {
+          // Surface a specific toast so the player knows why they didn't get a capsule.
+          // Silent failures were the root cause of "scored 15K+ got nothing" confusion.
+          if (result.capped) {
+            toast.error("Daily play cap reached — buy prize games for more capsules.");
+          } else if (result.reason) {
+            toast.error(`Capsule not awarded: ${result.reason}`);
+          } else {
+            toast.error("Could not award capsule. Try again.");
+          }
+        }
       }
 
       // 4. Check end-of-game achievements with match context for server-side verification

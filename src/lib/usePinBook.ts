@@ -49,27 +49,30 @@ export function usePinBook() {
     // Ref mirror of activeMatchId so async flows always read the latest value
     const activeMatchIdRef = useRef<string | null>(null);
 
-    const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<boolean> => {
-        if (score < CAPSULE_SCORE_THRESHOLD) return false;
+    const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<{ earned: boolean; reason?: string; capped?: boolean }> => {
+        if (score < CAPSULE_SCORE_THRESHOLD) return { earned: false, reason: 'Score below threshold' };
         try {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "earn", score, gameMode, matchId: activeMatchIdRef.current }),
             });
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                console.error("pinbook earn failed:", res.status, errData, "matchId:", activeMatchIdRef.current);
-                return false;
+                console.error("pinbook earn failed:", res.status, data, "matchId:", activeMatchIdRef.current);
+                return { earned: false, reason: data?.error || `HTTP ${res.status}` };
             }
-            const data = await res.json();
             if (data.earned) {
                 const amount = gameMode === 'daily' ? 2 : 1;
                 setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
-                return true;
+                return { earned: true };
             }
-        } catch (e) { console.error("pinbook earn error:", e); }
-        return false;
+            console.warn("pinbook earn rejected:", data);
+            return { earned: false, reason: data?.reason, capped: data?.capped };
+        } catch (e) {
+            console.error("pinbook earn error:", e);
+            return { earned: false, reason: String(e) };
+        }
     }, []);
 
     const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{ ok: boolean; error?: string }> => {
