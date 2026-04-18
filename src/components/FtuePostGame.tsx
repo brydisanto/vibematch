@@ -2,16 +2,17 @@
 
 import { motion } from "framer-motion";
 
+export type FtuePostGameVariant = "capsule" | "tryAgain";
+
 interface FtuePostGameProps {
+    variant: FtuePostGameVariant;
     score: number;
     onPrimary: () => void;
     onSecondary: () => void;
 }
 
-const CAPSULE_THRESHOLD = 15000;
-
-export default function FtuePostGame({ score, onPrimary, onSecondary }: FtuePostGameProps) {
-    const earnedCapsule = score >= CAPSULE_THRESHOLD;
+export default function FtuePostGame({ variant, score, onPrimary, onSecondary }: FtuePostGameProps) {
+    const isCapsule = variant === "capsule";
 
     return (
         <motion.div
@@ -39,16 +40,16 @@ export default function FtuePostGame({ score, onPrimary, onSecondary }: FtuePost
                 <div
                     className="absolute top-[-12px] left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-[24px] text-[10px] font-mundial font-extrabold tracking-[0.2em] uppercase"
                     style={{
-                        background: earnedCapsule
+                        background: isCapsule
                             ? "linear-gradient(135deg, #FFD700, #B8860B)"
                             : "linear-gradient(135deg, #B366FF, #6C5CE7)",
-                        color: earnedCapsule ? "#2A1810" : "#fff",
+                        color: isCapsule ? "#2A1810" : "#fff",
                     }}
                 >
-                    {earnedCapsule ? "First Capsule" : "So close"}
+                    {isCapsule ? "First Capsule" : "So close"}
                 </div>
 
-                {earnedCapsule ? (
+                {isCapsule ? (
                     <>
                         <h2 className="text-[#FFD700] text-[22px] font-display font-extrabold uppercase tracking-wide mt-2 mb-2">
                             You earned a Capsule

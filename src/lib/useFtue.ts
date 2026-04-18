@@ -15,7 +15,8 @@ export type FtueFlag =
     | "bombHintShown"     // first 4-match / bomb callout
     | "vibestreakHintShown" // first 5-match / vibestreak callout
     | "cosmicBlastHintShown" // first 6-match / cosmic blast callout
-    | "postGameShown";    // first-game post-game modal
+    | "firstCapsuleShown"  // first time a capsule was actually earned (server-confirmed)
+    | "firstFailShown";    // first time a game ended without earning a capsule
 
 type FtueState = Record<FtueFlag, boolean>;
 
@@ -25,7 +26,8 @@ const EMPTY: FtueState = {
     bombHintShown: false,
     vibestreakHintShown: false,
     cosmicBlastHintShown: false,
-    postGameShown: false,
+    firstCapsuleShown: false,
+    firstFailShown: false,
 };
 
 function read(): FtueState {

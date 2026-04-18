@@ -86,8 +86,7 @@ export default function AppClient() {
   // FTUE UI state — primer card before first Classic game, in-game hints, post-game modal
   const [ftuePending, setFtuePending] = useState<null | { mode: GameMode; username?: string; avatarUrl?: string }>(null);
   const [ftueHint, setFtueHint] = useState<HintKind | null>(null);
-  const [ftueShowPostGame, setFtueShowPostGame] = useState(false);
-  const ftuePostGameFiredRef = useRef(false);
+  const [ftuePostGame, setFtuePostGame] = useState<null | "capsule" | "tryAgain">(null);
   // Holds the in-flight logGame → earnCapsule → achievements promise so that
   // handlePlayAgain can wait for it before issuing a new trackGame. Without
   // this, trackGame can race logGame at the server and the pinbook route's
@@ -145,18 +144,11 @@ export default function AppClient() {
     });
   }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // FTUE post-game modal — fires once, after the very first Classic game ends.
-  // Separate from the logging effect below so the modal can show even before logGame resolves.
-  useEffect(() => {
-    if (game.state?.gamePhase !== "gameover") return;
-    if (game.state?.gameMode !== "classic") return;
-    if (ftue.has("postGameShown")) return;
-    if (ftuePostGameFiredRef.current) return;
-    ftuePostGameFiredRef.current = true;
-    // Small delay so the gameover screen animates in before the modal stacks on top
-    const t = setTimeout(() => setFtueShowPostGame(true), 800);
-    return () => clearTimeout(t);
-  }, [game.state?.gamePhase, game.state?.gameMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // FTUE post-game modal is triggered from inside the game-end async flow
+  // below — only once the server has actually confirmed (or rejected) the
+  // capsule. Two one-shot variants fire independently:
+  //   - "capsule": first time a capsule is actually earned -> push to Pin Book
+  //   - "tryAgain": first time a classic game ends without a capsule
 
   // Unified game-end flow: trackGame → logGame → earnCapsule → achievements
   // Must run sequentially so each step has the state it depends on:
@@ -187,14 +179,17 @@ export default function AppClient() {
         gameOverReason: gs.gameOverReason || 'unknown',
       }, mode);
 
-      // 3. Award capsule if score threshold met
+      // 3. Award capsule if score threshold met. Also gates which first-time
+      // FTUE modal (if any) fires on this game-over.
+      let actuallyEarnedCapsule = false;
       if (gs.score >= 15000) {
         const result = await pinBook.earnCapsule(gs.score, mode);
         if (result.earned) {
           setCapsuleEarned(true);
+          actuallyEarnedCapsule = true;
         } else {
-          // Surface a specific toast so the player knows why they didn't get a capsule.
-          // Silent failures were the root cause of "scored 15K+ got nothing" confusion.
+          // Silent failures were the root cause of "scored 15K+ got nothing"
+          // confusion. Surface the specific reason instead.
           if (result.capped) {
             toast.error("Daily play cap reached — buy prize games for more capsules.");
           } else if (result.reason) {
@@ -202,6 +197,21 @@ export default function AppClient() {
           } else {
             toast.error("Could not award capsule. Try again.");
           }
+        }
+      }
+
+      // First-time FTUE modal — only in classic mode.
+      //   - If this is the user's first-ever actual capsule earn, push them
+      //     to the Pin Book with the "First Capsule" reveal modal.
+      //   - Else if this is their first game ending without a capsule, show
+      //     the "So close" encouragement modal.
+      if (mode === "classic") {
+        if (actuallyEarnedCapsule && !ftue.has("firstCapsuleShown")) {
+          ftue.mark("firstCapsuleShown");
+          setTimeout(() => setFtuePostGame("capsule"), 800);
+        } else if (!actuallyEarnedCapsule && !ftue.has("firstFailShown")) {
+          ftue.mark("firstFailShown");
+          setTimeout(() => setFtuePostGame("tryAgain"), 800);
         }
       }
 
@@ -389,9 +399,9 @@ export default function AppClient() {
       }
     }
 
-    // Reset FTUE per-game flags
-    ftuePostGameFiredRef.current = false;
+    // Reset per-game FTUE UI state
     setFtueHint(null);
+    setFtuePostGame(null);
 
     // Vibe Draft disabled for now — slows down replayability
     // To re-enable: route classic mode to drafting view with selectDraftPool()
@@ -453,10 +463,9 @@ export default function AppClient() {
         return;
       }
     }
-    // Reset FTUE per-game flags so hints / post-game can still fire on future games
-    ftuePostGameFiredRef.current = false;
+    // Reset per-game FTUE UI so hints / modals can still fire on future games
     setFtueHint(null);
-    setFtueShowPostGame(false);
+    setFtuePostGame(null);
     setIsDealing(true);
     game.resetGame();
   };
@@ -956,23 +965,23 @@ export default function AppClient() {
         )}
       </AnimatePresence>
 
-      {/* FTUE: post-game first-game modal (one-shot, only while game is actually over) */}
+      {/* FTUE: post-game one-shot modals (capsule or tryAgain), only while game is over */}
       <AnimatePresence>
-        {ftueShowPostGame && game.state?.gamePhase === "gameover" && (
+        {ftuePostGame && game.state?.gamePhase === "gameover" && (
           <FtuePostGame
+            variant={ftuePostGame}
             score={game.state.score}
             onPrimary={() => {
-              ftue.mark("postGameShown");
-              setFtueShowPostGame(false);
-              if (game.state && game.state.score >= 15000) {
-                // "Show Me" → open pin book
+              const variant = ftuePostGame;
+              setFtuePostGame(null);
+              if (variant === "capsule") {
+                // "Show Me" → open pin book so they can open the capsule
                 setShowPinBook(true);
               } else {
                 // "Play Again" on try-again variant
                 if (game.state?.gameMode === "classic" && userProfile?.username) {
                   pinBook.trackGame("classic").then(result => {
                     if (result.ok) {
-                      ftuePostGameFiredRef.current = false;
                       setFtueHint(null);
                       setIsDealing(true);
                       game.resetGame();
@@ -982,14 +991,13 @@ export default function AppClient() {
               }
             }}
             onSecondary={() => {
-              ftue.mark("postGameShown");
-              setFtueShowPostGame(false);
-              if (game.state && game.state.score >= 15000) {
-                // "Play Again" secondary on success variant
+              const variant = ftuePostGame;
+              setFtuePostGame(null);
+              if (variant === "capsule") {
+                // "Play Again" secondary on capsule variant
                 if (game.state?.gameMode === "classic" && userProfile?.username) {
                   pinBook.trackGame("classic").then(result => {
                     if (result.ok) {
-                      ftuePostGameFiredRef.current = false;
                       setFtueHint(null);
                       setIsDealing(true);
                       game.resetGame();
