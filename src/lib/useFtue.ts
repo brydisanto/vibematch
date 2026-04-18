@@ -15,7 +15,6 @@ export type FtueFlag =
     | "bombHintShown"     // first 4-match / bomb callout
     | "vibestreakHintShown" // first 5-match / vibestreak callout
     | "cosmicBlastHintShown" // first 6-match / cosmic blast callout
-    | "capsuleFlashShown"  // first time score crossed 15K
     | "postGameShown";    // first-game post-game modal
 
 type FtueState = Record<FtueFlag, boolean>;
@@ -26,7 +25,6 @@ const EMPTY: FtueState = {
     bombHintShown: false,
     vibestreakHintShown: false,
     cosmicBlastHintShown: false,
-    capsuleFlashShown: false,
     postGameShown: false,
 };
 

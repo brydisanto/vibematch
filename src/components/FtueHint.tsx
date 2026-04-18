@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import { ArrowLeftRight, Bomb, Zap, Sparkles, Stars, X } from "lucide-react";
+import { ArrowLeftRight, Bomb, Zap, Stars, X } from "lucide-react";
 
-export type HintKind = "firstMove" | "bomb" | "vibestreak" | "cosmicBlast" | "capsule";
+export type HintKind = "firstMove" | "bomb" | "vibestreak" | "cosmicBlast";
 
 interface FtueHintProps {
     kind: HintKind;
@@ -54,14 +54,6 @@ const CONFIG: Record<
         gradient: "linear-gradient(135deg, #FF6BCB, #B366FF)",
         accent: "#E080FF",
         Icon: Stars,
-    },
-    capsule: {
-        label: "Capsule!",
-        title: "Pin Capsule Earned",
-        body: "Keep scoring — or check your Pin Book after.",
-        gradient: "linear-gradient(135deg, #FFD700, #B8860B)",
-        accent: "#FFD700",
-        Icon: Sparkles,
     },
 };
 

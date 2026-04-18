@@ -274,10 +274,7 @@ export default function AppClient() {
     if (game.state?.gameMode !== "classic") return;
     const result = game.lastTurnResult;
     const createdTypes = new Set(result.specialTilesCreated.map(s => s.type));
-    if (!ftue.has("capsuleFlashShown") && (game.state.score ?? 0) >= 15000) {
-      ftue.mark("capsuleFlashShown");
-      setFtueHint("capsule");
-    } else if (!ftue.has("cosmicBlastHintShown") && createdTypes.has("cosmic_blast")) {
+    if (!ftue.has("cosmicBlastHintShown") && createdTypes.has("cosmic_blast")) {
       ftue.mark("cosmicBlastHintShown");
       setFtueHint("cosmicBlast");
     } else if (!ftue.has("vibestreakHintShown") && createdTypes.has("vibestreak")) {
@@ -287,6 +284,9 @@ export default function AppClient() {
       ftue.mark("bombHintShown");
       setFtueHint("bomb");
     }
+    // No mid-game capsule flash — the game-over screen already shows the
+    // "Pin Capsule Earned!" confirmation, and the server is the source of
+    // truth for whether the capsule actually awarded.
   }, [game.lastTurnResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FTUE first-move nudge — if a first-time classic player sits on the board
