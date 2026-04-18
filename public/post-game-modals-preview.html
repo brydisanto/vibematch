@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeMatch — Post-Game Modals Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0114;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      padding: 40px 20px 120px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 56px;
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.55;
+    }
+
+    .variant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .variant-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px 24px 24px;
+    }
+
+    .variant-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(179,102,255,0.75);
+      margin-bottom: 6px;
+    }
+
+    .variant-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 6px;
+    }
+
+    .variant-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+
+    /* "Phone" context — shows modal over faux gameover backdrop */
+    .stage {
+      width: 380px;
+      max-width: 100%;
+      margin: 0 auto;
+      position: relative;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(179,102,255,0.10), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(255,215,0,0.07), transparent 55%),
+        linear-gradient(180deg, #110321 0%, #0a0114 100%);
+      border-radius: 24px;
+      padding: 24px;
+      min-height: 540px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* backdrop scrim simulating the bg-black/85 overlay */
+    .stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+    }
+
+    .modal {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 20px;
+      border: 1px solid rgba(179,102,255,0.3);
+      padding: 32px 24px 24px;
+      text-align: center;
+      background: linear-gradient(180deg, #1a0428 0%, #0a0114 100%);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+
+    .pill {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 5px 14px;
+      border-radius: 24px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pill-capsule {
+      background: linear-gradient(135deg, #FFD700, #B8860B);
+      color: #2A1810;
+    }
+
+    .pill-try {
+      background: linear-gradient(135deg, #B366FF, #6C5CE7);
+      color: #fff;
+    }
+
+    .modal-title {
+      color: #FFD700;
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.05;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .modal-body {
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .btn-primary {
+      padding: 13px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #2A1810;
+      box-shadow: 0 4px 14px rgba(255,165,0,0.25);
+    }
+
+    .btn-secondary {
+      margin-top: 8px;
+      padding: 10px 0;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+    }
+
+    .trigger-note {
+      text-align: center;
+      margin-top: 20px;
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .trigger-note strong {
+      color: #FFE048;
+    }
+
+    .pick-me {
+      display: inline-block;
+      background: rgba(46,255,46,0.15);
+      color: #2EFF2E;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Post-Game Onboarding Modals</h1>
+  <p class="page-subtitle">
+    Two first-time-only modals that appear on the GameOver screen, each gated
+    independently on an FTUE flag. Both are scoped to classic mode and fire
+    after the server confirms the capsule result.
+  </p>
+
+  <div class="variant-grid">
+
+    <!-- CAPSULE VARIANT -->
+    <div class="variant-card">
+      <div class="variant-label">Variant A</div>
+      <div class="variant-title">First Capsule — Push to Pin Book</div>
+      <div class="variant-note">
+        Fires the first time a capsule is actually earned (server-confirmed via
+        <code style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px; font-size:12px; color:#FFE048;">earnCapsule → earned: true</code>).
+        Primary CTA routes to the Pin Book so the user can crack open their
+        first capsule. Gated by
+        <code style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px; font-size:12px; color:#FFE048;">firstCapsuleShown</code>.
+      </div>
+
+      <div class="stage">
+        <div class="modal">
+          <div class="pill pill-capsule">First Capsule</div>
+          <h2 class="modal-title">You earned a Capsule</h2>
+          <p class="modal-body">
+            Open it to reveal your first pin. It lives in your Pin Book forever.
+          </p>
+          <button class="btn btn-primary">Show Me</button>
+          <button class="btn btn-secondary">Play Again</button>
+        </div>
+      </div>
+
+      <div class="trigger-note">
+        <strong>Trigger:</strong> server returns <code style="color:#FFE048;">earned: true</code> and
+        <code style="color:#FFE048;">!ftue.has("firstCapsuleShown")</code>.
+        <br>Fires 800ms after game-over so the GameOver screen animates in first.
+      </div>
+      <div style="text-align:center;"><span class="pick-me">One-shot per player</span></div>
+    </div>
+
+    <!-- TRY AGAIN VARIANT -->
+    <div class="variant-card">
+      <div class="variant-label">Variant B</div>
+      <div class="variant-title">So Close — Try Again Encouragement</div>
+      <div class="variant-note">
+        Fires the first time a classic game ends without earning a capsule
+        (score &lt; 15K, or the server rejected the award). Primary CTA
+        instantly kicks off a new game. Gated by
+        <code style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px; font-size:12px; color:#FFE048;">firstFailShown</code>.
+      </div>
+
+      <div class="stage">
+        <div class="modal">
+          <div class="pill pill-try">So close</div>
+          <h2 class="modal-title">You scored 8,420</h2>
+          <p class="modal-body">
+            Hit 15K next time — that&rsquo;s where capsules start dropping.
+            Special tiles (4-match, 5-match) compound your score fast.
+          </p>
+          <button class="btn btn-primary">Play Again</button>
+          <button class="btn btn-secondary">Home</button>
+        </div>
+      </div>
+
+      <div class="trigger-note">
+        <strong>Trigger:</strong> <code style="color:#FFE048;">!actuallyEarnedCapsule</code> and
+        <code style="color:#FFE048;">!ftue.has("firstFailShown")</code>.
+        <br>Fires 800ms after game-over. Only in classic mode.
+      </div>
+      <div style="text-align:center;"><span class="pick-me">One-shot per player</span></div>
+    </div>
+
+  </div>
+
+  <div style="text-align:center; color:rgba(255,255,255,0.4); font-size:13px; max-width:700px; margin:56px auto 0; line-height:1.6;">
+    Both modals layer at <code style="background:rgba(255,255,255,0.08); padding:1px 6px; border-radius:4px; font-size:12px; color:#FFE048;">z-[70]</code> over the GameOver screen with a 0.85-opacity black scrim.
+    <br>
+    <strong style="color:#B366FF;">Reply if copy or styling needs tweaks</strong> — otherwise these are what live in prod.
+  </div>
+</body>
+</html>
