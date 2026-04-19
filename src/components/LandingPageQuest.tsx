@@ -208,20 +208,24 @@ export default function LandingPageQuest({
 
                 {/* Logo — matches production sizing: 240px mobile, 320px sm+.
                     mt-4 pushes the logo further down from the header rail; no
-                    bottom margin so cards can tuck right under via -mt-5. */}
+                    bottom margin so cards can tuck right under via -mt-5.
+                    Wrapped so hover-scale lives on the outer element without
+                    stomping the inner bob keyframe. */}
                 <div className="flex justify-center mt-4">
-                    <Image
-                        src="/assets/logo-v2.png"
-                        alt="VIBE MATCH"
-                        width={320}
-                        height={160}
-                        priority
-                        className="w-[240px] sm:w-[320px] h-auto max-w-full"
-                        style={{
-                            filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
-                            animation: "vmLogoBob 4s ease-in-out infinite",
-                        }}
-                    />
+                    <div className="transition-transform duration-300 hover:scale-105">
+                        <Image
+                            src="/assets/logo-v2.png"
+                            alt="VIBE MATCH"
+                            width={320}
+                            height={160}
+                            priority
+                            className="w-[240px] sm:w-[320px] h-auto max-w-full"
+                            style={{
+                                filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
+                                animation: "vmLogoBob 4s ease-in-out infinite",
+                            }}
+                        />
+                    </div>
                     <style jsx>{`
                         @keyframes vmLogoBob {
                             0%, 100% { transform: translateY(0); }
@@ -372,9 +376,21 @@ export default function LandingPageQuest({
                     </EnamelCard>
                     </button>
 
-                    {/* Prize Games energy bar */}
+                    {/* Prize Games energy bar — whole strip is clickable and
+                        lifts on hover, matching production's tactile feedback.
+                        The inner RESTOCK ChunkyButton still works on its own
+                        (taps bubble up; both open the shop). */}
                     <div
-                        className="rounded-2xl p-[2px]"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => isLoggedIn ? onOpenBuyPrizeGames?.() : setAuthOpen(true)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                isLoggedIn ? onOpenBuyPrizeGames?.() : setAuthOpen(true);
+                            }
+                        }}
+                        className="rounded-2xl p-[2px] cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 outline-none"
                         style={{
                             background: `linear-gradient(180deg, ${prizeAccent} 0%, ${prizeAccentDeep} 100%)`,
                             boxShadow: `0 3px 0 ${prizeAccentDeep}, 0 5px 10px rgba(0,0,0,0.45)${empty ? `, 0 0 22px rgba(255,59,48,0.6)` : ""}`,
