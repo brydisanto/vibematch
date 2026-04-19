@@ -229,7 +229,8 @@ export default function LandingPageQuest({
                 </div>
 
                 {/* ========== QUEST CARDS ========== */}
-                <div className="flex flex-col gap-3 mt-1">
+                {/* -mt-4 pulls cards up close to the logo (matches production spacing) */}
+                <div className="flex flex-col gap-3 -mt-4">
                     {/* Classic */}
                     <EnamelCard
                         color={GOLD}
@@ -247,43 +248,42 @@ export default function LandingPageQuest({
                                 background: `radial-gradient(circle at 20% 15%, ${GOLD}22, transparent 40%), radial-gradient(circle at 80% 80%, ${GOLD}22, transparent 50%)`,
                             }}
                         />
-                        <div className="relative p-4 flex items-center gap-3.5">
-                            {/* 30 MOVES circle */}
+                        <div className="relative px-3.5 py-3.5 sm:px-4 sm:py-4 flex items-center gap-3">
+                            {/* 30 MOVES circle — slightly smaller on mobile to free horizontal room for the single-line title */}
                             <div
-                                className="shrink-0 rounded-full relative flex flex-col items-center justify-center overflow-hidden"
+                                className="shrink-0 rounded-full relative flex flex-col items-center justify-center overflow-hidden w-[64px] h-[64px] sm:w-[76px] sm:h-[76px]"
                                 style={{
-                                    width: 76, height: 76,
                                     background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 50%, ${GOLD_DEEP})`,
                                     boxShadow: `inset 0 -6px 10px ${GOLD_DEEP}88, 0 4px 8px rgba(0,0,0,0.5)`,
                                     border: "3px solid #2A1A0A",
                                 }}
                             >
                                 <span
-                                    className="mt-[6px] font-display font-black leading-none"
-                                    style={{ color: "#1A0633", fontSize: 32, textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
+                                    className="mt-[5px] font-display font-black leading-none text-[26px] sm:text-[32px]"
+                                    style={{ color: "#1A0633", textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
                                 >30</span>
                                 <span
-                                    className="mt-[2px] font-mundial font-black tracking-wider"
-                                    style={{ color: "#1A0633", fontSize: 7 }}
+                                    className="mt-[2px] font-mundial font-black tracking-wider text-[7px]"
+                                    style={{ color: "#1A0633" }}
                                 >MOVES</span>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h2
-                                    className="font-display font-black uppercase leading-[0.9]"
-                                    style={{ color: GOLD, fontSize: 22, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                    className="font-display font-black uppercase leading-none whitespace-nowrap overflow-hidden text-ellipsis text-[17px] sm:text-[22px]"
+                                    style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                 >
-                                    Classic<br />VibeMatch
+                                    Classic VibeMatch
                                 </h2>
                                 <p className="text-white/55 text-[11px] font-mundial mt-1.5">
                                     Match pins and score as high as you can.
                                 </p>
-                            </div>
-                            <div className="shrink-0 self-end">
-                                <ChunkyButton
-                                    style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
-                                >
-                                    PLAY
-                                </ChunkyButton>
+                                <div className="mt-2.5">
+                                    <ChunkyButton
+                                        style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
+                                    >
+                                        PLAY
+                                    </ChunkyButton>
+                                </div>
                             </div>
                         </div>
                     </EnamelCard>
@@ -306,35 +306,29 @@ export default function LandingPageQuest({
                                 background: `radial-gradient(circle at 80% 20%, ${COSMIC}22, transparent 40%), radial-gradient(circle at 15% 80%, rgba(255,107,157,0.1), transparent 50%)`,
                             }}
                         />
-                        <div className="relative p-4 flex items-center gap-3.5">
+                        <div className="relative px-3.5 py-3.5 sm:px-4 sm:py-4 flex items-center gap-3">
                             {/* Star circle */}
                             <div
-                                className="shrink-0 rounded-full relative flex items-center justify-center"
+                                className="shrink-0 rounded-full relative flex items-center justify-center w-[64px] h-[64px] sm:w-[76px] sm:h-[76px]"
                                 style={{
-                                    width: 76, height: 76,
                                     background: `radial-gradient(circle at 35% 30%, #E8C0FF, ${COSMIC} 50%, ${COSMIC_DEEP})`,
                                     boxShadow: `inset 0 -6px 10px ${COSMIC_DEEP}aa, 0 4px 8px rgba(0,0,0,0.5)`,
                                     border: "3px solid #1a0a2e",
                                 }}
                             >
                                 <span
-                                    className="font-display font-black leading-none"
-                                    style={{ color: "#1A0633", fontSize: 34 }}
+                                    className="font-display font-black leading-none text-[28px] sm:text-[34px]"
+                                    style={{ color: "#1A0633" }}
                                 >★</span>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     <h2
-                                        className="font-display font-black uppercase leading-[0.9]"
-                                        style={{ color: COSMIC, fontSize: 20, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                        className="font-display font-black uppercase leading-none whitespace-nowrap overflow-hidden text-ellipsis text-[16px] sm:text-[20px]"
+                                        style={{ color: COSMIC, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                     >
-                                        The Daily<br />Challenge
+                                        The Daily Challenge
                                     </h2>
-                                </div>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                    <p className="text-white/55 text-[11px] font-mundial">
-                                        1 shot per day, same board for all
-                                    </p>
                                     {streak > 0 && (
                                         <span
                                             className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-mundial font-black"
@@ -348,16 +342,19 @@ export default function LandingPageQuest({
                                         </span>
                                     )}
                                 </div>
-                            </div>
-                            <div className="shrink-0 self-end">
-                                <ChunkyButton
-                                    color={COSMIC}
-                                    deep={COSMIC_DEEP}
-                                    text="#fff"
-                                    style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
-                                >
-                                    PLAY
-                                </ChunkyButton>
+                                <p className="text-white/55 text-[11px] font-mundial mt-1">
+                                    1 shot per day, same board for all
+                                </p>
+                                <div className="mt-2.5">
+                                    <ChunkyButton
+                                        color={COSMIC}
+                                        deep={COSMIC_DEEP}
+                                        text="#fff"
+                                        style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
+                                    >
+                                        PLAY
+                                    </ChunkyButton>
+                                </div>
                             </div>
                         </div>
                     </EnamelCard>
