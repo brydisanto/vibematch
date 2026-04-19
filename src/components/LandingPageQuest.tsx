@@ -28,6 +28,8 @@ interface LandingPageQuestProps {
     onOpenPinBook?: () => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
+    /** Called when auth/signup succeeds so the parent can refresh userProfile. */
+    onAuthSuccess?: (username: string, avatarUrl: string) => void;
     capsuleCount?: number;
     achievementCount?: number;
     classicPlays?: number;
@@ -66,6 +68,7 @@ export default function LandingPageQuest({
     onOpenPinBook,
     onOpenAchievements,
     onOpenBuyPrizeGames,
+    onAuthSuccess,
     capsuleCount = 0,
     achievementCount = 0,
     classicPlays = 0,
@@ -126,9 +129,13 @@ export default function LandingPageQuest({
         return () => clearTimeout(t);
     }, []);
 
-    const handleAuthSuccess = (newUsername: string) => {
+    const handleAuthSuccess = (newUsername: string, newAvatarUrl: string) => {
         localStorage.setItem("vibematch_username", newUsername);
-        // userProfile update flows in via AppClient's session fetch; nothing else needed here.
+        // Propagate to AppClient so userProfile flips to logged-in state. Without
+        // this callback AppClient's session fetch only runs on mount and the UI
+        // stays stuck on guest until a page reload.
+        onAuthSuccess?.(newUsername, newAvatarUrl);
+        setAuthOpen(false);
     };
 
     const handleProfileSave = async (newUsername: string, newAvatarUrl: string) => {

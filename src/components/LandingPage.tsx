@@ -11,6 +11,7 @@ interface LandingPageProps {
     onOpenPinBook?: () => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
+    onAuthSuccess?: (username: string, avatarUrl: string) => void;
     capsuleCount?: number;
     achievementCount?: number;
     classicPlays?: number;

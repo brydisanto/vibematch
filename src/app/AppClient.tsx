@@ -509,6 +509,12 @@ export default function AppClient() {
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
               pinsCollected={Object.keys(pinBook.state.pins).length}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
+              onAuthSuccess={(username, avatarUrl) => {
+                setUserProfile({ username, avatarUrl });
+                localStorage.setItem('vibematch_username', username);
+                pinBook.load();
+                achievements.load();
+              }}
               referralCode={referralCode}
               userProfile={userProfile}
             />
