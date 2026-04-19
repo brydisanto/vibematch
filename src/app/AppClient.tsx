@@ -21,7 +21,7 @@ import PrizeGamesOnboarding from "@/components/PrizeGamesOnboarding";
 import dynamic from "next/dynamic";
 
 // Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
-const BuyPrizeGamesModal = dynamic(() => import("@/components/BuyPrizeGamesModal"), { ssr: false });
+const BuyPrizeGamesModal = dynamic(() => import("@/components/arcade/PrizeShopDrawer"), { ssr: false });
 const RerollModal = dynamic(() => import("@/components/RerollModal"), { ssr: false });
 const WalletProvider = dynamic(
   () => import("@/components/WalletProvider").then(m => m.WalletProvider),
