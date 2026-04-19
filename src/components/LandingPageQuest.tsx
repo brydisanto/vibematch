@@ -191,7 +191,7 @@ export default function LandingPageQuest({
             {/* Pin-wall background — defaults match production density (55 mobile / 120 desktop) */}
             <FloatingBadges />
 
-            <div className="relative z-10 flex flex-col w-full max-w-lg mx-auto px-4 pt-4 pb-4 min-h-screen">
+            <div className="relative z-10 flex flex-col w-full max-w-lg mx-auto px-4 pt-6 pb-4 min-h-screen">
                 {/* ========== HEADER RAIL ========== */}
                 <HeaderRail
                     isLoggedIn={isLoggedIn}
@@ -206,8 +206,10 @@ export default function LandingPageQuest({
                     onSignIn={() => setAuthOpen(true)}
                 />
 
-                {/* Logo — matches production sizing: 240px mobile, 320px sm+ */}
-                <div className="flex justify-center my-2">
+                {/* Logo — matches production sizing: 240px mobile, 320px sm+.
+                    mt-4 pushes the logo further down from the header rail; no
+                    bottom margin so cards can tuck right under via -mt-5. */}
+                <div className="flex justify-center mt-4">
                     <Image
                         src="/assets/logo-v2.png"
                         alt="VIBE MATCH"
@@ -229,17 +231,21 @@ export default function LandingPageQuest({
                 </div>
 
                 {/* ========== QUEST CARDS ========== */}
-                <div className="flex flex-col gap-3 mt-1">
+                {/* -mt-5 pulls the cards up to tuck under the logo, matching
+                    production's tight spacing. */}
+                <div className="flex flex-col gap-3 -mt-5">
                     {/* Classic */}
+                    <button
+                        type="button"
+                        onClick={() => onStartGame("classic", username || undefined, avatarUrl || undefined)}
+                        className="block w-full text-left outline-none transition-transform duration-200 ease-out hover:-translate-y-1 active:translate-y-0.5"
+                    >
                     <EnamelCard
                         color={GOLD}
                         deep={GOLD_DEEP}
                         inner="linear-gradient(155deg, #3a2108 0%, #1a0e03 60%, #0c0702 100%)"
                         tilt={-0.6}
                         depth={6}
-                        as="button"
-                        onClick={() => onStartGame("classic", username || undefined, avatarUrl || undefined)}
-                        className="text-left"
                     >
                         <div
                             className="absolute inset-0 pointer-events-none"
@@ -287,8 +293,14 @@ export default function LandingPageQuest({
                             </div>
                         </div>
                     </EnamelCard>
+                    </button>
 
                     {/* Daily Challenge */}
+                    <button
+                        type="button"
+                        onClick={handleStartDaily}
+                        className="block w-full text-left outline-none transition-transform duration-200 ease-out hover:-translate-y-1 active:translate-y-0.5"
+                    >
                     <EnamelCard
                         color={COSMIC}
                         deep={COSMIC_DEEP}
@@ -296,9 +308,6 @@ export default function LandingPageQuest({
                         inner="linear-gradient(155deg, #2a124d 0%, #14082a 60%, #0a0416 100%)"
                         tilt={0.5}
                         depth={6}
-                        as="button"
-                        onClick={handleStartDaily}
-                        className="text-left"
                     >
                         <div
                             className="absolute inset-0 pointer-events-none"
@@ -361,6 +370,7 @@ export default function LandingPageQuest({
                             </div>
                         </div>
                     </EnamelCard>
+                    </button>
 
                     {/* Prize Games energy bar */}
                     <div
