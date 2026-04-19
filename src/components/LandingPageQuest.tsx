@@ -451,10 +451,11 @@ export default function LandingPageQuest({
                     </button>
                 )}
 
-                {/* Spacer pushes nav to the bottom */}
-                <div className="flex-1 min-h-[6px]" />
-
-                {/* ========== BOTTOM NAV ========== */}
+                {/* ========== BOTTOM NAV ==========
+                    Natural flow below the content — no flex-1 spacer. On shorter
+                    screens the nav sits right below the sign-in callout; on tall
+                    screens there's a small natural gap (mt-4) rather than a void. */}
+                <div className="mt-4" />
                 <BottomNav
                     isLoggedIn={isLoggedIn}
                     capsuleCount={capsuleCount}
