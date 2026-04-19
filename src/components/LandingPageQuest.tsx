@@ -188,10 +188,10 @@ export default function LandingPageQuest({
 
     return (
         <div className="relative min-h-screen flex flex-col items-stretch">
-            {/* Pin-wall background */}
-            <FloatingBadges count={75} speed={0.9} />
+            {/* Pin-wall background — defaults match production density (55 mobile / 120 desktop) */}
+            <FloatingBadges />
 
-            <div className="relative z-10 flex flex-col w-full max-w-[420px] mx-auto px-3 pt-3 pb-3 min-h-screen">
+            <div className="relative z-10 flex flex-col w-full max-w-lg mx-auto px-4 pt-4 pb-4 min-h-screen">
                 {/* ========== HEADER RAIL ========== */}
                 <HeaderRail
                     isLoggedIn={isLoggedIn}
@@ -206,21 +206,24 @@ export default function LandingPageQuest({
                     onSignIn={() => setAuthOpen(true)}
                 />
 
-                {/* Logo */}
-                <div className="flex justify-center my-1">
+                {/* Logo — matches production sizing: 240px mobile, 320px sm+ */}
+                <div className="flex justify-center my-2">
                     <Image
                         src="/assets/logo-v2.png"
                         alt="VIBE MATCH"
-                        width={210}
-                        height={105}
+                        width={320}
+                        height={160}
                         priority
-                        className="w-[200px] h-auto"
-                        style={{ filter: `drop-shadow(0 10px 24px ${GOLD}55)`, animation: "vmLogoBob 3.2s ease-in-out infinite" }}
+                        className="w-[240px] sm:w-[320px] h-auto max-w-full"
+                        style={{
+                            filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
+                            animation: "vmLogoBob 4s ease-in-out infinite",
+                        }}
                     />
                     <style jsx>{`
                         @keyframes vmLogoBob {
                             0%, 100% { transform: translateY(0); }
-                            50% { transform: translateY(-5px); }
+                            50% { transform: translateY(-7px); }
                         }
                     `}</style>
                 </div>

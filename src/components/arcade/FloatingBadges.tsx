@@ -43,7 +43,10 @@ const BADGE_IMAGES = [
 ];
 
 interface FloatingBadgesProps {
+    /** Desktop count override. Mobile is always capped to `mobileCount`. */
     count?: number;
+    /** Mobile count override. */
+    mobileCount?: number;
     speed?: number;
 }
 
@@ -65,9 +68,10 @@ interface BadgeItem {
  * behind the main UI. Uses CSS @keyframes (not per-frame JS) so animation
  * runs on the browser's compositor — GPU-accelerated and essentially free.
  *
- * Ported from the Claude Design handoff; performance-conscious by design.
+ * Defaults match production's current density (55 mobile / 120 desktop) with
+ * size ranges tuned to feel full on both viewports.
  */
-export default function FloatingBadges({ count = 90, speed = 1 }: FloatingBadgesProps) {
+export default function FloatingBadges({ count = 120, mobileCount = 55, speed = 1 }: FloatingBadgesProps) {
     // Guard against SSR — window isn't available server-side. The badge list
     // populates on mount, leaving an empty purple bg during initial paint.
     const [mounted, setMounted] = useState(false);
@@ -75,27 +79,31 @@ export default function FloatingBadges({ count = 90, speed = 1 }: FloatingBadges
 
     const items = useMemo<BadgeItem[]>(() => {
         if (typeof window === "undefined") return [];
-        const isMobile = window.innerWidth < 520;
-        const n = isMobile ? Math.round(count * 0.55) : count;
+        // Match production's breakpoint (md) so phone behaviour is consistent
+        // between the legacy and refreshed landing pages.
+        const isMobile = window.innerWidth < 768;
+        const n = isMobile ? mobileCount : count;
         const pool: string[] = [];
-        for (let i = 0; i < 8; i++) pool.push(...BADGE_IMAGES);
+        for (let i = 0; i < 15; i++) pool.push(...BADGE_IMAGES);
         pool.sort(() => Math.random() - 0.5);
         return pool.slice(0, n).map((img, i) => {
             const rot = Math.random() * 360;
             return {
                 id: i,
                 image: img,
-                x: Math.random() * 118 - 9,
+                x: Math.random() * 120 - 10,
                 yStart: 110 + Math.random() * 100,
                 yEnd: -40 - Math.random() * 40,
-                size: 50 + Math.random() * (isMobile ? 75 : 155),
+                // Production-tuned: 60-160px mobile, 60-280px desktop — the larger
+                // desktop badges give the pin-wall real depth on wide viewports.
+                size: 60 + Math.random() * (isMobile ? 100 : 220),
                 rotation: rot,
                 rotationEnd: rot + (Math.random() > 0.5 ? 90 : -90),
-                duration: (22 + Math.random() * 38) / speed,
+                duration: (20 + Math.random() * 40) / speed,
                 delay: -(Math.random() * 60),
             };
         });
-    }, [count, speed, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [count, mobileCount, speed, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div
