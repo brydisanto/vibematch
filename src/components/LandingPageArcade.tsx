@@ -18,6 +18,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
+import { LogOut, Flame, Star } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
@@ -102,8 +103,9 @@ export default function LandingPageArcade({
     const [isProfileOpen, setProfileOpen] = useState(false);
     const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
     const [streak, setStreak] = useState(0);
-    const [rank, setRank] = useState<number | null>(null);
     const [personalBest, setPersonalBest] = useState<number>(0);
+    const [totalPlayers, setTotalPlayers] = useState<number>(0);
+    const [pinRank, setPinRank] = useState<number | null>(null);
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
     const countdown = useDailyCountdown();
 
@@ -127,6 +129,22 @@ export default function LandingPageArcade({
     // Pin collection math
     const totalBadges = BADGES.length;
     const pinPct = totalBadges > 0 ? Math.round((pinsCollected / totalBadges) * 100) : 0;
+
+    // Player tier — highest rarity of any collected pin. Drives the tier chip
+    // under the avatar ("COSMIC TIER · PIN #247" style). Blue-only / no pins
+    // collapse to "ROOKIE TIER" so we always have something to show.
+    const tier = useMemo<{ label: string; color: string } | null>(() => {
+        const owned = Object.keys(pins);
+        if (owned.length === 0) return { label: "Rookie Tier", color: "#9BA3B8" };
+        const tiers = owned
+            .map(id => BADGES.find(b => b.id === id)?.tier)
+            .filter((t): t is NonNullable<typeof t> => !!t);
+        if (tiers.includes("cosmic")) return { label: "Cosmic Tier", color: "#B366FF" };
+        if (tiers.includes("gold")) return { label: "Legendary Tier", color: "#FFE048" };
+        if (tiers.includes("special")) return { label: "Special Tier", color: "#FF5F1F" };
+        if (tiers.includes("silver")) return { label: "Rare Tier", color: "#4A9EFF" };
+        return { label: "Rookie Tier", color: "#9BA3B8" };
+    }, [pins]);
 
     // Recent pulls — sort collected pins by firstEarned desc, take top 6
     const recentPulls = useMemo(() => {
@@ -155,13 +173,27 @@ export default function LandingPageArcade({
             .catch(() => { /* silent */ });
     }, [username]);
 
-    // Rank + personal best fetch (classic leaderboard)
+    // Classic leaderboard fetch — also gives us totalPlayers for the marquee.
     useEffect(() => {
         fetch(`/api/scores?mode=classic&username=${encodeURIComponent(username)}`)
             .then(r => r.json())
             .then(data => {
-                if (typeof data.userRank === "number") setRank(data.userRank);
                 if (typeof data.personalBest === "number") setPersonalBest(data.personalBest);
+                if (typeof data.totalPlayers === "number") setTotalPlayers(data.totalPlayers);
+            })
+            .catch(() => { /* silent */ });
+    }, [username]);
+
+    // Pin leaderboard rank — derive by scanning the ordered list for the user.
+    useEffect(() => {
+        fetch("/api/pinbook/leaderboard")
+            .then(r => r.json())
+            .then(data => {
+                const list: Array<{ username: string }> = data?.leaderboard || [];
+                const idx = list.findIndex(
+                    e => e.username?.toLowerCase() === username.toLowerCase()
+                );
+                if (idx >= 0) setPinRank(idx + 1);
             })
             .catch(() => { /* silent */ });
     }, [username]);
@@ -234,7 +266,7 @@ export default function LandingPageArcade({
                     <div
                         className="relative shrink-0 flex flex-col"
                         style={{
-                            width: 260,
+                            width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
                             borderRight: `1px solid ${GOLD}15`,
                         }}
@@ -443,7 +475,7 @@ export default function LandingPageArcade({
                         {/* Pin wall background */}
                         <FloatingBadges count={90} speed={0.8} />
 
-                        {/* Top marquee */}
+                        {/* Top marquee — players count + daily reset countdown */}
                         <div
                             className="relative z-10 px-6 pt-2 pb-1.5"
                             style={{
@@ -452,14 +484,11 @@ export default function LandingPageArcade({
                             }}
                         >
                             <div className="flex items-center justify-between">
-                                <button
-                                    type="button"
-                                    onClick={handleLogout}
-                                    className="font-display text-[11px] tracking-[0.3em] text-white/55 hover:text-white/90 transition-colors"
-                                    title="Sign out"
-                                >
-                                    SIGN OUT
-                                </button>
+                                <span className="font-display text-[11px] tracking-[0.3em] text-white/65">
+                                    {totalPlayers > 0
+                                        ? `${totalPlayers.toLocaleString()} PLAYER${totalPlayers === 1 ? "" : "S"} VIBING`
+                                        : "\u00A0"}
+                                </span>
                                 <div className="flex items-center gap-3 text-[11px] font-display">
                                     <span className="text-white/45 tracking-[0.3em]">DAILY RESET</span>
                                     <span className="tabular-nums" style={{ color: GOLD }}>{countdown}</span>
@@ -467,24 +496,27 @@ export default function LandingPageArcade({
                             </div>
                         </div>
 
-                        {/* Logo */}
-                        <div className="relative z-10 flex flex-col items-center px-6 pt-1 pb-0">
+                        {/* Play stack — logo + cabinets + prize strip + nav.
+                            flex-1 with justify-center so the whole cluster
+                            vertically centers in the remaining space under
+                            the marquee. Gaps give the logo clear breathing
+                            room above the cabinets. */}
+                        <div className="relative z-10 flex-1 px-6 pb-6 pt-4 flex flex-col justify-center items-center gap-6">
                             <Image
                                 src="/assets/logo.png"
                                 alt="VIBE MATCH"
                                 width={1000}
                                 height={627}
                                 priority
-                                className="w-[300px] h-auto -mb-3"
+                                className="w-[300px] h-auto"
                                 style={{
                                     filter: `drop-shadow(0 16px 30px ${GOLD}55)`,
                                     animation: "vmArcadeBob 3.2s ease-in-out infinite",
                                 }}
                             />
-                        </div>
 
                         {/* Two mode cabinets side-by-side */}
-                        <div className="relative z-10 flex-1 px-6 pb-4 flex flex-col justify-start pt-1">
+                        <div className="w-full flex flex-col items-center">
                             <div className="grid grid-cols-2 gap-4 max-w-[640px] mx-auto w-full">
                                 {/* Classic */}
                                 <button
@@ -769,6 +801,19 @@ export default function LandingPageArcade({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Sign-out pill — lives below the nav so it reads as a tertiary
+                                action without competing with the main CTAs. Matches the
+                                production Quest treatment. */}
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/70 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                            >
+                                <LogOut size={12} />
+                                <span>Sign Out of VibeMatch</span>
+                            </button>
+                            </div>
                         </div>
                     </div>
 
@@ -776,7 +821,7 @@ export default function LandingPageArcade({
                     <div
                         className="relative shrink-0 flex flex-col"
                         style={{
-                            width: 260,
+                            width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
                             borderLeft: `1px solid ${GOLD}15`,
                         }}
@@ -873,12 +918,12 @@ export default function LandingPageArcade({
                                     {username}
                                 </div>
 
-                                {rank !== null && (
+                                {tier && (
                                     <div
                                         className="rounded-full px-2.5 py-1 flex items-center gap-1.5"
                                         style={{
-                                            background: `linear-gradient(180deg, ${COSMIC}33, ${COSMIC_DEEP}55)`,
-                                            border: `1px solid ${COSMIC}55`,
+                                            background: `linear-gradient(180deg, ${tier.color}33, ${tier.color}15)`,
+                                            border: `1px solid ${tier.color}55`,
                                         }}
                                     >
                                         <svg
@@ -886,15 +931,19 @@ export default function LandingPageArcade({
                                             height="10"
                                             viewBox="0 0 24 24"
                                             fill="none"
-                                            stroke={COSMIC}
+                                            stroke={tier.color}
                                             strokeWidth="2.5"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                         >
                                             <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2" />
                                         </svg>
-                                        <span className="font-display text-[9px] tracking-[0.18em]" style={{ color: COSMIC }}>
-                                            CLASSIC RANK #{rank}
+                                        <span
+                                            className="font-display text-[9px] tracking-[0.18em] uppercase"
+                                            style={{ color: tier.color }}
+                                        >
+                                            {tier.label}
+                                            {pinRank !== null ? ` · PIN #${pinRank}` : ""}
                                         </span>
                                     </div>
                                 )}
@@ -946,7 +995,7 @@ export default function LandingPageArcade({
                                             border: `1px solid ${ORANGE}44`,
                                         }}
                                     >
-                                        <div className="text-[15px] leading-none">🔥</div>
+                                        <Flame size={14} color={ORANGE} strokeWidth={2.2} />
                                         <div
                                             className="font-display font-black text-[13px] tabular-nums leading-none mt-1"
                                             style={{ color: ORANGE }}
@@ -964,7 +1013,7 @@ export default function LandingPageArcade({
                                             border: `1px solid ${GOLD}44`,
                                         }}
                                     >
-                                        <div className="text-[15px] leading-none">⭐</div>
+                                        <Star size={14} color={GOLD} strokeWidth={2.2} />
                                         <div
                                             className="font-display font-black text-[13px] tabular-nums leading-none mt-1"
                                             style={{ color: GOLD }}
@@ -1067,6 +1116,9 @@ export default function LandingPageArcade({
                     currentAvatarUrl={avatarUrl}
                     onSave={handleProfileSave}
                     onClose={() => setProfileOpen(false)}
+                    pinsCollected={pinsCollected}
+                    streak={streak}
+                    capsuleCount={capsuleCount}
                 />
             )}
             {isLeaderboardOpen && (
