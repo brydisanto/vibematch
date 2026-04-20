@@ -124,11 +124,25 @@ export default function AppClient() {
       .catch(err => console.error("Initial session check failed:", err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Retroactive achievement check — awards achievements for progress made before the system existed
-  const retroChecked = useRef(false);
+  // `musicChangedTick` lets ProfileModal / SettingsModal signal a BGM-track
+  // change up to this component, so the music-change journey quest can
+  // trigger retroactively without waiting for the next game to end.
+  // ProfileModal dispatches a `vm:music-changed` window event; we bump
+  // the tick to re-fire the retroactive check.
+  const [musicChangedTick, setMusicChangedTick] = useState(0);
   useEffect(() => {
-    if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username || retroChecked.current) return;
-    retroChecked.current = true;
+    const handler = () => setMusicChangedTick(t => t + 1);
+    window.addEventListener("vm:music-changed", handler);
+    return () => window.removeEventListener("vm:music-changed", handler);
+  }, []);
+
+  // Retroactive achievement check. Re-runs on mount AND whenever any
+  // context flag that drives a journey/mastery quest changes — avatar URL,
+  // bonus prize games, or a music-change tick — so quests like Face Lift
+  // / Set The Vibe fire immediately after the user does the thing, not
+  // only after their next game.
+  useEffect(() => {
+    if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username) return;
 
     const ctx = buildPlayerContext(pinBook.state.pins, {
       totalPinsOpened: pinBook.state.totalOpened,
@@ -147,7 +161,14 @@ export default function AppClient() {
       const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
       if (ids.length > 0) achievements.unlock(ids);
     });
-  }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    achievements.state.loaded,
+    pinBook.state.loaded,
+    userProfile?.username,
+    userProfile?.avatarUrl,
+    pinBook.state.bonusPrizeGames,
+    musicChangedTick,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FTUE post-game modal is triggered from inside the game-end async flow
   // below — only once the server has actually confirmed (or rejected) the

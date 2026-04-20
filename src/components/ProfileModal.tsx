@@ -88,6 +88,12 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
             toggleMute(false);
             startBGM();
         }
+        // Signal the app so the Set-The-Vibe journey quest can fire without
+        // waiting for the next game-over check. Window event keeps us from
+        // threading a prop through the two landing-page layouts.
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("vm:music-changed"));
+        }
     };
 
     return (
