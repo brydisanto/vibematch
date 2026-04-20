@@ -316,97 +316,6 @@ export default function LandingPageArcade({
                                 }}
                             >
                                 <div className="rounded-[10px] px-2.5 py-2 flex items-center gap-2.5" style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}>
-                                    {/* Cracked-open capsule glyph with sparkles */}
-                                    <div className="relative shrink-0" style={{ width: 46, height: 46 }}>
-                                        <div
-                                            className="absolute rounded-full"
-                                            style={{
-                                                inset: 2,
-                                                background: `radial-gradient(circle, ${COSMIC}66 0%, ${GOLD}22 40%, transparent 70%)`,
-                                                filter: "blur(3px)",
-                                            }}
-                                        />
-                                        {/* Loot beam */}
-                                        <div
-                                            style={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: "50%",
-                                                width: 3,
-                                                height: 18,
-                                                transform: "translateX(-50%)",
-                                                background: `linear-gradient(180deg, transparent 0%, ${GOLD} 40%, #fff 70%, ${GOLD} 100%)`,
-                                                boxShadow: `0 0 8px ${GOLD}, 0 0 14px ${GOLD}88`,
-                                                borderRadius: 2,
-                                            }}
-                                        />
-                                        {/* Sparkle star at top of beam */}
-                                        <div
-                                            style={{
-                                                position: "absolute",
-                                                top: -2,
-                                                left: "50%",
-                                                transform: "translateX(-50%)",
-                                                width: 12,
-                                                height: 12,
-                                            }}
-                                        >
-                                            <svg viewBox="0 0 10 10" width="12" height="12" style={{ filter: `drop-shadow(0 0 3px ${GOLD})` }}>
-                                                <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z" fill={GOLD} />
-                                            </svg>
-                                        </div>
-                                        {/* Top half (tilted open) */}
-                                        <div
-                                            style={{
-                                                position: "absolute",
-                                                top: 7,
-                                                left: 4,
-                                                width: 35,
-                                                height: 17,
-                                                background: "radial-gradient(ellipse at 35% 60%, #7a4db8 0%, #4a2280 55%, #2a0e55 100%)",
-                                                border: "1.5px solid #0C0418",
-                                                borderBottom: "none",
-                                                borderRadius: "17px 17px 2px 2px",
-                                                transform: "rotate(-12deg) translateY(-3px)",
-                                                transformOrigin: "right bottom",
-                                                boxShadow: "inset 0 2px 3px rgba(255,255,255,0.25), 0 -2px 4px rgba(0,0,0,0.3)",
-                                            }}
-                                        />
-                                        {/* Bottom half (bowl) */}
-                                        <div
-                                            style={{
-                                                position: "absolute",
-                                                bottom: 3,
-                                                left: 4,
-                                                width: 35,
-                                                height: 18,
-                                                background: "radial-gradient(ellipse at 35% 40%, #6a3da0 0%, #3a1a6e 55%, #1a0733 100%)",
-                                                border: "1.5px solid #0C0418",
-                                                borderTop: "none",
-                                                borderRadius: "2px 2px 17px 17px",
-                                                boxShadow: "inset 0 -3px 5px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.45)",
-                                                overflow: "hidden",
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    position: "absolute",
-                                                    top: -2,
-                                                    left: "50%",
-                                                    transform: "translateX(-50%)",
-                                                    width: 22,
-                                                    height: 13,
-                                                    borderRadius: "50%",
-                                                    background: `radial-gradient(ellipse, ${GOLD}aa 0%, ${GOLD}55 40%, transparent 70%)`,
-                                                    filter: "blur(1px)",
-                                                }}
-                                            />
-                                        </div>
-                                        {/* Side sparkle dots */}
-                                        <div style={{ position: "absolute", top: 8, right: 2, width: 3, height: 3, borderRadius: "50%", background: "#fff", boxShadow: `0 0 4px ${GOLD}` }} />
-                                        <div style={{ position: "absolute", top: 14, left: 0, width: 2, height: 2, borderRadius: "50%", background: GOLD, boxShadow: `0 0 3px ${GOLD}` }} />
-                                    </div>
-
                                     <div className="min-w-0 flex-1 leading-tight">
                                         <div className="flex items-baseline gap-1.5">
                                             <span
@@ -415,12 +324,12 @@ export default function LandingPageArcade({
                                             >
                                                 {capsuleCount}
                                             </span>
-                                            <span className="font-display text-[9px] tracking-[0.16em]" style={{ color: `${GOLD}cc` }}>
-                                                UNOPENED
+                                            <span className="font-display text-[11px]" style={{ color: `${GOLD}cc` }}>
+                                                Capsule{capsuleCount === 1 ? "" : "s"}
                                             </span>
                                         </div>
                                         <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
-                                            Open capsules to find Pins.
+                                            Rip &apos;em open to find Pins!
                                         </div>
                                     </div>
 
@@ -469,7 +378,7 @@ export default function LandingPageArcade({
                                             </span>
                                         </div>
                                         <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
-                                            Burn duplicates, roll new pins.
+                                            Burn duplicates, get new capsules.
                                         </div>
                                     </div>
                                     <ChunkyButton
