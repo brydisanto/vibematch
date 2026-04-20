@@ -303,7 +303,7 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                 </motion.div>
 
                 {/* Mode Cards — staggered entrance */}
-                <div className="flex flex-col gap-3 mt-4">
+                <div className="flex flex-col gap-3 mt-8">
                     {/* Classic Mode */}
                     <motion.div
                         initial={{ y: 30, opacity: 0 }}
