@@ -602,12 +602,14 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                         </div>
                     </div>
 
-                    {/* Logout Button — reserve space so layout doesn't shift */}
-                    <div className="mt-4 h-5">
+                    {/* Logout Button — subtle pill so it reads as interactive
+                        without competing with the main CTAs. Reserve space so
+                        layout doesn't shift for signed-out viewers. */}
+                    <div className="mt-5 h-8 flex justify-center">
                         {isLoggedIn && (
                             <button
                                 onClick={handleLogout}
-                                className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all flex items-center justify-center gap-2 hover:gap-3 w-full"
+                                className="group text-white/70 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm"
                             >
                                 <LogOut size={12} />
                                 <span>Sign Out of VibeMatch</span>
