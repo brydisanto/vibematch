@@ -87,8 +87,32 @@ export async function POST(req: Request) {
             totalEarned: number;
         };
 
+        // Load engagement signals that aren't part of the pinbook blob:
+        //   - profile.avatarUrl authoritatively verifies "uploaded an avatar"
+        //   - user_flags:<user> stores music-change + prize-game-purchased flags
+        //     written by their respective endpoints, so the server doesn't
+        //     have to trust a client claim here.
+        const [profileRaw, flagsRaw] = await Promise.all([
+            kv.get(`user:${username}`) as Promise<{ avatarUrl?: string } | null>,
+            kv.get(`user_flags:${username}`) as Promise<{
+                musicChanged?: boolean;
+                avatarUploaded?: boolean;
+                prizeGamePurchased?: boolean;
+            } | null>,
+        ]);
+        const hasUploadedAvatar =
+            !!(profileRaw?.avatarUrl && profileRaw.avatarUrl.trim()) ||
+            !!flagsRaw?.avatarUploaded;
+        const hasChangedMusic = !!flagsRaw?.musicChanged;
+        const hasPurchasedPrizeGame = !!flagsRaw?.prizeGamePurchased;
+
         // Build authoritative PlayerContext from stored pinbook state
-        const ctx = buildPlayerContext(pinbook.pins, { totalPinsOpened: pinbook.totalOpened });
+        const ctx = buildPlayerContext(pinbook.pins, {
+            totalPinsOpened: pinbook.totalOpened,
+            hasUploadedAvatar,
+            hasChangedMusic,
+            hasPurchasedPrizeGame,
+        });
 
         // Fetch streak + referral count
         const [streakRaw, referralRaw] = await Promise.all([

@@ -261,6 +261,16 @@ export async function POST(request: Request) {
             timestamp: Date.now(),
         }));
 
+        // Persist engagement flag so the "Put In A Coin" achievement fires
+        // on the next retroactive check. Best-effort — not critical path.
+        try {
+            const flagsKey = `user_flags:${username}`;
+            const existingFlags = (await kv.get(flagsKey)) as Record<string, boolean> | null;
+            await kv.set(flagsKey, { ...(existingFlags || {}), prizeGamePurchased: true });
+        } catch (flagErr) {
+            console.warn('[Purchase] failed to set prizeGamePurchased flag', flagErr);
+        }
+
         await kv.del(lockKey);
 
         console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatUnits(actualAmount, decimals)}`);
