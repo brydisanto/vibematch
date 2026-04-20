@@ -855,52 +855,12 @@ export default function LandingPageArcade({
                         <button
                             type="button"
                             onClick={() => setProfileOpen(true)}
-                            className="relative overflow-hidden text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
+                            className="relative text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
                         >
-                            <div
-                                className="absolute pointer-events-none"
-                                style={{
-                                    top: 10,
-                                    left: "50%",
-                                    transform: "translateX(-50%)",
-                                    width: 180,
-                                    height: 180,
-                                    background: `radial-gradient(circle, ${GOLD}22 0%, ${COSMIC}18 40%, transparent 70%)`,
-                                    filter: "blur(4px)",
-                                }}
-                            />
-                            <svg
-                                className="absolute pointer-events-none"
-                                style={{ top: 8, left: "50%", transform: "translateX(-50%)", opacity: 0.25 }}
-                                width="150"
-                                height="150"
-                                viewBox="0 0 150 150"
-                            >
-                                {[...Array(12)].map((_, i) => {
-                                    const angle = (i * 30) * Math.PI / 180;
-                                    const x1 = 75 + Math.cos(angle) * 42;
-                                    const y1 = 75 + Math.sin(angle) * 42;
-                                    const x2 = 75 + Math.cos(angle) * 70;
-                                    const y2 = 75 + Math.sin(angle) * 70;
-                                    return (
-                                        <line
-                                            key={i}
-                                            x1={x1}
-                                            y1={y1}
-                                            x2={x2}
-                                            y2={y2}
-                                            stroke={GOLD}
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                        />
-                                    );
-                                })}
-                            </svg>
-
                             <div className="relative flex flex-col items-center gap-2.5">
-                                {/* Avatar — subtle bounce + pulsing gold glow.
-                                    Bounce is on the outer wrapper so the
-                                    rotating ring stays in sync with the avatar. */}
+                                {/* Avatar — bounce + pulsing gold halo + starburst
+                                    rays all share the same relative box so their
+                                    centers line up with the avatar precisely. */}
                                 <div
                                     className="relative"
                                     style={{
@@ -909,12 +869,47 @@ export default function LandingPageArcade({
                                         animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                     }}
                                 >
+                                    {/* Starburst rays — centered on the avatar via
+                                        negative inset on an oversized absolute box. */}
+                                    <svg
+                                        className="absolute pointer-events-none"
+                                        style={{
+                                            top: "50%",
+                                            left: "50%",
+                                            transform: "translate(-50%, -50%)",
+                                            opacity: 0.55,
+                                        }}
+                                        width="160"
+                                        height="160"
+                                        viewBox="0 0 160 160"
+                                    >
+                                        {[...Array(12)].map((_, i) => {
+                                            const angle = (i * 30) * Math.PI / 180;
+                                            const x1 = 80 + Math.cos(angle) * 50;
+                                            const y1 = 80 + Math.sin(angle) * 50;
+                                            const x2 = 80 + Math.cos(angle) * 78;
+                                            const y2 = 80 + Math.sin(angle) * 78;
+                                            return (
+                                                <line
+                                                    key={i}
+                                                    x1={x1}
+                                                    y1={y1}
+                                                    x2={x2}
+                                                    y2={y2}
+                                                    stroke={GOLD}
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                />
+                                            );
+                                        })}
+                                    </svg>
                                     {/* Gold glow halo that breathes */}
                                     <div
                                         className="absolute rounded-full pointer-events-none"
                                         style={{
-                                            inset: -8,
-                                            background: `radial-gradient(circle, ${GOLD}55 0%, ${GOLD}22 50%, transparent 75%)`,
+                                            inset: -14,
+                                            background: `radial-gradient(circle, ${GOLD}bb 0%, ${GOLD}66 40%, ${GOLD}22 60%, transparent 80%)`,
+                                            filter: "blur(2px)",
                                             animation: "vmAvatarGlow 3.6s ease-in-out infinite",
                                         }}
                                     />

@@ -415,7 +415,7 @@ function PurchaseState({
                                             {p.label}
                                         </span>
                                         <span className="text-white/40 text-[10px] font-mundial">
-                                            {p.size} × Prize Game{p.size === 1 ? "" : "s"}
+                                            {p.size} Prize Game{p.size === 1 ? "" : "s"}
                                         </span>
                                     </div>
                                     {p.discount && (
