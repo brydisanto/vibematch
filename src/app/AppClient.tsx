@@ -574,10 +574,10 @@ export default function AppClient() {
 
                 <div className="pointer-events-none flex items-center justify-center z-50 mt-1 sm:mt-2">
                   <Image
-                    src="/assets/logo-cropped.png"
+                    src="/assets/logo.png"
                     alt="VIBE MATCH"
-                    width={500}
-                    height={250}
+                    width={1000}
+                    height={627}
                     className="w-auto h-16 sm:h-28 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                     priority
                   />

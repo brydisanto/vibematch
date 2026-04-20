@@ -206,18 +206,17 @@ export default function LandingPageQuest({
                     onSignIn={() => setAuthOpen(true)}
                 />
 
-                {/* Logo — matches production sizing: 240px mobile, 320px sm+.
-                    mt-4 pushes the logo further down from the header rail; no
-                    bottom margin so cards can tuck right under via -mt-5.
+                {/* Logo — tight-cropped 4K treatment (1000x627 source).
+                    mt-4 pushes the logo further down from the header rail.
                     Wrapped so hover-scale lives on the outer element without
                     stomping the inner bob keyframe. */}
                 <div className="flex justify-center mt-4">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
-                            src="/assets/logo-v2.png"
+                            src="/assets/logo.png"
                             alt="VIBE MATCH"
-                            width={320}
-                            height={160}
+                            width={1000}
+                            height={627}
                             priority
                             className="w-[240px] sm:w-[320px] h-auto max-w-full"
                             style={{
@@ -235,9 +234,10 @@ export default function LandingPageQuest({
                 </div>
 
                 {/* ========== QUEST CARDS ========== */}
-                {/* -mt-5 pulls the cards up to tuck under the logo, matching
-                    production's tight spacing. */}
-                <div className="flex flex-col gap-3 -mt-5">
+                {/* mt-8 leaves clear space under the tight-cropped logo.
+                    (Old -mt-5 was compensating for whitespace baked into
+                    logo-v2; the new logo has none.) */}
+                <div className="flex flex-col gap-3 mt-8">
                     {/* Classic */}
                     <button
                         type="button"
