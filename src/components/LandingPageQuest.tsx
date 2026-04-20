@@ -578,16 +578,21 @@ function HeaderRail({
         boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
     } as const;
 
+    // Hover treatment is identical across guest/logged-in so the bar reads
+    // as one interactive pill regardless of auth state. Brightness lift +
+    // subtle Y-translate + a softened gold edge on hover, 200ms ease.
+    const hoverFx =
+        "transition-all duration-200 ease-out hover:-translate-y-0.5 hover:brightness-[1.08] hover:shadow-[0_8px_22px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,224,72,0.35)] active:scale-[0.99]";
+
     if (!isLoggedIn) {
         return (
-            <div
-                className="flex items-center justify-between rounded-full pl-1.5 pr-3 py-1.5"
+            <button
+                type="button"
+                onClick={onSignIn}
+                className={`w-full flex items-center justify-between rounded-full pl-1.5 pr-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[${GOLD}]/60 ${hoverFx}`}
                 style={backdrop}
             >
-                <button
-                    onClick={onSignIn}
-                    className="flex items-center gap-2 active:scale-95 transition-transform"
-                >
+                <div className="flex items-center gap-2">
                     <div
                         className="w-9 h-9 rounded-full flex items-center justify-center"
                         style={{
@@ -603,19 +608,20 @@ function HeaderRail({
                             Tap to sign in
                         </div>
                     </div>
-                </button>
+                </div>
                 <div className="text-right">
                     <div className="text-[8px] tracking-[0.2em] font-mundial text-white/55">PLAYS RESET</div>
                     <div className="text-[11px] tabular-nums font-display font-black text-white">{countdown}</div>
                 </div>
-            </div>
+            </button>
         );
     }
 
     return (
         <button
+            type="button"
             onClick={onOpenProfile}
-            className="w-full flex items-center justify-between rounded-full pl-1.5 pr-3 py-1.5 active:scale-[0.99] transition-transform"
+            className={`w-full flex items-center justify-between rounded-full pl-1.5 pr-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[${GOLD}]/60 ${hoverFx}`}
             style={backdrop}
         >
             <div className="flex items-center gap-2">
