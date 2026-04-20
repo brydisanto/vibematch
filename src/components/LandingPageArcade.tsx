@@ -852,9 +852,11 @@ export default function LandingPageArcade({
                             className="relative text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
                         >
                             <div className="relative flex flex-col items-center gap-2.5">
-                                {/* Avatar — bounce + pulsing gold halo + starburst
-                                    rays all share the same relative box so their
-                                    centers line up with the avatar precisely. */}
+                                {/* Avatar — radar-ping rings (Option E) + subtle
+                                    bounce on the outer wrapper. Three staggered
+                                    rings expand outward on a 2.4s loop so the
+                                    avatar always has motion without interrupting
+                                    the username beneath. */}
                                 <div
                                     className="relative"
                                     style={{
@@ -863,50 +865,19 @@ export default function LandingPageArcade({
                                         animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                     }}
                                 >
-                                    {/* Starburst rays — centered on the avatar via
-                                        negative inset on an oversized absolute box. */}
-                                    <svg
-                                        className="absolute pointer-events-none"
-                                        style={{
-                                            top: "50%",
-                                            left: "50%",
-                                            transform: "translate(-50%, -50%)",
-                                            opacity: 0.55,
-                                        }}
-                                        width="160"
-                                        height="160"
-                                        viewBox="0 0 160 160"
-                                    >
-                                        {[...Array(12)].map((_, i) => {
-                                            const angle = (i * 30) * Math.PI / 180;
-                                            const x1 = 80 + Math.cos(angle) * 50;
-                                            const y1 = 80 + Math.sin(angle) * 50;
-                                            const x2 = 80 + Math.cos(angle) * 78;
-                                            const y2 = 80 + Math.sin(angle) * 78;
-                                            return (
-                                                <line
-                                                    key={i}
-                                                    x1={x1}
-                                                    y1={y1}
-                                                    x2={x2}
-                                                    y2={y2}
-                                                    stroke={GOLD}
-                                                    strokeWidth="2.5"
-                                                    strokeLinecap="round"
-                                                />
-                                            );
-                                        })}
-                                    </svg>
-                                    {/* Gold glow halo that breathes */}
-                                    <div
-                                        className="absolute rounded-full pointer-events-none"
-                                        style={{
-                                            inset: -14,
-                                            background: `radial-gradient(circle, ${GOLD}bb 0%, ${GOLD}66 40%, ${GOLD}22 60%, transparent 80%)`,
-                                            filter: "blur(2px)",
-                                            animation: "vmAvatarGlow 3.6s ease-in-out infinite",
-                                        }}
-                                    />
+                                    {/* Radar ping rings — keep pointer-events off
+                                        so they don't eat hover on the button. */}
+                                    {[0, 0.8, 1.6].map((delay, i) => (
+                                        <div
+                                            key={i}
+                                            className="absolute rounded-full pointer-events-none"
+                                            style={{
+                                                inset: -4,
+                                                border: `2px solid ${GOLD}b3`,
+                                                animation: `vmAvatarPing 2.4s ease-out ${delay}s infinite`,
+                                            }}
+                                        />
+                                    ))}
                                     {/* Outer gold rotating ring */}
                                     <div
                                         className="absolute inset-0 rounded-full"
@@ -1126,9 +1097,9 @@ export default function LandingPageArcade({
                         0%, 100% { transform: translateY(0); }
                         50% { transform: translateY(-3px); }
                     }
-                    @keyframes vmAvatarGlow {
-                        0%, 100% { opacity: 0.55; transform: scale(1); }
-                        50% { opacity: 0.9; transform: scale(1.08); }
+                    @keyframes vmAvatarPing {
+                        0% { transform: scale(0.9); opacity: 0.85; }
+                        100% { transform: scale(1.6); opacity: 0; }
                     }
                     @keyframes vmRestockPulse {
                         0%, 100% { box-shadow: 0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5), 0 0 14px ${RED}55; }
