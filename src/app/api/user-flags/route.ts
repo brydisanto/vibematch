@@ -16,6 +16,9 @@ export interface UserFlags {
     musicChanged?: boolean;
     avatarUploaded?: boolean;
     prizeGamePurchased?: boolean;
+    /** Server-verified: a wallet connected under this user holds > 0 $VIBESTR.
+     *  Only written by /api/wallet/vibestr-check (not settable from here). */
+    vibestrHolder?: boolean;
 }
 
 const VALID_FLAGS: (keyof UserFlags)[] = [

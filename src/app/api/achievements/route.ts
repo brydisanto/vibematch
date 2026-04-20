@@ -98,6 +98,7 @@ export async function POST(req: Request) {
                 musicChanged?: boolean;
                 avatarUploaded?: boolean;
                 prizeGamePurchased?: boolean;
+                vibestrHolder?: boolean;
             } | null>,
         ]);
         const hasUploadedAvatar =
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
             !!flagsRaw?.avatarUploaded;
         const hasChangedMusic = !!flagsRaw?.musicChanged;
         const hasPurchasedPrizeGame = !!flagsRaw?.prizeGamePurchased;
+        const hasVibestrWallet = !!flagsRaw?.vibestrHolder;
 
         // Build authoritative PlayerContext from stored pinbook state
         const ctx = buildPlayerContext(pinbook.pins, {
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
             hasUploadedAvatar,
             hasChangedMusic,
             hasPurchasedPrizeGame,
+            hasVibestrWallet,
         });
 
         // Fetch streak + referral count

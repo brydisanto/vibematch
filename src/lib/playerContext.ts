@@ -17,6 +17,7 @@ export function buildPlayerContext(
         hasUploadedAvatar?: boolean;
         hasChangedMusic?: boolean;
         hasPurchasedPrizeGame?: boolean;
+        hasVibestrWallet?: boolean;
     }
 ): PlayerContext {
     const ctx: PlayerContext = {
@@ -37,6 +38,7 @@ export function buildPlayerContext(
         hasUploadedAvatar: !!opts?.hasUploadedAvatar,
         hasChangedMusic: !!opts?.hasChangedMusic,
         hasPurchasedPrizeGame: !!opts?.hasPurchasedPrizeGame,
+        hasVibestrWallet: !!opts?.hasVibestrWallet,
     };
 
     for (const badgeId of Object.keys(pins)) {

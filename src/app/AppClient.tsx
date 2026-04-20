@@ -70,6 +70,7 @@ export default function AppClient() {
   const [draftPool, setDraftPool] = useState<Badge[]>([]);
   const [draftMode, setDraftMode] = useState<GameMode>("classic");
   const [showPinBook, setShowPinBook] = useState(false);
+  const [pinBookInitialTab, setPinBookInitialTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
   const [showCapsule, setShowCapsule] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
@@ -159,7 +160,13 @@ export default function AppClient() {
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
       const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-      if (ids.length > 0) achievements.unlock(ids);
+      if (ids.length > 0) {
+        achievements.unlock(ids).then(unlockedIds => {
+          // Achievements award capsules server-side — reload the pinbook so
+          // the capsule count in the UI reflects them without a page refresh.
+          if (unlockedIds.length > 0) pinBook.load();
+        });
+      }
     });
   }, [
     achievements.state.loaded,
@@ -539,7 +546,13 @@ export default function AppClient() {
               onStartGame={handleStartGame}
               onShowInstructions={() => setShowInstructions(true)}
               onLogout={() => setUserProfile(null)}
-              onOpenPinBook={() => setShowPinBook(true)}
+              onOpenPinBook={(tab) => { setPinBookInitialTab(tab ?? "collection"); setShowPinBook(true); }}
+              onProfileUpdate={(username, avatarUrl) => {
+                // Propagate saved avatar/username up so the rail re-renders
+                // without a page reload. Also re-runs the retroactive effect
+                // (depends on avatarUrl) so Face Lift fires immediately.
+                setUserProfile({ username, avatarUrl });
+              }}
               onOpenAchievements={() => { setShowAchievements(true); achievements.markSeen(); }}
               capsuleCount={pinBook.state.capsules}
               achievementCount={achievements.unseenCount}
@@ -892,6 +905,7 @@ export default function AppClient() {
       <PinBook
         isOpen={showPinBook}
         onClose={() => setShowPinBook(false)}
+        initialTab={pinBookInitialTab}
         onStartGame={() => handleStartGame("classic", userProfile?.username, userProfile?.avatarUrl)}
         onOpenReroll={() => { setShowPinBook(false); setShowReroll(true); }}
         onOpenBuyPrizeGames={() => { setShowPinBook(false); setShowBuyPrizeGames(true); }}
@@ -931,7 +945,11 @@ export default function AppClient() {
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
               });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-              if (ids.length > 0) achievements.unlock(ids);
+              if (ids.length > 0) {
+                achievements.unlock(ids).then(unlockedIds => {
+                  if (unlockedIds.length > 0) pinBook.load();
+                });
+              }
             }
           }}
         />

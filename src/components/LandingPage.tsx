@@ -9,10 +9,11 @@ interface LandingPageProps {
     onStartGame: (mode: GameMode, username?: string, avatarUrl?: string) => void;
     onShowInstructions?: () => void;
     onLogout?: () => void;
-    onOpenPinBook?: () => void;
+    onOpenPinBook?: (initialTab?: "collection" | "leaderboard" | "capsules") => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
     onOpenReroll?: () => void;
+    onProfileUpdate?: (username: string, avatarUrl: string) => void;
     onAuthSuccess?: (username: string, avatarUrl: string) => void;
     capsuleCount?: number;
     achievementCount?: number;
@@ -63,7 +64,7 @@ export default function LandingPage(props: LandingPageProps) {
                 onOpenPinBook={props.onOpenPinBook}
                 onOpenAchievements={props.onOpenAchievements}
                 onOpenBuyPrizeGames={props.onOpenBuyPrizeGames}
-                onOpenReroll={props.onOpenReroll}
+                onProfileUpdate={props.onProfileUpdate}
                 capsuleCount={props.capsuleCount}
                 classicPlays={props.classicPlays}
                 bonusPrizeGames={props.bonusPrizeGames}

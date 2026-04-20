@@ -523,6 +523,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 1,
         order: 33,
     },
+    {
+        id: "wallet_vibestr",
+        category: "mastery",
+        icon: "💰",
+        title: "Bag Holder",
+        description: "Connect a wallet holding $VIBESTR",
+        capsules: 2,
+        order: 34,
+    },
 ];
 
 export const ALL_ACHIEVEMENTS: AchievementDef[] = [
@@ -570,6 +579,8 @@ export interface PlayerContext {
     hasChangedMusic: boolean;
     /** User has ever had bonus prize games (so they purchased at least one). */
     hasPurchasedPrizeGame: boolean;
+    /** User has connected a wallet that holds $VIBESTR (verified server-side). */
+    hasVibestrWallet: boolean;
 }
 
 /**
@@ -652,6 +663,7 @@ export function checkAchievements(
     check("upload_avatar", context.hasUploadedAvatar);
     check("change_music", context.hasChangedMusic);
     check("buy_prize_game", context.hasPurchasedPrizeGame);
+    check("wallet_vibestr", context.hasVibestrWallet);
 
     return newly;
 }
@@ -703,6 +715,7 @@ export function checkRetroactiveAchievements(
     check("upload_avatar", context.hasUploadedAvatar);
     check("change_music", context.hasChangedMusic);
     check("buy_prize_game", context.hasPurchasedPrizeGame);
+    check("wallet_vibestr", context.hasVibestrWallet);
 
     return newly;
 }

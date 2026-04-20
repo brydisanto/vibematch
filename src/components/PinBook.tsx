@@ -23,6 +23,8 @@ interface PinBookProps {
     unopenedCapsules: number;
     prizeGamesRemaining?: number;
     currentUsername?: string;
+    /** Tab to show when the modal opens. Defaults to "collection". */
+    initialTab?: "collection" | "leaderboard" | "capsules";
 }
 
 const TIER_ORDER: BadgeTier[] = ["cosmic", "gold", "special", "silver", "blue"];
@@ -359,9 +361,15 @@ export default function PinBook({
     unopenedCapsules,
     prizeGamesRemaining = 10,
     currentUsername,
+    initialTab = "collection",
 }: PinBookProps) {
-    const [tab, setTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
+    const [tab, setTab] = useState<"collection" | "leaderboard" | "capsules">(initialTab);
     const [showInfo, setShowInfo] = useState(false);
+
+    // If the caller bumps initialTab while the modal is already mounted, reset.
+    useEffect(() => {
+        if (isOpen) setTab(initialTab);
+    }, [isOpen, initialTab]);
 
     const ownedCount = useMemo(
         () => Object.keys(pins).length,
