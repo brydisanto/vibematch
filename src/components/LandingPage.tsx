@@ -20,7 +20,7 @@ interface LandingPageProps {
     classicPlays?: number;
     bonusPrizeGames?: number;
     pinsCollected?: number;
-    pins?: Record<string, { count: number; firstEarned: string }>;
+    pins?: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     questsCompleted?: number;
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;

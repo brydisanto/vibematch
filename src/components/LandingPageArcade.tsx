@@ -51,7 +51,7 @@ interface LandingPageArcadeProps {
     classicPlays?: number;
     bonusPrizeGames?: number;
     pinsCollected?: number;
-    pins?: Record<string, { count: number; firstEarned: string }>;
+    pins?: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     questsCompleted?: number;
     userProfile: { username: string; avatarUrl: string };
 }
@@ -160,9 +160,10 @@ export default function LandingPageArcade({
         return getTierByCount(pinsCollected, totalBadges);
     }, [pinsCollected, totalBadges]);
 
-    // Recent pulls — sort collected pins by firstEarned desc, take top 6.
-    // `isNew` flags a pin the player still only has one copy of; rendered as
-    // a small green "NEW" chip on the row so first-time pulls pop.
+    // Recent pulls — sort by lastPulled desc so duplicate pulls also bubble
+    // to the top, falling back to firstEarned for legacy entries that don't
+    // carry a lastPulled timestamp yet. Take top 6. `isNew` flags pins the
+    // player still only has one copy of so the row renders a green NEW chip.
     const recentPulls = useMemo(() => {
         return Object.entries(pins)
             .map(([id, data]) => {
@@ -173,12 +174,12 @@ export default function LandingPageArcade({
                     name: badge.name,
                     image: badge.image,
                     tier: badge.tier,
-                    firstEarned: data.firstEarned,
+                    sortKey: data.lastPulled || data.firstEarned || "",
                     isNew: data.count === 1,
                 };
             })
             .filter((x): x is NonNullable<typeof x> => x !== null)
-            .sort((a, b) => (b.firstEarned || "").localeCompare(a.firstEarned || ""))
+            .sort((a, b) => b.sortKey.localeCompare(a.sortKey))
             .slice(0, 6);
     }, [pins]);
 

@@ -36,7 +36,7 @@ interface LandingPageQuestProps {
     bonusPrizeGames?: number;
     pinsCollected?: number;
     /** Collected pins map — only used by the desktop Arcade layout for RECENT PULLS. Accepted here for type compatibility with the dispatcher. */
-    pins?: Record<string, { count: number; firstEarned: string }>;
+    pins?: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;
 }

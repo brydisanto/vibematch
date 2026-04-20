@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { Badge, BADGES, BadgeTier } from "./badges";
 
 export interface PinBookState {
-    pins: Record<string, { count: number; firstEarned: string }>;
+    pins: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     capsules: number;
     totalOpened: number;
     totalEarned: number;
@@ -201,16 +201,23 @@ export function usePinBook() {
             if (!res.ok) { console.error("pinbook collect failed:", res.status); return; }
             const data = await res.json();
             if (data.collected) {
-                setState(prev => ({
-                    ...prev,
-                    pins: {
-                        ...prev.pins,
-                        [pendingReveal.badge.id]: {
-                            count: data.count,
-                            firstEarned: data.firstEarned || prev.pins[pendingReveal.badge.id]?.firstEarned || new Date().toISOString(),
+                setState(prev => {
+                    const nowIso = new Date().toISOString();
+                    return {
+                        ...prev,
+                        pins: {
+                            ...prev.pins,
+                            [pendingReveal.badge.id]: {
+                                count: data.count,
+                                firstEarned: data.firstEarned || prev.pins[pendingReveal.badge.id]?.firstEarned || nowIso,
+                                // Always bump lastPulled — even on duplicates — so
+                                // the most-recent pull bubbles to the top of any
+                                // recency-sorted list (Recent Pulls in the rail).
+                                lastPulled: nowIso,
+                            },
                         },
-                    },
-                }));
+                    };
+                });
                 setPendingReveal(null);
             } else {
                 console.error("pinbook collect returned collected=false");
