@@ -517,6 +517,7 @@ export default function AppClient() {
               pinsCollected={Object.keys(pinBook.state.pins).length}
               pins={pinBook.state.pins}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
+              onOpenReroll={() => setShowReroll(true)}
               onAuthSuccess={(username, avatarUrl) => {
                 setUserProfile({ username, avatarUrl });
                 localStorage.setItem('vibematch_username', username);

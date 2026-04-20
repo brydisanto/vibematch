@@ -12,6 +12,7 @@ interface LandingPageProps {
     onOpenPinBook?: () => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
+    onOpenReroll?: () => void;
     onAuthSuccess?: (username: string, avatarUrl: string) => void;
     capsuleCount?: number;
     achievementCount?: number;
@@ -61,6 +62,7 @@ export default function LandingPage(props: LandingPageProps) {
                 onOpenPinBook={props.onOpenPinBook}
                 onOpenAchievements={props.onOpenAchievements}
                 onOpenBuyPrizeGames={props.onOpenBuyPrizeGames}
+                onOpenReroll={props.onOpenReroll}
                 capsuleCount={props.capsuleCount}
                 classicPlays={props.classicPlays}
                 bonusPrizeGames={props.bonusPrizeGames}

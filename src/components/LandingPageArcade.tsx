@@ -42,6 +42,7 @@ interface LandingPageArcadeProps {
     onOpenPinBook?: () => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
+    onOpenReroll?: () => void;
     capsuleCount?: number;
     classicPlays?: number;
     bonusPrizeGames?: number;
@@ -93,6 +94,7 @@ export default function LandingPageArcade({
     onOpenPinBook,
     onOpenAchievements,
     onOpenBuyPrizeGames,
+    onOpenReroll,
     capsuleCount = 0,
     classicPlays = 0,
     bonusPrizeGames = 0,
@@ -129,6 +131,15 @@ export default function LandingPageArcade({
     // Pin collection math
     const totalBadges = BADGES.length;
     const pinPct = totalBadges > 0 ? Math.round((pinsCollected / totalBadges) * 100) : 0;
+
+    // Extra pins = total duplicates across all owned pins (sum of count-1 for
+    // every pin you own more than one of). These are what the Reroll flow
+    // burns to roll for new pins, so the card below doubles as an at-a-glance
+    // "you have X duplicates ready to swap" prompt.
+    const extraPinsCount = useMemo(
+        () => Object.values(pins).reduce((sum, p) => sum + Math.max(0, p.count - 1), 0),
+        [pins]
+    );
 
     // Player tier — highest rarity of any collected pin. Drives the tier chip
     // under the avatar ("COSMIC TIER · PIN #247" style). Blue-only / no pins
@@ -396,6 +407,66 @@ export default function LandingPageArcade({
                                         }}
                                     >
                                         OPEN
+                                    </ChunkyButton>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Extra Pins — surfaces duplicate pins available to
+                            burn for a reroll. Mirrors the cosmic styling of
+                            the cabinets so it reads as a complementary
+                            Pin-Book action, not a secondary capsule slot. */}
+                        <div className="px-5 pt-5 pb-4 border-b border-white/5">
+                            <div className="font-display text-[10px] tracking-[0.3em] mb-3" style={{ color: GOLD }}>
+                                EXTRA PINS
+                            </div>
+                            <div
+                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08]"
+                                style={{
+                                    background: `linear-gradient(180deg, ${COSMIC} 0%, ${COSMIC_DEEP} 100%)`,
+                                    boxShadow: `0 3px 0 ${COSMIC_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
+                                }}
+                            >
+                                <div
+                                    className="rounded-[10px] p-3 flex flex-col gap-3"
+                                    style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="min-w-0 flex-1 leading-none">
+                                            <div className="flex items-baseline gap-2">
+                                                <span
+                                                    className="font-display font-black text-[26px]"
+                                                    style={{
+                                                        color: COSMIC,
+                                                        textShadow: `0 2px 0 ${COSMIC_DEEP}`,
+                                                    }}
+                                                >
+                                                    {extraPinsCount}
+                                                </span>
+                                                <span className="font-display text-[10px] tracking-[0.18em]" style={{ color: `${COSMIC}cc` }}>
+                                                    DUPLICATE{extraPinsCount === 1 ? "" : "S"}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] text-white/50 mt-1.5 leading-snug">
+                                                Burn duplicates and roll for new pins.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ChunkyButton
+                                        onClick={onOpenReroll}
+                                        color={COSMIC}
+                                        deep={COSMIC_DEEP}
+                                        text="#fff"
+                                        disabled={extraPinsCount === 0}
+                                        style={{
+                                            width: "100%",
+                                            padding: "9px 12px",
+                                            fontSize: 11,
+                                            fontWeight: 900,
+                                            letterSpacing: "0.2em",
+                                        }}
+                                    >
+                                        REROLL
                                     </ChunkyButton>
                                 </div>
                             </div>
