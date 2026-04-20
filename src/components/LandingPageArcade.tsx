@@ -157,7 +157,9 @@ export default function LandingPageArcade({
         return { label: "Rookie Tier", color: "#9BA3B8" };
     }, [pins]);
 
-    // Recent pulls — sort collected pins by firstEarned desc, take top 6
+    // Recent pulls — sort collected pins by firstEarned desc, take top 6.
+    // `isNew` flags a pin the player still only has one copy of; rendered as
+    // a small green "NEW" chip on the row so first-time pulls pop.
     const recentPulls = useMemo(() => {
         return Object.entries(pins)
             .map(([id, data]) => {
@@ -169,6 +171,7 @@ export default function LandingPageArcade({
                     image: badge.image,
                     tier: badge.tier,
                     firstEarned: data.firstEarned,
+                    isNew: data.count === 1,
                 };
             })
             .filter((x): x is NonNullable<typeof x> => x !== null)
@@ -286,7 +289,7 @@ export default function LandingPageArcade({
                         <button
                             type="button"
                             onClick={onShowInstructions}
-                            className="text-left px-5 pt-6 pb-4 border-b border-white/5 transition-all hover:bg-white/[0.04] hover:translate-x-[2px]"
+                            className="text-left px-5 pt-6 pb-4 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04] hover:translate-x-[2px]"
                         >
                             <div className="font-display text-[10px] tracking-[0.3em] mb-2" style={{ color: GOLD }}>
                                 HOW TO PLAY
@@ -505,9 +508,11 @@ export default function LandingPageArcade({
                                     {recentPulls.map(pin => {
                                         const meta = TIER_META[pin.tier];
                                         return (
-                                            <div
+                                            <button
                                                 key={pin.id}
-                                                className="rounded-xl p-[1.5px]"
+                                                type="button"
+                                                onClick={onOpenPinBook}
+                                                className="rounded-xl p-[1.5px] cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.12] text-left w-full"
                                                 style={{
                                                     background: `linear-gradient(180deg, ${meta.tint}55, ${meta.tint}22)`,
                                                 }}
@@ -527,8 +532,22 @@ export default function LandingPageArcade({
                                                         <Image src={pin.image} alt="" fill sizes="40px" className="object-cover" />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="font-display text-[12px] text-white leading-none truncate">
-                                                            {pin.name}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-display text-[12px] text-white leading-none truncate">
+                                                                {pin.name}
+                                                            </span>
+                                                            {pin.isNew && (
+                                                                <span
+                                                                    className="shrink-0 font-display text-[8px] font-black uppercase tracking-[0.15em] px-1.5 py-[2px] rounded-sm"
+                                                                    style={{
+                                                                        color: "#0A2E12",
+                                                                        background: "#2EFF2E",
+                                                                        boxShadow: "0 0 10px rgba(46,255,46,0.45)",
+                                                                    }}
+                                                                >
+                                                                    New
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div
                                                             className="text-[9px] font-bold tracking-[0.15em] uppercase mt-1"
@@ -538,7 +557,7 @@ export default function LandingPageArcade({
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -589,18 +608,23 @@ export default function LandingPageArcade({
                             the marquee. Gaps give the logo clear breathing
                             room above the cabinets. */}
                         <div className="relative z-10 flex-1 px-6 pb-6 pt-4 flex flex-col justify-center items-center gap-6">
-                            <Image
-                                src="/assets/logo.png"
-                                alt="VIBE MATCH"
-                                width={1000}
-                                height={627}
-                                priority
-                                className="w-[300px] h-auto"
-                                style={{
-                                    filter: `drop-shadow(0 16px 30px ${GOLD}55)`,
-                                    animation: "vmArcadeBob 3.2s ease-in-out infinite",
-                                }}
-                            />
+                            {/* Outer wrapper hosts the hover-scale so it doesn't
+                                fight the inline `vmArcadeBob` keyframe on the
+                                Image. Matches the production Quest logo treatment. */}
+                            <div className="cursor-pointer transition-transform duration-300 hover:scale-105">
+                                <Image
+                                    src="/assets/logo.png"
+                                    alt="VIBE MATCH"
+                                    width={1000}
+                                    height={627}
+                                    priority
+                                    className="w-[300px] h-auto"
+                                    style={{
+                                        filter: `drop-shadow(0 16px 30px ${GOLD}55)`,
+                                        animation: "vmArcadeBob 3.2s ease-in-out infinite",
+                                    }}
+                                />
+                            </div>
 
                         {/* Two mode cabinets side-by-side */}
                         <div className="w-full flex flex-col items-center">
@@ -609,7 +633,7 @@ export default function LandingPageArcade({
                                 <button
                                     type="button"
                                     onClick={() => onStartGame("classic", username, avatarUrl)}
-                                    className="text-left outline-none"
+                                    className="text-left outline-none cursor-pointer"
                                 >
                                     <div
                                         className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
@@ -687,7 +711,7 @@ export default function LandingPageArcade({
                                 <button
                                     type="button"
                                     onClick={() => onStartGame("daily", username, avatarUrl)}
-                                    className="text-left outline-none"
+                                    className="text-left outline-none cursor-pointer"
                                 >
                                     <div
                                         className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
@@ -757,7 +781,7 @@ export default function LandingPageArcade({
                                 <button
                                     type="button"
                                     onClick={onOpenBuyPrizeGames}
-                                    className="w-full rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.12]"
+                                    className="w-full rounded-xl p-[2px] cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.12]"
                                     style={{
                                         background: `linear-gradient(180deg, ${accent} 0%, ${accentDeep} 100%)`,
                                         boxShadow: `0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5)${empty ? `, 0 0 22px ${RED}66` : ""}`,
@@ -916,7 +940,7 @@ export default function LandingPageArcade({
                         <button
                             type="button"
                             onClick={() => setProfileOpen(true)}
-                            className="relative overflow-hidden text-left px-5 pt-6 pb-5 border-b border-white/5 transition-all hover:bg-white/[0.04]"
+                            className="relative overflow-hidden text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
                         >
                             <div
                                 className="absolute pointer-events-none"
@@ -959,8 +983,26 @@ export default function LandingPageArcade({
                             </svg>
 
                             <div className="relative flex flex-col items-center gap-2.5">
-                                {/* Avatar (no level chip — VibeMatch doesn't have a leveling system yet) */}
-                                <div className="relative" style={{ width: 82, height: 82 }}>
+                                {/* Avatar — subtle bounce + pulsing gold glow.
+                                    Bounce is on the outer wrapper so the
+                                    rotating ring stays in sync with the avatar. */}
+                                <div
+                                    className="relative"
+                                    style={{
+                                        width: 82,
+                                        height: 82,
+                                        animation: "vmAvatarBounce 3.6s ease-in-out infinite",
+                                    }}
+                                >
+                                    {/* Gold glow halo that breathes */}
+                                    <div
+                                        className="absolute rounded-full pointer-events-none"
+                                        style={{
+                                            inset: -8,
+                                            background: `radial-gradient(circle, ${GOLD}55 0%, ${GOLD}22 50%, transparent 75%)`,
+                                            animation: "vmAvatarGlow 3.6s ease-in-out infinite",
+                                        }}
+                                    />
                                     {/* Outer gold rotating ring */}
                                     <div
                                         className="absolute inset-0 rounded-full"
@@ -1177,6 +1219,14 @@ export default function LandingPageArcade({
                     }
                     @keyframes vmProfileSpin {
                         to { transform: rotate(360deg); }
+                    }
+                    @keyframes vmAvatarBounce {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(-3px); }
+                    }
+                    @keyframes vmAvatarGlow {
+                        0%, 100% { opacity: 0.55; transform: scale(1); }
+                        50% { opacity: 0.9; transform: scale(1.08); }
                     }
                     @keyframes vmRestockPulse {
                         0%, 100% { box-shadow: 0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5), 0 0 14px ${RED}55; }
