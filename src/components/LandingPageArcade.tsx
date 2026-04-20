@@ -285,19 +285,25 @@ export default function LandingPageArcade({
                             borderRight: `1px solid ${GOLD}15`,
                         }}
                     >
-                        {/* How to Play */}
-                        <button
-                            type="button"
-                            onClick={onShowInstructions}
-                            className="text-left px-5 pt-6 pb-4 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04] hover:translate-x-[2px]"
-                        >
+                        {/* How to Play — full copy + explicit Full Rules CTA
+                            so the rail surface reads as two discrete things:
+                            a short pitch and a link to the detailed rules. */}
+                        <div className="px-5 pt-6 pb-4 border-b border-white/5">
                             <div className="font-display text-[10px] tracking-[0.3em] mb-2" style={{ color: GOLD }}>
                                 HOW TO PLAY
                             </div>
                             <div className="text-white/70 text-[12px] leading-relaxed">
-                                Match 3+ pins of the same vibe. Score multipliers stack. Clear the board for bonus stoke.
+                                Match 3+ badges of the same type in a row to score points. Hit 4/5/6 in a row to unlock power-ups for huge points. You&apos;ve got 30 moves to score as high as possible. Reach 15K+ and you&apos;re in for a surprise.
                             </div>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={onShowInstructions}
+                                className="mt-3 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg cursor-pointer transition-all hover:brightness-125"
+                                style={{ color: GOLD, border: `1px solid ${GOLD}44`, background: `${GOLD}0a` }}
+                            >
+                                FULL RULES →
+                            </button>
+                        </div>
 
                         {/* MY ITEMS — unified block for capsules + extra pins,
                             condensed so the rail doesn't dominate the page.
