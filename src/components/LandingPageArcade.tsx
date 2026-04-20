@@ -852,12 +852,11 @@ export default function LandingPageArcade({
                             className="relative text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
                         >
                             <div className="relative flex flex-col items-center gap-2.5">
-                                {/* Avatar — Option G tier-tinted halo + ring,
-                                    plus Option F floating sparkle dust. Halo
-                                    and ring pick up the player's tier color so
-                                    the treatment is earned rather than generic;
-                                    sparkles drift in mixed brand colors for a
-                                    subtle "something's happening" vibe. */}
+                                {/* Avatar — Option A: soft breathing gold halo,
+                                    no rays, no sparkles. Cleanest treatment —
+                                    the rotating gold ring is the only real
+                                    adornment, and the halo gives it a subtle
+                                    breath. */}
                                 <div
                                     className="relative"
                                     style={{
@@ -866,47 +865,23 @@ export default function LandingPageArcade({
                                         animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                     }}
                                 >
-                                    {/* Tier-tinted halo */}
+                                    {/* Soft gold halo that breathes */}
                                     <div
                                         className="absolute rounded-full pointer-events-none"
                                         style={{
-                                            inset: -14,
-                                            background: `radial-gradient(circle, ${tier.color} 0%, ${tier.color}66 40%, transparent 75%)`,
-                                            filter: "blur(5px)",
-                                            opacity: 0.85,
-                                            animation: "vmAvatarGlow 3.2s ease-in-out infinite",
+                                            inset: -18,
+                                            background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
+                                            filter: "blur(6px)",
+                                            animation: "vmAvatarGlow 3.6s ease-in-out infinite",
                                         }}
                                     />
-                                    {/* Floating sparkle dust — 5 mixed-color dots */}
-                                    {[
-                                        { top: -8, left: "20%", color: GOLD, size: 4, delay: "0s" },
-                                        { top: "10%", right: -10, color: COSMIC, size: 4, delay: "0.8s" },
-                                        { bottom: -8, left: "32%", color: PINK, size: 4, delay: "1.6s" },
-                                        { top: "70%", left: -12, color: GOLD, size: 4, delay: "2.4s" },
-                                        { top: -4, right: "22%", color: COSMIC, size: 3, delay: "3.2s" },
-                                    ].map((s, i) => (
-                                        <div
-                                            key={i}
-                                            className="absolute rounded-full pointer-events-none"
-                                            style={{
-                                                width: s.size,
-                                                height: s.size,
-                                                top: s.top,
-                                                bottom: s.bottom,
-                                                left: s.left,
-                                                right: s.right,
-                                                background: s.color,
-                                                boxShadow: `0 0 6px ${s.color}`,
-                                                animation: `vmAvatarSparkle 4s ease-in-out ${s.delay} infinite`,
-                                            }}
-                                        />
-                                    ))}
-                                    {/* Tier-tinted static ring */}
+                                    {/* Rotating gold conic ring */}
                                     <div
                                         className="absolute inset-0 rounded-full"
                                         style={{
-                                            background: `linear-gradient(135deg, ${tier.color}, ${tier.accent})`,
-                                            padding: 2.5,
+                                            background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
+                                            animation: "vmProfileSpin 8s linear infinite",
+                                            padding: 2,
                                         }}
                                     >
                                         <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
@@ -1112,18 +1087,16 @@ export default function LandingPageArcade({
                         0%, 100% { transform: translateY(0); }
                         50% { transform: translateY(-5px); }
                     }
+                    @keyframes vmProfileSpin {
+                        to { transform: rotate(360deg); }
+                    }
                     @keyframes vmAvatarBounce {
                         0%, 100% { transform: translateY(0); }
                         50% { transform: translateY(-3px); }
                     }
                     @keyframes vmAvatarGlow {
-                        0%, 100% { opacity: 0.7; transform: scale(1); }
-                        50% { opacity: 1; transform: scale(1.1); }
-                    }
-                    @keyframes vmAvatarSparkle {
-                        0%, 100% { transform: translateY(0) translateX(0); opacity: 0.9; }
-                        33% { transform: translateY(-6px) translateX(3px); opacity: 1; }
-                        66% { transform: translateY(2px) translateX(-3px); opacity: 0.7; }
+                        0%, 100% { opacity: 0.65; transform: scale(1); }
+                        50% { opacity: 1; transform: scale(1.08); }
                     }
                     @keyframes vmRestockPulse {
                         0%, 100% { box-shadow: 0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5), 0 0 14px ${RED}55; }
