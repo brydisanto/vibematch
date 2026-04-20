@@ -207,10 +207,11 @@ export default function LandingPageQuest({
                 />
 
                 {/* Logo — tight-cropped 4K treatment (1000x627 source).
-                    mt-4 pushes the logo further down from the header rail.
-                    Wrapped so hover-scale lives on the outer element without
-                    stomping the inner bob keyframe. */}
-                <div className="flex justify-center mt-4">
+                    mt-10 gives clear breathing room below the header rail
+                    (was mt-4 and touched the rail with the new tight-cropped
+                    logo). Wrapped so hover-scale lives on the outer element
+                    without stomping the inner bob keyframe. */}
+                <div className="flex justify-center mt-10">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo.png"
