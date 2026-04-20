@@ -60,13 +60,22 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         order: 4,
     },
     {
+        id: "first_cosmic",
+        category: "journey",
+        icon: "🌌",
+        title: "Cosmic Touch",
+        description: "Create your first cosmic blast",
+        capsules: 3,
+        order: 5,
+    },
+    {
         id: "first_l_shape",
         category: "journey",
         icon: "🔷",
         title: "L Takes",
         description: "Land your first L shape",
         capsules: 1,
-        order: 5,
+        order: 6,
     },
     {
         id: "first_t_shape",
@@ -75,7 +84,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "T Time",
         description: "Land your first T shape",
         capsules: 1,
-        order: 6,
+        order: 7,
     },
     {
         id: "first_cross_shape",
@@ -84,7 +93,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Cross That Off",
         description: "Land your first cross shape",
         capsules: 2,
-        order: 7,
+        order: 8,
     },
     {
         id: "first_capsule",
@@ -93,7 +102,43 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Collector",
         description: "Open your first capsule",
         capsules: 1,
-        order: 8,
+        order: 9,
+    },
+    {
+        id: "tier_silver",
+        category: "journey",
+        icon: "🥈",
+        title: "Rare Find",
+        description: "Collect your first Rare pin",
+        capsules: 1,
+        order: 10,
+    },
+    {
+        id: "tier_special",
+        category: "journey",
+        icon: "🔶",
+        title: "Strategic Find",
+        description: "Collect your first Strategic Specials pin",
+        capsules: 2,
+        order: 11,
+    },
+    {
+        id: "tier_gold",
+        category: "journey",
+        icon: "🥇",
+        title: "Gold Standard",
+        description: "Collect your first Legendary pin",
+        capsules: 2,
+        order: 12,
+    },
+    {
+        id: "tier_cosmic",
+        category: "journey",
+        icon: "✨",
+        title: "Cosmic Destiny",
+        description: "Collect your first Cosmic pin",
+        capsules: 3,
+        order: 13,
     },
     {
         id: "first_daily",
@@ -102,7 +147,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Daily Ritual",
         description: "Finish your first Daily Challenge game",
         capsules: 1,
-        order: 9,
+        order: 14,
     },
     {
         id: "streak_3",
@@ -111,16 +156,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "Streak Starter",
         description: "Reach a 3-day streak",
         capsules: 2,
-        order: 10,
-    },
-    {
-        id: "first_cosmic",
-        category: "journey",
-        icon: "🌌",
-        title: "Cosmic Touch",
-        description: "Create your first cosmic blast",
-        capsules: 3,
-        order: 11,
+        order: 15,
     },
     {
         id: "score_25k",
@@ -129,7 +165,34 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         title: "High Roller",
         description: "Score 25,000+ in a single game",
         capsules: 2,
-        order: 12,
+        order: 16,
+    },
+    {
+        id: "upload_avatar",
+        category: "journey",
+        icon: "🖼️",
+        title: "Fresh Face",
+        description: "Upload a profile picture",
+        capsules: 1,
+        order: 17,
+    },
+    {
+        id: "change_music",
+        category: "journey",
+        icon: "🎵",
+        title: "Set The Vibe",
+        description: "Change your game music",
+        capsules: 1,
+        order: 18,
+    },
+    {
+        id: "buy_prize_game",
+        category: "journey",
+        icon: "🪙",
+        title: "Put In A Coin",
+        description: "Buy a prize game with $VIBESTR",
+        capsules: 1,
+        order: 19,
     },
 ];
 
@@ -218,40 +281,13 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 9,
     },
     {
-        id: "tier_silver",
+        id: "pins_90",
         category: "mastery",
-        icon: "🥈",
-        title: "Rare Find",
-        description: "Collect your first Rare pin",
-        capsules: 1,
-        order: 9,
-    },
-    {
-        id: "tier_gold",
-        category: "mastery",
-        icon: "🥇",
-        title: "Gold Standard",
-        description: "Collect your first Legendary pin",
-        capsules: 2,
-        order: 10,
-    },
-    {
-        id: "tier_special",
-        category: "mastery",
-        icon: "🔶",
-        title: "Strategic Find",
-        description: "Collect your first Strategic Specials pin",
-        capsules: 2,
-        order: 11,
-    },
-    {
-        id: "tier_cosmic",
-        category: "mastery",
-        icon: "✨",
-        title: "Cosmic Destiny",
-        description: "Collect your first Cosmic pin",
+        icon: "🗃️",
+        title: "Big League Collector",
+        description: "Collect 90+ unique badges",
         capsules: 3,
-        order: 12,
+        order: 9,
     },
     {
         id: "all_common",
@@ -317,6 +353,24 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 17,
     },
     {
+        id: "cascades_30",
+        category: "mastery",
+        icon: "🌊",
+        title: "Cascade Flood",
+        description: "30+ total cascades in one game",
+        capsules: 3,
+        order: 17.3,
+    },
+    {
+        id: "cascades_45",
+        category: "mastery",
+        icon: "🌀",
+        title: "Cascade Tsunami",
+        description: "45+ total cascades in one game",
+        capsules: 4,
+        order: 17.6,
+    },
+    {
         id: "score_50k",
         category: "mastery",
         icon: "⭐",
@@ -362,15 +416,6 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 22,
     },
     {
-        id: "cross_3",
-        category: "mastery",
-        icon: "✚",
-        title: "Cross Roads",
-        description: "Land 3 cross shapes in one game",
-        capsules: 3,
-        order: 23,
-    },
-    {
         id: "l_shapes_3",
         category: "mastery",
         icon: "🔷",
@@ -380,6 +425,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 24,
     },
     {
+        id: "l_shapes_5",
+        category: "mastery",
+        icon: "🟦",
+        title: "L Express",
+        description: "Land 5 L shapes in one game",
+        capsules: 4,
+        order: 24.5,
+    },
+    {
         id: "t_shapes_3",
         category: "mastery",
         icon: "🔶",
@@ -387,6 +441,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         description: "Land 3 T shapes in one game",
         capsules: 3,
         order: 25,
+    },
+    {
+        id: "t_shapes_5",
+        category: "mastery",
+        icon: "🟧",
+        title: "T Tempest",
+        description: "Land 5 T shapes in one game",
+        capsules: 4,
+        order: 25.5,
     },
     {
         id: "shape_trifecta",
@@ -414,6 +477,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         description: "Score 30,000+ in a Daily Challenge",
         capsules: 2,
         order: 28,
+    },
+    {
+        id: "daily_50k",
+        category: "mastery",
+        icon: "🗓️",
+        title: "Daily Demolisher",
+        description: "Score 50,000+ in a Daily Challenge",
+        capsules: 3,
+        order: 28.5,
     },
     {
         id: "daily_champ",
@@ -492,6 +564,12 @@ export interface PlayerContext {
     hasSpecialPin: boolean;
     referralCount: number;
     gamesPlayedToday: number;
+    /** User has uploaded a custom profile picture (avatarUrl is non-empty). */
+    hasUploadedAvatar: boolean;
+    /** User has explicitly selected a BGM track (localStorage vibematch_bgm_track set). */
+    hasChangedMusic: boolean;
+    /** User has ever had bonus prize games (so they purchased at least one). */
+    hasPurchasedPrizeGame: boolean;
 }
 
 /**
@@ -547,23 +625,33 @@ export function checkAchievements(
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("bombs_5", stats.bombsCreated >= 5);
     check("cascades_15", stats.totalCascades >= 15);
+    check("cascades_30", stats.totalCascades >= 30);
+    check("cascades_45", stats.totalCascades >= 45);
     check("score_50k", stats.score >= 50000);
     check("score_75k", stats.score >= 75000);
     check("score_100k", stats.score >= 100000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
-    check("cross_3", stats.crossCount >= 3);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
     const tCount = stats.shapesLanded.find(s => s.type === "T")?.count ?? 0;
     const crossCount = stats.shapesLanded.find(s => s.type === "cross")?.count ?? 0;
     check("l_shapes_3", lCount >= 3);
+    check("l_shapes_5", lCount >= 5);
     check("t_shapes_3", tCount >= 3);
+    check("t_shapes_5", tCount >= 5);
     check("shape_trifecta", lCount > 0 && tCount > 0 && crossCount > 0);
     check("daily_cap", context.gamesPlayedToday >= 15);
     check("daily_30k", stats.gameMode === "daily" && stats.score >= 30000);
+    check("daily_50k", stats.gameMode === "daily" && stats.score >= 50000);
     check("refer_1", context.referralCount >= 1);
     check("refer_5", context.referralCount >= 5);
     check("refer_10", context.referralCount >= 10);
+    check("pins_90", context.uniquePins >= 90);
+
+    // Profile / engagement quests (journey)
+    check("upload_avatar", context.hasUploadedAvatar);
+    check("change_music", context.hasChangedMusic);
+    check("buy_prize_game", context.hasPurchasedPrizeGame);
 
     return newly;
 }
@@ -594,6 +682,7 @@ export function checkRetroactiveAchievements(
     check("pins_25", context.uniquePins >= 25);
     check("pins_50", context.uniquePins >= 50);
     check("pins_69", context.uniquePins >= 69);
+    check("pins_90", context.uniquePins >= 90);
     check("pins_all", context.uniquePins >= 101);
     check("tier_silver", context.hasSilverPin);
     check("tier_gold", context.hasGoldPin);
@@ -609,6 +698,11 @@ export function checkRetroactiveAchievements(
     check("refer_1", context.referralCount >= 1);
     check("refer_5", context.referralCount >= 5);
     check("refer_10", context.referralCount >= 10);
+
+    // Profile / engagement — derived from context flags
+    check("upload_avatar", context.hasUploadedAvatar);
+    check("change_music", context.hasChangedMusic);
+    check("buy_prize_game", context.hasPurchasedPrizeGame);
 
     return newly;
 }

@@ -1113,7 +1113,7 @@ export default function LandingPageArcade({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="tabular-nums text-[12px] text-white/75">
+                                                <span className="font-display font-black tabular-nums text-[12px] text-white/85">
                                                     {run.score.toLocaleString()}
                                                 </span>
                                             </div>

@@ -130,7 +130,12 @@ export default function AppClient() {
     if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username || retroChecked.current) return;
     retroChecked.current = true;
 
-    const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+    const ctx = buildPlayerContext(pinBook.state.pins, {
+      totalPinsOpened: pinBook.state.totalOpened,
+      hasUploadedAvatar: !!userProfile?.avatarUrl,
+      hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+      hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+    });
 
     // Fetch streak + referral count in parallel, then check retroactive achievements
     Promise.all([
@@ -228,7 +233,12 @@ export default function AppClient() {
         crossCount: stats.crossCount,
         gameMode: gs.gameMode,
       };
-      const playerCtx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+      const playerCtx = buildPlayerContext(pinBook.state.pins, {
+        totalPinsOpened: pinBook.state.totalOpened,
+        hasUploadedAvatar: !!userProfile?.avatarUrl,
+        hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+        hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+      });
       const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
       if (ids.length > 0) {
         await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
@@ -893,7 +903,12 @@ export default function AppClient() {
 
             // Re-check achievements after new pin collected (tier completions, etc.)
             if (userProfile?.username) {
-              const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+              const ctx = buildPlayerContext(pinBook.state.pins, {
+                totalPinsOpened: pinBook.state.totalOpened,
+                hasUploadedAvatar: !!userProfile?.avatarUrl,
+                hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+                hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+              });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) achievements.unlock(ids);
             }
