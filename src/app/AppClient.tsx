@@ -515,6 +515,7 @@ export default function AppClient() {
               classicPlays={pinBook.state.classicPlays}
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
               pinsCollected={Object.keys(pinBook.state.pins).length}
+              pins={pinBook.state.pins}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
               onAuthSuccess={(username, avatarUrl) => {
                 setUserProfile({ username, avatarUrl });

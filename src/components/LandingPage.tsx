@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GameMode } from "@/lib/gameEngine";
 import LandingPageQuest from "./LandingPageQuest";
+import LandingPageArcade from "./LandingPageArcade";
 
 interface LandingPageProps {
     onStartGame: (mode: GameMode, username?: string, avatarUrl?: string) => void;
@@ -17,18 +18,20 @@ interface LandingPageProps {
     classicPlays?: number;
     bonusPrizeGames?: number;
     pinsCollected?: number;
+    pins?: Record<string, { count: number; firstEarned: string }>;
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
 
 /**
- * Landing-page dispatcher. Chooses between the Quest (mobile) and Arcade
- * (desktop) layouts based on viewport width. ≥1024px (iPad landscape and
- * larger) gets the desktop arcade cabinet; everything below gets the mobile
- * Quest Cards layout.
+ * Landing-page dispatcher. Routes to one of three treatments:
  *
- * This file is intentionally thin — all landing logic lives in the two
- * layout components.
+ *   - ≥1024px AND logged-in → LandingPageArcade (desktop cabinet)
+ *   - anything else          → LandingPageQuest (mobile cards)
+ *
+ * Guests on desktop intentionally fall through to the Quest layout so
+ * the sign-in flow stays simple and uncluttered; the arcade cabinet
+ * assumes an authenticated player with a pinbook + score history.
  */
 export default function LandingPage(props: LandingPageProps) {
     const [isDesktop, setIsDesktop] = useState(false);
@@ -43,14 +46,30 @@ export default function LandingPage(props: LandingPageProps) {
         return () => mq.removeEventListener("change", update);
     }, []);
 
-    // SSR / pre-mount: render mobile layout. Prevents layout-flash for
-    // desktop users, but keeps the first paint predictable.
-    if (!mounted || !isDesktop) {
+    // SSR / pre-mount: render mobile. Prevents hydration mismatch for
+    // desktop viewers and keeps the first paint predictable.
+    if (!mounted) {
         return <LandingPageQuest {...props} />;
     }
 
-    // Phase 4 will swap this to <LandingPageArcade {...props} />. Until
-    // then, desktop viewers see the mobile layout centered — still good,
-    // just not the full cabinet treatment yet.
+    if (isDesktop && props.userProfile) {
+        return (
+            <LandingPageArcade
+                onStartGame={props.onStartGame}
+                onShowInstructions={props.onShowInstructions}
+                onLogout={props.onLogout}
+                onOpenPinBook={props.onOpenPinBook}
+                onOpenAchievements={props.onOpenAchievements}
+                onOpenBuyPrizeGames={props.onOpenBuyPrizeGames}
+                capsuleCount={props.capsuleCount}
+                classicPlays={props.classicPlays}
+                bonusPrizeGames={props.bonusPrizeGames}
+                pinsCollected={props.pinsCollected}
+                pins={props.pins}
+                userProfile={props.userProfile}
+            />
+        );
+    }
+
     return <LandingPageQuest {...props} />;
 }
