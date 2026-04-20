@@ -324,7 +324,7 @@ export default function LandingPageArcade({
                                             >
                                                 {capsuleCount}
                                             </span>
-                                            <span className="font-display text-[11px]" style={{ color: `${GOLD}cc` }}>
+                                            <span className="font-display text-[11px] tracking-[0.16em] uppercase" style={{ color: `${GOLD}cc` }}>
                                                 Capsule{capsuleCount === 1 ? "" : "s"}
                                             </span>
                                         </div>
