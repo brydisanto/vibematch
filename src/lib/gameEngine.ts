@@ -538,7 +538,12 @@ export interface TurnResult {
     matchesFound: Match[];
     combo: number;
     comboCarry: number;
-    specialTilesCreated: { pos: Position; type: SpecialTileType }[];
+    // `isInitial` is true only for specials produced by the player's
+    // own match (first iteration of the cascade loop). Cascade-side-effect
+    // specials — e.g. a 6-in-a-row that randomly forms when bomb-cleared
+    // cells get filled with fresh tiles — get `isInitial: false` so FTUE
+    // hints don't fire for moves the player didn't actually make.
+    specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean }[];
     specialTilesTriggered: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
     shapeBonus: ShapeBonus;
@@ -564,7 +569,7 @@ export function processTurn(
     // Start combo from carried-over value (cross-turn momentum)
     let combo = comboCarryIn;
     let totalMatches: Match[] = [];
-    const specialTilesCreated: { pos: Position; type: SpecialTileType }[] = [];
+    const specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean }[] = [];
     const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [];
     let cascadeCount = 0;
 
@@ -594,7 +599,10 @@ export function processTurn(
                 if (!pendingSpecials.has(posKey)) {
                     iterationSpecials.push({ cellId, type: specialType });
                     pendingSpecials.set(posKey, specialType);
-                    specialTilesCreated.push({ pos: midPos, type: specialType });
+                    // cascadeCount === 0 → this iteration is processing the
+                    // player's initial swap match; anything later is a
+                    // cascade side-effect.
+                    specialTilesCreated.push({ pos: midPos, type: specialType, isInitial: cascadeCount === 0 });
                 }
             }
         }

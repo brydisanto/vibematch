@@ -121,19 +121,25 @@ export async function POST(req: Request) {
         } else if (mode === 'daily') {
             const today = new Date().toISOString().split('T')[0];
 
-            // Check if already played today
-            const playedKey = `daily_played:${canonicalUsername.toLowerCase()}:${today}`;
-            const hasPlayed = await kv.get(playedKey);
-
-            if (hasPlayed) {
-                return NextResponse.json({ error: 'Already played today' }, { status: 403 });
+            // IMPORTANT: `daily_played:*` is owned by /api/pinbook.trackGame —
+            // it marks that the user STARTED today's daily (set atomically at
+            // game start to prevent the refresh-to-reroll exploit). We must
+            // NOT treat that marker as "score already submitted", or we'd
+            // reject every legitimate daily score post and the leaderboard
+            // would never update. Use a separate `daily_scored:*` marker
+            // whose contract is "score has been written for today".
+            const scoredKey = `daily_scored:${canonicalUsername.toLowerCase()}:${today}`;
+            const acquired = await kv.set(scoredKey, '1', { nx: true, ex: 86400 * 2 });
+            if (!acquired) {
+                // User has already submitted today's daily score. Silently
+                // acknowledge to avoid surfacing a scary error on a duplicate
+                // client retry.
+                return NextResponse.json({ success: true, isNewBest: false, isNewAllTimeHigh: false });
             }
 
-            // Pipeline: mark played + add score in one round trip
-            const dailyPipe = kv.pipeline();
-            dailyPipe.set(playedKey, 'true');
-            dailyPipe.zadd(`daily_leaderboard:${today}`, { score, member: canonicalUsername });
-            await dailyPipe.exec();
+            // Use { gt: true } so if a duplicate NX race ever slipped
+            // through, only the higher score survives.
+            await kv.zadd(`daily_leaderboard:${today}`, { gt: true } as any, { score, member: canonicalUsername });
             isNewBest = true;
 
             // Invalidate GET cache

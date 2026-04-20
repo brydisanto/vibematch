@@ -283,7 +283,14 @@ export default function AppClient() {
     if (!game.lastTurnResult) return;
     if (game.state?.gameMode !== "classic") return;
     const result = game.lastTurnResult;
-    const createdTypes = new Set(result.specialTilesCreated.map(s => s.type));
+    // Only fire FTUE hints for specials the player ACTUALLY produced with
+    // their swap — not cascade side-effects (e.g. a random 6-in-a-row that
+    // forms when bomb-cleared cells refill with fresh tiles would otherwise
+    // pop "For matching 6 in a row" even though the player just exploded
+    // bombs).
+    const createdTypes = new Set(
+      result.specialTilesCreated.filter(s => s.isInitial).map(s => s.type)
+    );
     if (!ftue.has("cosmicBlastHintShown") && createdTypes.has("cosmic_blast")) {
       ftue.mark("cosmicBlastHintShown");
       setFtueHint("cosmicBlast");
