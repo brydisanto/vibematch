@@ -18,9 +18,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
-import { LogOut, Flame, Star } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
+import { ALL_ACHIEVEMENTS } from "@/lib/achievements";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
@@ -49,6 +50,7 @@ interface LandingPageArcadeProps {
     bonusPrizeGames?: number;
     pinsCollected?: number;
     pins?: Record<string, { count: number; firstEarned: string }>;
+    questsCompleted?: number;
     userProfile: { username: string; avatarUrl: string };
 }
 
@@ -101,6 +103,7 @@ export default function LandingPageArcade({
     bonusPrizeGames = 0,
     pinsCollected = 0,
     pins = {},
+    questsCompleted = 0,
     userProfile,
 }: LandingPageArcadeProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
@@ -132,6 +135,10 @@ export default function LandingPageArcade({
     // Pin collection math
     const totalBadges = BADGES.length;
     const pinPct = totalBadges > 0 ? Math.round((pinsCollected / totalBadges) * 100) : 0;
+
+    // Quest completion math
+    const totalQuests = ALL_ACHIEVEMENTS.length;
+    const questPct = totalQuests > 0 ? Math.round((questsCompleted / totalQuests) * 100) : 0;
 
     // Extra pins = total duplicates across all owned pins (sum of count-1 for
     // every pin you own more than one of). These are what the Reroll flow
@@ -474,7 +481,7 @@ export default function LandingPageArcade({
                             <button
                                 type="button"
                                 onClick={onOpenPinBook}
-                                className="mt-3 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg transition-all hover:brightness-125"
+                                className="mt-3 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg cursor-pointer transition-all hover:brightness-125"
                                 style={{ color: GOLD, border: `1px solid ${GOLD}44`, background: `${GOLD}0a` }}
                             >
                                 VIEW ALL →
@@ -795,7 +802,7 @@ export default function LandingPageArcade({
                                                 key={label}
                                                 type="button"
                                                 onClick={onClick}
-                                                className="group rounded-lg p-[1.5px] transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
+                                                className="group rounded-lg p-[1.5px] cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
                                                 style={{
                                                     background: `linear-gradient(180deg, ${GOLD}55 0%, ${GOLD_DEEP}55 100%)`,
                                                     boxShadow: `0 2px 0 ${GOLD_DEEP}88`,
@@ -828,7 +835,7 @@ export default function LandingPageArcade({
                             <button
                                 type="button"
                                 onClick={handleLogout}
-                                className="mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/70 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                                className="mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/70 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer transition-all"
                             >
                                 <LogOut size={12} />
                                 <span>Sign Out of VibeMatch</span>
@@ -973,36 +980,73 @@ export default function LandingPageArcade({
                                     </div>
                                 </div>
 
+                                {/* Quests completed */}
+                                <div className="w-full mt-2">
+                                    <div className="flex items-baseline justify-between mb-1 gap-2">
+                                        <span className="font-display text-[9px] tracking-[0.22em]" style={{ color: `${COSMIC}bb` }}>
+                                            QUESTS COMPLETED
+                                        </span>
+                                        <span
+                                            className="font-display font-black text-[10px] tabular-nums whitespace-nowrap"
+                                            style={{ color: COSMIC }}
+                                        >
+                                            {questsCompleted}<span className="opacity-45">/{totalQuests}</span>
+                                            <span className="opacity-55"> ({questPct}%)</span>
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="relative h-2 rounded-full overflow-hidden"
+                                        style={{
+                                            background: "rgba(255,255,255,0.08)",
+                                            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
+                                        }}
+                                    >
+                                        <div
+                                            className="absolute inset-y-0 left-0 rounded-full"
+                                            style={{
+                                                width: `${questPct}%`,
+                                                background: `linear-gradient(90deg, ${COSMIC}, #D8A0FF, ${COSMIC})`,
+                                                boxShadow: `0 0 8px ${COSMIC}aa, inset 0 1px 0 rgba(255,255,255,0.4)`,
+                                            }}
+                                        />
+                                        {[25, 50, 75].map(p => (
+                                            <div
+                                                key={p}
+                                                className="absolute top-0 bottom-0 w-px"
+                                                style={{ left: `${p}%`, background: "rgba(0,0,0,0.5)" }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
                                 {/* Stats row */}
                                 <div className="grid grid-cols-2 gap-1.5 w-full mt-1.5">
                                     <div
-                                        className="rounded-lg px-2 py-1.5 flex flex-col items-center justify-center"
+                                        className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
                                         style={{
                                             background: `linear-gradient(180deg, ${ORANGE}1A, ${ORANGE}08)`,
                                             border: `1px solid ${ORANGE}44`,
                                         }}
                                     >
-                                        <Flame size={14} color={ORANGE} strokeWidth={2.2} />
                                         <div
-                                            className="font-display font-black text-[13px] tabular-nums leading-none mt-1"
+                                            className="font-display font-black text-[15px] tabular-nums leading-none"
                                             style={{ color: ORANGE }}
                                         >
                                             {streak}
                                         </div>
-                                        <div className="font-display text-[8px] tracking-[0.15em] mt-0.5" style={{ color: `${ORANGE}cc` }}>
+                                        <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${ORANGE}cc` }}>
                                             DAY STREAK
                                         </div>
                                     </div>
                                     <div
-                                        className="rounded-lg px-2 py-1.5 flex flex-col items-center justify-center"
+                                        className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
                                         style={{
                                             background: `linear-gradient(180deg, ${GOLD}1A, ${GOLD}08)`,
                                             border: `1px solid ${GOLD}44`,
                                         }}
                                     >
-                                        <Star size={14} color={GOLD} strokeWidth={2.2} />
                                         <div
-                                            className="font-display font-black text-[13px] tabular-nums leading-none mt-1"
+                                            className="font-display font-black text-[15px] tabular-nums leading-none"
                                             style={{ color: GOLD }}
                                         >
                                             {personalBest > 0
@@ -1011,7 +1055,7 @@ export default function LandingPageArcade({
                                                     : String(personalBest)
                                                 : "—"}
                                         </div>
-                                        <div className="font-display text-[8px] tracking-[0.15em] mt-0.5" style={{ color: `${GOLD}cc` }}>
+                                        <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${GOLD}cc` }}>
                                             BEST SCORE
                                         </div>
                                     </div>

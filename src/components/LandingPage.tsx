@@ -20,6 +20,7 @@ interface LandingPageProps {
     bonusPrizeGames?: number;
     pinsCollected?: number;
     pins?: Record<string, { count: number; firstEarned: string }>;
+    questsCompleted?: number;
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
@@ -68,6 +69,7 @@ export default function LandingPage(props: LandingPageProps) {
                 bonusPrizeGames={props.bonusPrizeGames}
                 pinsCollected={props.pinsCollected}
                 pins={props.pins}
+                questsCompleted={props.questsCompleted}
                 userProfile={props.userProfile}
             />
         );

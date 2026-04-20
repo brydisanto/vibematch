@@ -516,6 +516,7 @@ export default function AppClient() {
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
               pinsCollected={Object.keys(pinBook.state.pins).length}
               pins={pinBook.state.pins}
+              questsCompleted={Object.keys(achievements.state.unlocked).length}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
               onOpenReroll={() => setShowReroll(true)}
               onAuthSuccess={(username, avatarUrl) => {
