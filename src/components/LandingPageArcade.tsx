@@ -20,6 +20,7 @@ import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { LogOut, Flame, Star } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
+import { getTierByCount } from "@/lib/tiers";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
@@ -141,21 +142,14 @@ export default function LandingPageArcade({
         [pins]
     );
 
-    // Player tier — highest rarity of any collected pin. Drives the tier chip
-    // under the avatar ("COSMIC TIER · PIN #247" style). Blue-only / no pins
-    // collapse to "ROOKIE TIER" so we always have something to show.
-    const tier = useMemo<{ label: string; color: string } | null>(() => {
-        const owned = Object.keys(pins);
-        if (owned.length === 0) return { label: "Rookie Tier", color: "#9BA3B8" };
-        const tiers = owned
-            .map(id => BADGES.find(b => b.id === id)?.tier)
-            .filter((t): t is NonNullable<typeof t> => !!t);
-        if (tiers.includes("cosmic")) return { label: "Cosmic Tier", color: "#B366FF" };
-        if (tiers.includes("gold")) return { label: "Legendary Tier", color: "#FFE048" };
-        if (tiers.includes("special")) return { label: "Special Tier", color: "#FF5F1F" };
-        if (tiers.includes("silver")) return { label: "Rare Tier", color: "#4A9EFF" };
-        return { label: "Rookie Tier", color: "#9BA3B8" };
-    }, [pins]);
+    // Player tier — derived from pin-collection % via the canonical
+    // src/lib/tiers.ts tranches (Rookie → Pro Plastic → Big Vibes → All Gold
+    // → Shadow Funk → Cosmic → One-Of-One at 100%). Keeping the band logic
+    // in one place so the arcade chip stays in sync with leaderboards,
+    // profile cards, and anywhere else tier is surfaced.
+    const tier = useMemo(() => {
+        return getTierByCount(pinsCollected, totalBadges);
+    }, [pinsCollected, totalBadges]);
 
     // Recent pulls — sort collected pins by firstEarned desc, take top 6.
     // `isNew` flags a pin the player still only has one copy of; rendered as
@@ -957,23 +951,21 @@ export default function LandingPageArcade({
                                     {username}
                                 </div>
 
-                                {tier && (
-                                    <div
-                                        className="rounded-full px-2.5 py-1 flex items-center"
-                                        style={{
-                                            background: `linear-gradient(180deg, ${tier.color}33, ${tier.color}15)`,
-                                            border: `1px solid ${tier.color}55`,
-                                        }}
+                                <div
+                                    className="rounded-full px-2.5 py-1 flex items-center"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${tier.color}33, ${tier.accent}44)`,
+                                        border: `1px solid ${tier.color}55`,
+                                    }}
+                                >
+                                    <span
+                                        className="font-display text-[9px] tracking-[0.18em] uppercase"
+                                        style={{ color: tier.color }}
                                     >
-                                        <span
-                                            className="font-display text-[9px] tracking-[0.18em] uppercase"
-                                            style={{ color: tier.color }}
-                                        >
-                                            {tier.label}
-                                            {pinRank !== null ? ` · RANK #${pinRank}` : ""}
-                                        </span>
-                                    </div>
-                                )}
+                                        {tier.label}
+                                        {pinRank !== null ? ` · RANK #${pinRank}` : ""}
+                                    </span>
+                                </div>
 
                                 <div className="w-full mt-2">
                                     <div className="flex items-baseline justify-between mb-1 gap-2">
