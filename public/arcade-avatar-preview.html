@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arcade avatar — treatment explorations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #FFE048;
+    --gold-deep: #8B6914;
+    --gold-light: #FFF4B0;
+    --cosmic: #B366FF;
+    --cosmic-deep: #6B1FC0;
+    --pink: #FF6B9D;
+    --orange: #FF5F1F;
+    --ink: #180630;
+    --ink-deep: #0a0418;
+    --panel: #2D0B4E;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: linear-gradient(180deg, #1a0c2e 0%, #0a0418 100%);
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  h1 {
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 8px;
+    font-weight: 900;
+  }
+  .sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    max-width: 780px;
+    margin: 0 0 40px;
+    line-height: 1.55;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--ink) 100%);
+    border: 1px solid rgba(255,224,72,0.15);
+    border-radius: 18px;
+    padding: 28px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .label {
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .avatar-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 18px 0 14px;
+  }
+  .avatar-inner {
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--cosmic), var(--pink));
+    box-shadow: inset 0 -6px 14px var(--cosmic-deep), inset 0 3px 6px rgba(255,255,255,0.2);
+    font-size: 40px;
+    line-height: 1;
+    z-index: 2;
+  }
+  .avatar-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(from 0deg, var(--gold) 0deg, transparent 90deg, var(--gold) 180deg, transparent 270deg, var(--gold) 360deg);
+    animation: spin 8s linear infinite;
+  }
+  .avatar-ring > div {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .username {
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5);
+    margin-top: 2px;
+  }
+  .tier-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(255,224,72,0.33);
+    background: linear-gradient(180deg, rgba(255,224,72,0.2), rgba(139,105,20,0.27));
+  }
+  .notes {
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.55);
+    margin-top: 10px;
+    text-align: center;
+    min-height: 44px;
+  }
+
+  /* ------ ANIMATIONS ------ */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+  }
+  @keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  @keyframes pulseGrow {
+    0% { transform: scale(0.9); opacity: 0.85; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    33% { transform: translateY(-6px) translateX(3px); }
+    66% { transform: translateY(2px) translateX(-3px); }
+  }
+
+  /* =========================================================
+     OPTION A — Soft halo only (no ring, no rays)
+     ========================================================= */
+  .opt-a .halo {
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,224,72,0.75) 0%, rgba(255,224,72,0.35) 40%, transparent 75%);
+    filter: blur(6px);
+    animation: breathe 3.6s ease-in-out infinite;
+    z-index: 1;
+  }
+
+  /* =========================================================
+     OPTION B — Double ring (gold outer + cosmic inner)
+     ========================================================= */
+  .opt-b .ring-outer {
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    padding: 2.5px;
+    background: conic-gradient(from 0deg, var(--gold), var(--cosmic), var(--gold));
+    animation: spin 12s linear infinite;
+    z-index: 1;
+  }
+  .opt-b .ring-outer > div { width: 100%; height: 100%; border-radius: 50%; background: var(--ink); }
+  .opt-b .ring-glow {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    box-shadow: 0 0 32px rgba(255,224,72,0.4);
+  }
+
+  /* =========================================================
+     OPTION C — Iridescent shimmer ring
+     ========================================================= */
+  .opt-c .shimmer {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(
+      90deg,
+      #FFE048, #B366FF, #FF6B9D, #4A9EFF, #FFE048, #B366FF, #FF6B9D
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3.2s linear infinite;
+    z-index: 1;
+  }
+  .opt-c .shimmer > div { width: 100%; height: 100%; border-radius: 50%; background: var(--ink); }
+
+  /* =========================================================
+     OPTION D — Orbital dots
+     ========================================================= */
+  .opt-d .orbit {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    animation: orbit 10s linear infinite;
+    z-index: 1;
+  }
+  .opt-d .dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+    top: 50%;
+    left: 50%;
+    transform-origin: 0 0;
+  }
+  .opt-d .dot:nth-child(1) { transform: rotate(0deg) translateX(58px) translateY(-3px); }
+  .opt-d .dot:nth-child(2) { transform: rotate(120deg) translateX(58px) translateY(-3px); background: var(--cosmic); box-shadow: 0 0 8px var(--cosmic); }
+  .opt-d .dot:nth-child(3) { transform: rotate(240deg) translateX(58px) translateY(-3px); background: var(--pink); box-shadow: 0 0 8px var(--pink); }
+
+  /* =========================================================
+     OPTION E — Ping-expanding rings (radar ping)
+     ========================================================= */
+  .opt-e .ping {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,224,72,0.7);
+    animation: pulseGrow 2.4s ease-out infinite;
+  }
+  .opt-e .ping:nth-child(2) { animation-delay: 0.8s; }
+  .opt-e .ping:nth-child(3) { animation-delay: 1.6s; }
+
+  /* =========================================================
+     OPTION F — Floating sparkle dust (no ring)
+     ========================================================= */
+  .opt-f .spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 6px var(--gold);
+    animation: float 4s ease-in-out infinite;
+  }
+  .opt-f .spark.s1 { top: -10px; left: 20%; animation-delay: 0s; }
+  .opt-f .spark.s2 { top: 10%; right: -12px; animation-delay: 0.8s; background: var(--cosmic); box-shadow: 0 0 6px var(--cosmic); }
+  .opt-f .spark.s3 { bottom: -10px; left: 30%; animation-delay: 1.6s; background: var(--pink); box-shadow: 0 0 6px var(--pink); }
+  .opt-f .spark.s4 { top: 70%; left: -14px; animation-delay: 2.4s; }
+  .opt-f .spark.s5 { top: -6px; right: 20%; width: 3px; height: 3px; animation-delay: 3.2s; background: var(--cosmic); box-shadow: 0 0 5px var(--cosmic); }
+  .opt-f .halo-soft {
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,224,72,0.3) 0%, transparent 70%);
+    animation: breathe 3.6s ease-in-out infinite;
+    z-index: 0;
+  }
+
+  /* =========================================================
+     OPTION G — Tier-tinted glow only (tier-driven color)
+     ========================================================= */
+  .opt-g .tier-halo {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--cosmic) 0%, rgba(179,102,255,0.4) 40%, transparent 75%);
+    filter: blur(5px);
+    animation: breathe 3.2s ease-in-out infinite;
+    opacity: 0.8;
+    z-index: 1;
+  }
+  .opt-g .tier-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 2.5px;
+    background: linear-gradient(135deg, var(--cosmic), var(--pink));
+    z-index: 2;
+  }
+  .opt-g .tier-ring > div { width: 100%; height: 100%; border-radius: 50%; background: var(--ink); }
+
+  /* =========================================================
+     OPTION H — Subtle bezel + radial shadow (understated)
+     ========================================================= */
+  .opt-h .bezel {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 60%);
+    box-shadow:
+      0 0 0 1px rgba(255,224,72,0.45),
+      0 0 40px rgba(255,224,72,0.25),
+      inset 0 -6px 18px rgba(0,0,0,0.45);
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1>Arcade Avatar — Treatment Options</h1>
+  <p class="sub">
+    Eight alternatives to the current starburst rays. All render in the same 96px box at the top of the right rail.
+    Hover to see the animation cadence. Pick a favorite (or a combo — e.g., "Option G ring with Option F sparks") and I'll wire it in.
+  </p>
+
+  <div class="grid">
+
+    <!-- Option A — Soft halo only -->
+    <div class="card opt-a">
+      <div class="label">Option A · Soft Halo</div>
+      <div class="avatar-wrap">
+        <div class="halo"></div>
+        <div class="avatar-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Just a breathing gold halo, no rays. Cleanest option.</p>
+    </div>
+
+    <!-- Option B — Double ring -->
+    <div class="card opt-b">
+      <div class="label">Option B · Double Ring</div>
+      <div class="avatar-wrap">
+        <div class="ring-glow"></div>
+        <div class="ring-outer"><div></div></div>
+        <div class="avatar-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Rotating gold-to-cosmic outer ring + the existing inner one.</p>
+    </div>
+
+    <!-- Option C — Iridescent shimmer -->
+    <div class="card opt-c">
+      <div class="label">Option C · Iridescent</div>
+      <div class="avatar-wrap">
+        <div class="shimmer"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Holographic shimmer border cycling through brand colors.</p>
+    </div>
+
+    <!-- Option D — Orbital dots -->
+    <div class="card opt-d">
+      <div class="label">Option D · Orbital Dots</div>
+      <div class="avatar-wrap">
+        <div class="orbit">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <div class="avatar-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Three colored dots orbiting slowly around the avatar.</p>
+    </div>
+
+    <!-- Option E — Radar ping -->
+    <div class="card opt-e">
+      <div class="label">Option E · Radar Ping</div>
+      <div class="avatar-wrap">
+        <div class="ping"></div>
+        <div class="ping"></div>
+        <div class="ping"></div>
+        <div class="avatar-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Expanding rings pulse out from the avatar continuously.</p>
+    </div>
+
+    <!-- Option F — Floating sparkle dust -->
+    <div class="card opt-f">
+      <div class="label">Option F · Sparkle Dust</div>
+      <div class="avatar-wrap">
+        <div class="halo-soft"></div>
+        <div class="spark s1"></div>
+        <div class="spark s2"></div>
+        <div class="spark s3"></div>
+        <div class="spark s4"></div>
+        <div class="spark s5"></div>
+        <div class="avatar-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Small colored sparkles drift around, soft halo behind.</p>
+    </div>
+
+    <!-- Option G — Tier-tinted -->
+    <div class="card opt-g">
+      <div class="label">Option G · Tier-Tinted</div>
+      <div class="avatar-wrap">
+        <div class="tier-halo"></div>
+        <div class="tier-ring"><div></div></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip" style="color: var(--cosmic); border-color: rgba(179,102,255,0.55); background: linear-gradient(180deg, rgba(179,102,255,0.33), rgba(107,31,192,0.44));">Cosmic · Rank #2</div>
+      <p class="notes">Ring + glow pick up the player's tier color (shown in cosmic).</p>
+    </div>
+
+    <!-- Option H — Subtle bezel -->
+    <div class="card opt-h">
+      <div class="label">Option H · Gold Bezel</div>
+      <div class="avatar-wrap">
+        <div class="bezel"></div>
+        <div class="avatar-inner">🏄</div>
+      </div>
+      <div class="username">brydisanto</div>
+      <div class="tier-chip">All Gold · Rank #2</div>
+      <p class="notes">Static gold bezel with a soft glow. No animation. Minimalist.</p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
