@@ -185,15 +185,6 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 1,
         order: 18,
     },
-    {
-        id: "buy_prize_game",
-        category: "journey",
-        icon: "🪙",
-        title: "Put In A Coin",
-        description: "Buy a prize game with $VIBESTR",
-        capsules: 1,
-        order: 19,
-    },
 ];
 
 // ── Mastery achievements ─────────────────────────────────────────────
@@ -522,6 +513,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         description: "Refer 10 friends",
         capsules: 3,
         order: 32,
+    },
+    {
+        id: "buy_prize_game",
+        category: "mastery",
+        icon: "🪙",
+        title: "Put In A Coin",
+        description: "Buy a prize game with $VIBESTR",
+        capsules: 1,
+        order: 33,
     },
 ];
 
