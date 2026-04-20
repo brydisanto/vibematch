@@ -34,7 +34,7 @@ interface Pack {
 const PACKS: Pack[] = [
     { size: 1, label: "Single", price: "1", per: "1" },
     { size: 5, label: "Stack", price: "3", per: "0.6", discount: "40% OFF" },
-    { size: 10, label: "Mega Pack", price: "5", per: "0.5", discount: "BEST VALUE — 50% OFF", featured: true },
+    { size: 10, label: "Mega Pack", price: "5", per: "0.5", discount: "BEST VALUE, 50% OFF", featured: true },
 ];
 
 interface PrizeShopDrawerProps {
@@ -322,7 +322,7 @@ function PurchaseState({
                         Restock Prize Games
                     </h3>
                     <p className="text-white/45 text-[11px] font-mundial mt-1 tracking-wide">
-                        Pay with $VIBESTR
+                        Buy more games &amp; find more capsules with $VIBESTR
                         {currentBonus > 0 ? ` · +${currentBonus} bonus today` : ""}
                     </p>
                 </div>
@@ -359,21 +359,42 @@ function PurchaseState({
                                 className="rounded-[10px] px-3.5 py-3 flex items-center gap-3.5"
                                 style={{ background: "#150818" }}
                             >
-                                {/* Stacked coins illustration — bigger packs get more coins */}
-                                <div className="relative shrink-0" style={{ width: 58, height: 52 }}>
-                                    {[...Array(Math.min(3, p.size > 1 ? 3 : 1))].map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className="absolute"
-                                            style={{ left: i * 4, top: 24 - i * 8, zIndex: i }}
-                                        >
-                                            <PrizeCoin
-                                                size={44 - i * 2}
-                                                coinColor={p.featured ? COSMIC : GOLD}
-                                                glow={isSel && i === 2}
-                                            />
-                                        </div>
-                                    ))}
+                                {/* Stacked coins illustration — centered in a fixed
+                                    box so every pack's icon sits at the same
+                                    visual center (previously the stacks were
+                                    top/left-anchored and looked offset). */}
+                                <div className="relative shrink-0 flex items-center justify-center" style={{ width: 58, height: 52 }}>
+                                    {(() => {
+                                        const coinCount = p.size >= 5 ? 3 : p.size > 1 ? 2 : 1;
+                                        const baseSize = 44;
+                                        const stackStep = 8; // vertical spacing between stacked coins
+                                        const stackWidth = 4 * (coinCount - 1); // horizontal fan
+                                        const stackHeight = baseSize + stackStep * (coinCount - 1);
+                                        return (
+                                            <div
+                                                className="relative"
+                                                style={{ width: baseSize + stackWidth, height: stackHeight }}
+                                            >
+                                                {[...Array(coinCount)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="absolute"
+                                                        style={{
+                                                            left: i * 4,
+                                                            top: stackHeight - baseSize - i * stackStep,
+                                                            zIndex: i,
+                                                        }}
+                                                    >
+                                                        <PrizeCoin
+                                                            size={baseSize - i * 2}
+                                                            coinColor={p.featured ? COSMIC : GOLD}
+                                                            glow={isSel && i === coinCount - 1}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                     {p.size >= 5 && (
                                         <span
                                             className="absolute -top-1 -right-1 font-display font-black text-[10px] px-1.5 py-0.5 rounded-md"
@@ -389,12 +410,12 @@ function PurchaseState({
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-baseline gap-2">
+                                    <div className="flex items-baseline gap-2 flex-wrap">
                                         <span className="font-display font-black text-white uppercase text-[17px] tracking-tight leading-none">
                                             {p.label}
                                         </span>
                                         <span className="text-white/40 text-[10px] font-mundial">
-                                            {p.size} × Prize Game
+                                            {p.size} × Prize Game{p.size === 1 ? "" : "s"}
                                         </span>
                                     </div>
                                     {p.discount && (
@@ -405,9 +426,6 @@ function PurchaseState({
                                             {p.discount}
                                         </div>
                                     )}
-                                    <div className="text-white/35 text-[10px] font-mundial mt-0.5">
-                                        {p.per} $VIBESTR / game
-                                    </div>
                                 </div>
 
                                 <div className="text-right shrink-0">

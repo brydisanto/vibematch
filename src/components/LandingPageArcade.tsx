@@ -296,160 +296,177 @@ export default function LandingPageArcade({
                             </div>
                         </button>
 
-                        {/* My Capsules */}
-                        <div className="px-5 pt-5 pb-4 border-b border-white/5">
-                            <div className="font-display text-[10px] tracking-[0.3em] mb-3" style={{ color: GOLD }}>
-                                MY CAPSULES
+                        {/* MY ITEMS — unified block for capsules + extra pins,
+                            condensed so the rail doesn't dominate the page.
+                            Two stacked sub-cards share the same header. */}
+                        <div className="px-5 pt-4 pb-3 border-b border-white/5 flex flex-col gap-2.5">
+                            <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
+                                MY ITEMS
                             </div>
+
+                            {/* Capsules */}
                             <div
-                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08]"
+                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
                                 style={{
                                     background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DIM} 40%, ${GOLD_DEEP} 100%)`,
-                                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
+                                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
                                 }}
                             >
-                                <div className="rounded-[10px] p-3 flex flex-col gap-3" style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative shrink-0" style={{ width: 50, height: 50 }}>
-                                            <div
-                                                className="absolute rounded-full"
-                                                style={{
-                                                    inset: 2,
-                                                    background: `radial-gradient(circle, ${COSMIC}66 0%, ${GOLD}22 40%, transparent 70%)`,
-                                                    filter: "blur(3px)",
-                                                }}
-                                            />
-                                            {/* Cracked-open capsule glyph from the mockup */}
-                                            <div
-                                                style={{
-                                                    position: "absolute",
-                                                    top: 0,
-                                                    left: "50%",
-                                                    width: 3,
-                                                    height: 20,
-                                                    transform: "translateX(-50%)",
-                                                    background: `linear-gradient(180deg, transparent 0%, ${GOLD} 40%, #fff 70%, ${GOLD} 100%)`,
-                                                    boxShadow: `0 0 8px ${GOLD}, 0 0 14px ${GOLD}88`,
-                                                    borderRadius: 2,
-                                                }}
-                                            />
-                                            <div
-                                                style={{
-                                                    position: "absolute",
-                                                    top: 7,
-                                                    left: 6,
-                                                    width: 38,
-                                                    height: 19,
-                                                    background: "radial-gradient(ellipse at 35% 60%, #7a4db8 0%, #4a2280 55%, #2a0e55 100%)",
-                                                    border: "1.5px solid #0C0418",
-                                                    borderBottom: "none",
-                                                    borderRadius: "19px 19px 2px 2px",
-                                                    transform: "rotate(-12deg) translateY(-3px)",
-                                                    transformOrigin: "right bottom",
-                                                    boxShadow: "inset 0 2px 3px rgba(255,255,255,0.25), 0 -2px 4px rgba(0,0,0,0.3)",
-                                                }}
-                                            />
-                                            <div
-                                                style={{
-                                                    position: "absolute",
-                                                    bottom: 3,
-                                                    left: 6,
-                                                    width: 38,
-                                                    height: 20,
-                                                    background: "radial-gradient(ellipse at 35% 40%, #6a3da0 0%, #3a1a6e 55%, #1a0733 100%)",
-                                                    border: "1.5px solid #0C0418",
-                                                    borderTop: "none",
-                                                    borderRadius: "2px 2px 19px 19px",
-                                                    boxShadow: "inset 0 -3px 5px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.45)",
-                                                    overflow: "hidden",
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: -2,
-                                                        left: "50%",
-                                                        transform: "translateX(-50%)",
-                                                        width: 24,
-                                                        height: 14,
-                                                        borderRadius: "50%",
-                                                        background: `radial-gradient(ellipse, ${GOLD}aa 0%, ${GOLD}55 40%, transparent 70%)`,
-                                                        filter: "blur(1px)",
-                                                    }}
-                                                />
-                                            </div>
+                                <div className="rounded-[10px] px-2.5 py-2 flex items-center gap-2.5" style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}>
+                                    {/* Cracked-open capsule glyph with sparkles */}
+                                    <div className="relative shrink-0" style={{ width: 46, height: 46 }}>
+                                        <div
+                                            className="absolute rounded-full"
+                                            style={{
+                                                inset: 2,
+                                                background: `radial-gradient(circle, ${COSMIC}66 0%, ${GOLD}22 40%, transparent 70%)`,
+                                                filter: "blur(3px)",
+                                            }}
+                                        />
+                                        {/* Loot beam */}
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: "50%",
+                                                width: 3,
+                                                height: 18,
+                                                transform: "translateX(-50%)",
+                                                background: `linear-gradient(180deg, transparent 0%, ${GOLD} 40%, #fff 70%, ${GOLD} 100%)`,
+                                                boxShadow: `0 0 8px ${GOLD}, 0 0 14px ${GOLD}88`,
+                                                borderRadius: 2,
+                                            }}
+                                        />
+                                        {/* Sparkle star at top of beam */}
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: -2,
+                                                left: "50%",
+                                                transform: "translateX(-50%)",
+                                                width: 12,
+                                                height: 12,
+                                            }}
+                                        >
+                                            <svg viewBox="0 0 10 10" width="12" height="12" style={{ filter: `drop-shadow(0 0 3px ${GOLD})` }}>
+                                                <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z" fill={GOLD} />
+                                            </svg>
                                         </div>
-                                        <div className="min-w-0 flex-1 leading-none">
-                                            <div className="flex items-baseline gap-2">
-                                                <span
-                                                    className="font-display font-black text-[26px]"
-                                                    style={{ color: GOLD, textShadow: `0 2px 0 ${GOLD_DEEP}` }}
-                                                >
-                                                    {capsuleCount}
-                                                </span>
-                                                <span className="font-display text-[10px] tracking-[0.18em]" style={{ color: `${GOLD}cc` }}>
-                                                    UNOPENED
-                                                </span>
-                                            </div>
+                                        {/* Top half (tilted open) */}
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: 7,
+                                                left: 4,
+                                                width: 35,
+                                                height: 17,
+                                                background: "radial-gradient(ellipse at 35% 60%, #7a4db8 0%, #4a2280 55%, #2a0e55 100%)",
+                                                border: "1.5px solid #0C0418",
+                                                borderBottom: "none",
+                                                borderRadius: "17px 17px 2px 2px",
+                                                transform: "rotate(-12deg) translateY(-3px)",
+                                                transformOrigin: "right bottom",
+                                                boxShadow: "inset 0 2px 3px rgba(255,255,255,0.25), 0 -2px 4px rgba(0,0,0,0.3)",
+                                            }}
+                                        />
+                                        {/* Bottom half (bowl) */}
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                bottom: 3,
+                                                left: 4,
+                                                width: 35,
+                                                height: 18,
+                                                background: "radial-gradient(ellipse at 35% 40%, #6a3da0 0%, #3a1a6e 55%, #1a0733 100%)",
+                                                border: "1.5px solid #0C0418",
+                                                borderTop: "none",
+                                                borderRadius: "2px 2px 17px 17px",
+                                                boxShadow: "inset 0 -3px 5px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.45)",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    position: "absolute",
+                                                    top: -2,
+                                                    left: "50%",
+                                                    transform: "translateX(-50%)",
+                                                    width: 22,
+                                                    height: 13,
+                                                    borderRadius: "50%",
+                                                    background: `radial-gradient(ellipse, ${GOLD}aa 0%, ${GOLD}55 40%, transparent 70%)`,
+                                                    filter: "blur(1px)",
+                                                }}
+                                            />
+                                        </div>
+                                        {/* Side sparkle dots */}
+                                        <div style={{ position: "absolute", top: 8, right: 2, width: 3, height: 3, borderRadius: "50%", background: "#fff", boxShadow: `0 0 4px ${GOLD}` }} />
+                                        <div style={{ position: "absolute", top: 14, left: 0, width: 2, height: 2, borderRadius: "50%", background: GOLD, boxShadow: `0 0 3px ${GOLD}` }} />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 leading-tight">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span
+                                                className="font-display font-black text-[22px]"
+                                                style={{ color: GOLD, textShadow: `0 2px 0 ${GOLD_DEEP}` }}
+                                            >
+                                                {capsuleCount}
+                                            </span>
+                                            <span className="font-display text-[9px] tracking-[0.16em]" style={{ color: `${GOLD}cc` }}>
+                                                UNOPENED
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
+                                            Open capsules to find Pins.
                                         </div>
                                     </div>
+
                                     <ChunkyButton
                                         onClick={onOpenPinBook}
                                         color={GOLD}
                                         deep={GOLD_DEEP}
                                         text="#1A0E02"
                                         style={{
-                                            width: "100%",
-                                            padding: "9px 12px",
-                                            fontSize: 11,
+                                            padding: "6px 10px",
+                                            fontSize: 10,
                                             fontWeight: 900,
-                                            letterSpacing: "0.2em",
+                                            letterSpacing: "0.18em",
                                         }}
                                     >
                                         OPEN
                                     </ChunkyButton>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Extra Pins — surfaces duplicate pins available to
-                            burn for a reroll. Mirrors the cosmic styling of
-                            the cabinets so it reads as a complementary
-                            Pin-Book action, not a secondary capsule slot. */}
-                        <div className="px-5 pt-5 pb-4 border-b border-white/5">
-                            <div className="font-display text-[10px] tracking-[0.3em] mb-3" style={{ color: GOLD }}>
-                                EXTRA PINS
-                            </div>
+                            {/* Extra Pins → Reroll */}
                             <div
-                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08]"
+                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
                                 style={{
                                     background: `linear-gradient(180deg, ${COSMIC} 0%, ${COSMIC_DEEP} 100%)`,
-                                    boxShadow: `0 3px 0 ${COSMIC_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
+                                    boxShadow: `0 3px 0 ${COSMIC_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
                                 }}
                             >
                                 <div
-                                    className="rounded-[10px] p-3 flex flex-col gap-3"
+                                    className="rounded-[10px] px-2.5 py-2 flex items-center gap-2.5"
                                     style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="min-w-0 flex-1 leading-none">
-                                            <div className="flex items-baseline gap-2">
-                                                <span
-                                                    className="font-display font-black text-[26px]"
-                                                    style={{
-                                                        color: COSMIC,
-                                                        textShadow: `0 2px 0 ${COSMIC_DEEP}`,
-                                                    }}
-                                                >
-                                                    {extraPinsCount}
-                                                </span>
-                                                <span className="font-display text-[10px] tracking-[0.18em]" style={{ color: `${COSMIC}cc` }}>
-                                                    DUPLICATE{extraPinsCount === 1 ? "" : "S"}
-                                                </span>
-                                            </div>
-                                            <div className="text-[10px] text-white/50 mt-1.5 leading-snug">
-                                                Burn duplicates and roll for new pins.
-                                            </div>
+                                    <div className="min-w-0 flex-1 leading-tight">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span
+                                                className="font-display font-black text-[22px]"
+                                                style={{
+                                                    color: COSMIC,
+                                                    textShadow: `0 2px 0 ${COSMIC_DEEP}`,
+                                                }}
+                                            >
+                                                {extraPinsCount}
+                                            </span>
+                                            <span className="font-display text-[9px] tracking-[0.16em]" style={{ color: `${COSMIC}cc` }}>
+                                                EXTRA PIN{extraPinsCount === 1 ? "" : "S"}
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
+                                            Burn duplicates, roll new pins.
                                         </div>
                                     </div>
                                     <ChunkyButton
@@ -459,11 +476,10 @@ export default function LandingPageArcade({
                                         text="#fff"
                                         disabled={extraPinsCount === 0}
                                         style={{
-                                            width: "100%",
-                                            padding: "9px 12px",
-                                            fontSize: 11,
+                                            padding: "6px 10px",
+                                            fontSize: 10,
                                             fontWeight: 900,
-                                            letterSpacing: "0.2em",
+                                            letterSpacing: "0.18em",
                                         }}
                                     >
                                         REROLL
@@ -991,45 +1007,33 @@ export default function LandingPageArcade({
 
                                 {tier && (
                                     <div
-                                        className="rounded-full px-2.5 py-1 flex items-center gap-1.5"
+                                        className="rounded-full px-2.5 py-1 flex items-center"
                                         style={{
                                             background: `linear-gradient(180deg, ${tier.color}33, ${tier.color}15)`,
                                             border: `1px solid ${tier.color}55`,
                                         }}
                                     >
-                                        <svg
-                                            width="10"
-                                            height="10"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke={tier.color}
-                                            strokeWidth="2.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2" />
-                                        </svg>
                                         <span
                                             className="font-display text-[9px] tracking-[0.18em] uppercase"
                                             style={{ color: tier.color }}
                                         >
                                             {tier.label}
-                                            {pinRank !== null ? ` · PIN #${pinRank}` : ""}
+                                            {pinRank !== null ? ` · RANK #${pinRank}` : ""}
                                         </span>
                                     </div>
                                 )}
 
                                 <div className="w-full mt-2">
-                                    <div className="flex items-baseline justify-between mb-1">
+                                    <div className="flex items-baseline justify-between mb-1 gap-2">
                                         <span className="font-display text-[9px] tracking-[0.22em]" style={{ color: `${GOLD}bb` }}>
-                                            PIN COLLECTION
+                                            PINS COLLECTED
                                         </span>
                                         <span
-                                            className="font-display font-black text-[10px] tabular-nums"
+                                            className="font-display font-black text-[10px] tabular-nums whitespace-nowrap"
                                             style={{ color: GOLD }}
                                         >
-                                            {pinsCollected}
-                                            <span className="opacity-45">/{totalBadges}</span>
+                                            {pinsCollected}<span className="opacity-45">/{totalBadges}</span>
+                                            <span className="opacity-55"> ({pinPct}%)</span>
                                         </span>
                                     </div>
                                     <div
