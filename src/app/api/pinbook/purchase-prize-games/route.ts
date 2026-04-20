@@ -27,18 +27,30 @@ export const revalidate = 0;
 // Two-env treasury verification:
 // - NEXT_PUBLIC_TREASURY_ADDRESS is what the client sees & sends funds to
 // - TREASURY_ADDRESS_VERIFIER is what the server actually checks against
-// If these disagree, a frontend misconfig can't silently redirect funds.
-// In absence of the verifier var, fall back to the public var with a warning.
+// If these disagree, we HARD-FAIL every purchase request so an env-var drift
+// (malicious or accidental) can't silently redirect funds. Previous behavior
+// was a console.warn; post-Vercel-incident the warn is not enough.
 const PUBLIC_TREASURY = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
 const VERIFIER_TREASURY = (process.env.TREASURY_ADDRESS_VERIFIER || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
 const TREASURY_ADDRESS = VERIFIER_TREASURY;
 
-if (process.env.TREASURY_ADDRESS_VERIFIER && PUBLIC_TREASURY && PUBLIC_TREASURY !== VERIFIER_TREASURY) {
+const TREASURY_MISCONFIGURED = !TREASURY_ADDRESS || (
+    !!process.env.TREASURY_ADDRESS_VERIFIER &&
+    !!PUBLIC_TREASURY &&
+    PUBLIC_TREASURY !== VERIFIER_TREASURY
+);
+
+if (TREASURY_MISCONFIGURED) {
     console.error(
-        `[Purchase] TREASURY MISMATCH: public=${PUBLIC_TREASURY} verifier=${VERIFIER_TREASURY}. ` +
-        `This WILL reject legitimate payments. Fix env vars immediately.`
+        `[Purchase] TREASURY MISCONFIGURED: public=${PUBLIC_TREASURY || '<missing>'} ` +
+        `verifier=${VERIFIER_TREASURY || '<missing>'}. All purchase verification will hard-fail ` +
+        `until env vars agree.`
     );
 }
+
+// Ethereum mainnet chainId — reject any receipt from a different chain (e.g.
+// testnet-cheap txs accidentally verified via a misbehaving RPC in fallback).
+const EXPECTED_CHAIN_ID = BigInt(1);
 
 const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
@@ -120,6 +132,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
+        // Hard-fail any purchase while public/verifier treasury envs disagree.
+        // The warning at module load is a heads-up; this is the actual guard.
+        if (TREASURY_MISCONFIGURED) {
+            return NextResponse.json({ error: 'Payment temporarily unavailable (server misconfiguration)' }, { status: 503 });
+        }
+
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
         const normalizedTxHash = txHash.toLowerCase();
@@ -195,6 +213,14 @@ export async function POST(request: Request) {
         const tx = await client.getTransaction({ hash: normalizedTxHash as `0x${string}` });
         if (tx.from.toLowerCase() !== normalizedWallet) {
             return await fail(400, 'Transaction sender does not match provided wallet');
+        }
+
+        // Chain-id sanity: refuse any tx not on mainnet. Guards against the
+        // edge case where an RPC endpoint in fallback() misbehaves and serves
+        // a testnet-cheap receipt; also catches a compromised RPC config.
+        if (tx.chainId !== undefined && BigInt(tx.chainId) !== EXPECTED_CHAIN_ID) {
+            console.error(`[Purchase] chainId mismatch: got ${tx.chainId} expected ${EXPECTED_CHAIN_ID}`);
+            return await fail(400, 'Transaction is on the wrong chain');
         }
 
         // Parse event logs for valid Transfer
