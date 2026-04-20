@@ -145,18 +145,32 @@ export default function AppClient() {
   useEffect(() => {
     if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username) return;
 
-    const ctx = buildPlayerContext(pinBook.state.pins, {
-      totalPinsOpened: pinBook.state.totalOpened,
-      hasUploadedAvatar: !!userProfile?.avatarUrl,
-      hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
-      hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
-    });
-
-    // Fetch streak + referral count in parallel, then check retroactive achievements
+    // Fetch streak + referral count + user-flags in parallel, then check
+    // retroactive achievements. We need the flags from /api/user-flags so the
+    // client-side ctx knows about server-set signals like vibestrHolder
+    // (otherwise wallet_vibestr never makes it into the unlock POST body).
     Promise.all([
       fetch(`/api/streak?username=${userProfile.username}`).then(r => r.json()).catch(() => ({ streak: 0 })),
       fetch('/api/referral').then(r => r.json()).catch(() => ({ totalReferrals: 0 })),
-    ]).then(([streakData, referralData]) => {
+      fetch('/api/user-flags').then(r => r.json()).catch(() => ({ flags: {} })),
+    ]).then(([streakData, referralData, flagsData]) => {
+      const flags = (flagsData?.flags || {}) as {
+        musicChanged?: boolean;
+        avatarUploaded?: boolean;
+        prizeGamePurchased?: boolean;
+        vibestrHolder?: boolean;
+      };
+      const ctx = buildPlayerContext(pinBook.state.pins, {
+        totalPinsOpened: pinBook.state.totalOpened,
+        hasUploadedAvatar:
+          !!userProfile?.avatarUrl || !!flags.avatarUploaded,
+        hasChangedMusic:
+          (typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null) ||
+          !!flags.musicChanged,
+        hasPurchasedPrizeGame:
+          (pinBook.state.bonusPrizeGames || 0) > 0 || !!flags.prizeGamePurchased,
+        hasVibestrWallet: !!flags.vibestrHolder,
+      });
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
       const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
