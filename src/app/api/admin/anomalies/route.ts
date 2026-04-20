@@ -24,7 +24,7 @@ interface FlaggedGame extends GameLogEntry {
 }
 
 export async function GET(req: Request) {
-    const admin = await requireAdmin();
+    const admin = await requireAdmin(req);
     if (!admin) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

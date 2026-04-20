@@ -18,7 +18,7 @@ async function scanKeys(pattern: string, limit: number = 1000): Promise<string[]
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
-    const admin = await requireAdmin();
+    const admin = await requireAdmin(req);
     if (!admin) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

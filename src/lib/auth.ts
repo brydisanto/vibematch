@@ -97,6 +97,16 @@ export async function hashPassword(password: string): Promise<string> {
     return `pbkdf2:${saltHex}:${hashHex}`;
 }
 
+/**
+ * Detect a legacy raw SHA-256 hash. These pre-date PBKDF2 and are now
+ * considered compromised material after the 2026-04-20 platform incident.
+ * Callers should force a rotation flow on matched accounts instead of
+ * auto-rehashing under the user's existing password.
+ */
+export function isLegacyHash(storedHash: string): boolean {
+    return !storedHash.startsWith("pbkdf2:");
+}
+
 // Verify a password against a stored hash.
 // Supports both:
 //   - New format: "pbkdf2:<salt_hex>:<hash_hex>"

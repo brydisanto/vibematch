@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { adminFetch } from "../../_lib/adminFetch";
 
 interface AnomalyFlag {
     id: string;
@@ -65,7 +66,7 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch(`/api/admin/user/${username}`)
+        adminFetch(`/api/admin/user/${username}`)
             .then(r => r.json())
             .then(d => {
                 if (d.error) {
@@ -73,6 +74,10 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
                 } else {
                     setData(d);
                 }
+                setLoading(false);
+            })
+            .catch(e => {
+                setError(e?.message || "Admin authorization required");
                 setLoading(false);
             });
     }, [username]);

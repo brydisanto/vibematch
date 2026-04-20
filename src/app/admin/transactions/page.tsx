@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { adminFetch, adminDownload } from "../_lib/adminFetch";
 
 interface Transaction {
     txHash: string;
@@ -17,10 +18,13 @@ export default function TransactionsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("/api/admin/transactions").then(r => r.json()).then(data => {
-            setTxs(data.transactions || []);
-            setLoading(false);
-        });
+        adminFetch("/api/admin/transactions")
+            .then(r => r.json())
+            .then(data => {
+                setTxs(data.transactions || []);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
     }, []);
 
     const totalSpent = txs.reduce((sum, tx) => sum + parseFloat(tx.amount || "0"), 0);
@@ -31,12 +35,13 @@ export default function TransactionsPage() {
             <div className="flex items-baseline justify-between">
                 <div className="flex items-baseline gap-3">
                     <h1 className="text-2xl font-display font-black text-[#FFE048] uppercase">Transactions</h1>
-                    <a
-                        href="/api/admin/export?type=transactions"
+                    <button
+                        type="button"
+                        onClick={() => adminDownload("/api/admin/export?type=transactions", "transactions.csv").catch(() => {})}
                         className="text-[10px] text-[#FFE048] hover:text-[#FFE858] uppercase tracking-wider font-bold"
                     >
                         Export CSV
-                    </a>
+                    </button>
                 </div>
                 <div className="flex gap-6 text-sm text-white/60">
                     <div>

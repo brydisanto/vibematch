@@ -117,9 +117,9 @@ export async function GET() {
 }
 
 // DELETE — wipe all pinbook data and leaderboard (admin only)
-export async function DELETE() {
+export async function DELETE(req: Request) {
     try {
-        const admin = await requireAdmin();
+        const admin = await requireAdmin(req);
         if (!admin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
@@ -150,9 +150,9 @@ export async function DELETE() {
 }
 
 // POST — rebuild leaderboard from all pinbook data (admin only)
-export async function POST() {
+export async function POST(req: Request) {
     try {
-        const admin = await requireAdmin();
+        const admin = await requireAdmin(req);
         if (!admin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

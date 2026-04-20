@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { adminFetch } from "../_lib/adminFetch";
 
 interface AnomalyFlag {
     id: string;
@@ -60,7 +61,7 @@ export default function AnomaliesPage() {
     useEffect(() => {
         setLoading(true);
         const param = severity === 'all' ? 'low' : severity;
-        fetch(`/api/admin/anomalies?severity=${param}`)
+        adminFetch(`/api/admin/anomalies?severity=${param}`)
             .then(r => r.json())
             .then(d => {
                 setData(d);

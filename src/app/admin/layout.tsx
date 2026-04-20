@@ -1,10 +1,14 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import AdminTokenGate from "./_components/AdminTokenGate";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+    // Session-layer gate (username in ADMIN_USERNAMES). The second factor —
+    // the ADMIN_ACCESS_TOKEN header — is enforced per-API in requireAdmin()
+    // and surfaced to the user by the AdminTokenGate client component.
     const admin = await requireAdmin();
     if (!admin) {
         redirect("/");
@@ -36,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
 
             <div className="max-w-7xl mx-auto px-6 py-8">
-                {children}
+                <AdminTokenGate>{children}</AdminTokenGate>
             </div>
         </div>
     );

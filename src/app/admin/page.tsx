@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { adminFetch, adminDownload } from "./_lib/adminFetch";
 
 interface Overview {
     totalUsers: number;
@@ -37,18 +38,23 @@ export default function AdminDashboard() {
     const [shown, setShown] = useState(0);
 
     useEffect(() => {
-        fetch("/api/admin/overview").then(r => r.json()).then(setOverview).catch(() => {});
+        adminFetch("/api/admin/overview").then(r => r.json()).then(setOverview).catch(() => {});
     }, []);
 
     useEffect(() => {
         const timer = setTimeout(async () => {
             setLoading(true);
-            const res = await fetch(`/api/admin/users${search ? `?q=${encodeURIComponent(search)}` : ""}`);
-            const data = await res.json();
-            setUsers(data.users || []);
-            setTotal(data.total || 0);
-            setShown(data.shown || 0);
-            setLoading(false);
+            try {
+                const res = await adminFetch(`/api/admin/users${search ? `?q=${encodeURIComponent(search)}` : ""}`);
+                const data = await res.json();
+                setUsers(data.users || []);
+                setTotal(data.total || 0);
+                setShown(data.shown || 0);
+            } catch {
+                setUsers([]);
+            } finally {
+                setLoading(false);
+            }
         }, 200);
         return () => clearTimeout(timer);
     }, [search]);
@@ -79,12 +85,13 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-display font-black text-[#FFE048] uppercase">
                         Users <span className="text-white/40 text-sm font-normal">({shown} of {total})</span>
-                        <a
-                            href="/api/admin/export?type=users"
+                        <button
+                            type="button"
+                            onClick={() => adminDownload("/api/admin/export?type=users", "users.csv").catch(() => {})}
                             className="ml-3 text-[10px] text-[#FFE048] hover:text-[#FFE858] uppercase tracking-wider font-bold"
                         >
                             Export CSV
-                        </a>
+                        </button>
                     </h2>
                     <input
                         type="text"
