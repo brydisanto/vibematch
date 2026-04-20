@@ -291,10 +291,10 @@ export default function LandingPage({ onStartGame, onShowInstructions, onLogout,
                             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
                         >
                             <Image
-                                src="/assets/logo-v2.png"
+                                src="/assets/logo.png"
                                 alt="VIBE MATCH Logo"
-                                width={320}
-                                height={160}
+                                width={1000}
+                                height={627}
                                 className="drop-shadow-[0_10px_30px_rgba(255,224,72,0.3)] hover:scale-105 transition-transform duration-300 w-[240px] sm:w-[320px] h-auto max-w-full mx-auto block"
                                 priority
                             />
