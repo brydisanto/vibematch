@@ -4,11 +4,22 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trophy, Crown } from "lucide-react";
+import { BADGES } from "@/lib/badges";
 
 interface LeaderboardEntry {
     username: string;
     score: number;
     avatarUrl: string;
+    /**
+     * Pin-mode only — per-user collection stats. When present, the row
+     * renders `uniqueCount/totalBadges pins` as a secondary caption and
+     * formats `score` as a percentage. Unused for classic/weekly/daily.
+     */
+    pinDetails?: {
+        uniqueCount: number;
+        totalPins: number;
+        totalBadges: number;
+    };
 }
 
 interface UserEntry extends LeaderboardEntry {
@@ -26,10 +37,11 @@ interface LeaderboardModalProps {
     currentAvatarUrl?: string;
 }
 
-type TabMode = "classic" | "weekly" | "daily";
+type TabMode = "classic" | "weekly" | "daily" | "pins";
 
-const formatScore = (value: number) => {
+const formatScore = (value: number, mode: TabMode = "classic") => {
     if (value <= 0) return "\u2014";
+    if (mode === "pins") return `${value}%`;
     return value.toLocaleString();
 };
 
@@ -72,12 +84,13 @@ function useCountdown(mode: TabMode): string | null {
     const [, setTick] = useState(0);
 
     useEffect(() => {
-        if (mode === "classic") return;
+        if (mode === "classic" || mode === "pins") return;
         const interval = setInterval(() => setTick(t => t + 1), 60_000);
         return () => clearInterval(interval);
     }, [mode]);
 
-    if (mode === "classic") return null;
+    // Pins is a cumulative collection rank — there's no reset cadence.
+    if (mode === "classic" || mode === "pins") return null;
     if (mode === "weekly") return formatCountdown(getNextMonday());
     return formatCountdown(getMidnightTonight());
 }
@@ -121,7 +134,7 @@ function Avatar({ entry, size = 40, className = "" }: { entry: LeaderboardEntry;
 
 // --- Podium (top 3) ---
 
-function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry[]; currentUsername?: string }) {
+function PodiumSection({ entries, currentUsername, mode }: { entries: LeaderboardEntry[]; currentUsername?: string; mode: TabMode }) {
     if (entries.length < 3) return null;
 
     const podiumOrder = [entries[1], entries[0], entries[2]]; // 2nd, 1st, 3rd
@@ -162,8 +175,13 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
                             {isUser ? "You" : entry.username}
                         </div>
                         <div className="text-sm font-extrabold text-[#FFD700] mt-0.5">
-                            {formatScore(entry.score)}
+                            {formatScore(entry.score, mode)}
                         </div>
+                        {entry.pinDetails && (
+                            <div className="text-[9px] text-white/45 mt-0.5">
+                                {entry.pinDetails.uniqueCount}/{entry.pinDetails.totalBadges} pins
+                            </div>
+                        )}
                         {/* Pedestal */}
                         <div className="w-[100px] rounded-t-lg mt-2"
                             style={{
@@ -182,7 +200,7 @@ function PodiumSection({ entries, currentUsername }: { entries: LeaderboardEntry
 
 // --- List row ---
 
-function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean }) {
+function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean; mode: TabMode }) {
     return (
         <div
             className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${isCurrentUser
@@ -194,11 +212,18 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: { entry: LeaderboardEntr
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />
-            <div className="flex-1 font-display font-extrabold text-base text-white/90 truncate">
-                {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
+            <div className="flex-1 min-w-0">
+                <div className="font-display font-extrabold text-base text-white/90 truncate">
+                    {isCurrentUser ? <><span>{entry.username}</span><span className="ml-1.5 text-[9px] font-extrabold text-[#B366FF] bg-[#B366FF]/15 px-1.5 py-0.5 rounded tracking-wider">YOU</span></> : entry.username}
+                </div>
+                {entry.pinDetails && (
+                    <div className="text-[10px] text-white/40 mt-0.5">
+                        {entry.pinDetails.uniqueCount}/{entry.pinDetails.totalBadges} pins · {entry.pinDetails.totalPins} total
+                    </div>
+                )}
             </div>
             <div className="flex-shrink-0 font-display font-extrabold text-[#FFD700] text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                {formatScore(entry.score)}
+                {formatScore(entry.score, mode)}
             </div>
         </div>
     );
@@ -229,6 +254,73 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
+        // Pins tab reads from a different endpoint and a different row shape.
+        if (targetMode === "pins") {
+            const res = await fetch(`/api/pinbook/leaderboard`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const rawList: Array<{
+                username: string;
+                uniqueCount: number;
+                totalPins: number;
+                percentComplete: number;
+                pinScore: number;
+            }> = data.leaderboard || [];
+            // The endpoint returns every player; cap at 50 to match other tabs.
+            const top50 = rawList.slice(0, 50);
+            const totalBadges = BADGES.length;
+            const phase1List: LeaderboardEntry[] = top50.map(entry => {
+                const isCurrentUser = currentUsername && currentAvatarUrl && entry.username.toLowerCase() === currentUsername.toLowerCase();
+                return {
+                    username: entry.username,
+                    score: entry.percentComplete,
+                    avatarUrl: isCurrentUser ? currentAvatarUrl : "",
+                    pinDetails: {
+                        uniqueCount: entry.uniqueCount,
+                        totalPins: entry.totalPins,
+                        totalBadges,
+                    },
+                };
+            });
+
+            // If the signed-in user isn't in the top 50, pin them at the bottom.
+            let ue: UserEntry | null = null;
+            if (currentUsername) {
+                const fullIndex = rawList.findIndex(
+                    e => e.username.toLowerCase() === currentUsername.toLowerCase()
+                );
+                if (fullIndex >= 50) {
+                    const e = rawList[fullIndex];
+                    ue = {
+                        username: e.username,
+                        score: e.percentComplete,
+                        avatarUrl: currentAvatarUrl || "",
+                        pinDetails: {
+                            uniqueCount: e.uniqueCount,
+                            totalPins: e.totalPins,
+                            totalBadges,
+                        },
+                        rank: fullIndex + 1,
+                    };
+                }
+            }
+
+            fetchedModes.current.add(targetMode);
+            setCache(prev => ({
+                ...prev,
+                [targetMode]: {
+                    leaderboard: phase1List,
+                    userEntry: ue,
+                    nextPlayer: null,
+                    totalPlayers: data.totalPlayers || rawList.length,
+                    totalMatchesPlayed: 0,
+                },
+            }));
+            setIsLoading(false);
+            return;
+        }
+
+        // classic / weekly / daily
         const params = new URLSearchParams({ mode: targetMode });
         if (currentUsername) params.set("username", currentUsername);
         const res = await fetch(`/api/scores?${params}`);
@@ -311,15 +403,17 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         }
     }, [isLoading, leaderboard, currentUsername]);
 
-    // Beat nudge text
+    // Beat nudge text (not applicable for pins — that tab ranks by collection
+    // progress, and "X pins to beat Y" isn't a compelling CTA).
     const beatNudge = useMemo(() => {
+        if (mode === "pins") return null;
         if (!nextPlayer || !currentUsername) return null;
         const userScore = userEntry?.score ?? leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase())?.score;
         if (!userScore) return null;
         const diff = nextPlayer.score - userScore;
         if (diff <= 0) return null;
         return { name: nextPlayer.username, points: diff };
-    }, [nextPlayer, userEntry, leaderboard, currentUsername]);
+    }, [nextPlayer, userEntry, leaderboard, currentUsername, mode]);
 
     const hasPodium = leaderboard.length >= 3;
     const top3 = hasPodium ? leaderboard.slice(0, 3) : [];
@@ -329,6 +423,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         { key: "classic", label: "All Time" },
         { key: "weekly", label: "Weekly" },
         { key: "daily", label: "Daily" },
+        { key: "pins", label: "Pins" },
     ];
 
     return (
@@ -414,7 +509,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                 <motion.div key={`${mode}-list`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                     {/* Podium */}
                                     {hasPodium && (
-                                        <PodiumSection entries={top3} currentUsername={currentUsername} />
+                                        <PodiumSection entries={top3} currentUsername={currentUsername} mode={mode} />
                                     )}
 
                                     {/* Separator (only after podium) */}
@@ -432,6 +527,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                     entry={entry}
                                                     rank={hasPodium ? index + 4 : index + 1}
                                                     isCurrentUser={isCurrentUser}
+                                                    mode={mode}
                                                 />
                                             );
                                         })}
@@ -449,6 +545,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                 entry={userEntry}
                                                 rank={userEntry.rank}
                                                 isCurrentUser={true}
+                                                mode={mode}
                                             />
                                         </div>
                                     )}
