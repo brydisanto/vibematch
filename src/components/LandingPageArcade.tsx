@@ -287,7 +287,7 @@ export default function LandingPageArcade({
                                 HOW TO PLAY
                             </div>
                             <div className="text-white/70 text-[12px] leading-relaxed">
-                                Match 3+ badges of the same type in a row to score points. Hit 4/5/6 in a row to unlock power-ups for huge points. You&apos;ve got 30 moves to score as high as possible. Reach 15K+ and you&apos;re in for a surprise.
+                                Match 3+ badges of the same type in a row to score points • 30 moves to score as high as possible • reach 15K+ to win a surprise
                             </div>
                             <button
                                 type="button"
