@@ -943,7 +943,7 @@ export default function LandingPageArcade({
                                         className="font-display text-[9px] tracking-[0.18em] uppercase"
                                         style={{ color: tier.color }}
                                     >
-                                        {tier.label}
+                                        TIER: {tier.label}
                                         {pinRank !== null ? ` · RANK #${pinRank}` : ""}
                                     </span>
                                 </div>
