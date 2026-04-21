@@ -26,7 +26,7 @@ const TIERS: TierInfo[] = [
     { id: "one_of_one", label: "One-Of-One", color: "#FFFFFF",   accent: "#A8A8A8", minPercent: 100 },
     { id: "cosmic",     label: "Cosmic",     color: "#B366FF",   accent: "#6B1FC0", minPercent: 90 },
     { id: "shadow_funk",label: "Shadow Funk",color: "#D946EF",   accent: "#86198F", minPercent: 75 },
-    { id: "all_gold",   label: "All Gold",   color: "#FFE048",   accent: "#8B6914", minPercent: 50 },
+    { id: "all_gold",   label: "69K Gold",   color: "#FFE048",   accent: "#8B6914", minPercent: 50 },
     { id: "big_vibes",  label: "Big Vibes",  color: "#FFB547",   accent: "#B87333", minPercent: 25 },
     { id: "pro_plastic",label: "Pro Plastic",color: "#E5E7EB",   accent: "#6B7280", minPercent: 10 },
     { id: "rookie",     label: "Rookie",     color: "#9CA3AF",   accent: "#4B5563", minPercent: 0 },
