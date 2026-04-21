@@ -299,11 +299,8 @@ export default function LandingPageArcade({
                             <div className="font-display text-[10px] tracking-[0.3em] mb-2" style={{ color: GOLD }}>
                                 HOW TO PLAY
                             </div>
-                            <div className="text-white/70 text-[12px] leading-relaxed space-y-1.5">
-                                <p>Match 3+ badges in a row to score points.</p>
-                                <p>You get 30 moves to score as high as possible.</p>
-                                <p>Hit 15K+ to win Pin Capsules.</p>
-                                <p>Rip capsules to find Pins and build your collection.</p>
+                            <div className="text-white/70 text-[12px] leading-relaxed">
+                                Match 3+ badges in a row to score points • You get 30 moves to stack the highest score possible • Reach 15K+ to win Pin Capsules
                             </div>
                             <button
                                 type="button"
