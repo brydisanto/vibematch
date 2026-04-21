@@ -292,10 +292,10 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                     {[
-                        { title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules</> },
-                        { title: "Land Shapes", desc: <>Make a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> for a bonus capsule</> },
+                        { title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules. Win extras at <strong className="text-white/70">30K</strong> &amp; <strong className="text-white/70">50K</strong>.</> },
+                        { title: "Form Shapes", desc: <>Land a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> to win 1 bonus capsule.</> },
                         { title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
-                        { title: "Buy More", desc: <>Grab extra prize games with <strong className="text-white/70">$VIBESTR</strong></> },
+                        { title: "Reroll Extras", desc: <>Burn duplicate pins for new capsules. Requires <strong className="text-white/70">$VIBESTR</strong>.</> },
                     ].map(card => (
                         <div
                             key={card.title}
