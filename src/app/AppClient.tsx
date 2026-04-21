@@ -120,6 +120,23 @@ export default function AppClient() {
           setUserProfile({ username: data.user.username, avatarUrl: data.user.avatarUrl });
           pinBook.load(); // Load pin book for authenticated user
           achievements.load(); // Load achievements for authenticated user
+
+          // Check for unclaimed Daily Champion bonus. Server is idempotent
+          // per-day — hitting this multiple times only credits once. If the
+          // user is yesterday's #1, they get +3 capsules with a toast.
+          fetch("/api/daily-champ-bonus")
+            .then(r => r.ok ? r.json() : null)
+            .then(bonus => {
+              if (bonus?.claimed && bonus.capsules > 0) {
+                toast.success(
+                  `🏆 Daily Champion! +${bonus.capsules} capsules for winning yesterday's challenge.`,
+                  { duration: 6000 }
+                );
+                // Reload pinbook so the rail's capsule count reflects the new total.
+                pinBook.load();
+              }
+            })
+            .catch(() => { /* non-critical */ });
         }
       })
       .catch(err => console.error("Initial session check failed:", err));
