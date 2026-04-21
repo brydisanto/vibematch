@@ -208,12 +208,16 @@ export default function LandingPageQuest({
                     onSignIn={() => setAuthOpen(true)}
                 />
 
+                {/* Main content — wrapped in a flex-1 column that vertically
+                    centers within the remaining viewport space between the
+                    HeaderRail and the BottomNav. Keeps tall screens from
+                    leaving a dead zone below the cards. */}
+                <div className="flex-1 flex flex-col justify-center">
+
                 {/* Logo — tight-cropped 4K treatment (1000x627 source).
-                    mt-10 gives clear breathing room below the header rail
-                    (was mt-4 and touched the rail with the new tight-cropped
-                    logo). Wrapped so hover-scale lives on the outer element
-                    without stomping the inner bob keyframe. */}
-                <div className="flex justify-center mt-10">
+                    Wrapped so hover-scale lives on the outer element without
+                    stomping the inner bob keyframe. */}
+                <div className="flex justify-center">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo.png"
@@ -490,10 +494,10 @@ export default function LandingPageQuest({
                     </button>
                 )}
 
-                {/* ========== BOTTOM NAV ==========
-                    Natural flow below the content — no flex-1 spacer. On shorter
-                    screens the nav sits right below the sign-in callout; on tall
-                    screens there's a small natural gap (mt-4) rather than a void. */}
+                </div>{/* /main content */}
+
+                {/* ========== BOTTOM NAV — sits at the bottom of the viewport
+                    because the main-content block above is flex-1. */}
                 <div className="mt-4" />
                 <BottomNav
                     isLoggedIn={isLoggedIn}
