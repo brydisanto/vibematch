@@ -300,7 +300,7 @@ export default function LandingPageArcade({
                                 HOW TO PLAY
                             </div>
                             <div className="text-white/70 text-[12px] leading-relaxed">
-                                Match 3+ badges of the same type to score points • 4+ unlock power-ups • 30 moves to score as high as possible • Hit 15K+ to win a Pin Capsule!
+                                Match 3+ badges of the same type to score points • You get 30 moves to score as high as possible • Hit 15K+ to win a Pin Capsule!
                             </div>
                             <button
                                 type="button"
