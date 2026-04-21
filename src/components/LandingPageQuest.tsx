@@ -193,7 +193,7 @@ export default function LandingPageQuest({
             {/* Pin-wall background — defaults match production density (55 mobile / 120 desktop) */}
             <FloatingBadges />
 
-            <div className="relative z-10 flex flex-col w-full max-w-lg mx-auto px-4 pt-6 pb-4 min-h-screen">
+            <div className="relative z-10 flex flex-col justify-center w-full max-w-lg mx-auto px-4 py-6 min-h-screen">
                 {/* ========== HEADER RAIL ========== */}
                 <HeaderRail
                     isLoggedIn={isLoggedIn}
@@ -208,16 +208,11 @@ export default function LandingPageQuest({
                     onSignIn={() => setAuthOpen(true)}
                 />
 
-                {/* Main content — wrapped in a flex-1 column that vertically
-                    centers within the remaining viewport space between the
-                    HeaderRail and the BottomNav. Keeps tall screens from
-                    leaving a dead zone below the cards. */}
-                <div className="flex-1 flex flex-col justify-center">
-
                 {/* Logo — tight-cropped 4K treatment (1000x627 source).
+                    mt-10 gives clear breathing room below the header rail.
                     Wrapped so hover-scale lives on the outer element without
                     stomping the inner bob keyframe. */}
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-10">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo.png"
@@ -494,10 +489,9 @@ export default function LandingPageQuest({
                     </button>
                 )}
 
-                </div>{/* /main content */}
-
-                {/* ========== BOTTOM NAV — sits at the bottom of the viewport
-                    because the main-content block above is flex-1. */}
+                {/* ========== BOTTOM NAV — sits in natural flow right below
+                    the sign-in callout. Vertical centering of the whole stack
+                    is handled by the outer container's justify-center. */}
                 <div className="mt-4" />
                 <BottomNav
                     isLoggedIn={isLoggedIn}
