@@ -391,7 +391,7 @@ export default function LandingPageArcade({
                                             </span>
                                         </div>
                                         <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
-                                            Trade them in for new capsules!
+                                            Trade them in for capsules
                                         </div>
                                     </div>
                                     <ChunkyButton
