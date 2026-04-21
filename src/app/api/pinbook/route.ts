@@ -22,7 +22,7 @@ const CLASSIC_DAILY_CAP = 10;
 export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 10;
 
 export interface PinBookData {
-    pins: Record<string, { count: number; firstEarned: string }>;
+    pins: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     capsules: number; // unopened
     totalOpened: number;
     totalEarned: number;
@@ -519,11 +519,13 @@ export async function POST(req: Request) {
             // Consume the pending reveal atomically
             await kv.del(pendingKey);
 
+            const nowIso = new Date().toISOString();
             const existing = data.pins[badgeId];
             if (existing) {
                 existing.count += 1;
+                existing.lastPulled = nowIso;
             } else {
-                data.pins[badgeId] = { count: 1, firstEarned: new Date().toISOString() };
+                data.pins[badgeId] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
             }
 
             await kv.set(key, data);

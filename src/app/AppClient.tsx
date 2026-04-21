@@ -21,7 +21,7 @@ import PrizeGamesOnboarding from "@/components/PrizeGamesOnboarding";
 import dynamic from "next/dynamic";
 
 // Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
-const BuyPrizeGamesModal = dynamic(() => import("@/components/BuyPrizeGamesModal"), { ssr: false });
+const BuyPrizeGamesModal = dynamic(() => import("@/components/arcade/PrizeShopDrawer"), { ssr: false });
 const RerollModal = dynamic(() => import("@/components/RerollModal"), { ssr: false });
 const WalletProvider = dynamic(
   () => import("@/components/WalletProvider").then(m => m.WalletProvider),
@@ -70,6 +70,7 @@ export default function AppClient() {
   const [draftPool, setDraftPool] = useState<Badge[]>([]);
   const [draftMode, setDraftMode] = useState<GameMode>("classic");
   const [showPinBook, setShowPinBook] = useState(false);
+  const [pinBookInitialTab, setPinBookInitialTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
   const [showCapsule, setShowCapsule] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
@@ -124,25 +125,71 @@ export default function AppClient() {
       .catch(err => console.error("Initial session check failed:", err));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Retroactive achievement check — awards achievements for progress made before the system existed
-  const retroChecked = useRef(false);
+  // `musicChangedTick` lets ProfileModal / SettingsModal signal a BGM-track
+  // change up to this component, so the music-change journey quest can
+  // trigger retroactively without waiting for the next game to end.
+  // ProfileModal dispatches a `vm:music-changed` window event; we bump
+  // the tick to re-fire the retroactive check.
+  const [musicChangedTick, setMusicChangedTick] = useState(0);
   useEffect(() => {
-    if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username || retroChecked.current) return;
-    retroChecked.current = true;
+    const handler = () => setMusicChangedTick(t => t + 1);
+    window.addEventListener("vm:music-changed", handler);
+    return () => window.removeEventListener("vm:music-changed", handler);
+  }, []);
 
-    const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+  // Retroactive achievement check. Re-runs on mount AND whenever any
+  // context flag that drives a journey/mastery quest changes — avatar URL,
+  // bonus prize games, or a music-change tick — so quests like Face Lift
+  // / Set The Vibe fire immediately after the user does the thing, not
+  // only after their next game.
+  useEffect(() => {
+    if (!achievements.state.loaded || !pinBook.state.loaded || !userProfile?.username) return;
 
-    // Fetch streak + referral count in parallel, then check retroactive achievements
+    // Fetch streak + referral count + user-flags in parallel, then check
+    // retroactive achievements. We need the flags from /api/user-flags so the
+    // client-side ctx knows about server-set signals like vibestrHolder
+    // (otherwise wallet_vibestr never makes it into the unlock POST body).
     Promise.all([
       fetch(`/api/streak?username=${userProfile.username}`).then(r => r.json()).catch(() => ({ streak: 0 })),
       fetch('/api/referral').then(r => r.json()).catch(() => ({ totalReferrals: 0 })),
-    ]).then(([streakData, referralData]) => {
+      fetch('/api/user-flags').then(r => r.json()).catch(() => ({ flags: {} })),
+    ]).then(([streakData, referralData, flagsData]) => {
+      const flags = (flagsData?.flags || {}) as {
+        musicChanged?: boolean;
+        avatarUploaded?: boolean;
+        prizeGamePurchased?: boolean;
+        vibestrHolder?: boolean;
+      };
+      const ctx = buildPlayerContext(pinBook.state.pins, {
+        totalPinsOpened: pinBook.state.totalOpened,
+        hasUploadedAvatar:
+          !!userProfile?.avatarUrl || !!flags.avatarUploaded,
+        hasChangedMusic:
+          (typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null) ||
+          !!flags.musicChanged,
+        hasPurchasedPrizeGame:
+          (pinBook.state.bonusPrizeGames || 0) > 0 || !!flags.prizeGamePurchased,
+        hasVibestrWallet: !!flags.vibestrHolder,
+      });
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
       const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-      if (ids.length > 0) achievements.unlock(ids);
+      if (ids.length > 0) {
+        achievements.unlock(ids).then(unlockedIds => {
+          // Achievements award capsules server-side — reload the pinbook so
+          // the capsule count in the UI reflects them without a page refresh.
+          if (unlockedIds.length > 0) pinBook.load();
+        });
+      }
     });
-  }, [achievements.state.loaded, pinBook.state.loaded, userProfile?.username]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    achievements.state.loaded,
+    pinBook.state.loaded,
+    userProfile?.username,
+    userProfile?.avatarUrl,
+    pinBook.state.bonusPrizeGames,
+    musicChangedTick,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FTUE post-game modal is triggered from inside the game-end async flow
   // below — only once the server has actually confirmed (or rejected) the
@@ -228,7 +275,12 @@ export default function AppClient() {
         crossCount: stats.crossCount,
         gameMode: gs.gameMode,
       };
-      const playerCtx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+      const playerCtx = buildPlayerContext(pinBook.state.pins, {
+        totalPinsOpened: pinBook.state.totalOpened,
+        hasUploadedAvatar: !!userProfile?.avatarUrl,
+        hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+        hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+      });
       const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
       if (ids.length > 0) {
         await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
@@ -508,14 +560,29 @@ export default function AppClient() {
               onStartGame={handleStartGame}
               onShowInstructions={() => setShowInstructions(true)}
               onLogout={() => setUserProfile(null)}
-              onOpenPinBook={() => setShowPinBook(true)}
+              onOpenPinBook={(tab) => { setPinBookInitialTab(tab ?? "collection"); setShowPinBook(true); }}
+              onProfileUpdate={(username, avatarUrl) => {
+                // Propagate saved avatar/username up so the rail re-renders
+                // without a page reload. Also re-runs the retroactive effect
+                // (depends on avatarUrl) so Face Lift fires immediately.
+                setUserProfile({ username, avatarUrl });
+              }}
               onOpenAchievements={() => { setShowAchievements(true); achievements.markSeen(); }}
               capsuleCount={pinBook.state.capsules}
               achievementCount={achievements.unseenCount}
               classicPlays={pinBook.state.classicPlays}
               bonusPrizeGames={pinBook.state.bonusPrizeGames}
               pinsCollected={Object.keys(pinBook.state.pins).length}
+              pins={pinBook.state.pins}
+              questsCompleted={Object.keys(achievements.state.unlocked).length}
               onOpenBuyPrizeGames={() => setShowBuyPrizeGames(true)}
+              onOpenReroll={() => setShowReroll(true)}
+              onAuthSuccess={(username, avatarUrl) => {
+                setUserProfile({ username, avatarUrl });
+                localStorage.setItem('vibematch_username', username);
+                pinBook.load();
+                achievements.load();
+              }}
               referralCode={referralCode}
               userProfile={userProfile}
             />
@@ -852,6 +919,7 @@ export default function AppClient() {
       <PinBook
         isOpen={showPinBook}
         onClose={() => setShowPinBook(false)}
+        initialTab={pinBookInitialTab}
         onStartGame={() => handleStartGame("classic", userProfile?.username, userProfile?.avatarUrl)}
         onOpenReroll={() => { setShowPinBook(false); setShowReroll(true); }}
         onOpenBuyPrizeGames={() => { setShowPinBook(false); setShowBuyPrizeGames(true); }}
@@ -884,9 +952,18 @@ export default function AppClient() {
 
             // Re-check achievements after new pin collected (tier completions, etc.)
             if (userProfile?.username) {
-              const ctx = buildPlayerContext(pinBook.state.pins, { totalPinsOpened: pinBook.state.totalOpened });
+              const ctx = buildPlayerContext(pinBook.state.pins, {
+                totalPinsOpened: pinBook.state.totalOpened,
+                hasUploadedAvatar: !!userProfile?.avatarUrl,
+                hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+                hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+              });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
-              if (ids.length > 0) achievements.unlock(ids);
+              if (ids.length > 0) {
+                achievements.unlock(ids).then(unlockedIds => {
+                  if (unlockedIds.length > 0) pinBook.load();
+                });
+              }
             }
           }}
         />

@@ -167,14 +167,14 @@ function PodiumSection({ entries, currentUsername, mode }: { entries: Leaderboar
                             <Avatar entry={entry} size={avatarSizes[i]} />
                         </div>
                         {/* Medal badge */}
-                        <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-black text-[#110D17] -mt-[10px] relative z-20"
+                        <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center font-display text-[11px] font-black text-[#110D17] -mt-[10px] relative z-20"
                             style={{ background: medal.bg, boxShadow: rank === 1 ? `0 0 12px rgba(255,215,0,0.4)` : undefined }}>
                             {rank}
                         </div>
-                        <div className={`mt-1.5 text-xs font-bold max-w-[90px] truncate text-center ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
+                        <div className={`font-display mt-1.5 text-xs font-black max-w-[90px] truncate text-center ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
                             {isUser ? "You" : entry.username}
                         </div>
-                        <div className="text-sm font-extrabold text-[#FFD700] mt-0.5">
+                        <div className="font-display text-sm font-black text-[#FFD700] mt-0.5">
                             {formatScore(entry.score, mode)}
                         </div>
                         {entry.pinDetails && (
@@ -208,7 +208,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: Leaderboa
                 : "hover:bg-white/[0.03]"
                 }`}
         >
-            <div className="flex-shrink-0 w-7 text-center font-bold text-white/40 text-sm">
+            <div className="flex-shrink-0 w-7 text-center font-display font-black text-white/40 text-sm">
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />

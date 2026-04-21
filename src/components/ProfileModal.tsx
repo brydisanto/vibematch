@@ -88,6 +88,19 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
             toggleMute(false);
             startBGM();
         }
+        // Persist the music-change flag server-side so /api/achievements
+        // can verify the "Set The Vibe" journey quest.
+        fetch("/api/user-flags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ flag: "musicChanged" }),
+        }).catch(() => { /* non-blocking */ });
+        // Then signal the app so it re-runs the retroactive check without
+        // waiting for the next game-over. Window event keeps us from
+        // threading a prop through both landing-page layouts.
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("vm:music-changed"));
+        }
     };
 
     return (

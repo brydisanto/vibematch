@@ -14,6 +14,10 @@ export function buildPlayerContext(
         streak?: number;
         gamesPlayedToday?: number;
         referralCount?: number;
+        hasUploadedAvatar?: boolean;
+        hasChangedMusic?: boolean;
+        hasPurchasedPrizeGame?: boolean;
+        hasVibestrWallet?: boolean;
     }
 ): PlayerContext {
     const ctx: PlayerContext = {
@@ -31,6 +35,10 @@ export function buildPlayerContext(
         cosmicPinCount: 0,
         gamesPlayedToday: opts?.gamesPlayedToday || 0,
         referralCount: opts?.referralCount || 0,
+        hasUploadedAvatar: !!opts?.hasUploadedAvatar,
+        hasChangedMusic: !!opts?.hasChangedMusic,
+        hasPurchasedPrizeGame: !!opts?.hasPurchasedPrizeGame,
+        hasVibestrWallet: !!opts?.hasVibestrWallet,
     };
 
     for (const badgeId of Object.keys(pins)) {
