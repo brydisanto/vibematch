@@ -527,7 +527,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         id: "wallet_vibestr",
         category: "mastery",
         icon: "💰",
-        title: "Bag Holder",
+        title: "Vibewheel Captain",
         description: "Connect a wallet holding $VIBESTR",
         capsules: 2,
         order: 34,
