@@ -341,76 +341,63 @@ export default function LandingPageArcade({
                             borderRight: `1px solid ${GOLD}15`,
                         }}
                     >
-                        {/* How to Play — full copy + explicit Full Rules CTA
-                            so the rail surface reads as two discrete things:
-                            a short pitch and a link to the detailed rules. */}
-                        <div className="px-5 pt-6 pb-4 border-b border-white/5">
-                            <div className="font-display text-[10px] tracking-[0.3em] mb-2" style={{ color: GOLD }}>
-                                HOW TO PLAY
-                            </div>
-                            <div className="text-white/70 text-[12px] leading-relaxed">
-                                Match 3+ badges in a row to score points • You get 30 moves to stack the highest score possible • Reach 15K+ to win Pin Capsules
-                            </div>
-                            <button
-                                type="button"
-                                onClick={onShowInstructions}
-                                className="mt-3 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg cursor-pointer transition-all hover:brightness-125"
-                                style={{ color: GOLD, border: `1px solid ${GOLD}44`, background: `${GOLD}0a` }}
-                            >
-                                FULL RULES →
-                            </button>
-                        </div>
-
-                        {/* MY ITEMS — unified block for capsules + extra pins,
-                            condensed so the rail doesn't dominate the page.
-                            Two stacked sub-cards share the same header. */}
-                        <div className="px-5 pt-4 pb-3 border-b border-white/5 flex flex-col gap-2.5">
+                        {/* MY ITEMS — capsules (hero) + extra pins stacked.
+                            Top block on the rail now that HOW TO PLAY is
+                            gone; the bigger capsule card owns the focus
+                            without a competing header above it. */}
+                        <div className="px-5 pt-6 pb-4 border-b border-white/5 flex flex-col gap-2.5">
                             <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
                                 MY ITEMS
                             </div>
 
-                            {/* Capsules */}
-                            <div
-                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
+                            {/* Capsules — enlarged. Bigger count + bigger
+                                OPEN CAPSULES button anchors the rail. */}
+                            <button
+                                type="button"
+                                onClick={() => onOpenPinBook?.("capsules")}
+                                className="w-full rounded-xl p-[2px] text-left cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
                                 style={{
                                     background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DIM} 40%, ${GOLD_DEEP} 100%)`,
-                                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+                                    boxShadow: `0 4px 0 ${GOLD_DEEP}, 0 8px 16px rgba(0,0,0,0.5)`,
                                 }}
                             >
-                                <div className="rounded-[10px] px-2.5 py-2 flex items-center gap-2.5" style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}>
+                                <div
+                                    className="rounded-[10px] px-4 py-3.5 flex items-center gap-3"
+                                    style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
+                                >
                                     <div className="min-w-0 flex-1 leading-tight">
-                                        <div className="flex items-baseline gap-1.5">
+                                        <div className="flex items-baseline gap-2">
                                             <span
-                                                className="font-display font-black text-[22px]"
+                                                className="font-display font-black text-[34px] leading-none"
                                                 style={{ color: GOLD, textShadow: `0 2px 0 ${GOLD_DEEP}` }}
                                             >
                                                 {capsuleCount}
                                             </span>
-                                            <span className="font-display text-[11px] tracking-[0.16em] uppercase" style={{ color: `${GOLD}cc` }}>
+                                            <span className="font-display text-[12px] tracking-[0.18em] uppercase" style={{ color: `${GOLD}cc` }}>
                                                 Capsule{capsuleCount === 1 ? "" : "s"}
                                             </span>
                                         </div>
-                                        <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
+                                        <div className="text-[11px] text-white/55 mt-1 leading-snug">
                                             Rip &apos;em open to find Pins!
                                         </div>
                                     </div>
 
                                     <ChunkyButton
-                                        onClick={() => onOpenPinBook?.("capsules")}
                                         color={GOLD}
                                         deep={GOLD_DEEP}
                                         text="#1A0E02"
+                                        disabled={capsuleCount === 0}
                                         style={{
-                                            padding: "6px 10px",
-                                            fontSize: 10,
+                                            padding: "9px 14px",
+                                            fontSize: 11,
                                             fontWeight: 900,
-                                            letterSpacing: "0.18em",
+                                            letterSpacing: "0.2em",
                                         }}
                                     >
                                         OPEN
                                     </ChunkyButton>
                                 </div>
-                            </div>
+                            </button>
 
                             {/* Extra Pins → Reroll */}
                             <div
@@ -468,7 +455,7 @@ export default function LandingPageArcade({
                             render as dashed placeholders so the grid's
                             shape is always visible. */}
                         <div className="px-5 pt-4 pb-4 border-b border-white/5">
-                            <div className="flex items-center justify-between mb-2.5">
+                            <div className="flex items-center justify-between mb-1.5">
                                 <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
                                     PINS COLLECTED
                                 </div>
@@ -479,6 +466,29 @@ export default function LandingPageArcade({
                                     {pinsCollected}<span className="opacity-45">/{totalBadges}</span>
                                     <span className="opacity-55"> ({pinPct}%)</span>
                                 </span>
+                            </div>
+                            <div
+                                className="relative h-2 rounded-full overflow-hidden mb-2.5"
+                                style={{
+                                    background: "rgba(255,255,255,0.08)",
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
+                                }}
+                            >
+                                <div
+                                    className="absolute inset-y-0 left-0 rounded-full"
+                                    style={{
+                                        width: `${pinPct}%`,
+                                        background: `linear-gradient(90deg, ${GOLD}, #FFF4B0, ${GOLD})`,
+                                        boxShadow: `0 0 8px ${GOLD}aa, inset 0 1px 0 rgba(255,255,255,0.4)`,
+                                    }}
+                                />
+                                {[25, 50, 75].map(p => (
+                                    <div
+                                        key={p}
+                                        className="absolute top-0 bottom-0 w-px"
+                                        style={{ left: `${p}%`, background: "rgba(0,0,0,0.5)" }}
+                                    />
+                                ))}
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
                                 {Array.from({ length: 8 }).map((_, i) => {
@@ -546,7 +556,7 @@ export default function LandingPageArcade({
                             className="flex-1 relative flex flex-col px-5 py-5"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${COSMIC}20, transparent 60%)` }}
                         >
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center justify-between mb-1.5">
                                 <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
                                     QUESTS
                                 </div>
@@ -555,7 +565,31 @@ export default function LandingPageArcade({
                                     style={{ color: COSMIC }}
                                 >
                                     {questsCompleted}<span className="opacity-45">/{totalQuests}</span>
+                                    <span className="opacity-55"> ({totalQuests > 0 ? Math.round((questsCompleted / totalQuests) * 100) : 0}%)</span>
                                 </span>
+                            </div>
+                            <div
+                                className="relative h-2 rounded-full overflow-hidden mb-3"
+                                style={{
+                                    background: "rgba(255,255,255,0.08)",
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
+                                }}
+                            >
+                                <div
+                                    className="absolute inset-y-0 left-0 rounded-full"
+                                    style={{
+                                        width: `${totalQuests > 0 ? (questsCompleted / totalQuests) * 100 : 0}%`,
+                                        background: `linear-gradient(90deg, ${COSMIC}, #D8A0FF, ${COSMIC})`,
+                                        boxShadow: `0 0 8px ${COSMIC}aa, inset 0 1px 0 rgba(255,255,255,0.4)`,
+                                    }}
+                                />
+                                {[25, 50, 75].map(p => (
+                                    <div
+                                        key={p}
+                                        className="absolute top-0 bottom-0 w-px"
+                                        style={{ left: `${p}%`, background: "rgba(0,0,0,0.5)" }}
+                                    />
+                                ))}
                             </div>
                             {shownQuests.length === 0 ? (
                                 <div className="text-[11px] text-white/40 leading-relaxed">
@@ -724,16 +758,17 @@ export default function LandingPageArcade({
                                 />
                             </div>
 
-                        {/* Classic cabinet — sole center CTA on this
-                            layout. Daily Challenge now lives in the right
-                            rail with richer stats, so the hero play
-                            button is unambiguous. */}
+                        {/* Two mode cabinets side-by-side — matches prod
+                            layout. Daily Challenge returns to live beside
+                            Classic; its rich stats block in the right rail
+                            was pulled back out per latest feedback. */}
                         <div className="w-full flex flex-col items-center">
-                            <div className="max-w-[380px] mx-auto w-full">
+                            <div className="grid grid-cols-2 gap-4 max-w-[640px] mx-auto w-full">
+                                {/* Classic */}
                                 <button
                                     type="button"
                                     onClick={() => onStartGame("classic", username, avatarUrl)}
-                                    className="block w-full text-left outline-none cursor-pointer"
+                                    className="text-left outline-none cursor-pointer"
                                 >
                                     <div
                                         className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
@@ -753,8 +788,8 @@ export default function LandingPageArcade({
                                             <div
                                                 className="relative mb-3 rounded-full flex flex-col items-center justify-center overflow-hidden"
                                                 style={{
-                                                    width: 90,
-                                                    height: 90,
+                                                    width: 82,
+                                                    height: 82,
                                                     background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
                                                     boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 25px ${GOLD}55`,
                                                     border: "3px solid #2A1A0A",
@@ -764,24 +799,24 @@ export default function LandingPageArcade({
                                                     className="mt-[4px] font-display font-black leading-none"
                                                     style={{
                                                         color: "#1A0633",
-                                                        fontSize: 38,
+                                                        fontSize: 34,
                                                         textShadow: "0 2px 0 rgba(255,255,255,0.25)",
                                                     }}
                                                 >
                                                     30
                                                 </span>
-                                                <span className="mt-[1px] text-[9px] font-bold tracking-wider" style={{ color: "#1A0633" }}>
+                                                <span className="mt-[1px] text-[8px] font-bold tracking-wider" style={{ color: "#1A0633" }}>
                                                     MOVES
                                                 </span>
                                             </div>
                                             <h2
-                                                className="font-display font-black uppercase leading-none text-[30px]"
+                                                className="font-display font-black uppercase leading-none text-[26px]"
                                                 style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                             >
                                                 Classic
                                             </h2>
                                             <h3
-                                                className="font-display font-black uppercase leading-none text-[22px] mt-1"
+                                                className="font-display font-black uppercase leading-none text-[20px] mt-1"
                                                 style={{ color: GOLD }}
                                             >
                                                 VibeMatch
@@ -794,10 +829,78 @@ export default function LandingPageArcade({
                                                     color={GOLD}
                                                     deep={GOLD_DEEP}
                                                     style={{
-                                                        padding: "11px 30px",
-                                                        fontSize: 13,
+                                                        padding: "10px 22px",
+                                                        fontSize: 12,
                                                         fontWeight: 900,
-                                                        letterSpacing: "0.18em",
+                                                        letterSpacing: "0.15em",
+                                                    }}
+                                                >
+                                                    PLAY
+                                                </ChunkyButton>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Daily */}
+                                <button
+                                    type="button"
+                                    onClick={() => onStartGame("daily", username, avatarUrl)}
+                                    className="text-left outline-none cursor-pointer"
+                                >
+                                    <div
+                                        className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
+                                        style={{
+                                            background: `linear-gradient(180deg, #D8A0FF 0%, ${COSMIC} 40%, ${COSMIC_DEEP} 100%)`,
+                                            boxShadow: `0 6px 0 #4A1A80, 0 12px 22px rgba(0,0,0,0.55), 0 0 40px ${COSMIC}22`,
+                                        }}
+                                    >
+                                        <div
+                                            className="rounded-[14px] relative p-5 h-full flex flex-col items-center text-center overflow-hidden"
+                                            style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+                                        >
+                                            <div
+                                                className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+                                                style={{ background: `linear-gradient(180deg, ${COSMIC}16, transparent)` }}
+                                            />
+                                            <div
+                                                className="relative mb-3 rounded-full flex items-center justify-center"
+                                                style={{
+                                                    width: 82,
+                                                    height: 82,
+                                                    background: `radial-gradient(circle at 35% 30%, #E8C0FF, ${COSMIC} 55%, ${COSMIC_DEEP})`,
+                                                    boxShadow: `inset 0 -5px 9px ${COSMIC_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 28px ${COSMIC}77`,
+                                                }}
+                                            >
+                                                <span className="font-display font-black text-[38px]" style={{ color: "#1A0633" }}>
+                                                    ★
+                                                </span>
+                                            </div>
+                                            <h2
+                                                className="font-display font-black uppercase leading-none text-[22px]"
+                                                style={{ color: COSMIC, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                            >
+                                                The Daily
+                                            </h2>
+                                            <h3
+                                                className="font-display font-black uppercase leading-none text-[22px] mt-1"
+                                                style={{ color: COSMIC }}
+                                            >
+                                                Challenge
+                                            </h3>
+                                            <p className="text-white/55 text-[12px] mt-2">
+                                                1 shot per day, same board for everyone.
+                                            </p>
+                                            <div className="mt-4">
+                                                <ChunkyButton
+                                                    color={COSMIC}
+                                                    deep={COSMIC_DEEP}
+                                                    text="#fff"
+                                                    style={{
+                                                        padding: "10px 22px",
+                                                        fontSize: 12,
+                                                        fontWeight: 900,
+                                                        letterSpacing: "0.15em",
                                                     }}
                                                 >
                                                     PLAY
@@ -969,138 +1072,177 @@ export default function LandingPageArcade({
                             borderLeft: `1px solid ${GOLD}15`,
                         }}
                     >
-                        <button
-                            type="button"
-                            onClick={() => setProfileOpen(true)}
-                            className="relative text-left px-5 pt-6 pb-5 border-b border-white/5 cursor-pointer transition-all hover:bg-white/[0.04]"
-                        >
-                            <div className="relative flex flex-col items-center gap-2.5">
-                                {/* Avatar — Option A: soft breathing gold halo,
-                                    no rays, no sparkles. Cleanest treatment —
-                                    the rotating gold ring is the only real
-                                    adornment, and the halo gives it a subtle
-                                    breath. */}
-                                <div
-                                    className="relative"
-                                    style={{
-                                        width: 82,
-                                        height: 82,
-                                        animation: "vmAvatarBounce 3.6s ease-in-out infinite",
-                                    }}
-                                >
-                                    {/* Soft gold halo that breathes */}
+                        <div className="relative px-5 pt-6 pb-5 border-b border-white/5">
+                            <button
+                                type="button"
+                                onClick={() => setProfileOpen(true)}
+                                className="relative w-full text-left cursor-pointer transition-all hover:opacity-90"
+                            >
+                                <div className="relative flex flex-col items-center gap-3">
+                                    {/* Avatar — enlarged from 82→108. Same
+                                        halo + rotating ring treatment. */}
                                     <div
-                                        className="absolute rounded-full pointer-events-none"
+                                        className="relative"
                                         style={{
-                                            inset: -18,
-                                            background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
-                                            filter: "blur(6px)",
-                                            animation: "vmAvatarGlow 3.6s ease-in-out infinite",
-                                        }}
-                                    />
-                                    {/* Rotating gold conic ring */}
-                                    <div
-                                        className="absolute inset-0 rounded-full"
-                                        style={{
-                                            background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
-                                            animation: "vmProfileSpin 8s linear infinite",
-                                            padding: 2,
-                                        }}
-                                    >
-                                        <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
-                                    </div>
-                                    {/* Inner avatar */}
-                                    <div
-                                        className="absolute rounded-full overflow-hidden flex items-center justify-center"
-                                        style={{
-                                            inset: 4,
-                                            background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
-                                            boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
-                                        }}
-                                    >
-                                        {avatarUrl ? (
-                                            <Image
-                                                src={avatarUrl}
-                                                alt=""
-                                                fill
-                                                sizes="74px"
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="text-[38px] leading-none">🏄</div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div
-                                    className="font-display font-black text-white leading-none"
-                                    style={{
-                                        fontSize: 19,
-                                        textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 12px ${GOLD}44`,
-                                    }}
-                                >
-                                    {username}
-                                </div>
-
-                                <div
-                                    className="rounded-full px-2.5 py-1 flex items-center"
-                                    style={{
-                                        background: `linear-gradient(180deg, ${tier.color}33, ${tier.accent}44)`,
-                                        border: `1px solid ${tier.color}55`,
-                                    }}
-                                >
-                                    <span
-                                        className="font-display text-[9px] tracking-[0.18em] uppercase"
-                                        style={{ color: tier.color }}
-                                    >
-                                        TIER: {tier.label}
-                                        {pinRank !== null ? ` · RANK #${pinRank}` : ""}
-                                    </span>
-                                </div>
-
-                                {/* Stats row */}
-                                <div className="grid grid-cols-2 gap-1.5 w-full mt-2">
-                                    <div
-                                        className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
-                                        style={{
-                                            background: `linear-gradient(180deg, ${ORANGE}1A, ${ORANGE}08)`,
-                                            border: `1px solid ${ORANGE}44`,
+                                            width: 108,
+                                            height: 108,
+                                            animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                         }}
                                     >
                                         <div
-                                            className="font-display font-black text-[15px] tabular-nums leading-none"
-                                            style={{ color: ORANGE }}
+                                            className="absolute rounded-full pointer-events-none"
+                                            style={{
+                                                inset: -22,
+                                                background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
+                                                filter: "blur(7px)",
+                                                animation: "vmAvatarGlow 3.6s ease-in-out infinite",
+                                            }}
+                                        />
+                                        <div
+                                            className="absolute inset-0 rounded-full"
+                                            style={{
+                                                background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
+                                                animation: "vmProfileSpin 8s linear infinite",
+                                                padding: 3,
+                                            }}
                                         >
-                                            {streak}
+                                            <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
                                         </div>
-                                        <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${ORANGE}cc` }}>
-                                            DAY STREAK
+                                        <div
+                                            className="absolute rounded-full overflow-hidden flex items-center justify-center"
+                                            style={{
+                                                inset: 5,
+                                                background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
+                                                boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
+                                            }}
+                                        >
+                                            {avatarUrl ? (
+                                                <Image
+                                                    src={avatarUrl}
+                                                    alt=""
+                                                    fill
+                                                    sizes="98px"
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="text-[48px] leading-none">🏄</div>
+                                            )}
                                         </div>
                                     </div>
+
+                                    {/* Username — enlarged from 19→24. */}
                                     <div
-                                        className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
+                                        className="font-display font-black text-white leading-none text-center"
                                         style={{
-                                            background: `linear-gradient(180deg, ${GOLD}1A, ${GOLD}08)`,
-                                            border: `1px solid ${GOLD}44`,
+                                            fontSize: 24,
+                                            textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 14px ${GOLD}55`,
                                         }}
                                     >
-                                        <div
-                                            className="font-display font-black text-[15px] tabular-nums leading-none"
-                                            style={{ color: GOLD }}
+                                        {username}
+                                    </div>
+
+                                    {/* Tier / rank pill — enlarged padding
+                                        + text. */}
+                                    <div
+                                        className="rounded-full px-3.5 py-1.5 flex items-center"
+                                        style={{
+                                            background: `linear-gradient(180deg, ${tier.color}33, ${tier.accent}44)`,
+                                            border: `1px solid ${tier.color}77`,
+                                        }}
+                                    >
+                                        <span
+                                            className="font-display text-[11px] tracking-[0.2em] uppercase font-black"
+                                            style={{ color: tier.color }}
                                         >
-                                            {personalBest > 0
-                                                ? personalBest >= 1000
-                                                    ? `${Math.round(personalBest / 1000)}K`
-                                                    : String(personalBest)
-                                                : "—"}
-                                        </div>
-                                        <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${GOLD}cc` }}>
-                                            BEST SCORE
-                                        </div>
+                                            TIER: {tier.label}
+                                            {pinRank !== null ? ` · RANK #${pinRank}` : ""}
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+
+                            {/* Stats row — enlarged DAY STREAK and BEST
+                                SCORE blocks. Outside the profile button so
+                                hover state stays clean. */}
+                            <div className="grid grid-cols-2 gap-2 w-full mt-4">
+                                <div
+                                    className="rounded-xl px-3 py-3 flex flex-col items-center justify-center"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${ORANGE}1F, ${ORANGE}08)`,
+                                        border: `1px solid ${ORANGE}55`,
+                                    }}
+                                >
+                                    <div
+                                        className="font-display font-black text-[26px] tabular-nums leading-none"
+                                        style={{ color: ORANGE, textShadow: `0 2px 0 ${ORANGE_DEEP}` }}
+                                    >
+                                        {streak}
+                                    </div>
+                                    <div className="font-display text-[10px] tracking-[0.18em] mt-1.5 font-black" style={{ color: `${ORANGE}cc` }}>
+                                        DAY STREAK
+                                    </div>
+                                </div>
+                                <div
+                                    className="rounded-xl px-3 py-3 flex flex-col items-center justify-center"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${GOLD}1F, ${GOLD}08)`,
+                                        border: `1px solid ${GOLD}55`,
+                                    }}
+                                >
+                                    <div
+                                        className="font-display font-black text-[26px] tabular-nums leading-none"
+                                        style={{ color: GOLD, textShadow: `0 2px 0 ${GOLD_DEEP}` }}
+                                    >
+                                        {personalBest > 0
+                                            ? personalBest >= 1000
+                                                ? `${Math.round(personalBest / 1000)}K`
+                                                : String(personalBest)
+                                            : "—"}
+                                    </div>
+                                    <div className="font-display text-[10px] tracking-[0.18em] mt-1.5 font-black" style={{ color: `${GOLD}cc` }}>
+                                        BEST SCORE
                                     </div>
                                 </div>
                             </div>
-                        </button>
+
+                            {/* Referral box — tappable link that copies
+                                the user's referral URL to clipboard.
+                                Small-but-present so it reads as a nudge,
+                                not a hard-sell. Matches the prod pattern
+                                used in PinBook/ProfileModal. */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const url = `https://vibematch.app?ref=${encodeURIComponent(username)}`;
+                                    navigator.clipboard.writeText(url)
+                                        .then(() => toast.success("Referral link copied!"))
+                                        .catch(() => toast.error("Copy failed"));
+                                }}
+                                className="mt-2.5 w-full rounded-lg px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer transition-all hover:brightness-[1.12]"
+                                style={{
+                                    background: `linear-gradient(180deg, ${COSMIC}1A, ${COSMIC}06)`,
+                                    border: `1px solid ${COSMIC}55`,
+                                }}
+                            >
+                                <div className="min-w-0 flex-1 text-left">
+                                    <div
+                                        className="font-display font-black text-[10px] tracking-[0.2em] uppercase"
+                                        style={{ color: COSMIC }}
+                                    >
+                                        Refer Friends, Win Capsules
+                                    </div>
+                                    <div className="text-[10px] text-white/55 mt-0.5 truncate">
+                                        vibematch.app?ref={username}
+                                    </div>
+                                </div>
+                                <span
+                                    className="shrink-0 font-display font-black text-[9px] tracking-[0.22em]"
+                                    style={{ color: COSMIC }}
+                                >
+                                    COPY →
+                                </span>
+                            </button>
+                        </div>
 
                         {/* Recent Runs */}
                         <div
