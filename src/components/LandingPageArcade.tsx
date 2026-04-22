@@ -403,7 +403,7 @@ export default function LandingPageArcade({
                                 }}
                             >
                                 <div
-                                    className="rounded-[14px] relative p-4 flex flex-col items-center text-center overflow-hidden"
+                                    className="rounded-[14px] relative px-3 py-3 flex flex-col items-center text-center overflow-hidden"
                                     style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
                                 >
                                     <div
@@ -411,20 +411,20 @@ export default function LandingPageArcade({
                                         style={{ background: `linear-gradient(180deg, ${GOLD}1f, transparent)` }}
                                     />
                                     <div
-                                        className="relative mb-2 rounded-full flex items-center justify-center"
+                                        className="relative mb-1.5 rounded-full flex items-center justify-center"
                                         style={{
-                                            width: 82,
-                                            height: 82,
+                                            width: 64,
+                                            height: 64,
                                             background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
-                                            boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 24px ${GOLD}55`,
-                                            border: "3px solid #2A1A0A",
+                                            boxShadow: `inset 0 -4px 7px ${GOLD_DEEP}, 0 3px 8px rgba(0,0,0,0.55), 0 0 18px ${GOLD}55`,
+                                            border: "2px solid #2A1A0A",
                                         }}
                                     >
                                         <span
                                             className="font-display font-black leading-none"
                                             style={{
                                                 color: "#1A0633",
-                                                fontSize: 38,
+                                                fontSize: 30,
                                                 textShadow: "0 2px 0 rgba(255,255,255,0.25)",
                                             }}
                                         >
@@ -432,23 +432,23 @@ export default function LandingPageArcade({
                                         </span>
                                     </div>
                                     <div
-                                        className="font-display font-black uppercase text-[13px] tracking-[0.12em]"
+                                        className="font-display font-black uppercase text-[12px] tracking-[0.12em]"
                                         style={{ color: GOLD }}
                                     >
                                         Capsule{capsuleCount === 1 ? "" : "s"} Ready
                                     </div>
-                                    <div className="text-[10px] text-white/55 mt-1 leading-snug">
+                                    <div className="text-[10px] text-white/55 mt-0.5 leading-snug">
                                         {capsuleCount > 0 ? "Rip 'em open to find Pins!" : "Score 15K+ to earn your first"}
                                     </div>
-                                    <div className="mt-3">
+                                    <div className="mt-2.5">
                                         <ChunkyButton
                                             color={GOLD}
                                             deep={GOLD_DEEP}
                                             text="#1A0E02"
                                             disabled={capsuleCount === 0}
                                             style={{
-                                                padding: "9px 22px",
-                                                fontSize: 11,
+                                                padding: "8px 18px",
+                                                fontSize: 10,
                                                 fontWeight: 900,
                                                 letterSpacing: "0.2em",
                                             }}
@@ -549,12 +549,6 @@ export default function LandingPageArcade({
                                         style={{ left: `${p}%`, background: "rgba(0,0,0,0.5)" }}
                                     />
                                 ))}
-                            </div>
-                            <div
-                                className="font-display text-[9px] tracking-[0.28em] mb-1.5"
-                                style={{ color: `${GOLD}99` }}
-                            >
-                                RECENT PULLS
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
                                 {Array.from({ length: 8 }).map((_, i) => {
@@ -670,51 +664,38 @@ export default function LandingPageArcade({
                                                 key={q.def.id}
                                                 type="button"
                                                 onClick={onOpenAchievements}
-                                                className="rounded-lg px-2.5 py-2 flex items-start gap-2.5 cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.1] text-left"
+                                                className="rounded-lg px-2.5 py-2 flex flex-col cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.1] text-left"
                                                 style={{
                                                     background: "rgba(255,255,255,0.04)",
                                                     border: `1px solid ${COSMIC}33`,
                                                 }}
                                             >
-                                                <div
-                                                    className="shrink-0 rounded-lg flex items-center justify-center text-[18px] leading-none mt-0.5"
-                                                    style={{
-                                                        width: 34,
-                                                        height: 34,
-                                                        background: `linear-gradient(180deg, ${COSMIC}22, ${COSMIC_DEEP}22)`,
-                                                        border: `1px solid ${COSMIC}44`,
-                                                    }}
-                                                >
-                                                    {q.def.icon}
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-baseline justify-between gap-1.5">
-                                                        <span className="font-display text-[11px] font-black text-white truncate">
-                                                            {q.def.title}
-                                                        </span>
-                                                        <span
-                                                            className="font-display text-[9px] font-black tabular-nums shrink-0"
-                                                            style={{ color: COSMIC }}
-                                                        >
-                                                            {pct}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[10px] text-white/55 leading-snug mt-0.5">
-                                                        {q.def.description}
-                                                    </div>
-                                                    <div
-                                                        className="relative h-1.5 rounded-full overflow-hidden mt-1.5"
-                                                        style={{ background: "rgba(255,255,255,0.08)" }}
+                                                <div className="flex items-baseline justify-between gap-1.5">
+                                                    <span className="font-display text-[11px] font-black text-white truncate">
+                                                        {q.def.title}
+                                                    </span>
+                                                    <span
+                                                        className="font-display text-[9px] font-black tabular-nums shrink-0"
+                                                        style={{ color: COSMIC }}
                                                     >
-                                                        <div
-                                                            className="absolute inset-y-0 left-0 rounded-full"
-                                                            style={{
-                                                                width: `${pct}%`,
-                                                                background: `linear-gradient(90deg, ${COSMIC}, #D8A0FF)`,
-                                                                boxShadow: `0 0 6px ${COSMIC}88`,
-                                                            }}
-                                                        />
-                                                    </div>
+                                                        {pct}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] text-white/55 leading-snug mt-0.5">
+                                                    {q.def.description}
+                                                </div>
+                                                <div
+                                                    className="relative h-1.5 rounded-full overflow-hidden mt-1.5"
+                                                    style={{ background: "rgba(255,255,255,0.08)" }}
+                                                >
+                                                    <div
+                                                        className="absolute inset-y-0 left-0 rounded-full"
+                                                        style={{
+                                                            width: `${pct}%`,
+                                                            background: `linear-gradient(90deg, ${COSMIC}, #D8A0FF)`,
+                                                            boxShadow: `0 0 6px ${COSMIC}88`,
+                                                        }}
+                                                    />
                                                 </div>
                                             </button>
                                         );
@@ -1277,7 +1258,7 @@ export default function LandingPageArcade({
 
                                     <p className="text-white/55 text-[11px] leading-snug text-center mb-3">
                                         {playedDaily
-                                            ? "You've played today. New board drops at reset."
+                                            ? "You've already played today."
                                             : dailyStats.totalPlayers > 0
                                                 ? `${dailyStats.totalPlayers.toLocaleString()} player${dailyStats.totalPlayers === 1 ? "" : "s"} have taken a shot today.`
                                                 : "1 shot per day, same board for everyone."}
