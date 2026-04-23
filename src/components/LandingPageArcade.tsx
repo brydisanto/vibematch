@@ -385,7 +385,7 @@ export default function LandingPageArcade({
 
                     {/* ======== LEFT PANEL ======== */}
                     <div
-                        className="relative shrink-0 flex flex-col"
+                        className="relative shrink-0 flex flex-col justify-center"
                         style={{
                             width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
@@ -637,7 +637,7 @@ export default function LandingPageArcade({
                                 className="mt-2.5 w-full text-[10px] font-display tracking-[0.25em] py-1.5 rounded-lg cursor-pointer transition-all hover:brightness-125"
                                 style={{ color: GOLD, border: `1px solid ${GOLD}44`, background: `${GOLD}0a` }}
                             >
-                                VIEW ALL →
+                                VIEW PINBOOK →
                             </button>
                         </div>
 
@@ -647,7 +647,7 @@ export default function LandingPageArcade({
                             Empty state (everything done or rail hasn't
                             loaded yet) falls back to a compact teaser. */}
                         <div
-                            className="flex-1 relative flex flex-col px-5 py-5"
+                            className="relative flex flex-col px-5 py-5"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${COSMIC}20, transparent 60%)` }}
                         >
                             <div className="flex items-center justify-between mb-1.5">
@@ -1075,7 +1075,7 @@ export default function LandingPageArcade({
 
                     {/* ======== RIGHT PANEL ======== */}
                     <div
-                        className="relative shrink-0 flex flex-col"
+                        className="relative shrink-0 flex flex-col justify-center"
                         style={{
                             width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
@@ -1355,7 +1355,7 @@ export default function LandingPageArcade({
 
                         {/* Recent Runs */}
                         <div
-                            className="flex-1 relative flex flex-col items-stretch justify-start px-5 py-6"
+                            className="relative flex flex-col items-stretch justify-start px-5 py-6"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${GOLD}14, transparent 60%)` }}
                         >
                             <div className="font-display text-[10px] tracking-[0.3em] mb-3 self-start" style={{ color: GOLD }}>
