@@ -358,7 +358,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         id: "found_rare_100",
         category: "mastery",
         icon: "🗝️",
-        title: "Rare Hoard",
+        title: "Rare Air",
         description: "Find 100+ Rare pins (total)",
         capsules: 2,
         order: 17.25,
