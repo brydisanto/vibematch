@@ -182,8 +182,9 @@ function PodiumSection({ entries, currentUsername, mode }: { entries: Leaderboar
                             {formatScore(entry.score, mode)}
                         </div>
                         {entry.pinDetails && (
-                            <div className="text-[9px] text-white/45 mt-0.5">
+                            <div className="text-[9px] text-white/45 mt-0.5 text-center leading-tight">
                                 {entry.pinDetails.uniqueCount}/{entry.pinDetails.totalBadges} pins
+                                <span className="block opacity-80">{entry.pinDetails.totalPins} total</span>
                             </div>
                         )}
                         {/* Pedestal */}

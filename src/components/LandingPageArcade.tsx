@@ -132,8 +132,9 @@ export default function LandingPageArcade({
     const [isTierInfoOpen, setTierInfoOpen] = useState(false);
     // Leaderboard modal open-state doubles as its initial tab, so the
     // Leaders nav button can open on "classic" while the DAILY CHALLENGE
-    // VIEW LEADERS CTA jumps straight to "daily".
-    const [leaderboardTab, setLeaderboardTab] = useState<"classic" | "daily" | null>(null);
+    // VIEW LEADERS CTA jumps straight to "daily" and the SCORE/PIN rank
+    // tiles route to their respective boards.
+    const [leaderboardTab, setLeaderboardTab] = useState<"classic" | "daily" | "pins" | null>(null);
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [totalPlayers, setTotalPlayers] = useState<number>(0);
@@ -1194,13 +1195,16 @@ export default function LandingPageArcade({
                                 </div>
                             </button>
 
-                            {/* Rank row — PIN RANK (from pin leaderboard)
-                                and SCORE RANK (from classic all-time
-                                leaderboard). Both fall back to "—" when
-                                the player isn't ranked yet. */}
+                            {/* Rank row — PIN RANK routes to the pin
+                                leaderboard tab; SCORE RANK routes to the
+                                classic all-time tab. Each is a real
+                                <button> so the whole tile is tappable
+                                including keyboard focus. */}
                             <div className="grid grid-cols-2 gap-1.5 w-full mt-3">
-                                <div
-                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
+                                <button
+                                    type="button"
+                                    onClick={() => setLeaderboardTab("pins")}
+                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.12]"
                                     style={{
                                         background: `linear-gradient(180deg, ${COSMIC}1A, ${COSMIC}08)`,
                                         border: `1px solid ${COSMIC}44`,
@@ -1215,9 +1219,11 @@ export default function LandingPageArcade({
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${COSMIC}cc` }}>
                                         PIN RANK
                                     </div>
-                                </div>
-                                <div
-                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setLeaderboardTab("classic")}
+                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.12]"
                                     style={{
                                         background: `linear-gradient(180deg, ${PINK}1A, ${PINK}08)`,
                                         border: `1px solid ${PINK}44`,
@@ -1232,7 +1238,7 @@ export default function LandingPageArcade({
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${PINK}cc` }}>
                                         SCORE RANK
                                     </div>
-                                </div>
+                                </button>
                             </div>
 
                             {/* Stats row — compact DAY STREAK and BEST
