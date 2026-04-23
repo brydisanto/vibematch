@@ -270,28 +270,35 @@ export default function LandingPageArcade({
             .catch(() => { /* silent */ });
     }, []);
 
-    // Daily challenge stats for the right-rail box — your best today,
-    // your rank, and total players attempted.
+    // Daily challenge stats + played-today flag for the right-rail box.
+    // Refetched on mount *and* on window focus so returning from a
+    // daily game refreshes the stats without a manual reload. Cache
+    // headers on the score endpoint keep this cheap.
     useEffect(() => {
-        fetch(`/api/scores?mode=daily&username=${encodeURIComponent(username)}`)
-            .then(r => r.json())
-            .then(data => {
-                setDailyStats({
-                    yourBest: typeof data.personalBest === "number" && data.personalBest > 0 ? data.personalBest : null,
-                    totalPlayers: typeof data.totalPlayers === "number" ? data.totalPlayers : 0,
-                    yourRank: typeof data.userRank === "number" ? data.userRank : null,
-                });
-            })
-            .catch(() => { /* silent */ });
-    }, [username]);
-
-    // Has the user already played today's daily? Drives CTA copy
-    // (ENTER CHALLENGE vs COME BACK TOMORROW).
-    useEffect(() => {
-        fetch("/api/daily-status")
-            .then(r => r.json())
-            .then(data => { if (typeof data.playedToday === "boolean") setPlayedDaily(data.playedToday); })
-            .catch(() => { /* silent */ });
+        let cancelled = false;
+        const refresh = () => {
+            fetch(`/api/scores?mode=daily&username=${encodeURIComponent(username)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (cancelled) return;
+                    setDailyStats({
+                        yourBest: typeof data.personalBest === "number" && data.personalBest > 0 ? data.personalBest : null,
+                        totalPlayers: typeof data.totalPlayers === "number" ? data.totalPlayers : 0,
+                        yourRank: typeof data.userRank === "number" ? data.userRank : null,
+                    });
+                })
+                .catch(() => { /* silent */ });
+            fetch("/api/daily-status")
+                .then(r => r.json())
+                .then(data => { if (!cancelled && typeof data.playedToday === "boolean") setPlayedDaily(data.playedToday); })
+                .catch(() => { /* silent */ });
+        };
+        refresh();
+        window.addEventListener("focus", refresh);
+        return () => {
+            cancelled = true;
+            window.removeEventListener("focus", refresh);
+        };
     }, [username]);
 
 
@@ -309,9 +316,9 @@ export default function LandingPageArcade({
             .catch(() => { /* silent */ });
     }, [username]);
 
-    // Recent runs fetch
+    // Recent runs fetch — capped at 6 so the right-rail scrolls less.
     useEffect(() => {
-        fetch("/api/recent-scores?limit=8")
+        fetch("/api/recent-scores?limit=6")
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data.runs)) setRecentRuns(data.runs);
@@ -385,82 +392,57 @@ export default function LandingPageArcade({
                             borderRight: `1px solid ${GOLD}15`,
                         }}
                     >
-                        {/* MY ITEMS — CAPSULES hero + extra pins sub-strip.
-                            Full-hero treatment for capsules (big glowing
-                            orb number + OPEN CAPSULES chunky CTA) with
-                            the extra-pins reroll strip still compact
-                            below it. */}
-                        <div className="px-5 pt-6 pb-4 border-b border-white/5 flex flex-col gap-2.5">
+                        {/* MY ITEMS — compact unified block matching
+                            production: capsules + extra-pins as two
+                            stacked horizontal sub-cards sharing the
+                            same MY ITEMS header. */}
+                        <div className="px-5 pt-6 pb-3 border-b border-white/5 flex flex-col gap-2.5">
                             <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
                                 MY ITEMS
                             </div>
 
-                            {/* CAPSULES hero */}
-                            <button
-                                type="button"
-                                onClick={() => onOpenPinBook?.("capsules")}
-                                className="w-full rounded-2xl p-[2px] text-left cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
+                            {/* Capsules */}
+                            <div
+                                className="rounded-xl p-[2px] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.08]"
                                 style={{
                                     background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DIM} 40%, ${GOLD_DEEP} 100%)`,
-                                    boxShadow: `0 4px 0 ${GOLD_DEEP}, 0 8px 18px rgba(0,0,0,0.55), 0 0 28px ${GOLD}22`,
+                                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
                                 }}
                             >
-                                <div
-                                    className="rounded-[14px] relative p-4 flex flex-col items-center text-center overflow-hidden"
-                                    style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
-                                >
-                                    <div
-                                        className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
-                                        style={{ background: `linear-gradient(180deg, ${GOLD}1f, transparent)` }}
-                                    />
-                                    <div
-                                        className="relative mb-2 rounded-full flex items-center justify-center"
+                                <div className="rounded-[10px] px-2.5 py-2 flex items-center gap-2.5" style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}>
+                                    <div className="min-w-0 flex-1 leading-tight">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span
+                                                className="font-display font-black text-[22px]"
+                                                style={{ color: GOLD, textShadow: `0 2px 0 ${GOLD_DEEP}` }}
+                                            >
+                                                {capsuleCount}
+                                            </span>
+                                            <span className="font-display text-[11px] tracking-[0.16em] uppercase" style={{ color: `${GOLD}cc` }}>
+                                                Capsule{capsuleCount === 1 ? "" : "s"}
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-white/50 mt-0.5 leading-snug">
+                                            Rip &apos;em open to find Pins!
+                                        </div>
+                                    </div>
+
+                                    <ChunkyButton
+                                        onClick={() => onOpenPinBook?.("capsules")}
+                                        color={GOLD}
+                                        deep={GOLD_DEEP}
+                                        text="#1A0E02"
                                         style={{
-                                            width: 82,
-                                            height: 82,
-                                            background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
-                                            boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 24px ${GOLD}55`,
-                                            border: "3px solid #2A1A0A",
+                                            padding: "6px 10px",
+                                            fontSize: 10,
+                                            fontWeight: 900,
+                                            letterSpacing: "0.18em",
                                         }}
                                     >
-                                        <span
-                                            className="font-display font-black leading-none"
-                                            style={{
-                                                color: "#1A0633",
-                                                fontSize: 38,
-                                                textShadow: "0 2px 0 rgba(255,255,255,0.25)",
-                                            }}
-                                        >
-                                            {capsuleCount}
-                                        </span>
-                                    </div>
-                                    <div
-                                        className="font-display font-black uppercase text-[13px] tracking-[0.12em]"
-                                        style={{ color: GOLD }}
-                                    >
-                                        Capsule{capsuleCount === 1 ? "" : "s"} Ready
-                                    </div>
-                                    <div className="text-[10px] text-white/55 mt-1 leading-snug">
-                                        {capsuleCount > 0 ? "Rip 'em open to find Pins!" : "Score 15K+ to earn your first"}
-                                    </div>
-                                    <div className="mt-3">
-                                        <ChunkyButton
-                                            color={GOLD}
-                                            deep={GOLD_DEEP}
-                                            text="#1A0E02"
-                                            disabled={capsuleCount === 0}
-                                            style={{
-                                                padding: "9px 22px",
-                                                fontSize: 11,
-                                                fontWeight: 900,
-                                                letterSpacing: "0.2em",
-                                            }}
-                                        >
-                                            OPEN CAPSULES
-                                        </ChunkyButton>
-                                    </div>
+                                        OPEN
+                                    </ChunkyButton>
                                 </div>
-                            </button>
+                            </div>
 
                             {/* Extra Pins → Reroll */}
                             <div
@@ -569,6 +551,17 @@ export default function LandingPageArcade({
                                         );
                                     }
                                     const meta = TIER_META[pin.tier];
+                                    // Column-aware tooltip alignment so
+                                    // leftmost and rightmost tiles don't
+                                    // push their hover cards past the rail
+                                    // edge. Middle columns center normally.
+                                    const col = i % 4;
+                                    const tooltipAlign =
+                                        col === 0
+                                            ? { left: 0, right: "auto", transform: "none" as const }
+                                            : col === 3
+                                                ? { left: "auto" as const, right: 0, transform: "none" as const }
+                                                : { left: "50%", right: "auto", transform: "translateX(-50%)" as const };
                                     return (
                                         <button
                                             key={pin.id}
@@ -597,11 +590,12 @@ export default function LandingPageArcade({
                                             )}
                                             {/* Hover card — absolute, escapes
                                                 the tile so the full pin name
-                                                is readable. z-20 sits above
-                                                neighbor tiles. */}
+                                                is readable. Column-aligned
+                                                so edge tiles don't clip. */}
                                             <div
-                                                className="pointer-events-none absolute left-1/2 bottom-full mb-1.5 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap"
+                                                className="pointer-events-none absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap"
                                                 style={{
+                                                    ...tooltipAlign,
                                                     background: "rgba(12, 4, 24, 0.96)",
                                                     border: `1px solid ${meta.tint}66`,
                                                     boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 12px ${meta.tint}33`,
@@ -1304,7 +1298,7 @@ export default function LandingPageArcade({
                                             : "Highest score wins bonus Capsules!"}
                                     </p>
 
-                                    <div className="flex justify-center">
+                                    <div className="flex flex-col items-center gap-2">
                                         <ChunkyButton
                                             color={COSMIC}
                                             deep={COSMIC_DEEP}
@@ -1319,24 +1313,38 @@ export default function LandingPageArcade({
                                         >
                                             {playedDaily ? "COME BACK TOMORROW" : "ENTER CHALLENGE"}
                                         </ChunkyButton>
+
+                                        {/* VIEW LEADERS — pill secondary
+                                            action under the primary CTA.
+                                            Opens the leaderboard modal
+                                            straight onto the Daily tab.
+                                            stopPropagation prevents the
+                                            outer daily-start button from
+                                            also firing. */}
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLeaderboardTab("daily");
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    e.stopPropagation();
+                                                    setLeaderboardTab("daily");
+                                                }
+                                            }}
+                                            className="rounded-full px-3.5 py-1.5 text-[9px] font-display font-black tracking-[0.22em] cursor-pointer transition-all hover:brightness-125"
+                                            style={{
+                                                color: COSMIC,
+                                                border: `1px solid ${COSMIC}55`,
+                                                background: `${COSMIC}14`,
+                                            }}
+                                        >
+                                            VIEW LEADERS →
+                                        </span>
                                     </div>
                                 </div>
-                            </button>
-
-                            {/* VIEW LEADERS — opens the leaderboard modal
-                                straight onto the Daily tab. Sits just
-                                below the hero card so it reads as a
-                                secondary action. */}
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLeaderboardTab("daily");
-                                }}
-                                className="mt-2.5 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg cursor-pointer transition-all hover:brightness-125"
-                                style={{ color: COSMIC, border: `1px solid ${COSMIC}44`, background: `${COSMIC}0a` }}
-                            >
-                                VIEW LEADERS →
                             </button>
                         </div>
 
