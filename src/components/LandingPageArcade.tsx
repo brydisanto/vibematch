@@ -505,7 +505,7 @@ export default function LandingPageArcade({
                                     PINS COLLECTED
                                 </div>
                                 <span
-                                    className="font-display font-black text-[10px] tabular-nums"
+                                    className="font-display font-black text-[13px] tabular-nums"
                                     style={{ color: GOLD }}
                                 >
                                     {pinsCollected}<span className="opacity-45">/{totalBadges}</span>
@@ -655,7 +655,7 @@ export default function LandingPageArcade({
                                     QUESTS
                                 </div>
                                 <span
-                                    className="font-display font-black text-[10px] tabular-nums"
+                                    className="font-display font-black text-[13px] tabular-nums"
                                     style={{ color: COSMIC }}
                                 >
                                     {questsCompleted}<span className="opacity-45">/{totalQuests}</span>
@@ -1299,28 +1299,33 @@ export default function LandingPageArcade({
                                     </p>
 
                                     <div className="flex flex-col items-center gap-2">
-                                        <ChunkyButton
-                                            color={COSMIC}
-                                            deep={COSMIC_DEEP}
-                                            text="#fff"
-                                            disabled={playedDaily}
-                                            style={{
-                                                padding: "10px 22px",
-                                                fontSize: 11,
-                                                fontWeight: 900,
-                                                letterSpacing: "0.2em",
-                                            }}
-                                        >
-                                            {playedDaily ? "COME BACK TOMORROW" : "ENTER CHALLENGE"}
-                                        </ChunkyButton>
+                                        {/* Primary CTA only renders while
+                                            the user hasn't played today.
+                                            Once played, the "come back
+                                            tomorrow" block is dropped and
+                                            VIEW LEADERS stands alone. */}
+                                        {!playedDaily && (
+                                            <ChunkyButton
+                                                color={COSMIC}
+                                                deep={COSMIC_DEEP}
+                                                text="#fff"
+                                                style={{
+                                                    padding: "10px 22px",
+                                                    fontSize: 11,
+                                                    fontWeight: 900,
+                                                    letterSpacing: "0.2em",
+                                                }}
+                                            >
+                                                ENTER CHALLENGE
+                                            </ChunkyButton>
+                                        )}
 
-                                        {/* VIEW LEADERS — pill secondary
-                                            action under the primary CTA.
-                                            Opens the leaderboard modal
-                                            straight onto the Daily tab.
-                                            stopPropagation prevents the
-                                            outer daily-start button from
-                                            also firing. */}
+                                        {/* VIEW LEADERS — pill. Opens the
+                                            leaderboard modal on the Daily
+                                            tab. stopPropagation prevents
+                                            the outer daily-start button
+                                            from also firing when the card
+                                            is still tappable. */}
                                         <span
                                             role="button"
                                             tabIndex={0}
