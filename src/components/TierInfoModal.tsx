@@ -206,7 +206,7 @@ export default function TierInfoModal({
                                                             : undefined,
                                                 }}
                                             >
-                                                {t.minPercent}%+
+                                                {t.minPercent}%{isHolo ? "" : "+"}
                                             </div>
                                             <div
                                                 className="text-[9px] tabular-nums mt-0.5"
@@ -219,7 +219,7 @@ export default function TierInfoModal({
                                                     textShadow: isHolo || isCosmic ? "0 1px 2px rgba(0,0,0,0.75)" : undefined,
                                                 }}
                                             >
-                                                {minCount}+ pins
+                                                {minCount}{isHolo ? "" : "+"} pins
                                             </div>
                                         </div>
                                     </div>
