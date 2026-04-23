@@ -168,10 +168,15 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Mid-game refresh penalty: if the previous match was created <5 min ago
-            // and never received a logGame, mark it abandoned AND make the new match
-            // ineligible for capsules. Prevents board-shopping via refresh.
-            const ABANDON_WINDOW_MS = 5 * 60 * 1000;
+            // Mid-game refresh penalty: if the previous match was created
+            // very recently (< 30s) and never received a logGame, treat it
+            // as a refresh-shop attempt and make the new match ineligible.
+            // Previously 5 minutes, which was way too aggressive — any
+            // genuinely-abandoned game (network drop, browser close) within
+            // 5 min wrongly nuked the next legit game's capsule. 30 seconds
+            // is tight enough to catch "reload to reroll the board" while
+            // letting mid-game crashes / home-button exits through.
+            const ABANDON_WINDOW_MS = 30 * 1000;
             const activePointerKey = `pinbook:${username}:activeMatch`;
             const previousMatchId = await kv.get(activePointerKey) as string | null;
             let abandonedPrevious = false;

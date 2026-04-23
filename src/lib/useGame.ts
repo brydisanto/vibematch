@@ -68,9 +68,12 @@ export interface UseGameReturn {
     swapAnim: { pos1: Position; pos2: Position } | null;
     selectTile: (pos: Position) => void;
     swipeTiles: (from: Position, to: Position) => void;
-    startGame: (mode: GameMode) => void;
-    startGameWithBadges: (mode: GameMode, badges: Badge[]) => void;
-    resetGame: () => void;
+    /** Resolves once the initial board state has been set so callers can
+     *  defer the view switch and avoid flashing an empty grid while
+     *  badge images preload. */
+    startGame: (mode: GameMode) => Promise<void>;
+    startGameWithBadges: (mode: GameMode, badges: Badge[]) => Promise<void>;
+    resetGame: () => Promise<void>;
 }
 
 function getIntensity(score: number, combo: number, maxMatchSize: number): MatchIntensity {
@@ -152,34 +155,31 @@ export function useGame(): UseGameReturn {
         playGameStartSound();
     }, [resetHintTimer]);
 
-    const startGame = useCallback((mode: GameMode) => {
+    const startGame = useCallback(async (mode: GameMode) => {
         const initialState = createInitialState(mode);
-        preloadBadgeImages(initialState.gameBadges).then(() => {
-            applyStartState(initialState);
-        });
+        await preloadBadgeImages(initialState.gameBadges);
+        applyStartState(initialState);
     }, [preloadBadgeImages, applyStartState]);
 
-    const startGameWithBadges = useCallback((mode: GameMode, badges: Badge[]) => {
+    const startGameWithBadges = useCallback(async (mode: GameMode, badges: Badge[]) => {
         const initialState = createInitialState(mode, badges);
-        preloadBadgeImages(initialState.gameBadges).then(() => {
-            applyStartState(initialState);
-        });
+        await preloadBadgeImages(initialState.gameBadges);
+        applyStartState(initialState);
     }, [preloadBadgeImages, applyStartState]);
 
-    const resetGame = useCallback(() => {
+    const resetGame = useCallback(async () => {
         hintShownThisGame.current = false;
         const mode = state?.gameMode ?? "classic";
         const s = createInitialState(mode);
-        preloadBadgeImages(s.gameBadges).then(() => {
-            setState(s);
-            resetHintTimer(s.board);
-            setScorePopups([]);
-            setLastTurnResult(null);
-            setMatchEffect(null);
-            setIsAnimating(false);
-            setHintMessage(null);
-            playGameStartSound();
-        });
+        await preloadBadgeImages(s.gameBadges);
+        setState(s);
+        resetHintTimer(s.board);
+        setScorePopups([]);
+        setLastTurnResult(null);
+        setMatchEffect(null);
+        setIsAnimating(false);
+        setHintMessage(null);
+        playGameStartSound();
     }, [state?.gameMode, resetHintTimer, preloadBadgeImages]);
 
     // Shared helper: apply a TurnResult to game state with effects

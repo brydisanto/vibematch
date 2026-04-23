@@ -490,9 +490,12 @@ export default function AppClient() {
 
     // Vibe Draft disabled for now — slows down replayability
     // To re-enable: route classic mode to drafting view with selectDraftPool()
-    game.startGame(mode);
+    // Await startGame so badge images finish preloading BEFORE the view
+    // switches — otherwise the board renders with an empty grid until
+    // the images finish loading a beat later.
     setCapsuleEarned(false);
     gameSessionStats.current = { bombsCreated: 0, vibestreaksCreated: 0, cosmicBlastsCreated: 0, crossCount: 0, shapesLanded: [] };
+    await game.startGame(mode);
     setIsDealing(true);
     setView("playing");
     startBGM();
@@ -507,8 +510,10 @@ export default function AppClient() {
     }
   };
 
-  const handleDraftComplete = (drafted: Badge[]) => {
-    game.startGameWithBadges(draftMode, drafted);
+  const handleDraftComplete = async (drafted: Badge[]) => {
+    // Await so badge images preload before the view switches — keeps
+    // the board from flashing empty tiles on mount.
+    await game.startGameWithBadges(draftMode, drafted);
     setIsDealing(true);
     setView("playing");
     startBGM();
@@ -551,8 +556,9 @@ export default function AppClient() {
     // Reset per-game FTUE UI so hints / modals can still fire on future games
     setFtueHint(null);
     setFtuePostGame(null);
+    // Await so badge images preload before dealing animation fires.
+    await game.resetGame();
     setIsDealing(true);
-    game.resetGame();
   };
 
   // Record streak when any game ends (daily or classic)
