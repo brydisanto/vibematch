@@ -1327,11 +1327,15 @@ export default function LandingPageArcade({
                                             10×
                                         </span>
                                     </div>
-                                    {/* Hover explainer. Pops above the
-                                        badge so it doesn't push layout. */}
+                                    {/* Hover explainer. Fixed width + text
+                                        wrap so the full copy stays inside
+                                        the 300px rail. Anchored to the
+                                        badge's left edge for predictable
+                                        placement. */}
                                     <div
-                                        className="pointer-events-none absolute left-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-30 whitespace-nowrap"
+                                        className="pointer-events-none absolute left-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-30"
                                         style={{
+                                            width: 220,
                                             background: "rgba(12, 4, 24, 0.96)",
                                             border: `1px solid ${GOLD}66`,
                                             boxShadow: `0 6px 16px rgba(0,0,0,0.6), 0 0 14px ${GOLD}33`,
