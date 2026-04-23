@@ -70,10 +70,10 @@ export default function TierInfoModal({
                                     textShadow: "0 2px 0 rgba(0,0,0,0.5)",
                                 }}
                             >
-                                Collection Tiers
+                                Collector Tiers
                             </h2>
                             <p className="text-white/55 text-[12px] leading-snug mt-1.5">
-                                Your tier is tied to the share of unique pins you&apos;ve collected.
+                                Your tier is determined by the % of unique pins you&apos;ve collected.
                                 Keep opening capsules to climb.
                             </p>
                             <div
@@ -88,31 +88,44 @@ export default function TierInfoModal({
                             {tiers.map((t) => {
                                 const minCount = Math.ceil((t.minPercent / 100) * totalBadges);
                                 const isCurrent = t.id === currentTierId;
+                                const isHolo = t.id === "one_of_one";
                                 return (
                                     <div
                                         key={t.id}
-                                        className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-all"
+                                        className={`rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden ${isHolo ? "tier-holo" : ""}`}
                                         style={{
-                                            background: isCurrent
-                                                ? `linear-gradient(180deg, ${t.color}26, ${t.accent}26)`
-                                                : "rgba(255,255,255,0.03)",
-                                            border: isCurrent
-                                                ? `1px solid ${t.color}99`
-                                                : "1px solid rgba(255,255,255,0.06)",
-                                            boxShadow: isCurrent ? `0 0 18px ${t.color}40` : undefined,
+                                            background: isHolo
+                                                ? undefined
+                                                : isCurrent
+                                                    ? `linear-gradient(180deg, ${t.color}26, ${t.accent}26)`
+                                                    : "rgba(255,255,255,0.03)",
+                                            border: isHolo
+                                                ? "1px solid rgba(255,255,255,0.55)"
+                                                : isCurrent
+                                                    ? `1px solid ${t.color}99`
+                                                    : "1px solid rgba(255,255,255,0.06)",
+                                            boxShadow: isHolo
+                                                ? "0 0 24px rgba(255,255,255,0.25), inset 0 0 20px rgba(255,255,255,0.12)"
+                                                : isCurrent
+                                                    ? `0 0 18px ${t.color}40`
+                                                    : undefined,
                                         }}
                                     >
-                                        <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="flex items-center gap-2.5 min-w-0 relative z-10">
                                             <div
-                                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                style={{
-                                                    background: t.color,
-                                                    boxShadow: `0 0 10px ${t.color}aa`,
-                                                }}
+                                                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isHolo ? "tier-holo-dot" : ""}`}
+                                                style={
+                                                    isHolo
+                                                        ? undefined
+                                                        : {
+                                                            background: t.color,
+                                                            boxShadow: `0 0 10px ${t.color}aa`,
+                                                        }
+                                                }
                                             />
                                             <span
-                                                className="font-display font-black text-[13px] uppercase tracking-[0.08em] truncate"
-                                                style={{ color: t.color }}
+                                                className={`font-display font-black text-[13px] uppercase tracking-[0.08em] truncate ${isHolo ? "tier-holo-text" : ""}`}
+                                                style={isHolo ? undefined : { color: t.color }}
                                             >
                                                 {t.label}
                                             </span>
@@ -128,10 +141,12 @@ export default function TierInfoModal({
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="text-right shrink-0">
+                                        <div className="text-right shrink-0 relative z-10">
                                             <div
                                                 className="font-display font-black text-[12px] tabular-nums"
-                                                style={{ color: isCurrent ? t.color : "#ffffffaa" }}
+                                                style={{
+                                                    color: isHolo ? "#ffffff" : isCurrent ? t.color : "#ffffffaa",
+                                                }}
                                             >
                                                 {t.minPercent}%+
                                             </div>
@@ -146,6 +161,60 @@ export default function TierInfoModal({
                     </motion.div>
                 </motion.div>
             )}
+            {/* Holo animation for the One-Of-One tier row. Iridescent
+                conic sweep behind the content + animated gradient on the
+                label and dot to sell the "rainbow foil" look. */}
+            <style jsx global>{`
+                .tier-holo {
+                    background:
+                        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+                        conic-gradient(
+                            from var(--holo-angle, 0deg),
+                            #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
+                            #84fab0, #fad0c4, #ffdde1, #ff6ad5
+                        );
+                    background-blend-mode: overlay, normal;
+                    animation: tierHoloSpin 6s linear infinite;
+                }
+                .tier-holo-dot {
+                    background: conic-gradient(
+                        from 0deg,
+                        #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
+                        #84fab0, #fad0c4, #ffdde1, #ff6ad5
+                    );
+                    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+                    animation: tierHoloDotSpin 4s linear infinite;
+                }
+                .tier-holo-text {
+                    background: linear-gradient(
+                        90deg,
+                        #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
+                        #84fab0, #fad0c4, #ffdde1, #ff6ad5
+                    );
+                    background-size: 200% auto;
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    color: transparent;
+                    animation: tierHoloShimmer 4s linear infinite;
+                    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+                }
+                @keyframes tierHoloSpin {
+                    to { --holo-angle: 360deg; }
+                }
+                @keyframes tierHoloDotSpin {
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes tierHoloShimmer {
+                    0% { background-position: 0% center; }
+                    100% { background-position: 200% center; }
+                }
+                @property --holo-angle {
+                    syntax: "<angle>";
+                    inherits: false;
+                    initial-value: 0deg;
+                }
+            `}</style>
         </AnimatePresence>
     );
 }
