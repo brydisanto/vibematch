@@ -45,6 +45,7 @@ interface LandingPageArcadeProps {
     onOpenPinBook?: (initialTab?: "collection" | "leaderboard" | "capsules") => void;
     onOpenAchievements?: () => void;
     onOpenBuyPrizeGames?: () => void;
+    onOpenReroll?: () => void;
     /** Called after a successful profile save so the parent can update
      *  userProfile state and the avatar refreshes without a page reload. */
     onProfileUpdate?: (username: string, avatarUrl: string) => void;
@@ -114,6 +115,7 @@ export default function LandingPageArcade({
     onOpenPinBook,
     onOpenAchievements,
     onOpenBuyPrizeGames,
+    onOpenReroll,
     onProfileUpdate,
     capsuleCount = 0,
     classicPlays = 0,
@@ -478,7 +480,7 @@ export default function LandingPageArcade({
                                         </div>
                                     </div>
                                     <ChunkyButton
-                                        onClick={() => onOpenPinBook?.("capsules")}
+                                        onClick={() => onOpenReroll?.()}
                                         color={COSMIC}
                                         deep={COSMIC_DEEP}
                                         text="#fff"

@@ -65,6 +65,7 @@ export default function LandingPage(props: LandingPageProps) {
                 onOpenPinBook={props.onOpenPinBook}
                 onOpenAchievements={props.onOpenAchievements}
                 onOpenBuyPrizeGames={props.onOpenBuyPrizeGames}
+                onOpenReroll={props.onOpenReroll}
                 onProfileUpdate={props.onProfileUpdate}
                 capsuleCount={props.capsuleCount}
                 classicPlays={props.classicPlays}
