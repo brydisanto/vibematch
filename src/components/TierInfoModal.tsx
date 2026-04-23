@@ -28,6 +28,7 @@ export default function TierInfoModal({
 }: TierInfoModalProps) {
     const tiers = getAllTiers();
     const totalBadges = BADGES.length;
+    const pinPct = totalBadges > 0 ? Math.round((pinsCollected / totalBadges) * 100) : 0;
 
     return (
         <AnimatePresence>
@@ -80,7 +81,7 @@ export default function TierInfoModal({
                                 className="mt-2 font-display text-[11px] tracking-[0.2em] uppercase"
                                 style={{ color: "#B366FFcc" }}
                             >
-                                You own {pinsCollected} / {totalBadges} pins
+                                You&apos;ve found {pinsCollected} / {totalBadges} pins ({pinPct}%)
                             </div>
                         </div>
 
@@ -89,33 +90,67 @@ export default function TierInfoModal({
                                 const minCount = Math.ceil((t.minPercent / 100) * totalBadges);
                                 const isCurrent = t.id === currentTierId;
                                 const isHolo = t.id === "one_of_one";
+                                const isCosmic = t.id === "cosmic";
+                                const specialRow = isHolo || isCosmic;
                                 return (
                                     <div
                                         key={t.id}
-                                        className={`rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden ${isHolo ? "tier-holo" : ""}`}
+                                        className={`rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
                                         style={{
-                                            background: isHolo
+                                            background: specialRow
                                                 ? undefined
                                                 : isCurrent
                                                     ? `linear-gradient(180deg, ${t.color}26, ${t.accent}26)`
                                                     : "rgba(255,255,255,0.03)",
                                             border: isHolo
                                                 ? "1px solid rgba(255,255,255,0.55)"
-                                                : isCurrent
-                                                    ? `1px solid ${t.color}99`
-                                                    : "1px solid rgba(255,255,255,0.06)",
+                                                : isCosmic
+                                                    ? "1px solid rgba(179,102,255,0.65)"
+                                                    : isCurrent
+                                                        ? `1px solid ${t.color}99`
+                                                        : "1px solid rgba(255,255,255,0.06)",
                                             boxShadow: isHolo
                                                 ? "0 0 24px rgba(255,255,255,0.25), inset 0 0 20px rgba(255,255,255,0.12)"
-                                                : isCurrent
-                                                    ? `0 0 18px ${t.color}40`
-                                                    : undefined,
+                                                : isCosmic
+                                                    ? "0 0 28px rgba(179,102,255,0.45), inset 0 0 24px rgba(179,102,255,0.18)"
+                                                    : isCurrent
+                                                        ? `0 0 18px ${t.color}40`
+                                                        : undefined,
                                         }}
                                     >
+                                        {/* Dark scrim over the holo sweep so
+                                            white text has something to sit on.
+                                            Without this the rainbow back
+                                            fights the label for readability. */}
+                                        {isHolo && (
+                                            <div
+                                                className="absolute inset-0 pointer-events-none"
+                                                style={{
+                                                    background: "linear-gradient(180deg, rgba(8,4,20,0.55), rgba(8,4,20,0.72))",
+                                                }}
+                                            />
+                                        )}
+                                        {/* Cosmic particle field — six staggered
+                                            sparkles that drift + twinkle. Each
+                                            uses its own keyframe offset so the
+                                            pattern doesn't look like a synced
+                                            strobe. Purely decorative, aria-
+                                            hidden. */}
+                                        {isCosmic && (
+                                            <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+                                                <span className="tier-cosmic-particle" style={{ left: "10%", top: "28%", animationDelay: "0s" }} />
+                                                <span className="tier-cosmic-particle" style={{ left: "26%", top: "70%", animationDelay: "0.6s" }} />
+                                                <span className="tier-cosmic-particle" style={{ left: "44%", top: "18%", animationDelay: "1.2s" }} />
+                                                <span className="tier-cosmic-particle" style={{ left: "62%", top: "62%", animationDelay: "1.8s" }} />
+                                                <span className="tier-cosmic-particle" style={{ left: "78%", top: "30%", animationDelay: "2.4s" }} />
+                                                <span className="tier-cosmic-particle" style={{ left: "90%", top: "75%", animationDelay: "3.0s" }} />
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-2.5 min-w-0 relative z-10">
                                             <div
-                                                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isHolo ? "tier-holo-dot" : ""}`}
+                                                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isHolo ? "tier-holo-dot" : ""} ${isCosmic ? "tier-cosmic-dot" : ""}`}
                                                 style={
-                                                    isHolo
+                                                    specialRow
                                                         ? undefined
                                                         : {
                                                             background: t.color,
@@ -124,8 +159,20 @@ export default function TierInfoModal({
                                                 }
                                             />
                                             <span
-                                                className={`font-display font-black text-[13px] uppercase tracking-[0.08em] truncate ${isHolo ? "tier-holo-text" : ""}`}
-                                                style={isHolo ? undefined : { color: t.color }}
+                                                className="font-display font-black text-[13px] uppercase tracking-[0.08em] truncate"
+                                                style={
+                                                    isHolo
+                                                        ? {
+                                                            color: "#FFFFFF",
+                                                            textShadow: "0 0 6px rgba(255,255,255,0.45), 0 1px 2px rgba(0,0,0,0.9)",
+                                                        }
+                                                        : isCosmic
+                                                            ? {
+                                                                color: "#E8C8FF",
+                                                                textShadow: "0 0 10px rgba(179,102,255,0.65), 0 1px 2px rgba(0,0,0,0.7)",
+                                                            }
+                                                            : { color: t.color }
+                                                }
                                             >
                                                 {t.label}
                                             </span>
@@ -145,12 +192,33 @@ export default function TierInfoModal({
                                             <div
                                                 className="font-display font-black text-[12px] tabular-nums"
                                                 style={{
-                                                    color: isHolo ? "#ffffff" : isCurrent ? t.color : "#ffffffaa",
+                                                    color: isHolo
+                                                        ? "#ffffff"
+                                                        : isCosmic
+                                                            ? "#E8C8FF"
+                                                            : isCurrent
+                                                                ? t.color
+                                                                : "#ffffffaa",
+                                                    textShadow: isHolo
+                                                        ? "0 1px 2px rgba(0,0,0,0.9)"
+                                                        : isCosmic
+                                                            ? "0 0 8px rgba(179,102,255,0.55), 0 1px 2px rgba(0,0,0,0.7)"
+                                                            : undefined,
                                                 }}
                                             >
                                                 {t.minPercent}%+
                                             </div>
-                                            <div className="text-[9px] text-white/45 tabular-nums mt-0.5">
+                                            <div
+                                                className="text-[9px] tabular-nums mt-0.5"
+                                                style={{
+                                                    color: isHolo
+                                                        ? "rgba(255,255,255,0.75)"
+                                                        : isCosmic
+                                                            ? "rgba(232,200,255,0.75)"
+                                                            : "rgba(255,255,255,0.45)",
+                                                    textShadow: isHolo || isCosmic ? "0 1px 2px rgba(0,0,0,0.75)" : undefined,
+                                                }}
+                                            >
                                                 {minCount}+ pins
                                             </div>
                                         </div>
@@ -185,34 +253,63 @@ export default function TierInfoModal({
                     box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
                     animation: tierHoloDotSpin 4s linear infinite;
                 }
-                .tier-holo-text {
-                    background: linear-gradient(
-                        90deg,
-                        #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
-                        #84fab0, #fad0c4, #ffdde1, #ff6ad5
-                    );
-                    background-size: 200% auto;
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    color: transparent;
-                    animation: tierHoloShimmer 4s linear infinite;
-                    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-                }
                 @keyframes tierHoloSpin {
                     to { --holo-angle: 360deg; }
                 }
                 @keyframes tierHoloDotSpin {
                     to { transform: rotate(360deg); }
                 }
-                @keyframes tierHoloShimmer {
-                    0% { background-position: 0% center; }
-                    100% { background-position: 200% center; }
-                }
                 @property --holo-angle {
                     syntax: "<angle>";
                     inherits: false;
                     initial-value: 0deg;
+                }
+                /* Cosmic row — purple nebula background that breathes, a
+                   pulsing cosmic dot, and a sparse particle field that
+                   twinkles. Keeps the whole treatment purple-centric
+                   without stealing loudness from the holo One-Of-One. */
+                .tier-cosmic {
+                    background:
+                        radial-gradient(circle at 20% 30%, rgba(179,102,255,0.42), transparent 55%),
+                        radial-gradient(circle at 80% 75%, rgba(216,160,255,0.35), transparent 55%),
+                        linear-gradient(180deg, rgba(45,14,84,0.85), rgba(21,6,48,0.92));
+                    animation: tierCosmicBreathe 4.5s ease-in-out infinite;
+                }
+                .tier-cosmic-dot {
+                    background: radial-gradient(circle at 30% 30%, #E8C8FF, #B366FF 55%, #6B1FC0);
+                    box-shadow:
+                        0 0 8px rgba(179,102,255,0.9),
+                        0 0 16px rgba(179,102,255,0.55);
+                    animation: tierCosmicDotPulse 2.2s ease-in-out infinite;
+                }
+                .tier-cosmic-particle {
+                    position: absolute;
+                    width: 3px;
+                    height: 3px;
+                    border-radius: 50%;
+                    background: #E8C8FF;
+                    box-shadow:
+                        0 0 6px rgba(232,200,255,0.95),
+                        0 0 12px rgba(179,102,255,0.75);
+                    opacity: 0;
+                    animation: tierCosmicTwinkle 3.6s ease-in-out infinite;
+                }
+                @keyframes tierCosmicBreathe {
+                    0%, 100% {
+                        box-shadow: 0 0 24px rgba(179,102,255,0.4), inset 0 0 24px rgba(179,102,255,0.18);
+                    }
+                    50% {
+                        box-shadow: 0 0 36px rgba(179,102,255,0.65), inset 0 0 30px rgba(179,102,255,0.3);
+                    }
+                }
+                @keyframes tierCosmicDotPulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.35); opacity: 0.8; }
+                }
+                @keyframes tierCosmicTwinkle {
+                    0%, 100% { opacity: 0; transform: scale(0.6); }
+                    40% { opacity: 1; transform: scale(1.1); }
+                    60% { opacity: 1; transform: scale(1.1); }
                 }
             `}</style>
         </AnimatePresence>
