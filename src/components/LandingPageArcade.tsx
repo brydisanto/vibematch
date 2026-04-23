@@ -1327,13 +1327,14 @@ export default function LandingPageArcade({
                                             10×
                                         </span>
                                     </div>
-                                    {/* Hover explainer. Fixed width + text
-                                        wrap so the full copy stays inside
-                                        the 300px rail. Anchored to the
-                                        badge's left edge for predictable
-                                        placement. */}
+                                    {/* Hover explainer. Anchored to the
+                                        badge's RIGHT edge so the tooltip
+                                        extends LEFTWARD — the badge sits
+                                        near the right side of the rail,
+                                        so anchoring left-0 pushed the
+                                        tooltip past the rail boundary. */}
                                     <div
-                                        className="pointer-events-none absolute left-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-30"
+                                        className="pointer-events-none absolute right-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-30"
                                         style={{
                                             width: 220,
                                             background: "rgba(12, 4, 24, 0.96)",
