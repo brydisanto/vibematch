@@ -325,6 +325,53 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 5,
         order: 17,
     },
+    // ── Tier-find achievements — "find N pins of this tier total,
+    //    dupes count." Lifetime counters; rerolls don't regress them.
+    {
+        id: "found_cosmic_10",
+        category: "mastery",
+        icon: "🌠",
+        title: "Cosmic Frequency",
+        description: "Find 10+ Cosmic pins (total)",
+        capsules: 4,
+        order: 17.1,
+    },
+    {
+        id: "found_special_25",
+        category: "mastery",
+        icon: "🎯",
+        title: "Special Operations",
+        description: "Find 25+ Strategic Special pins (total)",
+        capsules: 3,
+        order: 17.15,
+    },
+    {
+        id: "found_legendary_50",
+        category: "mastery",
+        icon: "👑",
+        title: "Legend in the Making",
+        description: "Find 50+ Legendary pins (total)",
+        capsules: 3,
+        order: 17.2,
+    },
+    {
+        id: "found_rare_100",
+        category: "mastery",
+        icon: "🗝️",
+        title: "Rare Hoard",
+        description: "Find 100+ Rare pins (total)",
+        capsules: 2,
+        order: 17.25,
+    },
+    {
+        id: "found_common_200",
+        category: "mastery",
+        icon: "🏷️",
+        title: "Common Currency",
+        description: "Find 200+ Common pins (total)",
+        capsules: 2,
+        order: 17.3,
+    },
     {
         id: "bombs_5",
         category: "mastery",
@@ -375,7 +422,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "💫",
         title: "Diamond Hands",
-        description: "Score 75,000+ in a single game",
+        description: "Score 69,000+ in a single game",
         capsules: 2,
         order: 19,
     },
@@ -383,8 +430,8 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         id: "score_100k",
         category: "mastery",
         icon: "🌟",
-        title: "Century Club",
-        description: "Score 100,000+ in a single game",
+        title: "Hall of Vibes",
+        description: "Score 85,000+ in a single game",
         capsules: 3,
         order: 20,
     },
@@ -574,6 +621,11 @@ export function getQuestProgressList(ctx: PlayerContext): QuestProgress[] {
         { id: "all_legendary", current: ctx.legendaryPinCount, target: 19 },
         { id: "all_special", current: ctx.specialPinCount, target: 9 },
         { id: "all_cosmic", current: ctx.cosmicPinCount, target: 3 },
+        { id: "found_common_200", current: ctx.totalFoundCommon, target: 200 },
+        { id: "found_rare_100", current: ctx.totalFoundRare, target: 100 },
+        { id: "found_special_25", current: ctx.totalFoundSpecial, target: 25 },
+        { id: "found_legendary_50", current: ctx.totalFoundLegendary, target: 50 },
+        { id: "found_cosmic_10", current: ctx.totalFoundCosmic, target: 10 },
         { id: "streak_3", current: ctx.streak, target: 3 },
         { id: "streak_7", current: ctx.streak, target: 7 },
         { id: "streak_30", current: ctx.streak, target: 30 },
@@ -642,6 +694,15 @@ export interface PlayerContext {
     specialPinCount: number;  // unique special pins collected
     legendaryPinCount: number; // unique legendary pins collected
     cosmicPinCount: number;   // unique cosmic pins collected
+    /** Lifetime per-tier pin finds (duplicates included, never
+     *  decremented on reroll). Drives the "Find N X-tier pins"
+     *  achievement set. Sourced from pinbook.totalFoundByTier with a
+     *  fallback backfill from current held counts on legacy accounts. */
+    totalFoundCommon: number;
+    totalFoundRare: number;
+    totalFoundSpecial: number;
+    totalFoundLegendary: number;
+    totalFoundCosmic: number;
     hasSpecialPin: boolean;
     referralCount: number;
     gamesPlayedToday: number;
@@ -706,13 +767,18 @@ export function checkAchievements(
     check("all_special", context.specialPinCount >= 9);
     check("all_legendary", context.legendaryPinCount >= 19);
     check("all_cosmic", context.cosmicPinCount >= 3);
+    check("found_common_200", context.totalFoundCommon >= 200);
+    check("found_rare_100", context.totalFoundRare >= 100);
+    check("found_special_25", context.totalFoundSpecial >= 25);
+    check("found_legendary_50", context.totalFoundLegendary >= 50);
+    check("found_cosmic_10", context.totalFoundCosmic >= 10);
     check("bombs_5", stats.bombsCreated >= 5);
     check("cascades_15", stats.totalCascades >= 15);
     check("cascades_30", stats.totalCascades >= 30);
     check("cascades_45", stats.totalCascades >= 45);
     check("score_50k", stats.score >= 50000);
-    check("score_75k", stats.score >= 75000);
-    check("score_100k", stats.score >= 100000);
+    check("score_75k", stats.score >= 69000);
+    check("score_100k", stats.score >= 85000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
@@ -777,6 +843,11 @@ export function checkRetroactiveAchievements(
     check("all_special", context.specialPinCount >= 9);
     check("all_legendary", context.legendaryPinCount >= 19);
     check("all_cosmic", context.cosmicPinCount >= 3);
+    check("found_common_200", context.totalFoundCommon >= 200);
+    check("found_rare_100", context.totalFoundRare >= 100);
+    check("found_special_25", context.totalFoundSpecial >= 25);
+    check("found_legendary_50", context.totalFoundLegendary >= 50);
+    check("found_cosmic_10", context.totalFoundCosmic >= 10);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     check("refer_1", context.referralCount >= 1);

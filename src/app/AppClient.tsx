@@ -179,6 +179,7 @@ export default function AppClient() {
       };
       const ctx = buildPlayerContext(pinBook.state.pins, {
         totalPinsOpened: pinBook.state.totalOpened,
+        totalFoundByTier: pinBook.state.totalFoundByTier,
         hasUploadedAvatar:
           !!userProfile?.avatarUrl || !!flags.avatarUploaded,
         hasChangedMusic:
@@ -303,6 +304,7 @@ export default function AppClient() {
       };
       const playerCtx = buildPlayerContext(pinBook.state.pins, {
         totalPinsOpened: pinBook.state.totalOpened,
+        totalFoundByTier: pinBook.state.totalFoundByTier,
         hasUploadedAvatar: !!userProfile?.avatarUrl,
         hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
         hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
@@ -997,6 +999,7 @@ export default function AppClient() {
             if (userProfile?.username) {
               const ctx = buildPlayerContext(pinBook.state.pins, {
                 totalPinsOpened: pinBook.state.totalOpened,
+                totalFoundByTier: pinBook.state.totalFoundByTier,
                 hasUploadedAvatar: !!userProfile?.avatarUrl,
                 hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,

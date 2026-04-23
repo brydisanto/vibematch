@@ -99,7 +99,7 @@ export async function POST(req: Request) {
 
         const [achData, pinData] = await Promise.all([
             kv.get(achKey) as Promise<AchievementsData | null>,
-            kv.get(pinKey) as Promise<{ pins: Record<string, unknown>; capsules: number; totalOpened: number; totalEarned: number } | null>,
+            kv.get(pinKey) as Promise<{ pins: Record<string, unknown>; capsules: number; totalOpened: number; totalEarned: number; totalFoundByTier?: Record<string, number> } | null>,
         ]);
 
         const achievements = achData || emptyAchievements();
@@ -108,6 +108,7 @@ export async function POST(req: Request) {
             capsules: number;
             totalOpened: number;
             totalEarned: number;
+            totalFoundByTier?: Partial<Record<import('@/lib/badges').BadgeTier, number>>;
         };
 
         // Load engagement signals that aren't part of the pinbook blob:
@@ -134,6 +135,7 @@ export async function POST(req: Request) {
         // Build authoritative PlayerContext from stored pinbook state
         const ctx = buildPlayerContext(pinbook.pins, {
             totalPinsOpened: pinbook.totalOpened,
+            totalFoundByTier: pinbook.totalFoundByTier,
             hasUploadedAvatar,
             hasChangedMusic,
             hasPurchasedPrizeGame,

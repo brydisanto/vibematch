@@ -26,6 +26,13 @@ export interface PinBookData {
     capsules: number; // unopened
     totalOpened: number;
     totalEarned: number;
+    /** Lifetime pins discovered per tier — INCREMENT ONLY. Incremented
+     *  in the `collect` action when a pin drops (even duplicates).
+     *  Never decremented on reroll, so tier-find achievements stay
+     *  sticky regardless of subsequent burn flows. Backfilled from the
+     *  current held count when we first encounter a legacy pinbook
+     *  that doesn't have this field yet. */
+    totalFoundByTier?: Partial<Record<BadgeTier, number>>;
 }
 
 interface DailyTracker {
@@ -61,7 +68,27 @@ async function incrementClassicPlays(username: string): Promise<DailyTracker> {
 }
 
 function emptyPinBook(): PinBookData {
-    return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0 };
+    return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0, totalFoundByTier: {} };
+}
+
+/**
+ * Ensure `totalFoundByTier` is populated on a pinbook. Legacy pinbooks
+ * pre-dating the tier-find achievements don't have this field — backfill
+ * from their current held pin counts so they don't start from zero. Only
+ * runs once per pinbook (idempotent — subsequent calls see a non-null
+ * map and leave it alone).
+ */
+function ensureTotalFoundByTier(data: PinBookData): Required<Pick<PinBookData, 'totalFoundByTier'>>['totalFoundByTier'] {
+    if (data.totalFoundByTier) return data.totalFoundByTier;
+    const seeded: Partial<Record<BadgeTier, number>> = {};
+    const tierOf = new Map(BADGES.map(b => [b.id, b.tier]));
+    for (const [badgeId, entry] of Object.entries(data.pins || {})) {
+        const t = tierOf.get(badgeId);
+        if (!t) continue;
+        seeded[t] = (seeded[t] || 0) + (entry?.count || 0);
+    }
+    data.totalFoundByTier = seeded;
+    return seeded;
 }
 
 // Per-user lock backed by KV (works across serverless instances).
@@ -543,6 +570,12 @@ export async function POST(req: Request) {
             } else {
                 data.pins[badgeId] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
             }
+
+            // Lifetime per-tier pin counter — increments on every pull
+            // (including duplicates), never decremented on reroll. Drives
+            // the "Find N Cosmic/Special/etc. pins" achievement set.
+            const tierFound = ensureTotalFoundByTier(data);
+            tierFound[badgeDef.tier] = (tierFound[badgeDef.tier] || 0) + 1;
 
             await kv.set(key, data);
 

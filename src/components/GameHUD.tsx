@@ -227,28 +227,6 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     return (
         <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-hidden">
 
-            {/* Extra-play indicator — small orange pill that floats above
-                the HUD content whenever the current match is beyond the
-                daily prize cap. Keeps the player aware that this run
-                isn't saving or earning anything. */}
-            {isExtraPlay && (
-                <div
-                    className="absolute left-1/2 -translate-x-1/2 top-0 z-[55] px-2.5 py-1 rounded-full flex items-center gap-1.5 pointer-events-none"
-                    style={{
-                        background: "rgba(255, 149, 0, 0.18)",
-                        border: "1px solid rgba(255, 149, 0, 0.6)",
-                        boxShadow: "0 0 14px rgba(255, 149, 0, 0.35)",
-                    }}
-                >
-                    <span
-                        className="font-display font-black text-[9px] tracking-[0.22em] uppercase"
-                        style={{ color: "#FFB547" }}
-                    >
-                        Extra Play · No Leaderboard
-                    </span>
-                </div>
-            )}
-
             {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
                 <div

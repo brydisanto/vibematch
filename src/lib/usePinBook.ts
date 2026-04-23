@@ -10,6 +10,10 @@ export interface PinBookState {
     totalEarned: number;
     classicPlays: number;
     bonusPrizeGames: number;
+    /** Lifetime per-tier pin finds. Undefined for legacy pinbooks; the
+     *  server backfills from held counts on first mutation, and
+     *  buildPlayerContext falls back to the same derivation client-side. */
+    totalFoundByTier?: Partial<Record<BadgeTier, number>>;
     loaded: boolean;
 }
 
