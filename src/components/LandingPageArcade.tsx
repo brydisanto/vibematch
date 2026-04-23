@@ -104,6 +104,7 @@ interface VibingPlayer {
 
 interface DailyStats {
     yourBest: number | null;
+    topScore: number | null;
     totalPlayers: number;
     yourRank: number | null;
 }
@@ -140,7 +141,7 @@ export default function LandingPageArcade({
     const [scoreRank, setScoreRank] = useState<number | null>(null);
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
     const [vibingPlayers, setVibingPlayers] = useState<VibingPlayer[]>([]);
-    const [dailyStats, setDailyStats] = useState<DailyStats>({ yourBest: null, totalPlayers: 0, yourRank: null });
+    const [dailyStats, setDailyStats] = useState<DailyStats>({ yourBest: null, topScore: null, totalPlayers: 0, yourRank: null });
     const [playedDaily, setPlayedDaily] = useState<boolean>(false);
     // Stable random seed per mount — drives the QUESTS rotation so the
     // player sees a different 3-quest slice each visit without them
@@ -287,8 +288,14 @@ export default function LandingPageArcade({
                 .then(r => r.json())
                 .then(data => {
                     if (cancelled) return;
+                    // Leaderboard is ordered rev by score, so entry 0 is
+                    // the day's top score (or null if no plays yet).
+                    const top = Array.isArray(data.leaderboard) && data.leaderboard.length > 0
+                        ? Number(data.leaderboard[0]?.score) || null
+                        : null;
                     setDailyStats({
                         yourBest: typeof data.personalBest === "number" && data.personalBest > 0 ? data.personalBest : null,
+                        topScore: top && top > 0 ? top : null,
                         totalPlayers: typeof data.totalPlayers === "number" ? data.totalPlayers : 0,
                         yourRank: typeof data.userRank === "number" ? data.userRank : null,
                     });
@@ -1313,34 +1320,37 @@ export default function LandingPageArcade({
                                         style={{ background: `linear-gradient(180deg, ${COSMIC}18, transparent)` }}
                                     />
 
-                                    {/* Stats row — beat %, your best */}
-                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                    {/* Stats row — beat %, your score today,
+                                        day's top score. Three columns so the
+                                        tiles stay narrow but still readable
+                                        inside the 300px rail. */}
+                                    <div className="grid grid-cols-3 gap-1.5 mb-3">
                                         <div
-                                            className="rounded-lg px-2 py-2 text-center"
+                                            className="rounded-lg px-1.5 py-2 text-center"
                                             style={{
                                                 background: "rgba(255,255,255,0.04)",
                                                 border: `1px solid ${COSMIC}33`,
                                             }}
                                         >
                                             <div
-                                                className="font-display font-black text-[16px] tabular-nums leading-none"
+                                                className="font-display font-black text-[14px] tabular-nums leading-none"
                                                 style={{ color: COSMIC }}
                                             >
                                                 {dailyBeatPct !== null ? `${dailyBeatPct}%` : "—"}
                                             </div>
-                                            <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${COSMIC}cc` }}>
+                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${COSMIC}cc` }}>
                                                 BEAT TODAY
                                             </div>
                                         </div>
                                         <div
-                                            className="rounded-lg px-2 py-2 text-center"
+                                            className="rounded-lg px-1.5 py-2 text-center"
                                             style={{
                                                 background: "rgba(255,255,255,0.04)",
                                                 border: `1px solid ${GOLD}33`,
                                             }}
                                         >
                                             <div
-                                                className="font-display font-black text-[16px] tabular-nums leading-none"
+                                                className="font-display font-black text-[14px] tabular-nums leading-none"
                                                 style={{ color: GOLD }}
                                             >
                                                 {dailyStats.yourBest !== null
@@ -1349,8 +1359,29 @@ export default function LandingPageArcade({
                                                         : String(dailyStats.yourBest)
                                                     : "—"}
                                             </div>
-                                            <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${GOLD}cc` }}>
-                                                YOUR BEST
+                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${GOLD}cc` }}>
+                                                YOUR SCORE
+                                            </div>
+                                        </div>
+                                        <div
+                                            className="rounded-lg px-1.5 py-2 text-center"
+                                            style={{
+                                                background: "rgba(255,255,255,0.04)",
+                                                border: `1px solid ${ORANGE}33`,
+                                            }}
+                                        >
+                                            <div
+                                                className="font-display font-black text-[14px] tabular-nums leading-none"
+                                                style={{ color: ORANGE }}
+                                            >
+                                                {dailyStats.topScore !== null
+                                                    ? dailyStats.topScore >= 1000
+                                                        ? `${Math.round(dailyStats.topScore / 1000)}K`
+                                                        : String(dailyStats.topScore)
+                                                    : "—"}
+                                            </div>
+                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${ORANGE}cc` }}>
+                                                TOP SCORE
                                             </div>
                                         </div>
                                     </div>
