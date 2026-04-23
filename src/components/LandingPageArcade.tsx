@@ -133,6 +133,7 @@ export default function LandingPageArcade({
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [totalPlayers, setTotalPlayers] = useState<number>(0);
     const [pinRank, setPinRank] = useState<number | null>(null);
+    const [scoreRank, setScoreRank] = useState<number | null>(null);
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
     const [vibingPlayers, setVibingPlayers] = useState<VibingPlayer[]>([]);
     const [dailyStats, setDailyStats] = useState<DailyStats>({ yourBest: null, totalPlayers: 0, yourRank: null });
@@ -246,14 +247,15 @@ export default function LandingPageArcade({
             .catch(() => { /* silent */ });
     }, [username]);
 
-    // Classic leaderboard fetch — personal best only. Total players
-    // (marquee count) now comes from /api/players-vibing so the count
-    // matches the avatar stack.
+    // Classic leaderboard fetch — personal best + all-time score rank.
+    // Total players (marquee count) now comes from /api/players-vibing
+    // so the count matches the avatar stack.
     useEffect(() => {
         fetch(`/api/scores?mode=classic&username=${encodeURIComponent(username)}`)
             .then(r => r.json())
             .then(data => {
                 if (typeof data.personalBest === "number") setPersonalBest(data.personalBest);
+                if (typeof data.userRank === "number") setScoreRank(data.userRank);
             })
             .catch(() => { /* silent */ });
     }, [username]);
@@ -385,7 +387,7 @@ export default function LandingPageArcade({
 
                     {/* ======== LEFT PANEL ======== */}
                     <div
-                        className="relative shrink-0 flex flex-col justify-center"
+                        className="relative shrink-0 flex flex-col"
                         style={{
                             width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
@@ -647,7 +649,7 @@ export default function LandingPageArcade({
                             Empty state (everything done or rail hasn't
                             loaded yet) falls back to a compact teaser. */}
                         <div
-                            className="relative flex flex-col px-5 py-5"
+                            className="flex-1 relative flex flex-col px-5 py-5"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${COSMIC}20, transparent 60%)` }}
                         >
                             <div className="flex items-center justify-between mb-1.5">
@@ -1075,7 +1077,7 @@ export default function LandingPageArcade({
 
                     {/* ======== RIGHT PANEL ======== */}
                     <div
-                        className="relative shrink-0 flex flex-col justify-center"
+                        className="relative shrink-0 flex flex-col"
                         style={{
                             width: 300,
                             background: "linear-gradient(180deg, #2D0B4E 0%, #180630 100%)",
@@ -1153,7 +1155,9 @@ export default function LandingPageArcade({
                                         {username}
                                     </div>
 
-                                    {/* Tier / rank pill — compact size. */}
+                                    {/* Tier pill — simplified to just the
+                                        tier label; rank metrics live in
+                                        their own boxes below. */}
                                     <div
                                         className="rounded-full px-2.5 py-1 flex items-center"
                                         style={{
@@ -1166,16 +1170,56 @@ export default function LandingPageArcade({
                                             style={{ color: tier.color }}
                                         >
                                             TIER: {tier.label}
-                                            {pinRank !== null ? ` · RANK #${pinRank}` : ""}
                                         </span>
                                     </div>
                                 </div>
                             </button>
 
+                            {/* Rank row — PIN RANK (from pin leaderboard)
+                                and SCORE RANK (from classic all-time
+                                leaderboard). Both fall back to "—" when
+                                the player isn't ranked yet. */}
+                            <div className="grid grid-cols-2 gap-1.5 w-full mt-3">
+                                <div
+                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${COSMIC}1A, ${COSMIC}08)`,
+                                        border: `1px solid ${COSMIC}44`,
+                                    }}
+                                >
+                                    <div
+                                        className="font-display font-black text-[15px] tabular-nums leading-none"
+                                        style={{ color: COSMIC }}
+                                    >
+                                        {pinRank !== null ? `#${pinRank}` : "—"}
+                                    </div>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${COSMIC}cc` }}>
+                                        PIN RANK
+                                    </div>
+                                </div>
+                                <div
+                                    className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${PINK}1A, ${PINK}08)`,
+                                        border: `1px solid ${PINK}44`,
+                                    }}
+                                >
+                                    <div
+                                        className="font-display font-black text-[15px] tabular-nums leading-none"
+                                        style={{ color: PINK }}
+                                    >
+                                        {scoreRank !== null ? `#${scoreRank}` : "—"}
+                                    </div>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1" style={{ color: `${PINK}cc` }}>
+                                        SCORE RANK
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Stats row — compact DAY STREAK and BEST
                                 SCORE blocks. Outside the profile button so
                                 hover state stays clean. */}
-                            <div className="grid grid-cols-2 gap-1.5 w-full mt-3">
+                            <div className="grid grid-cols-2 gap-1.5 w-full mt-1.5">
                                 <div
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
                                     style={{
@@ -1231,11 +1275,13 @@ export default function LandingPageArcade({
                                 DAILY CHALLENGE
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={() => { if (!playedDaily) onStartGame("daily", username, avatarUrl); }}
-                                disabled={playedDaily}
-                                className="w-full rounded-2xl p-[2px] text-left transition-all duration-200 ease-out enabled:cursor-pointer enabled:hover:-translate-y-[2px] enabled:hover:brightness-[1.08] disabled:cursor-default disabled:opacity-90"
+                            {/* Card wrapper is a <div> not a <button> —
+                                the ChunkyButtons inside are the real
+                                clickable elements, avoiding nested-button
+                                HTML invalidity that was breaking the
+                                VIEW LEADERS click handler. */}
+                            <div
+                                className="w-full rounded-2xl p-[2px]"
                                 style={{
                                     background: `linear-gradient(180deg, #D8A0FF 0%, ${COSMIC} 40%, ${COSMIC_DEEP} 100%)`,
                                     boxShadow: `0 4px 0 #4A1A80, 0 8px 18px rgba(0,0,0,0.55), 0 0 28px ${COSMIC}22`,
@@ -1299,13 +1345,9 @@ export default function LandingPageArcade({
                                     </p>
 
                                     <div className="flex flex-col items-center gap-2">
-                                        {/* Primary CTA only renders while
-                                            the user hasn't played today.
-                                            Once played, the "come back
-                                            tomorrow" block is dropped and
-                                            VIEW LEADERS stands alone. */}
                                         {!playedDaily && (
                                             <ChunkyButton
+                                                onClick={() => onStartGame("daily", username, avatarUrl)}
                                                 color={COSMIC}
                                                 deep={COSMIC_DEEP}
                                                 text="#fff"
@@ -1320,42 +1362,33 @@ export default function LandingPageArcade({
                                             </ChunkyButton>
                                         )}
 
-                                        {/* VIEW LEADERS — pill. Opens the
-                                            leaderboard modal on the Daily
-                                            tab. stopPropagation prevents
-                                            the outer daily-start button
-                                            from also firing when the card
-                                            is still tappable. */}
-                                        <span
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setLeaderboardTab("daily");
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter" || e.key === " ") {
-                                                    e.stopPropagation();
-                                                    setLeaderboardTab("daily");
-                                                }
-                                            }}
-                                            className="rounded-full px-3.5 py-1.5 text-[9px] font-display font-black tracking-[0.22em] cursor-pointer transition-all hover:brightness-125"
+                                        {/* VIEW LEADERS — filled purple
+                                            ChunkyButton styled to mirror
+                                            the REROLL button in the left
+                                            rail. Opens the leaderboard
+                                            modal on the Daily tab. */}
+                                        <ChunkyButton
+                                            onClick={() => setLeaderboardTab("daily")}
+                                            color={COSMIC}
+                                            deep={COSMIC_DEEP}
+                                            text="#fff"
                                             style={{
-                                                color: COSMIC,
-                                                border: `1px solid ${COSMIC}55`,
-                                                background: `${COSMIC}14`,
+                                                padding: "6px 14px",
+                                                fontSize: 10,
+                                                fontWeight: 900,
+                                                letterSpacing: "0.18em",
                                             }}
                                         >
-                                            VIEW LEADERS →
-                                        </span>
+                                            VIEW LEADERS
+                                        </ChunkyButton>
                                     </div>
                                 </div>
-                            </button>
+                            </div>
                         </div>
 
                         {/* Recent Runs */}
                         <div
-                            className="relative flex flex-col items-stretch justify-start px-5 py-6"
+                            className="flex-1 relative flex flex-col items-stretch justify-start px-5 py-6"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${GOLD}14, transparent 60%)` }}
                         >
                             <div className="font-display text-[10px] tracking-[0.3em] mb-3 self-start" style={{ color: GOLD }}>
