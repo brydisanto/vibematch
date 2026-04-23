@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const BONUS_CAPSULES = 3;
+const BONUS_CAPSULES = 10;
 
 interface PinBookLite {
     pins: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
@@ -15,7 +15,7 @@ interface PinBookLite {
 
 /**
  * Daily Champion bonus — the #1 player on each day's Daily Challenge leaderboard
- * gets +3 capsules credited the following day, once per day. This is separate
+ * gets +10 capsules credited the following day, once per day. This is separate
  * from the sticky `daily_champ` achievement (which still fires one-time at
  * capsules: 3 for your first-ever win) — champions keep earning recurring
  * capsules every day they repeat the #1 finish.

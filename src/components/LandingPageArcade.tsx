@@ -1290,8 +1290,66 @@ export default function LandingPageArcade({
                             className="px-5 pt-4 pb-4 border-b border-white/5"
                             style={{ background: `linear-gradient(180deg, ${COSMIC}14 0%, transparent 100%)` }}
                         >
-                            <div className="font-display text-[10px] tracking-[0.3em] mb-2.5" style={{ color: COSMIC }}>
-                                DAILY CHALLENGE
+                            <div className="flex items-center gap-2 mb-2.5">
+                                <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: COSMIC }}>
+                                    DAILY CHALLENGE
+                                </div>
+                                {/* 10× Pin Capsule prize indicator. Tap /
+                                    hover reveals an explainer tooltip with
+                                    the SPECIAL PRIZE copy. Positioned next
+                                    to the header so it reads as "here's
+                                    what you're competing for". */}
+                                <div className="relative group">
+                                    <div
+                                        className="flex items-center gap-1 rounded-full pl-1 pr-1.5 py-[2px] cursor-help transition-all hover:brightness-125"
+                                        style={{
+                                            background: `linear-gradient(180deg, ${GOLD}44, ${GOLD_DEEP}33)`,
+                                            border: `1px solid ${GOLD}88`,
+                                            boxShadow: `0 0 10px ${GOLD}33`,
+                                        }}
+                                        tabIndex={0}
+                                    >
+                                        <Image
+                                            src="/badges/any_gvc_1759173799963.webp"
+                                            alt=""
+                                            width={14}
+                                            height={14}
+                                            unoptimized
+                                            style={{
+                                                objectFit: "contain",
+                                                filter: `drop-shadow(0 0 4px ${GOLD}88)`,
+                                            }}
+                                        />
+                                        <span
+                                            className="font-display font-black text-[9px] tracking-[0.1em]"
+                                            style={{ color: GOLD }}
+                                        >
+                                            10×
+                                        </span>
+                                    </div>
+                                    {/* Hover explainer. Pops above the
+                                        badge so it doesn't push layout. */}
+                                    <div
+                                        className="pointer-events-none absolute left-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-30 whitespace-nowrap"
+                                        style={{
+                                            background: "rgba(12, 4, 24, 0.96)",
+                                            border: `1px solid ${GOLD}66`,
+                                            boxShadow: `0 6px 16px rgba(0,0,0,0.6), 0 0 14px ${GOLD}33`,
+                                            borderRadius: 8,
+                                            padding: "7px 10px",
+                                        }}
+                                    >
+                                        <div
+                                            className="font-display font-black text-[9px] tracking-[0.22em] uppercase"
+                                            style={{ color: GOLD }}
+                                        >
+                                            Special Prize
+                                        </div>
+                                        <div className="text-[11px] text-white/75 mt-0.5 leading-snug">
+                                            The #1 finisher each day wins 10 Pin Capsules!
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Card wrapper is a <div> not a <button> —
