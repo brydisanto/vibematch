@@ -543,6 +543,78 @@ export const ACHIEVEMENTS_BY_ID: Record<string, AchievementDef> = Object.fromEnt
     ALL_ACHIEVEMENTS.map(a => [a.id, a])
 );
 
+// ── Quest progress (for "closest to unlock" UI) ──────────────────────
+//
+// Progress table for achievements whose state can be derived from
+// PlayerContext alone (no mid-game stats). Each entry yields a
+// `{ current, target }` pair; percent = min(1, current/target). Used
+// by the desktop rail's QUESTS section to surface the 3 nearest
+// unlockable achievements so the list feels dynamic instead of static.
+//
+// Binary flags (tier_silver, upload_avatar, etc.) are intentionally
+// excluded because 0% / 100% makes them useless for "closest" ranking.
+
+export interface QuestProgress {
+    def: AchievementDef;
+    current: number;
+    target: number;
+    percent: number;   // 0–1
+}
+
+export function getQuestProgressList(ctx: PlayerContext): QuestProgress[] {
+    const bands: Array<{ id: string; current: number; target: number }> = [
+        { id: "pins_10", current: ctx.uniquePins, target: 10 },
+        { id: "pins_25", current: ctx.uniquePins, target: 25 },
+        { id: "pins_50", current: ctx.uniquePins, target: 50 },
+        { id: "pins_69", current: ctx.uniquePins, target: 69 },
+        { id: "pins_90", current: ctx.uniquePins, target: 90 },
+        { id: "pins_all", current: ctx.uniquePins, target: 101 },
+        { id: "all_common", current: ctx.commonPinCount, target: 19 },
+        { id: "all_rare", current: ctx.rarePinCount, target: 51 },
+        { id: "all_legendary", current: ctx.legendaryPinCount, target: 19 },
+        { id: "all_special", current: ctx.specialPinCount, target: 9 },
+        { id: "all_cosmic", current: ctx.cosmicPinCount, target: 3 },
+        { id: "streak_3", current: ctx.streak, target: 3 },
+        { id: "streak_7", current: ctx.streak, target: 7 },
+        { id: "streak_30", current: ctx.streak, target: 30 },
+        { id: "refer_1", current: ctx.referralCount, target: 1 },
+        { id: "refer_5", current: ctx.referralCount, target: 5 },
+        { id: "refer_10", current: ctx.referralCount, target: 10 },
+    ];
+    const out: QuestProgress[] = [];
+    for (const b of bands) {
+        const def = ACHIEVEMENTS_BY_ID[b.id];
+        if (!def) continue;
+        out.push({
+            def,
+            current: b.current,
+            target: b.target,
+            percent: b.target > 0 ? Math.min(1, b.current / b.target) : 0,
+        });
+    }
+    return out;
+}
+
+/**
+ * Returns the `n` progressable achievements closest to unlocking
+ * (highest percent < 1) that aren't already in `unlocked`. Ties broken
+ * by smaller absolute distance to target so a 9/10 pins quest ranks
+ * above a 45/51 rares quest.
+ */
+export function getTopQuestsNearUnlock(
+    ctx: PlayerContext,
+    unlocked: Set<string>,
+    n: number,
+): QuestProgress[] {
+    return getQuestProgressList(ctx)
+        .filter(q => !unlocked.has(q.def.id) && q.percent < 1)
+        .sort((a, b) => {
+            if (b.percent !== a.percent) return b.percent - a.percent;
+            return (a.target - a.current) - (b.target - b.current);
+        })
+        .slice(0, n);
+}
+
 // ── Client-side condition checking ───────────────────────────────────
 
 export interface GameEndStats {

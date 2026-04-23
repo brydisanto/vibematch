@@ -22,6 +22,7 @@ interface LandingPageProps {
     pinsCollected?: number;
     pins?: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
     questsCompleted?: number;
+    unlockedAchievementIds?: string[];
     referralCode?: string | null;
     userProfile?: { username: string; avatarUrl: string } | null;
 }
@@ -71,6 +72,7 @@ export default function LandingPage(props: LandingPageProps) {
                 pinsCollected={props.pinsCollected}
                 pins={props.pins}
                 questsCompleted={props.questsCompleted}
+                unlockedAchievementIds={props.unlockedAchievementIds}
                 userProfile={props.userProfile}
             />
         );
