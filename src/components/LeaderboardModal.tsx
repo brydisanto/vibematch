@@ -35,6 +35,10 @@ interface LeaderboardModalProps {
     onClose: () => void;
     currentUsername?: string;
     currentAvatarUrl?: string;
+    /** Initial tab when the modal opens. Defaults to "classic". Pass
+     *  "daily" when opening from the DAILY CHALLENGE rail so the user
+     *  lands on the relevant board. */
+    initialTab?: "classic" | "weekly" | "daily" | "pins";
 }
 
 type TabMode = "classic" | "weekly" | "daily" | "pins";
@@ -231,8 +235,8 @@ function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: Leaderboa
 
 // --- Main component ---
 
-export default function LeaderboardModal({ onClose, currentUsername, currentAvatarUrl }: LeaderboardModalProps) {
-    const [mode, setMode] = useState<TabMode>("classic");
+export default function LeaderboardModal({ onClose, currentUsername, currentAvatarUrl, initialTab = "classic" }: LeaderboardModalProps) {
+    const [mode, setMode] = useState<TabMode>(initialTab);
     const [cache, setCache] = useState<Record<string, {
         leaderboard: LeaderboardEntry[];
         userEntry: UserEntry | null;

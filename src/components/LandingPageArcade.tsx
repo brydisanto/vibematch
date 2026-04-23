@@ -125,7 +125,10 @@ export default function LandingPageArcade({
     userProfile,
 }: LandingPageArcadeProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
-    const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
+    // Leaderboard modal open-state doubles as its initial tab, so the
+    // Leaders nav button can open on "classic" while the DAILY CHALLENGE
+    // VIEW LEADERS CTA jumps straight to "daily".
+    const [leaderboardTab, setLeaderboardTab] = useState<"classic" | "daily" | null>(null);
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [totalPlayers, setTotalPlayers] = useState<number>(0);
@@ -213,9 +216,9 @@ export default function LandingPageArcade({
 
     // Recent pulls — sort by lastPulled desc so duplicate pulls also bubble
     // to the top, falling back to firstEarned for legacy entries that don't
-    // carry a lastPulled timestamp yet. Take top 8 so the rail can render a
-    // 2×4 grid of recent pins. `isNew` flags pins the player still only has
-    // one copy of so the tile renders a green NEW chip.
+    // carry a lastPulled timestamp yet. Take top 12 so the rail can render
+    // a 4×3 grid of recent pins. `isNew` flags pins the player still only
+    // has one copy of so the tile surfaces a green NEW indicator on hover.
     const recentPulls = useMemo(() => {
         return Object.entries(pins)
             .map(([id, data]) => {
@@ -232,7 +235,7 @@ export default function LandingPageArcade({
             })
             .filter((x): x is NonNullable<typeof x> => x !== null)
             .sort((a, b) => b.sortKey.localeCompare(a.sortKey))
-            .slice(0, 8);
+            .slice(0, 12);
     }, [pins]);
 
     // Streak fetch
@@ -403,7 +406,7 @@ export default function LandingPageArcade({
                                 }}
                             >
                                 <div
-                                    className="rounded-[14px] relative px-3 py-3 flex flex-col items-center text-center overflow-hidden"
+                                    className="rounded-[14px] relative p-4 flex flex-col items-center text-center overflow-hidden"
                                     style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
                                 >
                                     <div
@@ -411,20 +414,20 @@ export default function LandingPageArcade({
                                         style={{ background: `linear-gradient(180deg, ${GOLD}1f, transparent)` }}
                                     />
                                     <div
-                                        className="relative mb-1.5 rounded-full flex items-center justify-center"
+                                        className="relative mb-2 rounded-full flex items-center justify-center"
                                         style={{
-                                            width: 64,
-                                            height: 64,
+                                            width: 82,
+                                            height: 82,
                                             background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
-                                            boxShadow: `inset 0 -4px 7px ${GOLD_DEEP}, 0 3px 8px rgba(0,0,0,0.55), 0 0 18px ${GOLD}55`,
-                                            border: "2px solid #2A1A0A",
+                                            boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 24px ${GOLD}55`,
+                                            border: "3px solid #2A1A0A",
                                         }}
                                     >
                                         <span
                                             className="font-display font-black leading-none"
                                             style={{
                                                 color: "#1A0633",
-                                                fontSize: 30,
+                                                fontSize: 38,
                                                 textShadow: "0 2px 0 rgba(255,255,255,0.25)",
                                             }}
                                         >
@@ -432,23 +435,23 @@ export default function LandingPageArcade({
                                         </span>
                                     </div>
                                     <div
-                                        className="font-display font-black uppercase text-[12px] tracking-[0.12em]"
+                                        className="font-display font-black uppercase text-[13px] tracking-[0.12em]"
                                         style={{ color: GOLD }}
                                     >
                                         Capsule{capsuleCount === 1 ? "" : "s"} Ready
                                     </div>
-                                    <div className="text-[10px] text-white/55 mt-0.5 leading-snug">
+                                    <div className="text-[10px] text-white/55 mt-1 leading-snug">
                                         {capsuleCount > 0 ? "Rip 'em open to find Pins!" : "Score 15K+ to earn your first"}
                                     </div>
-                                    <div className="mt-2.5">
+                                    <div className="mt-3">
                                         <ChunkyButton
                                             color={GOLD}
                                             deep={GOLD_DEEP}
                                             text="#1A0E02"
                                             disabled={capsuleCount === 0}
                                             style={{
-                                                padding: "8px 18px",
-                                                fontSize: 10,
+                                                padding: "9px 22px",
+                                                fontSize: 11,
                                                 fontWeight: 900,
                                                 letterSpacing: "0.2em",
                                             }}
@@ -551,7 +554,7 @@ export default function LandingPageArcade({
                                 ))}
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
-                                {Array.from({ length: 8 }).map((_, i) => {
+                                {Array.from({ length: 12 }).map((_, i) => {
                                     const pin = recentPulls[i];
                                     if (!pin) {
                                         return (
@@ -571,8 +574,7 @@ export default function LandingPageArcade({
                                             key={pin.id}
                                             type="button"
                                             onClick={() => onOpenPinBook?.()}
-                                            title={pin.name}
-                                            className="aspect-square rounded-lg p-[1.5px] cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.12] relative"
+                                            className="group aspect-square rounded-lg p-[1.5px] cursor-pointer transition-all duration-200 ease-out hover:-translate-y-[2px] hover:brightness-[1.12] relative"
                                             style={{
                                                 background: `linear-gradient(180deg, ${meta.tint}aa, ${meta.tint}44)`,
                                                 boxShadow: `0 0 8px ${meta.tint}33`,
@@ -593,6 +595,44 @@ export default function LandingPageArcade({
                                                     }}
                                                 />
                                             )}
+                                            {/* Hover card — absolute, escapes
+                                                the tile so the full pin name
+                                                is readable. z-20 sits above
+                                                neighbor tiles. */}
+                                            <div
+                                                className="pointer-events-none absolute left-1/2 bottom-full mb-1.5 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap"
+                                                style={{
+                                                    background: "rgba(12, 4, 24, 0.96)",
+                                                    border: `1px solid ${meta.tint}66`,
+                                                    boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 12px ${meta.tint}33`,
+                                                    borderRadius: 8,
+                                                    padding: "6px 9px",
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-display text-[11px] font-black text-white leading-none">
+                                                        {pin.name}
+                                                    </span>
+                                                    {pin.isNew && (
+                                                        <span
+                                                            className="font-display text-[8px] font-black uppercase tracking-[0.15em] px-1.5 py-[2px] rounded-sm leading-none"
+                                                            style={{
+                                                                color: "#0A2E12",
+                                                                background: "#2EFF2E",
+                                                                boxShadow: "0 0 8px rgba(46,255,46,0.5)",
+                                                            }}
+                                                        >
+                                                            NEW
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className="text-[9px] font-bold tracking-[0.15em] uppercase mt-1"
+                                                    style={{ color: `${meta.tint}cc` }}
+                                                >
+                                                    {meta.label}
+                                                </div>
+                                            </div>
                                         </button>
                                     );
                                 })}
@@ -617,7 +657,7 @@ export default function LandingPageArcade({
                             style={{ background: `radial-gradient(circle at 50% 40%, ${COSMIC}20, transparent 60%)` }}
                         >
                             <div className="flex items-center justify-between mb-1.5">
-                                <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
+                                <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: COSMIC }}>
                                     QUESTS
                                 </div>
                                 <span
@@ -990,7 +1030,7 @@ export default function LandingPageArcade({
                                             { label: "Profile", onClick: () => setProfileOpen(true), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
                                             { label: "Pins", onClick: () => onOpenPinBook?.(), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>) },
                                             { label: "Quests", onClick: onOpenAchievements, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>) },
-                                            { label: "Leaders", onClick: () => setLeaderboardOpen(true), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>) },
+                                            { label: "Leaders", onClick: () => setLeaderboardTab("classic"), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>) },
                                             { label: "Rules", onClick: onShowInstructions, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>) },
                                         ].map(({ label, onClick, icon }) => (
                                             <button
@@ -1055,22 +1095,23 @@ export default function LandingPageArcade({
                                 className="relative w-full text-left cursor-pointer transition-all hover:opacity-90"
                             >
                                 <div className="relative flex flex-col items-center gap-3">
-                                    {/* Avatar — enlarged from 82→108. Same
-                                        halo + rotating ring treatment. */}
+                                    {/* Avatar — sized between the original
+                                        82 and the earlier 108 iteration for
+                                        a balanced hero presence. */}
                                     <div
                                         className="relative"
                                         style={{
-                                            width: 108,
-                                            height: 108,
+                                            width: 92,
+                                            height: 92,
                                             animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                         }}
                                     >
                                         <div
                                             className="absolute rounded-full pointer-events-none"
                                             style={{
-                                                inset: -22,
+                                                inset: -20,
                                                 background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
-                                                filter: "blur(7px)",
+                                                filter: "blur(6px)",
                                                 animation: "vmAvatarGlow 3.6s ease-in-out infinite",
                                             }}
                                         />
@@ -1079,7 +1120,7 @@ export default function LandingPageArcade({
                                             style={{
                                                 background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
                                                 animation: "vmProfileSpin 8s linear infinite",
-                                                padding: 3,
+                                                padding: 2,
                                             }}
                                         >
                                             <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
@@ -1087,7 +1128,7 @@ export default function LandingPageArcade({
                                         <div
                                             className="absolute rounded-full overflow-hidden flex items-center justify-center"
                                             style={{
-                                                inset: 5,
+                                                inset: 4,
                                                 background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
                                                 boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
                                             }}
@@ -1097,21 +1138,22 @@ export default function LandingPageArcade({
                                                     src={avatarUrl}
                                                     alt=""
                                                     fill
-                                                    sizes="98px"
+                                                    sizes="84px"
                                                     className="object-cover"
                                                 />
                                             ) : (
-                                                <div className="text-[48px] leading-none">🏄</div>
+                                                <div className="text-[42px] leading-none">🏄</div>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Username — enlarged from 19→24. */}
+                                    {/* Username — sized between original 19
+                                        and the earlier 24 iteration. */}
                                     <div
                                         className="font-display font-black text-white leading-none text-center"
                                         style={{
-                                            fontSize: 24,
-                                            textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 14px ${GOLD}55`,
+                                            fontSize: 21,
+                                            textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 12px ${GOLD}55`,
                                         }}
                                     >
                                         {username}
@@ -1259,9 +1301,7 @@ export default function LandingPageArcade({
                                     <p className="text-white/55 text-[11px] leading-snug text-center mb-3">
                                         {playedDaily
                                             ? "You've already played today."
-                                            : dailyStats.totalPlayers > 0
-                                                ? `${dailyStats.totalPlayers.toLocaleString()} player${dailyStats.totalPlayers === 1 ? "" : "s"} have taken a shot today.`
-                                                : "1 shot per day, same board for everyone."}
+                                            : "Highest score wins bonus Capsules!"}
                                     </p>
 
                                     <div className="flex justify-center">
@@ -1281,6 +1321,22 @@ export default function LandingPageArcade({
                                         </ChunkyButton>
                                     </div>
                                 </div>
+                            </button>
+
+                            {/* VIEW LEADERS — opens the leaderboard modal
+                                straight onto the Daily tab. Sits just
+                                below the hero card so it reads as a
+                                secondary action. */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLeaderboardTab("daily");
+                                }}
+                                className="mt-2.5 w-full text-[10px] font-display tracking-[0.25em] py-2 rounded-lg cursor-pointer transition-all hover:brightness-125"
+                                style={{ color: COSMIC, border: `1px solid ${COSMIC}44`, background: `${COSMIC}0a` }}
+                            >
+                                VIEW LEADERS →
                             </button>
                         </div>
 
@@ -1381,10 +1437,11 @@ export default function LandingPageArcade({
                     capsuleCount={capsuleCount}
                 />
             )}
-            {isLeaderboardOpen && (
+            {leaderboardTab && (
                 <LeaderboardModal
-                    onClose={() => setLeaderboardOpen(false)}
+                    onClose={() => setLeaderboardTab(null)}
                     currentUsername={username}
+                    initialTab={leaderboardTab}
                 />
             )}
         </>
