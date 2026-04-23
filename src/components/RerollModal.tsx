@@ -255,7 +255,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                     }}
                                                 >
                                                     <div>
-                                                        <div className="text-xs font-black uppercase tracking-wider" style={{ color: TIER_COLORS[tier] }}>
+                                                        <div className="font-display text-xs font-black uppercase tracking-wider" style={{ color: TIER_COLORS[tier] }}>
                                                             {TIER_DISPLAY_NAMES[tier]}
                                                         </div>
                                                         <div className="text-[11px] text-white/50 font-mundial mt-0.5">

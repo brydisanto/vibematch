@@ -17,6 +17,10 @@ interface GameOverProps {
     onRequestLogin?: () => void;
     capsuleEarned?: boolean;
     onOpenPinBook?: () => void;
+    /** Server-issued match token. When present, the score submission
+     *  includes it so the server can enforce the prize-eligibility
+     *  gate before writing to leaderboards. */
+    matchId?: string;
 }
 
 /* ===== STAR SVG GRADIENTS (rendered once) ===== */
@@ -551,11 +555,14 @@ function RankProgressBar({ score, rank }: { score: number; rank: typeof RANK_CON
     );
 }
 
-export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin, capsuleEarned, onOpenPinBook }: GameOverProps) {
+export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin, capsuleEarned, onOpenPinBook, matchId }: GameOverProps) {
     const { score, matchCount, maxCombo, totalCascades, gameMode, gameBadges, gameOverReason } = state;
     const rank = getRank(score);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
     const [isAllTimeHigh, setIsAllTimeHigh] = useState(false);
+    // Server returns leaderboardSkipped:true when the match was outside
+    // the prize cap. Drives the "extra play — not saved" banner below.
+    const [leaderboardSkipped, setLeaderboardSkipped] = useState(false);
 
     // Persist score to Vercel KV Cloud Database
     useEffect(() => {
@@ -566,11 +573,16 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                 body: JSON.stringify({
                     username: userProfile.username,
                     mode: gameMode,
-                    score: score
+                    score: score,
+                    matchId: matchId,
                 })
             })
                 .then(res => res.json())
                 .then(data => {
+                    if (data.leaderboardSkipped) {
+                        setLeaderboardSkipped(true);
+                        return;
+                    }
                     if (data.isNewAllTimeHigh) {
                         setIsAllTimeHigh(true);
                         setIsNewHighScore(true);
@@ -783,6 +795,50 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
 
                         {/* ===== RANK PROGRESS (hidden on new best) ===== */}
                         {!isNewHighScore && <RankProgressBar score={score} rank={rank} />}
+
+                        {/* ===== EXTRA PLAY NOTICE =====
+                            Classic matches played beyond the prize cap are
+                            "extra plays" — still tracked as games, but the
+                            score is not saved to the all-time or weekly
+                            leaderboards and no capsules are awarded. Give
+                            the player explicit feedback so they aren't
+                            left wondering why a big score didn't move
+                            their rank. */}
+                        {leaderboardSkipped && (
+                            <motion.div
+                                className="mx-auto max-w-[440px] rounded-xl px-4 py-3 mb-5 flex items-start gap-3"
+                                style={{
+                                    background: "rgba(255, 149, 0, 0.08)",
+                                    border: "1px solid rgba(255, 149, 0, 0.35)",
+                                }}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4, duration: 0.3 }}
+                            >
+                                <div
+                                    className="flex-shrink-0 rounded-full flex items-center justify-center font-display font-black text-[10px]"
+                                    style={{
+                                        width: 22,
+                                        height: 22,
+                                        background: "rgba(255, 149, 0, 0.25)",
+                                        color: "#FFB547",
+                                    }}
+                                >
+                                    !
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div
+                                        className="font-display font-black text-[11px] tracking-[0.2em] uppercase"
+                                        style={{ color: "#FFB547" }}
+                                    >
+                                        Extra Play
+                                    </div>
+                                    <div className="text-[12px] text-white/70 leading-snug mt-0.5">
+                                        This run was beyond your daily prize cap — score isn&apos;t saved to the leaderboard and no capsules were awarded.
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
 
                         {/* ===== STATS ROW ===== */}
                         <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">

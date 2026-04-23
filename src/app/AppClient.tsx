@@ -739,13 +739,13 @@ export default function AppClient() {
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
               <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
-                <GameHUD state={game.state} username={userProfile?.username} />
+                <GameHUD state={game.state} username={userProfile?.username} isExtraPlay={pinBook.currentMatchIsExtra} />
               </div>
 
               {/* Mobile HUD Top — Metrics only */}
               <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-1 order-first">
                 <div className="w-full">
-                  <GameHUD state={game.state} username={userProfile?.username} hideHighScores />
+                  <GameHUD state={game.state} username={userProfile?.username} hideHighScores isExtraPlay={pinBook.currentMatchIsExtra} />
                 </div>
               </div>
 
@@ -905,6 +905,7 @@ export default function AppClient() {
                   onRequestLogin={() => setShowSystemAuthModal(true)}
                   capsuleEarned={capsuleEarned}
                   onOpenPinBook={() => setShowPinBook(true)}
+                  matchId={pinBook.getActiveMatchId() ?? undefined}
                 />
               )}
             </AnimatePresence>

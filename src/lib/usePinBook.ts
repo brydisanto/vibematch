@@ -34,6 +34,10 @@ export function usePinBook() {
     });
     const [pendingReveal, setPendingReveal] = useState<CapsuleReveal | null>(null);
     const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+    // True when the current match was started outside the daily prize
+    // cap (capped OR abandoned-previous). Consumed by the HUD to flag
+    // "extra play — no leaderboard / no capsules" during gameplay.
+    const [currentMatchIsExtra, setCurrentMatchIsExtra] = useState<boolean>(false);
 
     const load = useCallback(async () => {
         try {
@@ -94,6 +98,12 @@ export function usePinBook() {
             if (data.matchId) {
                 activeMatchIdRef.current = data.matchId;
                 setActiveMatchId(data.matchId);
+                // Classic-only: flag the match as "extra" so the HUD can
+                // surface a practice banner. Daily matches never use the
+                // cap, so always eligible.
+                setCurrentMatchIsExtra(
+                    gameMode === 'classic' && (!!data.capped || !!data.abandonedPrevious)
+                );
                 console.log("[usePinBook] trackGame matchId:", data.matchId, "mode:", gameMode, "abandonedPrevious:", data.abandonedPrevious);
             } else {
                 console.warn("[usePinBook] trackGame response missing matchId:", data);
@@ -237,6 +247,7 @@ export function usePinBook() {
         pendingReveal,
         activeMatchId,
         getActiveMatchId,
+        currentMatchIsExtra,
         load,
         trackGame,
         logGame,

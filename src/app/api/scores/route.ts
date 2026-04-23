@@ -45,7 +45,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        const { mode, score } = await req.json();
+        const { mode, score, matchId } = await req.json();
 
         if (!mode || score === undefined) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -74,6 +74,37 @@ export async function POST(req: Request) {
 
         if (mode === 'classic') {
             const weeklyKey = `classic_weekly:${getMonday()}`;
+
+            // Prize eligibility gate: classic matches played outside the
+            // daily prize cap (or invalidated by the abandoned-match rule)
+            // are "extra plays". They still get a response for the client
+            // to display a score, but they don't write to the all-time or
+            // weekly leaderboards — extras aren't allowed to influence
+            // rankings, matching how they're already blocked from
+            // awarding capsules.
+            let leaderboardSkipped = false;
+            let skipReason: string | null = null;
+            if (matchId && typeof matchId === 'string') {
+                const matchKey = `pinbook:${username.toLowerCase()}:match:${matchId}`;
+                const match = await kv.get(matchKey) as { username?: string; prizeEligible?: boolean; abandonedPrevious?: boolean } | null;
+                if (match && match.username === username.toLowerCase() && match.prizeEligible === false) {
+                    leaderboardSkipped = true;
+                    skipReason = match.abandonedPrevious ? 'previous-match-abandoned' : 'daily-cap-exceeded';
+                }
+            }
+
+            if (leaderboardSkipped) {
+                // Still bump the matches-played counter for admin visibility,
+                // but never touch the leaderboard zsets.
+                await kv.hincrby('classic_matches_played', canonicalUsername.toLowerCase(), 1);
+                return NextResponse.json({
+                    success: true,
+                    isNewBest: false,
+                    isNewAllTimeHigh: false,
+                    leaderboardSkipped: true,
+                    skipReason,
+                });
+            }
 
             // Pipeline: fetch current scores in a single round trip
             const readPipe = kv.pipeline();
