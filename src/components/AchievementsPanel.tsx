@@ -7,7 +7,10 @@ import {
     JOURNEY_ACHIEVEMENTS,
     MASTERY_ACHIEVEMENTS,
     ALL_ACHIEVEMENTS,
+    getQuestProgressList,
     type AchievementDef,
+    type PlayerContext,
+    type QuestProgress,
 } from "@/lib/achievements";
 
 const ACHIEVEMENT_BADGE = "/badges/any_gvc_1759173799963.webp";
@@ -16,17 +19,31 @@ interface AchievementsPanelProps {
     isOpen: boolean;
     onClose: () => void;
     unlocked: Record<string, { unlockedAt: string }>;
+    /** When present, the panel surfaces a per-card progress bar for
+     *  quests whose state is computable from PlayerContext (pin
+     *  counts, streaks, tier-find counters, referrals). Binary quests
+     *  without a numeric target continue to show just locked/unlocked. */
+    playerContext?: PlayerContext;
 }
 
 type Tab = "journey" | "mastery";
 
-export default function AchievementsPanel({ isOpen, onClose, unlocked }: AchievementsPanelProps) {
+export default function AchievementsPanel({ isOpen, onClose, unlocked, playerContext }: AchievementsPanelProps) {
     const [activeTab, setActiveTab] = useState<Tab>("journey");
 
     const totalUnlocked = Object.keys(unlocked).length;
     const totalAchievements = ALL_ACHIEVEMENTS.length;
     const journeyUnlocked = JOURNEY_ACHIEVEMENTS.filter(a => unlocked[a.id]).length;
     const masteryUnlocked = MASTERY_ACHIEVEMENTS.filter(a => unlocked[a.id]).length;
+
+    // Build an id → progress map once when the context changes so each
+    // card can look up its own bar values without recomputing the list.
+    const progressById: Record<string, QuestProgress> = {};
+    if (playerContext) {
+        for (const q of getQuestProgressList(playerContext)) {
+            progressById[q.def.id] = q;
+        }
+    }
 
     const achievements = activeTab === "journey" ? JOURNEY_ACHIEVEMENTS : MASTERY_ACHIEVEMENTS;
 
@@ -121,6 +138,7 @@ export default function AchievementsPanel({ isOpen, onClose, unlocked }: Achieve
                                     key={a.id}
                                     achievement={a}
                                     state={getState(a)}
+                                    progress={progressById[a.id]}
                                 />
                             ))}
                         </div>
@@ -161,12 +179,20 @@ function TabButton({
 function AchievementCard({
     achievement,
     state,
+    progress,
 }: {
     achievement: AchievementDef;
     state: "completed" | "current" | "locked";
+    progress?: QuestProgress;
 }) {
     const isCompleted = state === "completed";
     const isLocked = state === "locked";
+    // Only show the progress bar for still-locked quests that have a
+    // derivable numeric target from PlayerContext. Completed quests
+    // don't need a bar; binary locked quests (first_bomb etc.) have
+    // no bar to show.
+    const showProgress = !isCompleted && progress && progress.target > 0;
+    const pct = progress ? Math.round(progress.percent * 100) : 0;
 
     return (
         <div
@@ -183,13 +209,13 @@ function AchievementCard({
                     : state === "current"
                     ? "1px solid rgba(179, 102, 255, 0.3)"
                     : "1px solid rgba(255, 255, 255, 0.05)",
-                opacity: isLocked ? 0.45 : 1,
+                opacity: isLocked && !showProgress ? 0.45 : 1,
             }}
         >
             {/* Icon */}
             <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
-                    isLocked ? "grayscale" : ""
+                    isLocked && !showProgress ? "grayscale" : ""
                 }`}
                 style={{
                     background: isCompleted
@@ -202,7 +228,7 @@ function AchievementCard({
                     alt=""
                     width={32}
                     height={32}
-                    className={`rounded-full object-cover ${isLocked ? "opacity-40" : ""}`}
+                    className={`rounded-full object-cover ${isLocked && !showProgress ? "opacity-40" : ""}`}
                 />
             </div>
 
@@ -221,6 +247,34 @@ function AchievementCard({
                 <div className="text-[#B399D4] text-xs leading-tight mt-0.5">
                     {achievement.description}
                 </div>
+                {showProgress && progress && (
+                    <div className="mt-1.5">
+                        <div className="flex items-baseline justify-between mb-1 gap-2">
+                            <span className="text-[10px] tabular-nums text-[#B399D4]">
+                                {progress.current}/{progress.target}
+                            </span>
+                            <span
+                                className="text-[10px] font-black tabular-nums"
+                                style={{ color: "#B366FF" }}
+                            >
+                                {pct}%
+                            </span>
+                        </div>
+                        <div
+                            className="relative h-1.5 rounded-full overflow-hidden"
+                            style={{ background: "rgba(255,255,255,0.08)" }}
+                        >
+                            <div
+                                className="absolute inset-y-0 left-0 rounded-full"
+                                style={{
+                                    width: `${pct}%`,
+                                    background: "linear-gradient(90deg, #B366FF, #D8A0FF)",
+                                    boxShadow: "0 0 6px rgba(179,102,255,0.55)",
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Reward / Status */}

@@ -75,6 +75,11 @@ export default function AppClient() {
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  // Cached streak + referral count from the retroactive-achievement
+  // useEffect so the AchievementsPanel can render accurate progress
+  // bars for streak / refer quests without re-fetching on open.
+  const [streakSnapshot, setStreakSnapshot] = useState(0);
+  const [referralSnapshot, setReferralSnapshot] = useState(0);
   const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const [prizeOnboarding, setPrizeOnboarding] = useState<null | { variant: "running-low" | "capped"; remaining: number }>(null);
   const [showReroll, setShowReroll] = useState(false);
@@ -191,6 +196,8 @@ export default function AppClient() {
       });
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
+      setStreakSnapshot(ctx.streak);
+      setReferralSnapshot(ctx.referralCount);
       const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
       if (ids.length > 0) {
         achievements.unlock(ids).then(unlockedIds => {
@@ -1060,11 +1067,25 @@ export default function AppClient() {
         onDismiss={achievements.dismissToast}
       />
 
-      {/* Achievements Panel */}
+      {/* Achievements Panel — build a PlayerContext from live pinbook
+          state plus the last-fetched streak/referral snapshots so each
+          card can render its own progress bar without extra fetches. */}
       <AchievementsPanel
         isOpen={showAchievements}
         onClose={() => setShowAchievements(false)}
         unlocked={achievements.state.unlocked}
+        playerContext={userProfile?.username ? (() => {
+          const ctx = buildPlayerContext(pinBook.state.pins, {
+            totalPinsOpened: pinBook.state.totalOpened,
+            totalFoundByTier: pinBook.state.totalFoundByTier,
+            hasUploadedAvatar: !!userProfile.avatarUrl,
+            hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+            hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+          });
+          ctx.streak = streakSnapshot;
+          ctx.referralCount = referralSnapshot;
+          return ctx;
+        })() : undefined}
       />
 
       {/* Global Auth Modal for Game Over Save Score */}
