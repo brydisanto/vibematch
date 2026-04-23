@@ -18,7 +18,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
-import { LogOut } from "lucide-react";
+import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
@@ -191,14 +191,9 @@ export default function LandingPageArcade({
         return getTierByCount(pinsCollected, totalBadges);
     }, [pinsCollected, totalBadges]);
 
-    // Daily challenge derived stat — "you beat X% of players" computed
-    // from (totalPlayers - rank) / totalPlayers. Shown only after the
-    // player has actually posted a score today.
-    const dailyBeatPct = useMemo(() => {
-        if (dailyStats.yourRank === null || dailyStats.totalPlayers < 2) return null;
-        const below = Math.max(0, dailyStats.totalPlayers - dailyStats.yourRank);
-        return Math.round((below / dailyStats.totalPlayers) * 100);
-    }, [dailyStats]);
+    // Current #1 on today's daily? Drives the champion crown pill +
+    // gold glow on the hero card.
+    const isDailyChamp = dailyStats.yourRank === 1;
 
     // Quest rotation — per the landing-v2 design, the rail surfaces 3
     // random quests each visit (refresh = new set). We seed a stable
@@ -1305,41 +1300,73 @@ export default function LandingPageArcade({
                                 HTML invalidity that was breaking the
                                 VIEW LEADERS click handler. */}
                             <div
-                                className="w-full rounded-2xl p-[2px]"
+                                className="w-full rounded-2xl p-[2px] relative"
                                 style={{
-                                    background: `linear-gradient(180deg, #D8A0FF 0%, ${COSMIC} 40%, ${COSMIC_DEEP} 100%)`,
-                                    boxShadow: `0 4px 0 #4A1A80, 0 8px 18px rgba(0,0,0,0.55), 0 0 28px ${COSMIC}22`,
+                                    background: isDailyChamp
+                                        ? `linear-gradient(180deg, #FFF4B0 0%, ${GOLD} 40%, ${GOLD_DEEP} 100%)`
+                                        : `linear-gradient(180deg, #D8A0FF 0%, ${COSMIC} 40%, ${COSMIC_DEEP} 100%)`,
+                                    boxShadow: isDailyChamp
+                                        ? `0 4px 0 ${GOLD_DEEP}, 0 8px 18px rgba(0,0,0,0.55), 0 0 32px ${GOLD}77`
+                                        : `0 4px 0 #4A1A80, 0 8px 18px rgba(0,0,0,0.55), 0 0 28px ${COSMIC}22`,
+                                    animation: isDailyChamp ? "vmDailyChampPulse 2.2s ease-in-out infinite" : undefined,
                                 }}
                             >
+                                {/* Champion pill — surfaces when the user
+                                    is currently #1 on today's daily. Floats
+                                    above the card with a gold crown so the
+                                    achievement is unmissable. */}
+                                {isDailyChamp && (
+                                    <div
+                                        className="absolute left-1/2 -translate-x-1/2 -top-2.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                                        style={{
+                                            background: `linear-gradient(180deg, #FFF4B0 0%, ${GOLD} 55%, ${GOLD_DEEP} 100%)`,
+                                            boxShadow: `0 2px 6px rgba(0,0,0,0.55), 0 0 14px ${GOLD}aa`,
+                                            border: "1px solid #FFF4B0",
+                                        }}
+                                    >
+                                        <Crown size={11} style={{ color: "#1A0E02" }} strokeWidth={2.5} />
+                                        <span
+                                            className="font-display font-black text-[9px] tracking-[0.22em] uppercase"
+                                            style={{ color: "#1A0E02" }}
+                                        >
+                                            #1 Today
+                                        </span>
+                                    </div>
+                                )}
                                 <div
                                     className="rounded-[14px] relative p-4 flex flex-col overflow-hidden"
                                     style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
                                 >
                                     <div
                                         className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
-                                        style={{ background: `linear-gradient(180deg, ${COSMIC}18, transparent)` }}
+                                        style={{
+                                            background: `linear-gradient(180deg, ${isDailyChamp ? `${GOLD}22` : `${COSMIC}18`}, transparent)`,
+                                        }}
                                     />
 
-                                    {/* Stats row — beat %, your score today,
-                                        day's top score. Three columns so the
-                                        tiles stay narrow but still readable
-                                        inside the 300px rail. */}
+                                    {/* Stats row — rank, your score, top score.
+                                        Three columns so the tiles stay narrow
+                                        but still readable inside the 300px rail. */}
                                     <div className="grid grid-cols-3 gap-1.5 mb-3">
                                         <div
                                             className="rounded-lg px-1.5 py-2 text-center"
                                             style={{
                                                 background: "rgba(255,255,255,0.04)",
-                                                border: `1px solid ${COSMIC}33`,
+                                                border: `1px solid ${isDailyChamp ? GOLD : COSMIC}44`,
+                                                boxShadow: isDailyChamp ? `inset 0 0 10px ${GOLD}33` : undefined,
                                             }}
                                         >
                                             <div
                                                 className="font-display font-black text-[14px] tabular-nums leading-none"
-                                                style={{ color: COSMIC }}
+                                                style={{ color: isDailyChamp ? GOLD : COSMIC }}
                                             >
-                                                {dailyBeatPct !== null ? `${dailyBeatPct}%` : "—"}
+                                                {dailyStats.yourRank !== null ? `#${dailyStats.yourRank}` : "—"}
                                             </div>
-                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${COSMIC}cc` }}>
-                                                BEAT TODAY
+                                            <div
+                                                className="font-display text-[8px] tracking-[0.12em] mt-1"
+                                                style={{ color: isDailyChamp ? `${GOLD}cc` : `${COSMIC}cc` }}
+                                            >
+                                                RANK TODAY
                                             </div>
                                         </div>
                                         <div
@@ -1516,6 +1543,10 @@ export default function LandingPageArcade({
                     @keyframes vmRestockPulse {
                         0%, 100% { box-shadow: 0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5), 0 0 14px ${RED}55; }
                         50% { box-shadow: 0 3px 0 ${accentDeep}, 0 5px 14px rgba(0,0,0,0.5), 0 0 28px ${RED}cc; }
+                    }
+                    @keyframes vmDailyChampPulse {
+                        0%, 100% { box-shadow: 0 4px 0 ${GOLD_DEEP}, 0 8px 18px rgba(0,0,0,0.55), 0 0 28px ${GOLD}77; }
+                        50% { box-shadow: 0 4px 0 ${GOLD_DEEP}, 0 8px 18px rgba(0,0,0,0.55), 0 0 48px ${GOLD}cc; }
                     }
                 `}</style>
             </div>
