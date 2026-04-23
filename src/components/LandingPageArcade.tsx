@@ -26,6 +26,7 @@ import { buildPlayerContext } from "@/lib/playerContext";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
+import TierInfoModal from "./TierInfoModal";
 import { ChunkyButton, FloatingBadges } from "./arcade";
 import {
     GOLD,
@@ -127,6 +128,7 @@ export default function LandingPageArcade({
     userProfile,
 }: LandingPageArcadeProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
+    const [isTierInfoOpen, setTierInfoOpen] = useState(false);
     // Leaderboard modal open-state doubles as its initial tab, so the
     // Leaders nav button can open on "classic" while the DAILY CHALLENGE
     // VIEW LEADERS CTA jumps straight to "daily".
@@ -1159,9 +1161,22 @@ export default function LandingPageArcade({
 
                                     {/* Tier pill — simplified to just the
                                         tier label; rank metrics live in
-                                        their own boxes below. */}
-                                    <div
-                                        className="rounded-full px-2.5 py-1 flex items-center"
+                                        their own boxes below. Tap to
+                                        open the tier-threshold modal. */}
+                                    <span
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setTierInfoOpen(true);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.stopPropagation();
+                                                setTierInfoOpen(true);
+                                            }
+                                        }}
+                                        className="rounded-full px-2.5 py-1 flex items-center cursor-pointer transition-all hover:brightness-125"
                                         style={{
                                             background: `linear-gradient(180deg, ${tier.color}33, ${tier.accent}44)`,
                                             border: `1px solid ${tier.color}55`,
@@ -1173,7 +1188,7 @@ export default function LandingPageArcade({
                                         >
                                             TIER: {tier.label}
                                         </span>
-                                    </div>
+                                    </span>
                                 </div>
                             </button>
 
@@ -1492,6 +1507,12 @@ export default function LandingPageArcade({
                     initialTab={leaderboardTab}
                 />
             )}
+            <TierInfoModal
+                isOpen={isTierInfoOpen}
+                onClose={() => setTierInfoOpen(false)}
+                currentTierId={tier.id}
+                pinsCollected={pinsCollected}
+            />
         </>
     );
 }
