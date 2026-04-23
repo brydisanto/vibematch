@@ -469,6 +469,15 @@ export default function AppClient() {
     // Crucial for iOS/Safari: MUST interact with AudioContext during a direct click/tap event
     unlockAudio();
 
+    // If the previous game's end flow is still running (logGame clears the
+    // activeMatch pointer on completion), wait for it. Otherwise a rapid
+    // HOME→PLAY can race trackGame before the old match is marked logged,
+    // tripping the abandonedPrevious anti-abuse rule on the new match and
+    // silently killing its prize eligibility.
+    if (gameEndPromiseRef.current) {
+      await gameEndPromiseRef.current.catch(() => {});
+    }
+
     // Issue match token at game START. For daily, the server atomically sets
     // the daily_played marker here — if it's already set (e.g. user refreshed
     // mid-daily), the server rejects and we route back to landing.

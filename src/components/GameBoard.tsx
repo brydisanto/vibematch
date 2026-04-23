@@ -800,6 +800,14 @@ export default function GameBoard({
                                                 className="object-cover"
                                                 priority={rowIdx < 3}
                                                 quality={60}
+                                                // Serve the preloaded raw webp
+                                                // directly. Without this, Next
+                                                // generates optimizer URLs
+                                                // (w=128/256/etc.) that don't
+                                                // match what preloadBadgeImages
+                                                // warmed, so tiles still pop in
+                                                // while the optimizer works.
+                                                unoptimized
                                             />
                                         </div>
 
