@@ -10,6 +10,29 @@ import {
 import { BADGES } from '@/lib/badges';
 import { buildPlayerContext } from '@/lib/playerContext';
 
+// Mid-game achievements that fire from checkMidGameAchievements in the
+// client. These are observable one-off claims ("did you land a T shape?
+// did you hit a 5× combo?") that the server can't re-verify at the
+// moment they happen because matchstats are written at game END, not
+// per-turn. Capsule rewards are small (1–3 each) and none of them
+// influence leaderboards, so the spoof surface is minimal. Trusting
+// the client here is the pragmatic call; the alternative is silently
+// rejecting every mid-game unlock, which was the bug surfaced by the
+// missing T-shape toast.
+const MID_GAME_TRUSTED_IDS = new Set([
+    'first_combo',
+    'first_bomb',
+    'first_vibestreak',
+    'first_cosmic',
+    'first_l_shape',
+    'first_t_shape',
+    'first_cross_shape',
+    'combo_5',
+    'combo_6',
+    'combo_8',
+    'cascade_5',
+]);
+
 export interface AchievementsData {
     unlocked: Record<string, { unlockedAt: string }>;
 }
@@ -219,6 +242,19 @@ export async function POST(req: Request) {
             // Path 2: gameplay achievement verified by server re-running checkAchievements
             // against match-token-bound stats
             if (serverVerifiedGameplay.has(id)) {
+                achievements.unlocked[id] = { unlockedAt: new Date().toISOString() };
+                totalCapsules += def.capsules;
+                newlyUnlocked.push({ id, capsules: def.capsules });
+                continue;
+            }
+
+            // Path 3: trusted mid-game claims (first-X shapes/specials,
+            // combo milestones, cascade_5). These fire from the client's
+            // per-turn checkMidGameAchievements and can't be server-
+            // verified in-flight because matchstats are written on game
+            // end. Accept the client's claim — see MID_GAME_TRUSTED_IDS
+            // comment for the rationale on why this is safe.
+            if (MID_GAME_TRUSTED_IDS.has(id)) {
                 achievements.unlocked[id] = { unlockedAt: new Date().toISOString() };
                 totalCapsules += def.capsules;
                 newlyUnlocked.push({ id, capsules: def.capsules });

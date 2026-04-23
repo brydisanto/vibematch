@@ -253,11 +253,17 @@ export default function AppClient() {
           actuallyEarnedCapsule = true;
         } else {
           // Silent failures were the root cause of "scored 15K+ got nothing"
-          // confusion. Surface the specific reason instead.
-          if (result.capped) {
+          // confusion. Surface the specific reason instead. The server
+          // returns `abandonedPrevious: true` when the anti-refresh-shop
+          // rule burned this match — that's distinct from a legitimate
+          // daily-cap exhaustion and the copy should say so.
+          const r = result as { capped?: boolean; abandonedPrevious?: boolean; reason?: string };
+          if (r.abandonedPrevious) {
+            toast.error("No capsule — previous game wasn't finished before starting this one.");
+          } else if (r.capped) {
             toast.error("Daily play cap reached — buy prize games for more capsules.");
-          } else if (result.reason) {
-            toast.error(`Capsule not awarded: ${result.reason}`);
+          } else if (r.reason) {
+            toast.error(`Capsule not awarded: ${r.reason}`);
           } else {
             toast.error("Could not award capsule. Try again.");
           }
@@ -267,13 +273,16 @@ export default function AppClient() {
       // First-time FTUE modal — only in classic mode.
       //   - If this is the user's first-ever actual capsule earn, push them
       //     to the Pin Book with the "First Capsule" reveal modal.
-      //   - Else if this is their first game ending without a capsule, show
-      //     the "So close" encouragement modal.
+      //   - Else if this is their first game ending UNDER the 15K capsule
+      //     threshold, show the "So close" encouragement modal. Guard on
+      //     score<15K so the modal doesn't fire (with its "hit 15K+ next
+      //     time" copy) on high-score runs that legitimately missed a
+      //     capsule for other reasons (e.g. abandonedPrevious anti-abuse).
       if (mode === "classic") {
         if (actuallyEarnedCapsule && !ftue.has("firstCapsuleShown")) {
           ftue.mark("firstCapsuleShown");
           setTimeout(() => setFtuePostGame("capsule"), 800);
-        } else if (!actuallyEarnedCapsule && !ftue.has("firstFailShown")) {
+        } else if (!actuallyEarnedCapsule && gs.score < 15000 && !ftue.has("firstFailShown")) {
           ftue.mark("firstFailShown");
           setTimeout(() => setFtuePostGame("tryAgain"), 800);
         }

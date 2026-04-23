@@ -357,7 +357,15 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Capsule already claimed for this match' }, { status: 400 });
                 }
                 if (!match.prizeEligible) {
-                    return NextResponse.json({ earned: false, reason: 'Match was outside prize cap', capped: true });
+                    // Disambiguate: the match is ineligible either because
+                    // the daily classic cap was exhausted when it was
+                    // created, OR because it followed an unfinished match
+                    // within the 5-minute abandon window. The client
+                    // surfaces different copy for each.
+                    if (match.abandonedPrevious) {
+                        return NextResponse.json({ earned: false, reason: 'Previous match was abandoned', abandonedPrevious: true });
+                    }
+                    return NextResponse.json({ earned: false, reason: 'Daily play cap reached', capped: true });
                 }
                 // Atomically mark the match as claimed
                 await kv.set(matchKey, { ...match, earnedCapsule: true }, { ex: 60 * 60 * 2 });
@@ -405,7 +413,10 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Bonus already claimed for this match' }, { status: 400 });
                 }
                 if (!match.prizeEligible) {
-                    return NextResponse.json({ earned: false, reason: 'Match was outside prize cap', capped: true });
+                    if (match.abandonedPrevious) {
+                        return NextResponse.json({ earned: false, reason: 'Previous match was abandoned', abandonedPrevious: true });
+                    }
+                    return NextResponse.json({ earned: false, reason: 'Daily play cap reached', capped: true });
                 }
                 await kv.set(matchKey, { ...match, earnedBonus: true }, { ex: 60 * 60 * 2 });
                 data.capsules += 1;
