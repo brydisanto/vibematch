@@ -4,8 +4,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import VibeCapsule from "./VibeCapsule";
-import { Badge, BadgeTier, TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
+import { Badge, BadgeTier, TIER_COLORS } from "@/lib/badges";
 import type { CapsuleReveal } from "@/lib/usePinBook";
+
+// Short labels tuned for the summary grid where each card is narrow — the
+// "Strategic Specials" label from the global catalog overruns the tile.
+const TIER_SHORT_LABELS: Record<BadgeTier, string> = {
+    blue: "Common",
+    silver: "Rare",
+    special: "Special",
+    gold: "Legendary",
+    cosmic: "Cosmic",
+};
+
+// Text color for the filled tier pill. Dark text on bright tier colors reads
+// as crisp labelwork; silver is light enough that black stays readable.
+const TIER_PILL_TEXT: Record<BadgeTier, string> = {
+    blue: "#1a1a1a",
+    silver: "#0a1a2e",
+    special: "#1f0a00",
+    gold: "#2a1a00",
+    cosmic: "#1a0633",
+};
 
 interface CapsuleSequenceProps {
     isOpen: boolean;
@@ -355,7 +375,7 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
                                     <>
                                         {" · best pull "}
                                         <span style={{ color: TIER_COLORS[bestTier] }} className="font-bold uppercase">
-                                            {TIER_DISPLAY_NAMES[bestTier]}
+                                            {TIER_SHORT_LABELS[bestTier]}
                                         </span>
                                     </>
                                 )}
@@ -409,10 +429,14 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
                 {badge.name}
             </div>
             <div
-                className="text-[8px] font-mundial font-black uppercase tracking-widest text-center"
-                style={{ color: tierColor }}
+                className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded text-center"
+                style={{
+                    color: TIER_PILL_TEXT[reveal.tier],
+                    background: tierColor,
+                    boxShadow: `0 0 8px ${tierColor}55`,
+                }}
             >
-                {TIER_DISPLAY_NAMES[reveal.tier]}
+                {TIER_SHORT_LABELS[reveal.tier]}
             </div>
             {!isDuplicate && (
                 <div
