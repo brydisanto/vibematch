@@ -27,10 +27,6 @@ interface VibeCapsuleProps {
     duplicateCount: number;
     quickOpen: boolean;
     onComplete: () => void;
-    /** Optional: auto-fire collect this many ms after the reveal phase starts.
-     *  Used by bulk capsule flows to auto-advance through common/rare pulls
-     *  without requiring a tap. Leave undefined for the normal tap-to-collect flow. */
-    autoCollectMs?: number;
 }
 
 type Phase = "idle" | "appear" | "anticipate" | "crack" | "reveal" | "collect";
@@ -1015,7 +1011,6 @@ export default function VibeCapsule({
     duplicateCount,
     quickOpen,
     onComplete,
-    autoCollectMs,
 }: VibeCapsuleProps) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [showBurst, setShowBurst] = useState(false);
@@ -1147,16 +1142,6 @@ export default function VibeCapsule({
         triggerHaptic(15);
         addTimeout(() => { onComplete(); }, 500);
     }, [phase, onComplete, addTimeout]);
-
-    // Auto-collect in bulk mode: fire handleCollect a fixed delay after reveal
-    // begins. Only active when autoCollectMs is provided; manual tap-to-collect
-    // remains the default.
-    useEffect(() => {
-        if (phase !== "reveal") return;
-        if (typeof autoCollectMs !== "number") return;
-        const id = setTimeout(() => { handleCollect(); }, autoCollectMs);
-        return () => clearTimeout(id);
-    }, [phase, autoCollectMs, handleCollect]);
 
     // Screen shake values
     const shakeAmount = tier === "cosmic" ? 8 : tier === "gold" ? 4 : tier === "silver" ? 2 : 0;

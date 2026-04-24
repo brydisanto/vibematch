@@ -2,41 +2,54 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
 import VibeCapsule from "./VibeCapsule";
 import { Badge, BadgeTier, TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
 import type { CapsuleReveal } from "@/lib/usePinBook";
-
-// Tiers that always get the full hero animation (no quickOpen, no auto-collect)
-// even inside a bulk run, so a rare pull is never blurred past.
-const HERO_TIERS: BadgeTier[] = ["gold", "cosmic"];
-
-const AUTO_COLLECT_MS = 650;
 
 interface CapsuleSequenceProps {
     isOpen: boolean;
     /** How many capsules to open in this run. */
     count: number;
+    /** "chain" reveals one capsule at a time with an escape button. "bulk"
+     *  pre-rolls every capsule server-side and then plays a single hero
+     *  reveal at the best tier, followed by the summary grid. */
+    mode: "chain" | "bulk";
     openCapsule: () => Promise<CapsuleReveal | null>;
     collectReveal: () => Promise<void>;
     onClose: (pulled: CapsuleReveal[]) => void;
 }
 
-type SequencePhase = "idle" | "rolling" | "revealing" | "summary" | "closing";
+type SequencePhase =
+    | "idle"
+    | "rolling"         // chain: rolling the next capsule between reveals
+    | "revealing"       // chain: showing VibeCapsule for the current reveal
+    | "prerolling"      // bulk: server-rolling every capsule before the reveal
+    | "herorevealing"   // bulk: showing a single VibeCapsule for the best-tier pull
+    | "summary"
+    | "closing";
+
+const TIER_RANK: Record<BadgeTier, number> = {
+    blue: 0,
+    silver: 1,
+    special: 2,
+    gold: 3,
+    cosmic: 4,
+};
 
 export default function CapsuleSequence({
     isOpen,
     count,
+    mode,
     openCapsule,
     collectReveal,
     onClose,
 }: CapsuleSequenceProps) {
-    const mode: "single" | "chain" | "bulk" =
-        count >= 6 ? "bulk" : count >= 2 ? "chain" : "single";
-
     const [pulled, setPulled] = useState<CapsuleReveal[]>([]);
     const [currentReveal, setCurrentReveal] = useState<CapsuleReveal | null>(null);
     const [phase, setPhase] = useState<SequencePhase>("idle");
     const [revealKey, setRevealKey] = useState(0);
+    const [prerollProgress, setPrerollProgress] = useState(0);
     const [rollFailed, setRollFailed] = useState(false);
     const remainingRef = useRef<number>(count);
     const runIdRef = useRef(0);
@@ -44,6 +57,8 @@ export default function CapsuleSequence({
     // Guards against double-rolls when openCapsule's identity changes mid-roll
     // because usePinBook rebinds it on each state.capsules decrement.
     const rollInFlightRef = useRef(false);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
     // Kick off the run whenever isOpen flips true (and we have capsules)
     useEffect(() => {
@@ -55,14 +70,15 @@ export default function CapsuleSequence({
         setPulled([]);
         setCurrentReveal(null);
         setRollFailed(false);
+        setPrerollProgress(0);
         setRevealKey(k => k + 1);
-        setPhase("rolling");
-    }, [isOpen, count]);
+        setPhase(mode === "bulk" ? "prerolling" : "rolling");
+    }, [isOpen, count, mode]);
 
-    // Roll the next capsule when we enter the rolling phase. Gated by a ref
-    // so we don't double-fire if openCapsule's identity changes mid-roll.
+    // CHAIN mode: roll one capsule whenever phase enters "rolling".
     useEffect(() => {
         if (!isOpen) return;
+        if (mode !== "chain") return;
         if (phase !== "rolling") { rollInFlightRef.current = false; return; }
         if (rollInFlightRef.current) return;
         rollInFlightRef.current = true;
@@ -82,11 +98,64 @@ export default function CapsuleSequence({
             setPhase("revealing");
         })();
         return () => { cancelled = true; };
-    }, [isOpen, phase, openCapsule]);
+    }, [isOpen, phase, mode, openCapsule]);
 
-    // When VibeCapsule signals completion, collect + advance
+    // BULK mode: pre-roll every capsule sequentially, then hand off to the
+    // hero reveal of the best-tier pull.
+    useEffect(() => {
+        if (!isOpen) return;
+        if (mode !== "bulk") return;
+        if (phase !== "prerolling") return;
+        const myRun = runIdRef.current;
+        let cancelled = false;
+        (async () => {
+            const collected: CapsuleReveal[] = [];
+            for (let i = 0; i < count; i++) {
+                if (cancelled || myRun !== runIdRef.current) return;
+                const reveal = await openCapsule();
+                if (cancelled || myRun !== runIdRef.current) return;
+                if (!reveal) {
+                    // Partial failure: whatever we got so far still counts.
+                    if (collected.length === 0) {
+                        setRollFailed(true);
+                        setPhase("summary");
+                        return;
+                    }
+                    break;
+                }
+                // Credit the pin server-side immediately so the user owns it
+                // even if they navigate away during the hero reveal.
+                await collectReveal();
+                if (cancelled || myRun !== runIdRef.current) return;
+                collected.push(reveal);
+                setPrerollProgress(collected.length);
+            }
+            if (collected.length === 0) {
+                setRollFailed(true);
+                setPhase("summary");
+                return;
+            }
+            pulledRef.current = collected;
+            setPulled(collected);
+            // Pick the best-tier reveal as the hero. Ties broken by pull order
+            // (first one wins) — arbitrary but stable.
+            const hero = collected.reduce((best, r) =>
+                TIER_RANK[r.tier] > TIER_RANK[best.tier] ? r : best, collected[0]);
+            setCurrentReveal(hero);
+            setRevealKey(k => k + 1);
+            setPhase("herorevealing");
+        })();
+        return () => { cancelled = true; };
+    }, [isOpen, phase, mode, count, openCapsule, collectReveal]);
+
+    // CHAIN reveal complete: collect + advance. BULK reveals were already
+    // collected during pre-roll; hero-reveal completion jumps to summary.
     const handleRevealComplete = useCallback(async () => {
         if (!currentReveal) return;
+        if (mode === "bulk") {
+            setPhase("summary");
+            return;
+        }
         const collectingReveal = currentReveal;
         await collectReveal();
         const nextPulled = [...pulledRef.current, collectingReveal];
@@ -95,33 +164,31 @@ export default function CapsuleSequence({
         remainingRef.current -= 1;
 
         if (remainingRef.current <= 0) {
-            if (mode === "bulk") {
-                setPhase("summary");
-            } else {
-                setPhase("closing");
-                onClose(nextPulled);
-            }
+            setPhase("closing");
+            onClose(nextPulled);
             return;
         }
 
-        // Chain to next capsule — flip to rolling (the VibeCapsule unmount via
-        // currentReveal=null also clears any lingering animation state).
         setCurrentReveal(null);
         setPhase("rolling");
     }, [collectReveal, currentReveal, mode, onClose]);
 
-    const rare = currentReveal ? HERO_TIERS.includes(currentReveal.tier) : false;
-    // Bulk mode: non-rare pulls use quickOpen + auto-collect to cycle fast.
-    // Rare pulls (gold/cosmic) always get the full hero animation and a manual tap.
-    // Chain mode (2-5) and single: always full animation + manual tap.
-    const quickOpen = mode === "bulk" && !rare;
-    const autoCollectMs = mode === "bulk" && !rare ? AUTO_COLLECT_MS : undefined;
+    // Escape from chain mode mid-run — finishes whatever has already been
+    // collected and returns to the Pin Book.
+    const handleEscape = useCallback(() => {
+        runIdRef.current += 1; // invalidate in-flight rolls
+        setPhase("closing");
+        onCloseRef.current(pulledRef.current);
+    }, []);
 
     if (!isOpen) return null;
 
+    const showVibeCapsule =
+        (phase === "revealing" || phase === "herorevealing") && currentReveal !== null;
+
     return (
         <>
-            {currentReveal && phase === "revealing" && (
+            {showVibeCapsule && currentReveal && (
                 <VibeCapsule
                     key={revealKey}
                     isOpen={true}
@@ -129,17 +196,38 @@ export default function CapsuleSequence({
                     tier={currentReveal.tier}
                     isDuplicate={currentReveal.isDuplicate}
                     duplicateCount={currentReveal.duplicateCount}
-                    quickOpen={quickOpen}
-                    autoCollectMs={autoCollectMs}
+                    quickOpen={false}
                     onComplete={handleRevealComplete}
                 />
             )}
 
+            {/* Chain escape button — floats in the top-right while a chain
+                run is active so users can bail out between or during pulls. */}
+            {mode === "chain" && (phase === "rolling" || phase === "revealing") && (
+                <button
+                    onClick={handleEscape}
+                    aria-label="Close capsule opening"
+                    className="fixed top-4 right-4 z-[140] w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                    style={{
+                        background: "rgba(12, 4, 24, 0.85)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        boxShadow: "0 4px 14px rgba(0,0,0,0.55)",
+                        color: "rgba(255,255,255,0.85)",
+                    }}
+                >
+                    <X size={18} />
+                </button>
+            )}
+
             {phase === "rolling" && (
                 <RollingOverlay
-                    mode={mode}
-                    index={pulled.length + 1}
-                    total={count}
+                    subtitle={count > 1 ? `Capsule ${pulled.length + 1} of ${count}` : undefined}
+                />
+            )}
+
+            {phase === "prerolling" && (
+                <RollingOverlay
+                    subtitle={`Opening ${prerollProgress} of ${count}`}
                 />
             )}
 
@@ -158,8 +246,7 @@ export default function CapsuleSequence({
 // Overlays
 // -----------------------------------------------------------------------------
 
-function RollingOverlay({ mode, index, total }: { mode: "single" | "chain" | "bulk"; index: number; total: number }) {
-    const showCounter = mode !== "single";
+function RollingOverlay({ subtitle }: { subtitle?: string }) {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
             <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(26,6,51,0.92), rgba(6,0,15,0.96))" }} />
@@ -170,9 +257,9 @@ function RollingOverlay({ mode, index, total }: { mode: "single" | "chain" | "bu
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
                 />
-                {showCounter && (
+                {subtitle && (
                     <div className="text-[11px] font-mundial uppercase tracking-widest text-white/60">
-                        Capsule <span className="text-[#B366FF] font-bold">{index}</span> of {total}
+                        {subtitle}
                     </div>
                 )}
             </div>
@@ -207,7 +294,7 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
                     initial={{ scale: 0.92, y: 16 }}
                     animate={{ scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    className="relative w-full max-w-[480px] rounded-2xl p-5 sm:p-6"
+                    className="relative w-full max-w-[520px] rounded-2xl p-5 sm:p-6"
                     style={{
                         background: "linear-gradient(180deg, rgba(36,14,68,0.95), rgba(16,6,34,0.96))",
                         border: "1px solid rgba(179,102,255,0.3)",
@@ -225,7 +312,7 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
                         </div>
                         {!failed && pulled.length > 0 && (
                             <div className="mt-1 text-[11px] font-mundial text-white/60">
-                                <span className="text-[#B366FF] font-bold">{newPins}</span> new ·{" "}
+                                <span className="text-[#4ADE80] font-bold">{newPins}</span> new ·{" "}
                                 <span className="text-white/80 font-bold">{dupes}</span> duplicate
                                 {bestTier && (
                                     <>
@@ -240,7 +327,7 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
                     </div>
 
                     {pulled.length > 0 && (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[48vh] overflow-y-auto custom-scrollbar pr-1">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[52vh] overflow-y-auto custom-scrollbar pr-1">
                             {pulled.map((reveal, i) => (
                                 <SummaryCard key={`${reveal.badge.id}-${i}`} reveal={reveal} index={i} />
                             ))}
@@ -274,19 +361,35 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: Math.min(index * 0.03, 0.4), duration: 0.28 }}
             className="relative rounded-xl p-2 flex flex-col items-center gap-1"
+            title={badge.name}
             style={{
                 background: `linear-gradient(180deg, ${tierColor}18, ${tierColor}08)`,
                 border: `1px solid ${tierColor}40`,
             }}
         >
             <PinArt badge={badge} tier={reveal.tier} />
-            <div className="mt-1 text-[9px] font-mundial uppercase tracking-wider text-center truncate w-full" style={{ color: tierColor }}>
+            <div
+                className="mt-1 font-display font-black text-[10px] leading-tight text-center w-full break-words line-clamp-2"
+                style={{ color: tierColor }}
+            >
                 {badge.name}
             </div>
+            <div className="text-[8px] font-mundial uppercase tracking-widest text-white/40">
+                {TIER_DISPLAY_NAMES[reveal.tier]}
+            </div>
             {isDuplicate ? (
-                <div className="text-[8px] font-mundial uppercase tracking-wider text-white/40">Dupe</div>
+                <div className="text-[8px] font-mundial uppercase tracking-widest text-white/40">Duplicate</div>
             ) : (
-                <div className="text-[8px] font-mundial uppercase tracking-wider font-bold" style={{ color: tierColor }}>New</div>
+                <div
+                    className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                    style={{
+                        color: "#0a1f10",
+                        background: "linear-gradient(180deg, #6EF0A0, #3ED17A)",
+                        boxShadow: "0 0 10px rgba(78, 222, 128, 0.55), 0 0 18px rgba(78, 222, 128, 0.25)",
+                    }}
+                >
+                    New
+                </div>
             )}
         </motion.div>
     );
@@ -311,14 +414,6 @@ function PinArt({ badge, tier }: { badge: Badge; tier: BadgeTier }) {
 // -----------------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------------
-
-const TIER_RANK: Record<BadgeTier, number> = {
-    blue: 0,
-    silver: 1,
-    special: 2,
-    gold: 3,
-    cosmic: 4,
-};
 
 function summarize(pulled: CapsuleReveal[]) {
     let newPins = 0;

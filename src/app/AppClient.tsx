@@ -74,6 +74,7 @@ export default function AppClient() {
   const [pinBookInitialTab, setPinBookInitialTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
   const [showCapsule, setShowCapsule] = useState(false);
   const [capsuleSequenceCount, setCapsuleSequenceCount] = useState(0);
+  const [capsuleSequenceMode, setCapsuleSequenceMode] = useState<"chain" | "bulk">("chain");
   const [showCapsuleSequence, setShowCapsuleSequence] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
@@ -979,22 +980,23 @@ export default function AppClient() {
         onOpenReroll={() => { setShowPinBook(false); setShowReroll(true); }}
         onOpenBuyPrizeGames={() => { setShowPinBook(false); setShowBuyPrizeGames(true); }}
         prizeGamesRemaining={Math.max(0, (10 + pinBook.state.bonusPrizeGames) - pinBook.state.classicPlays)}
-        onOpenCapsule={async () => {
+        onOpenCapsule={async (requestedMode) => {
           const count = pinBook.state.capsules;
           if (count <= 0) return;
-          if (count === 1) {
+          if (requestedMode === "one" && count === 1) {
             const reveal = await pinBook.openCapsule();
             if (reveal) {
               setShowPinBook(false);
               setShowCapsule(true);
             }
-          } else {
-            // Multi-capsule run: chain (2-5) or bulk (6+). CapsuleSequence
-            // decides mode internally from count.
-            setShowPinBook(false);
-            setCapsuleSequenceCount(count);
-            setShowCapsuleSequence(true);
+            return;
           }
+          // "one" with count > 1 → chain mode with escape button.
+          // "all" → bulk mode (pre-roll everything, single hero reveal, summary).
+          setShowPinBook(false);
+          setCapsuleSequenceCount(count);
+          setCapsuleSequenceMode(requestedMode === "all" ? "bulk" : "chain");
+          setShowCapsuleSequence(true);
         }}
         pins={pinBook.state.pins}
         unopenedCapsules={pinBook.state.capsules}
@@ -1041,6 +1043,7 @@ export default function AppClient() {
         <CapsuleSequence
           isOpen={showCapsuleSequence}
           count={capsuleSequenceCount}
+          mode={capsuleSequenceMode}
           openCapsule={pinBook.openCapsule}
           collectReveal={pinBook.collectReveal}
           onClose={() => {

@@ -15,7 +15,10 @@ import {
 interface PinBookProps {
     isOpen: boolean;
     onClose: () => void;
-    onOpenCapsule: () => void;
+    /** mode="one" opens a single capsule (or starts a chain for 2-5 count that the
+     *  user can escape from). mode="all" opens every capsule and jumps to a
+     *  single hero reveal + summary grid. */
+    onOpenCapsule: (mode: "one" | "all") => void;
     onOpenReroll?: () => void;
     onOpenBuyPrizeGames?: () => void;
     onStartGame?: () => void;
@@ -563,37 +566,63 @@ export default function PinBook({
                             <div className="px-5 sm:px-6 py-5 space-y-3">
                                 {/* Capsules Card */}
                                 <div
-                                    className="flex justify-between items-center p-4 rounded-xl"
+                                    className="p-4 rounded-xl"
                                     style={{
                                         background: "rgba(179,102,255,0.08)",
                                         border: "1px solid rgba(179,102,255,0.15)",
                                     }}
                                 >
-                                    <div>
-                                        <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
-                                        <div className="text-[10px] text-white/40 font-mundial">
-                                            {unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready
-                                            {unopenedCapsules >= 2 && unopenedCapsules <= 5 && (
-                                                <> · <span className="text-white/60">chains automatically</span></>
-                                            )}
-                                            {unopenedCapsules >= 6 && (
-                                                <> · <span className="text-[#B366FF]/80">fast cycle, rare pulls still hero</span></>
-                                            )}
+                                    <div className={unopenedCapsules >= 6 ? "mb-3" : "flex justify-between items-center"}>
+                                        <div>
+                                            <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
+                                            <div className="text-[10px] text-white/40 font-mundial">
+                                                {unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready
+                                            </div>
                                         </div>
+                                        {unopenedCapsules < 6 && (
+                                            <button
+                                                onClick={() => onOpenCapsule("one")}
+                                                disabled={unopenedCapsules <= 0}
+                                                className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                style={{
+                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
+                                                    border: "2px solid rgba(179,102,255,0.6)",
+                                                    color: "#fff",
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                                }}
+                                            >
+                                                {unopenedCapsules >= 2 ? `Open ${unopenedCapsules}` : "Open"}
+                                            </button>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={onOpenCapsule}
-                                        disabled={unopenedCapsules <= 0}
-                                        className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
-                                        style={{
-                                            background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
-                                            border: "2px solid rgba(179,102,255,0.6)",
-                                            color: "#fff",
-                                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                                        }}
-                                    >
-                                        {unopenedCapsules >= 6 ? `Open All (${unopenedCapsules})` : unopenedCapsules >= 2 ? `Open ${unopenedCapsules}` : "Open"}
-                                    </button>
+                                    {unopenedCapsules >= 6 && (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => onOpenCapsule("one")}
+                                                className="px-4 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5"
+                                                style={{
+                                                    background: "rgba(179,102,255,0.12)",
+                                                    border: "2px solid rgba(179,102,255,0.45)",
+                                                    color: "#fff",
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                                }}
+                                            >
+                                                Open
+                                            </button>
+                                            <button
+                                                onClick={() => onOpenCapsule("all")}
+                                                className="px-4 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5"
+                                                style={{
+                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
+                                                    border: "2px solid rgba(179,102,255,0.6)",
+                                                    color: "#fff",
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                                }}
+                                            >
+                                                Open All
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Duplicates / Reroll Card */}
