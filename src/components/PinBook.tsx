@@ -571,7 +571,15 @@ export default function PinBook({
                                 >
                                     <div>
                                         <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
-                                        <div className="text-[10px] text-white/40 font-mundial">{unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">
+                                            {unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready
+                                            {unopenedCapsules >= 2 && unopenedCapsules <= 5 && (
+                                                <> · <span className="text-white/60">chains automatically</span></>
+                                            )}
+                                            {unopenedCapsules >= 6 && (
+                                                <> · <span className="text-[#B366FF]/80">fast cycle, rare pulls still hero</span></>
+                                            )}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={onOpenCapsule}
@@ -584,7 +592,7 @@ export default function PinBook({
                                             boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
                                         }}
                                     >
-                                        Open
+                                        {unopenedCapsules >= 6 ? `Open All (${unopenedCapsules})` : unopenedCapsules >= 2 ? `Open ${unopenedCapsules}` : "Open"}
                                     </button>
                                 </div>
 

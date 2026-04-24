@@ -17,6 +17,7 @@ import FlameBackground from "@/components/FlameBackground";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
+import CapsuleSequence from "@/components/CapsuleSequence";
 import PrizeGamesOnboarding from "@/components/PrizeGamesOnboarding";
 import dynamic from "next/dynamic";
 
@@ -72,6 +73,8 @@ export default function AppClient() {
   const [showPinBook, setShowPinBook] = useState(false);
   const [pinBookInitialTab, setPinBookInitialTab] = useState<"collection" | "leaderboard" | "capsules">("collection");
   const [showCapsule, setShowCapsule] = useState(false);
+  const [capsuleSequenceCount, setCapsuleSequenceCount] = useState(0);
+  const [showCapsuleSequence, setShowCapsuleSequence] = useState(false);
   const [capsuleEarned, setCapsuleEarned] = useState(false);
   const [bonusCapsuleFlash, setBonusCapsuleFlash] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -977,10 +980,20 @@ export default function AppClient() {
         onOpenBuyPrizeGames={() => { setShowPinBook(false); setShowBuyPrizeGames(true); }}
         prizeGamesRemaining={Math.max(0, (10 + pinBook.state.bonusPrizeGames) - pinBook.state.classicPlays)}
         onOpenCapsule={async () => {
-          const reveal = await pinBook.openCapsule();
-          if (reveal) {
+          const count = pinBook.state.capsules;
+          if (count <= 0) return;
+          if (count === 1) {
+            const reveal = await pinBook.openCapsule();
+            if (reveal) {
+              setShowPinBook(false);
+              setShowCapsule(true);
+            }
+          } else {
+            // Multi-capsule run: chain (2-5) or bulk (6+). CapsuleSequence
+            // decides mode internally from count.
             setShowPinBook(false);
-            setShowCapsule(true);
+            setCapsuleSequenceCount(count);
+            setShowCapsuleSequence(true);
           }
         }}
         pins={pinBook.state.pins}
@@ -988,7 +1001,7 @@ export default function AppClient() {
         currentUsername={userProfile?.username}
       />
 
-      {/* Vibe Capsule Opening Animation */}
+      {/* Vibe Capsule Opening Animation (single capsule) */}
       {pinBook.pendingReveal && (
         <VibeCapsule
           isOpen={showCapsule}
@@ -1000,9 +1013,42 @@ export default function AppClient() {
           onComplete={async () => {
             await pinBook.collectReveal();
             setShowCapsule(false);
+            setPinBookInitialTab("capsules");
             setShowPinBook(true); // Return to pin book after collecting
 
             // Re-check achievements after new pin collected (tier completions, etc.)
+            if (userProfile?.username) {
+              const ctx = buildPlayerContext(pinBook.state.pins, {
+                totalPinsOpened: pinBook.state.totalOpened,
+                totalFoundByTier: pinBook.state.totalFoundByTier,
+                hasUploadedAvatar: !!userProfile?.avatarUrl,
+                hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+                hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+              });
+              const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
+              if (ids.length > 0) {
+                achievements.unlock(ids).then(unlockedIds => {
+                  if (unlockedIds.length > 0) pinBook.load();
+                });
+              }
+            }
+          }}
+        />
+      )}
+
+      {/* Multi-capsule chain / bulk flow */}
+      {showCapsuleSequence && (
+        <CapsuleSequence
+          isOpen={showCapsuleSequence}
+          count={capsuleSequenceCount}
+          openCapsule={pinBook.openCapsule}
+          collectReveal={pinBook.collectReveal}
+          onClose={() => {
+            setShowCapsuleSequence(false);
+            setPinBookInitialTab("capsules");
+            setShowPinBook(true);
+
+            // Re-check achievements after the full run completes.
             if (userProfile?.username) {
               const ctx = buildPlayerContext(pinBook.state.pins, {
                 totalPinsOpened: pinBook.state.totalOpened,
