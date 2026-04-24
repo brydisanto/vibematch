@@ -300,9 +300,22 @@ export default function CapsuleSequence({
 
 function RollingOverlay({ subtitle }: { subtitle?: string }) {
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none p-4">
             <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(26,6,51,0.92), rgba(6,0,15,0.96))" }} />
-            <div className="relative flex flex-col items-center gap-4">
+            {/* Stylized box matching the SummaryOverlay aesthetic so the idle
+                state reads as a proper modal panel instead of floating glyphs
+                on a faint backdrop. */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="relative w-full max-w-[320px] rounded-2xl px-7 py-7 flex flex-col items-center gap-4"
+                style={{
+                    background: "linear-gradient(180deg, rgba(36,14,68,0.96), rgba(16,6,34,0.97))",
+                    border: "1px solid rgba(179,102,255,0.32)",
+                    boxShadow: "0 20px 80px rgba(0,0,0,0.6), 0 0 48px rgba(179,102,255,0.25)",
+                }}
+            >
                 {/* Shaka wiggle — GVC's signature hang-loose icon doing a
                     continuous loose wiggle while capsules roll on the server.
                     Same rotation keyframes used across the rest of the app. */}
@@ -315,11 +328,11 @@ function RollingOverlay({ subtitle }: { subtitle?: string }) {
                     transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
                 />
                 {subtitle && (
-                    <div className="text-[11px] font-mundial uppercase tracking-widest text-white/60">
+                    <div className="text-[11px] font-mundial font-bold uppercase tracking-widest text-white/70">
                         {subtitle}
                     </div>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 }

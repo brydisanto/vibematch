@@ -1075,11 +1075,16 @@ export default function VibeCapsule({
             addTimeout(() => { setShowFlash(false); }, 400);
             addTimeout(() => {
                 if (skipReveal) {
-                    // Bulk hero: explosion is the finale, summary grid is the
-                    // reveal. Don't show the pin.
+                    // Bulk hero: explosion is the finale, summary grid is
+                    // the reveal. Still play the reveal apex audio so the
+                    // moment lands, then hand off after the sound has had
+                    // a beat to peak.
                     setShowBurst(false);
                     setShowShockwave(false);
-                    onComplete();
+                    playCapsuleRevealSound(tier);
+                    if (!isDuplicate) playNewPinSound();
+                    triggerHaptic(20);
+                    addTimeout(() => { onComplete(); }, QUICK_DURATIONS.reveal);
                     return;
                 }
                 setPhase("reveal");
@@ -1133,12 +1138,18 @@ export default function VibeCapsule({
         }, PHASE_DURATION.crack * 0.55);
 
         // Reveal — badge materializes from the bloom. When skipReveal is set
-        // (bulk hero), we stop here and hand off; the summary grid is the
-        // reveal.
+        // (bulk hero), we still play the reveal apex audio so the moment
+        // lands, then hand off to the summary after the sound has had a
+        // beat to peak.
         addTimeout(() => {
             if (skipReveal) {
-                setShowBloom(false);
-                onComplete();
+                playCapsuleRevealSound(tier);
+                if (!isDuplicate) playNewPinSound();
+                triggerHaptic(20);
+                addTimeout(() => {
+                    setShowBloom(false);
+                    onComplete();
+                }, PHASE_DURATION.reveal);
                 return;
             }
             setPhase("reveal");
