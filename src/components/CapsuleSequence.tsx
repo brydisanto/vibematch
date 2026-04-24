@@ -412,6 +412,14 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
 function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }) {
     const tierColor = TIER_COLORS[reveal.tier] ?? "#888";
     const { badge, isDuplicate } = reveal;
+    // New pulls signal via a green border + glow on the tile itself so the
+    // tier pill and a stacked NEW pill don't compete for the same row of
+    // real estate. Duplicates keep the subtle tier-tinted outline.
+    const isNew = !isDuplicate;
+    const borderColor = isNew ? "#4ADE80" : `${tierColor}40`;
+    const tileShadow = isNew
+        ? "0 0 14px rgba(74, 222, 128, 0.55), 0 0 28px rgba(74, 222, 128, 0.2)"
+        : "none";
     return (
         <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.92 }}
@@ -421,7 +429,8 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             title={badge.name}
             style={{
                 background: `linear-gradient(180deg, ${tierColor}18, ${tierColor}08)`,
-                border: `1px solid ${tierColor}40`,
+                border: `2px solid ${borderColor}`,
+                boxShadow: tileShadow,
             }}
         >
             <PinArt badge={badge} tier={reveal.tier} />
@@ -438,18 +447,6 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             >
                 {TIER_SHORT_LABELS[reveal.tier]}
             </div>
-            {!isDuplicate && (
-                <div
-                    className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded text-center"
-                    style={{
-                        color: "#0a1f10",
-                        background: "linear-gradient(180deg, #6EF0A0, #3ED17A)",
-                        boxShadow: "0 0 10px rgba(78, 222, 128, 0.55), 0 0 18px rgba(78, 222, 128, 0.25)",
-                    }}
-                >
-                    New
-                </div>
-            )}
         </motion.div>
     );
 }
