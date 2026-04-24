@@ -914,7 +914,7 @@ function ShapeBonuses() {
                     sub="Two lines cross at the middle of both"
                     color={COSMIC}
                     glow="rgba(179,102,255,0.55)"
-                    sequence={[[2,0], [2,1], [2,2], [2,3], [2,4], [0,2], [1,2], [3,2], [4,2]]}
+                    sequence={[[1,2], [2,1], [2,2], [2,3], [3,2]]}
                     highlight
                 />
             </div>
