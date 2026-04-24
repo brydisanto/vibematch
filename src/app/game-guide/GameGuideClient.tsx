@@ -49,19 +49,19 @@ const QUEST_SAMPLER = [
 ];
 
 const SECTIONS: Array<{ id: string; label: string }> = [
-    { id: "how-to-play", label: "How to play" },
-    { id: "scoring", label: "Scoring moves" },
-    { id: "power-tiles", label: "Power tiles" },
-    { id: "shapes", label: "Shape bonuses" },
+    { id: "how-to-play", label: "How to Play" },
+    { id: "scoring", label: "Scoring Moves" },
+    { id: "power-tiles", label: "Power Tiles" },
+    { id: "shapes", label: "Shape Bonuses" },
     { id: "capsules", label: "Pin Capsules" },
-    { id: "pins", label: "Pins and rarity" },
-    { id: "ladder", label: "Collector ladder" },
+    { id: "pins", label: "Pins and Rarity" },
+    { id: "ladder", label: "Collector Ladder" },
     { id: "daily", label: "Daily Challenge" },
     { id: "quests", label: "Quests" },
     { id: "rerolls", label: "Rerolls" },
     { id: "leaderboards", label: "Leaderboards" },
-    { id: "streak", label: "Streaks and referrals" },
-    { id: "tips", label: "Tips and tricks" },
+    { id: "streak", label: "Streaks and Referrals" },
+    { id: "tips", label: "Tips and Tricks" },
 ];
 
 /* Badges used in the interactive demos (same pool the FTUE uses). */
@@ -416,37 +416,67 @@ function Callout({ tone, label, children }: { tone: "gold" | "cosmic"; label: st
 
 function TableOfContents() {
     return (
-        <nav
-            className="mt-8 mb-16 rounded-2xl px-6 py-5"
-            style={{
-                background: "rgba(12,4,24,0.82)",
-                border: "1px solid rgba(179,102,255,0.25)",
-                backdropFilter: "blur(4px)",
-            }}
-        >
-            <div className="font-display font-black text-[10px] tracking-[0.3em] uppercase mb-3" style={{ color: GOLD }}>
-                What is in here
+        <section className="mt-8 mb-16">
+            {/* Header matches the standard SectionHeader rhythm: small COSMIC
+                tag pill above, big GOLD title below. */}
+            <div className="mb-6">
+                <div
+                    className="inline-block font-display font-black text-[10px] tracking-[0.3em] uppercase px-3 py-1 rounded-full mb-3"
+                    style={{ color: COSMIC, background: `${COSMIC}18`, border: `1px solid ${COSMIC}44` }}
+                >
+                    Contents
+                </div>
+                <h2
+                    className="font-display font-black uppercase leading-none"
+                    style={{
+                        fontSize: "clamp(28px, 4.5vw, 44px)",
+                        color: GOLD,
+                        textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 18px ${GOLD}33`,
+                    }}
+                >
+                    What&apos;s In Here
+                </h2>
             </div>
-            <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 list-none p-0 m-0">
-                {SECTIONS.map((s, i) => (
-                    <li key={s.id}>
-                        <a
-                            href={`#${s.id}`}
-                            className="font-mundial text-[13px] no-underline transition-colors hover:text-white"
-                            style={{ color: "rgba(255,255,255,0.78)" }}
-                        >
-                            <span
-                                className="font-display font-black tabular-nums mr-2"
-                                style={{ color: COSMIC }}
+            <nav
+                className="rounded-2xl p-2"
+                style={{
+                    background: "linear-gradient(180deg, rgba(26,10,46,0.92), rgba(12,4,24,0.96))",
+                    border: `1px solid ${COSMIC}33`,
+                    boxShadow: `0 4px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                }}
+            >
+                <ol className="grid grid-cols-1 sm:grid-cols-2 gap-1 list-none p-0 m-0">
+                    {SECTIONS.map((s, i) => (
+                        <li key={s.id}>
+                            <a
+                                href={`#${s.id}`}
+                                className="group flex items-center gap-3 no-underline rounded-xl px-3 py-2.5 transition-colors"
+                                style={{
+                                    color: "rgba(255,255,255,0.85)",
+                                    background: "transparent",
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = `${COSMIC}14`; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
                             >
-                                {String(i + 1).padStart(2, "0")}
-                            </span>
-                            {s.label}
-                        </a>
-                    </li>
-                ))}
-            </ol>
-        </nav>
+                                <span
+                                    className="font-display font-black tabular-nums text-[12px] tracking-[0.05em] flex-shrink-0 w-7 text-center py-1 rounded"
+                                    style={{
+                                        color: COSMIC,
+                                        background: `${COSMIC}14`,
+                                        border: `1px solid ${COSMIC}33`,
+                                    }}
+                                >
+                                    {String(i + 1).padStart(2, "0")}
+                                </span>
+                                <span className="font-mundial font-bold text-[14px] transition-colors group-hover:text-white">
+                                    {s.label}
+                                </span>
+                            </a>
+                        </li>
+                    ))}
+                </ol>
+            </nav>
+        </section>
     );
 }
 
@@ -459,8 +489,8 @@ function HowToPlay() {
             <SectionHeader
                 id="how-to-play"
                 tag="The basics"
-                title="How to play"
-                sub="Match-3 with Good Vibes Club pin art. 30 moves per run. Swap two adjacent tiles to line up 3+ of the same pin and clear them; tiles fall, new ones drop, and fresh matches from those drops are cascades that climb your multiplier. The whole game is finding the swap that triggers a chain."
+                title="How to Play"
+                sub="Match-3 with GVC pin art. 30 moves per run. Find the swap that triggers a chain reaction."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
@@ -483,18 +513,18 @@ function HowToPlay() {
                 <div className="order-1 md:order-2 space-y-4">
                     <MiniFact
                         icon={<ArrowRight size={18} style={{ color: COSMIC }} />}
-                        title="Swap adjacent tiles"
-                        body="Tap a tile, then tap one of its four neighbors (up, down, left, or right). Diagonal swaps are not allowed. If the swap produces a match the tiles clear. If it does not, the tiles swap back and no move is spent."
+                        title="Swap Adjacent Tiles"
+                        body="Tap a tile, then tap a neighbor up/down/left/right. No diagonals. No-match swaps revert and don't cost a move."
                     />
                     <MiniFact
                         icon={<TrendingUp size={18} style={{ color: COSMIC }} />}
-                        title="Cascades compound"
-                        body="When matched tiles clear, the ones above fall down to fill the gaps and new tiles spawn at the top. Any new matches that form from that settle count as a cascade, and each cascade adds to your combo multiplier. A single well-planned swap can trigger 3 or 4 cascades in a row."
+                        title="Cascades Compound"
+                        body="Cleared tiles drop, new ones spawn, and any fresh matches from the settle stack a +75% multiplier. One smart swap can chain 3-4 cascades."
                     />
                     <MiniFact
                         icon={<Target size={18} style={{ color: COSMIC }} />}
-                        title="30 moves, chosen carefully"
-                        body="You have a hard ceiling of 30 moves. That means deliberate: you are not rewarded for playing fast, you are rewarded for spotting the highest-value move each turn. Bigger matches create power tiles, and specific shapes (see below) multiply your score dramatically."
+                        title="30 Moves, Chosen Carefully"
+                        body="Hard ceiling of 30. Speed isn't rewarded — spotting the highest-value swap is. Bigger matches spawn power tiles; certain shapes multiply hard."
                     />
                 </div>
             </div>
@@ -707,7 +737,7 @@ function Scoring() {
             <SectionHeader
                 id="scoring"
                 tag="Score math"
-                title="Scoring your moves"
+                title="Scoring Your Moves"
                 sub="Three multipliers stack on every match: match length, tier of the matched badge, and cascade depth. They compound. A 4-match of Legendary pins on the second cascade can outscore the same tiles cleared cold by 8-10x — chasing setups beats grabbing first-available matches every time."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -887,7 +917,7 @@ function ShapeBonuses() {
             <SectionHeader
                 id="shapes"
                 tag="Shape bonuses"
-                title="The shape multipliers"
+                title="The Shape Multipliers"
                 sub="When a cascade lines up two matching runs that share a tile, the engine detects the shape and stacks a huge multiplier on top of everything else. Three outcomes: L, T, Cross. Tap a card to see the detection order."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1436,7 +1466,7 @@ function PinsSection() {
             <SectionHeader
                 id="pins"
                 tag="The collection"
-                title="Pins and rarity"
+                title="Pins and Rarity"
                 sub="101 unique pins across 5 tiers. Capsules roll tier first (weighted toward Common, Cosmic is rarest), then pick a pin from that tier. Rarer pins also have lower drop weights inside their tier."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -1489,7 +1519,7 @@ function CollectorLadder() {
             <SectionHeader
                 id="ladder"
                 tag="Status"
-                title="The Collector ladder"
+                title="The Collector Ladder"
                 sub="Your prestige title, calculated from unique-pin %, not capsule spend. Cosmic gets a purple nebula pulse; One-Of-One is the holographic rainbow foil reserved for completing the catalog."
             />
             <div className="flex flex-col gap-2">
@@ -1571,19 +1601,19 @@ function DailyChallenge() {
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Globe size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Same board, everyone</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Same Board, Everyone</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        The daily board is seeded by the calendar date, so every player sees the identical starting layout. A player on the other side of the world is solving the same puzzle you are. The leaderboard at day's end reflects pure skill on that specific puzzle.
+                        Daily board is seeded by date. Identical layout for every player on the planet.
                     </p>
                 </Card>
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Lock size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>One shot</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>One Shot</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        You get one attempt per day, period. The moment you start, a server marker locks you in. Refreshing, closing the browser, or switching devices will not give you a second try. Commit carefully; the next Daily unlocks at midnight UTC.
+                        One attempt per day. Server locks you in the moment you start. Next Daily unlocks at midnight UTC.
                     </p>
                 </Card>
             </div>
@@ -1798,17 +1828,17 @@ function StreakRefer() {
             <SectionHeader
                 id="streak"
                 tag="Show up, share"
-                title="Streaks and referrals"
+                title="Streaks and Referrals"
                 sub="Streaks climb each day you play (any mode), reset on skip. Quests at 3, 7, and 30 days pay bonus capsules. Referrals: your link gives you and the new player +2 capsules each, up to a 50-capsule lifetime cap."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
                     <div className="flex items-center gap-2 mb-2">
                         <Flame size={18} style={{ color: ORANGE }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Day streaks</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Day Streaks</h3>
                     </div>
                     <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Any game ending (Classic or Daily) counts toward your streak. The counter lives in your profile and is shown on every landing page. Streak quests:
+                        Any game ending counts. Counter lives on your profile.
                     </p>
                     <ul className="font-mundial text-[14px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.98)" }}>
                         <li className="mb-1 flex items-center gap-1.5"><strong style={{ color: ORANGE }}>3 days</strong> Streak Starter <span className="inline-flex items-center gap-0.5"><CapsuleIcon size={11} /> x2</span></li>
@@ -1819,10 +1849,10 @@ function StreakRefer() {
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <HandHeart size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Referral link</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Referral Link</h3>
                     </div>
                     <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Your referral URL lives in your profile. Share it anywhere. When a new player signs up through your link, capsules get credited on registration:
+                        Your URL is in your profile. New signups via your link credit capsules on registration:
                     </p>
                     <div className="rounded-lg px-3 py-2 mb-1.5 flex items-center gap-2" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}55` }}>
                         <CapsuleIcon size={13} /> <strong style={{ color: GOLD }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to you</span>
@@ -1831,7 +1861,7 @@ function StreakRefer() {
                         <CapsuleIcon size={13} color={COSMIC} /> <strong style={{ color: COSMIC }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to them</span>
                     </div>
                     <p className="font-mundial text-[12px] mt-3" style={{ color: "rgba(255,255,255,0.65)" }}>
-                        Lifetime cap: 50 capsules earnable per account from referrals. Also powers the Good Vibes Ambassador / Vibe Recruiter / Vibe Commander quest line (1 / 5 / 10 referrals).
+                        Lifetime cap: 50 capsules. Also powers the Ambassador / Recruiter / Commander quest line (1 / 5 / 10 referrals).
                     </p>
                 </Card>
             </div>
@@ -1862,7 +1892,7 @@ function Tips() {
             <SectionHeader
                 id="tips"
                 tag="Get good"
-                title="Tips and tricks"
+                title="Tips and Tricks"
                 sub="A handful of habits separate consistent high scorers from lucky ones. None of these are exotic strategies; they are all simple shifts in how you read the board each turn."
             />
             <div className="flex flex-col gap-3">
