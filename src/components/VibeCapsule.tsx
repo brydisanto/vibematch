@@ -1076,15 +1076,16 @@ export default function VibeCapsule({
             addTimeout(() => {
                 if (skipReveal) {
                     // Bulk hero: explosion is the finale, summary grid is
-                    // the reveal. Still play the reveal apex audio so the
-                    // moment lands, then hand off after the sound has had
-                    // a beat to peak.
+                    // the reveal. Play the reveal apex audio so the moment
+                    // lands, then hand off quickly — the sound plays out on
+                    // the audio context after unmount, so a short UI delay
+                    // is enough to perceive the peak without visible lag.
                     setShowBurst(false);
                     setShowShockwave(false);
                     playCapsuleRevealSound(tier);
                     if (!isDuplicate) playNewPinSound();
                     triggerHaptic(20);
-                    addTimeout(() => { onComplete(); }, QUICK_DURATIONS.reveal);
+                    addTimeout(() => { onComplete(); }, 200);
                     return;
                 }
                 setPhase("reveal");
@@ -1146,10 +1147,13 @@ export default function VibeCapsule({
                 playCapsuleRevealSound(tier);
                 if (!isDuplicate) playNewPinSound();
                 triggerHaptic(20);
+                // Short hand-off — Web Audio keeps playing after unmount, so
+                // a brief beat is enough to perceive the peak without making
+                // the UI feel frozen before the summary pops up.
                 addTimeout(() => {
                     setShowBloom(false);
                     onComplete();
-                }, PHASE_DURATION.reveal);
+                }, 220);
                 return;
             }
             setPhase("reveal");
