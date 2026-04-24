@@ -27,8 +27,7 @@ type SequencePhase =
     | "idle"
     | "rolling"         // chain: rolling the next capsule between reveals
     | "revealing"       // chain: showing VibeCapsule for the current reveal
-    | "prerolling"      // bulk: server-rolling every capsule before the reveal
-    | "herorevealing"   // bulk: showing a single VibeCapsule for the best-tier pull
+    | "prerolling"      // bulk: server-rolling every capsule before the summary
     | "summary"
     | "closing";
 
@@ -152,27 +151,24 @@ export default function CapsuleSequence({
                 setPhase("summary");
                 return;
             }
-            pulledRef.current = collected;
-            setPulled(collected);
-            // Pick the best-tier reveal as the hero. Ties broken by pull order
-            // (first one wins) — arbitrary but stable.
-            const hero = collected.reduce((best, r) =>
-                TIER_RANK[r.tier] > TIER_RANK[best.tier] ? r : best, collected[0]);
-            setCurrentReveal(hero);
-            setRevealKey(k => k + 1);
-            setPhase("herorevealing");
+            // Sort the haul by tier rarity (most rare first) so the summary
+            // grid leads with cosmic/legendary pulls rather than whatever
+            // came out of the RNG first.
+            const sorted = [...collected].sort(
+                (a, b) => TIER_RANK[b.tier] - TIER_RANK[a.tier]
+            );
+            pulledRef.current = sorted;
+            setPulled(sorted);
+            setPhase("summary");
         })();
         return () => { cancelled = true; };
     }, [isOpen, phase, mode, count]);
 
-    // CHAIN reveal complete: collect + advance. BULK reveals were already
-    // collected during pre-roll; hero-reveal completion jumps to summary.
+    // CHAIN reveal complete: collect + advance. (BULK mode skips per-capsule
+    // reveals entirely — all pulls are pre-rolled and the user jumps straight
+    // to the summary grid.)
     const handleRevealComplete = useCallback(async () => {
         if (!currentReveal) return;
-        if (mode === "bulk") {
-            setPhase("summary");
-            return;
-        }
         const collectingReveal = currentReveal;
         await collectRevealRef.current();
         const nextPulled = [...pulledRef.current, collectingReveal];
@@ -188,7 +184,7 @@ export default function CapsuleSequence({
 
         setCurrentReveal(null);
         setPhase("rolling");
-    }, [currentReveal, mode, onClose]);
+    }, [currentReveal, onClose]);
 
     // Escape from chain mode mid-run — finishes whatever has already been
     // collected and returns to the Pin Book.
@@ -200,8 +196,7 @@ export default function CapsuleSequence({
 
     if (!isOpen) return null;
 
-    const showVibeCapsule =
-        (phase === "revealing" || phase === "herorevealing") && currentReveal !== null;
+    const showVibeCapsule = phase === "revealing" && currentReveal !== null;
 
     return (
         <>
@@ -384,7 +379,7 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             initial={{ opacity: 0, y: 8, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: Math.min(index * 0.03, 0.4), duration: 0.28 }}
-            className="relative rounded-xl p-2 flex flex-col items-center gap-1"
+            className="relative rounded-xl p-2 flex flex-col items-center gap-1 text-center"
             title={badge.name}
             style={{
                 background: `linear-gradient(180deg, ${tierColor}18, ${tierColor}08)`,
@@ -392,20 +387,18 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             }}
         >
             <PinArt badge={badge} tier={reveal.tier} />
-            <div
-                className="mt-1 font-display font-black text-[10px] leading-tight text-center w-full break-words line-clamp-2"
-                style={{ color: tierColor }}
-            >
+            <div className="mt-1 font-display font-black text-[10px] leading-tight text-center w-full break-words line-clamp-2 text-white">
                 {badge.name}
             </div>
-            <div className="text-[8px] font-mundial uppercase tracking-widest text-white/40">
+            <div
+                className="text-[8px] font-mundial font-black uppercase tracking-widest text-center"
+                style={{ color: tierColor }}
+            >
                 {TIER_DISPLAY_NAMES[reveal.tier]}
             </div>
-            {isDuplicate ? (
-                <div className="text-[8px] font-mundial uppercase tracking-widest text-white/40">Duplicate</div>
-            ) : (
+            {!isDuplicate && (
                 <div
-                    className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                    className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded text-center"
                     style={{
                         color: "#0a1f10",
                         background: "linear-gradient(180deg, #6EF0A0, #3ED17A)",
