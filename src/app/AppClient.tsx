@@ -1046,6 +1046,7 @@ export default function AppClient() {
           mode={capsuleSequenceMode}
           openCapsule={pinBook.openCapsule}
           collectReveal={pinBook.collectReveal}
+          rollAndCollectCapsule={pinBook.rollAndCollectCapsule}
           onClose={() => {
             setShowCapsuleSequence(false);
             setPinBookInitialTab("capsules");

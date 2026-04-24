@@ -17,6 +17,9 @@ interface CapsuleSequenceProps {
     mode: "chain" | "bulk";
     openCapsule: () => Promise<CapsuleReveal | null>;
     collectReveal: () => Promise<void>;
+    /** Atomic open+collect used by bulk mode to avoid the React render race
+     *  between the state-based openCapsule and collectReveal. */
+    rollAndCollectCapsule: () => Promise<CapsuleReveal | null>;
     onClose: (pulled: CapsuleReveal[]) => void;
 }
 
@@ -43,6 +46,7 @@ export default function CapsuleSequence({
     mode,
     openCapsule,
     collectReveal,
+    rollAndCollectCapsule,
     onClose,
 }: CapsuleSequenceProps) {
     const [pulled, setPulled] = useState<CapsuleReveal[]>([]);
@@ -69,8 +73,10 @@ export default function CapsuleSequence({
     // conflict.
     const openCapsuleRef = useRef(openCapsule);
     const collectRevealRef = useRef(collectReveal);
+    const rollAndCollectRef = useRef(rollAndCollectCapsule);
     useEffect(() => { openCapsuleRef.current = openCapsule; }, [openCapsule]);
     useEffect(() => { collectRevealRef.current = collectReveal; }, [collectReveal]);
+    useEffect(() => { rollAndCollectRef.current = rollAndCollectCapsule; }, [rollAndCollectCapsule]);
 
     // Kick off the run whenever isOpen flips true (and we have capsules)
     useEffect(() => {
@@ -124,7 +130,10 @@ export default function CapsuleSequence({
             const collected: CapsuleReveal[] = [];
             for (let i = 0; i < count; i++) {
                 if (cancelled || myRun !== runIdRef.current) return;
-                const reveal = await openCapsuleRef.current();
+                // Atomic open+collect — hits the server sequentially and
+                // updates client state without routing through pendingReveal,
+                // so we don't race React's render cycle between iterations.
+                const reveal = await rollAndCollectRef.current();
                 if (cancelled || myRun !== runIdRef.current) return;
                 if (!reveal) {
                     // Partial failure: whatever we got so far still counts.
@@ -135,10 +144,6 @@ export default function CapsuleSequence({
                     }
                     break;
                 }
-                // Credit the pin server-side immediately so the user owns it
-                // even if they navigate away during the hero reveal.
-                await collectRevealRef.current();
-                if (cancelled || myRun !== runIdRef.current) return;
                 collected.push(reveal);
                 setPrerollProgress(collected.length);
             }
@@ -213,22 +218,29 @@ export default function CapsuleSequence({
                 />
             )}
 
-            {/* Chain escape button — floats in the top-right while a chain
-                run is active so users can bail out between or during pulls. */}
+            {/* Chain escape pill — lives in the top-right while a chain run
+                is active so users can bail out between or during pulls. Large
+                and labeled so it doesn't get lost against the capsule FX. */}
             {mode === "chain" && (phase === "rolling" || phase === "revealing") && (
-                <button
+                <motion.button
                     onClick={handleEscape}
                     aria-label="Close capsule opening"
-                    className="fixed top-4 right-4 z-[140] w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.25 }}
+                    className="fixed top-5 right-5 z-[140] flex items-center gap-1.5 rounded-full pl-3 pr-3.5 py-2 transition-all hover:scale-[1.04] active:scale-[0.97]"
                     style={{
-                        background: "rgba(12, 4, 24, 0.85)",
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        boxShadow: "0 4px 14px rgba(0,0,0,0.55)",
-                        color: "rgba(255,255,255,0.85)",
+                        background: "linear-gradient(180deg, rgba(255,255,255,0.97), rgba(235,225,255,0.94))",
+                        border: "1px solid rgba(179,102,255,0.55)",
+                        boxShadow: "0 6px 20px rgba(0,0,0,0.55), 0 0 24px rgba(179,102,255,0.4)",
+                        color: "#2A0F52",
                     }}
                 >
-                    <X size={18} />
-                </button>
+                    <X size={16} strokeWidth={3} />
+                    <span className="font-mundial font-black text-[11px] uppercase tracking-[0.18em]">
+                        Close
+                    </span>
+                </motion.button>
             )}
 
             {phase === "rolling" && (
