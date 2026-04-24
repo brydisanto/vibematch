@@ -606,7 +606,7 @@ export default function LandingPageArcade({
                                                 boundary rather than overflowing
                                                 past the right edge. */}
                                             <div
-                                                className="pointer-events-none absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20"
+                                                className="pointer-events-none absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 text-center"
                                                 style={{
                                                     ...tooltipAlign,
                                                     width: 180,
@@ -617,8 +617,8 @@ export default function LandingPageArcade({
                                                     padding: "6px 9px",
                                                 }}
                                             >
-                                                <div className="flex items-start gap-1.5 flex-wrap">
-                                                    <span className="font-display text-[11px] font-black text-white leading-tight break-words">
+                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                    <span className="font-display text-[11px] font-black text-white leading-tight break-words text-center">
                                                         {pin.name}
                                                     </span>
                                                     {pin.isNew && (
@@ -635,7 +635,7 @@ export default function LandingPageArcade({
                                                     )}
                                                 </div>
                                                 <div
-                                                    className="text-[9px] font-bold tracking-[0.15em] uppercase mt-1"
+                                                    className="text-[9px] font-bold tracking-[0.15em] uppercase mt-1 text-center"
                                                     style={{ color: `${meta.tint}cc` }}
                                                 >
                                                     {meta.label}
