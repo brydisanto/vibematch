@@ -243,6 +243,76 @@ export function usePinBook() {
         setState(prev => ({ ...prev, bonusPrizeGames: bonus }));
     }, []);
 
+    /** Atomic open+collect for bulk capsule flows. Bypasses `pendingReveal`
+     *  state entirely — bulk flows can't wait a full render cycle between
+     *  open and collect, and the state-based openCapsule/collectReveal pair
+     *  would race the React render and leave a pending reveal on the server
+     *  (which would reject the next open with "A pending capsule is already
+     *  open"). This path hits the server sequentially and updates state in
+     *  a single functional setState. Never sets `pendingReveal`, so it
+     *  doesn't interfere with the single-capsule tap-to-collect flow. */
+    const rollAndCollectCapsule = useCallback(async (): Promise<CapsuleReveal | null> => {
+        try {
+            const openRes = await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "open" }),
+            });
+            if (!openRes.ok) {
+                console.error("rollAndCollectCapsule open failed:", openRes.status);
+                return null;
+            }
+            const openData = await openRes.json();
+            if (!openData.opened) return null;
+
+            const tier = openData.tier as BadgeTier;
+            const badge = BADGES.find(b => b.id === openData.badgeId);
+            if (!badge) {
+                console.error("Server returned unknown badgeId:", openData.badgeId);
+                return null;
+            }
+
+            const collectRes = await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "collect", badgeId: openData.badgeId }),
+            });
+            if (!collectRes.ok) {
+                console.error("rollAndCollectCapsule collect failed:", collectRes.status);
+                return null;
+            }
+            const collectData = await collectRes.json();
+            if (!collectData.collected) return null;
+
+            const nowIso = new Date().toISOString();
+            setState(prev => ({
+                ...prev,
+                capsules: openData.capsules,
+                totalOpened: openData.totalOpened,
+                pins: {
+                    ...prev.pins,
+                    [badge.id]: {
+                        count: collectData.count,
+                        firstEarned: collectData.firstEarned
+                            || prev.pins[badge.id]?.firstEarned
+                            || nowIso,
+                        lastPulled: nowIso,
+                    },
+                },
+            }));
+
+            return {
+                badge,
+                tier,
+                isDuplicate: !!collectData.isDuplicate,
+                duplicateCount: collectData.isDuplicate ? Math.max(0, collectData.count - 1) : 0,
+            };
+        } catch (e) {
+            console.error("rollAndCollectCapsule error:", e);
+            return null;
+        }
+    }, []);
+
     // Exposed for consumers that need to read the latest match id in async flows
     const getActiveMatchId = useCallback(() => activeMatchIdRef.current, []);
 
@@ -259,6 +329,7 @@ export function usePinBook() {
         earnBonusCapsule,
         openCapsule,
         collectReveal,
+        rollAndCollectCapsule,
         setBonusPrizeGames,
         totalCollected: Object.keys(state.pins).length,
         totalBadges: BADGES.length,

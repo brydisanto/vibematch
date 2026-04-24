@@ -27,6 +27,11 @@ interface VibeCapsuleProps {
     duplicateCount: number;
     quickOpen: boolean;
     onComplete: () => void;
+    /** When true, the animation plays through the crack/explosion and then
+     *  fires onComplete without ever entering the reveal phase — i.e. no
+     *  pin is shown. Used by bulk-open so the summary grid is the "reveal"
+     *  rather than a single representative pin. */
+    skipReveal?: boolean;
 }
 
 type Phase = "idle" | "appear" | "anticipate" | "crack" | "reveal" | "collect";
@@ -1011,6 +1016,7 @@ export default function VibeCapsule({
     duplicateCount,
     quickOpen,
     onComplete,
+    skipReveal,
 }: VibeCapsuleProps) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [showBurst, setShowBurst] = useState(false);
@@ -1068,6 +1074,20 @@ export default function VibeCapsule({
             triggerHaptic(50);
             addTimeout(() => { setShowFlash(false); }, 400);
             addTimeout(() => {
+                if (skipReveal) {
+                    // Bulk hero: explosion is the finale, summary grid is
+                    // the reveal. Play the reveal apex audio so the moment
+                    // lands, then hand off quickly — the sound plays out on
+                    // the audio context after unmount, so a short UI delay
+                    // is enough to perceive the peak without visible lag.
+                    setShowBurst(false);
+                    setShowShockwave(false);
+                    playCapsuleRevealSound(tier);
+                    if (!isDuplicate) playNewPinSound();
+                    triggerHaptic(20);
+                    addTimeout(() => { onComplete(); }, 200);
+                    return;
+                }
                 setPhase("reveal");
                 setShowBurst(false);
                 setShowShockwave(false);
@@ -1089,7 +1109,7 @@ export default function VibeCapsule({
                 playCapsuleAnticipateSound();
             }, PHASE_DURATION.appear);
         }
-    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic, isDuplicate]);
+    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic, isDuplicate, skipReveal, onComplete]);
 
     // Handle tap to crack
     const handleCapsuleTap = useCallback(() => {
@@ -1118,8 +1138,24 @@ export default function VibeCapsule({
             setShowBloom(true);
         }, PHASE_DURATION.crack * 0.55);
 
-        // Reveal — badge materializes from the bloom
+        // Reveal — badge materializes from the bloom. When skipReveal is set
+        // (bulk hero), we still play the reveal apex audio so the moment
+        // lands, then hand off to the summary after the sound has had a
+        // beat to peak.
         addTimeout(() => {
+            if (skipReveal) {
+                playCapsuleRevealSound(tier);
+                if (!isDuplicate) playNewPinSound();
+                triggerHaptic(20);
+                // Short hand-off — Web Audio keeps playing after unmount, so
+                // a brief beat is enough to perceive the peak without making
+                // the UI feel frozen before the summary pops up.
+                addTimeout(() => {
+                    setShowBloom(false);
+                    onComplete();
+                }, 220);
+                return;
+            }
             setPhase("reveal");
             setShowRevealParticles(true);
             if (tier === "gold" || tier === "cosmic") setShowConfetti(true);
@@ -1132,7 +1168,7 @@ export default function VibeCapsule({
             setShowBloom(false);
             setShowRevealParticles(false);
         }, PHASE_DURATION.crack * 0.7 + PHASE_DURATION.reveal);
-    }, [phase, addTimeout, tier, isDuplicate]);
+    }, [phase, addTimeout, tier, isDuplicate, skipReveal, onComplete]);
 
     // Handle collect tap
     const handleCollect = useCallback(() => {
