@@ -219,6 +219,9 @@ export default function CapsuleSequence({
                     isDuplicate={currentReveal.isDuplicate}
                     duplicateCount={currentReveal.duplicateCount}
                     quickOpen={false}
+                    // Bulk hero plays the crack + explosion but skips the
+                    // single-pin reveal — the summary grid is the reveal.
+                    skipReveal={phase === "herorevealing"}
                     onComplete={handleRevealComplete}
                 />
             )}
@@ -275,28 +278,21 @@ export default function CapsuleSequence({
 // Overlays
 // -----------------------------------------------------------------------------
 
-// Tier colors used for the idle-floating capsules so the overlay previews the
-// palette the user's about to see in the summary.
-const IDLE_CAPSULE_TIERS: BadgeTier[] = ["blue", "silver", "special", "gold", "cosmic"];
-
 function RollingOverlay({ subtitle }: { subtitle?: string }) {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
             <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(26,6,51,0.92), rgba(6,0,15,0.96))" }} />
-            <div className="relative flex flex-col items-center gap-5">
-                {/* Floating capsule cluster — five rarity-tinted pills bobbing
-                    on staggered delays so the counter feels alive instead of
-                    a blank spinner wait. */}
-                <div className="relative h-28 w-[280px] flex items-end justify-center gap-3">
-                    {IDLE_CAPSULE_TIERS.map((tier, i) => (
-                        <FloatingCapsule key={tier} tier={tier} index={i} />
-                    ))}
-                </div>
-                <motion.div
-                    className="w-8 h-8 rounded-full border-2 border-white/10"
-                    style={{ borderTopColor: "#B366FF", borderRightColor: "#B366FF" }}
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
+            <div className="relative flex flex-col items-center gap-4">
+                {/* Shaka wiggle — GVC's signature hang-loose icon doing a
+                    continuous loose wiggle while capsules roll on the server.
+                    Same rotation keyframes used across the rest of the app. */}
+                <motion.img
+                    src="/assets/gvc_shaka.png"
+                    alt=""
+                    className="w-24 h-24 object-contain"
+                    style={{ filter: "drop-shadow(0 6px 18px rgba(179, 102, 255, 0.55))" }}
+                    animate={{ rotate: [0, -14, 14, -10, 10, -6, 6, 0] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
                 />
                 {subtitle && (
                     <div className="text-[11px] font-mundial uppercase tracking-widest text-white/60">
@@ -305,56 +301,6 @@ function RollingOverlay({ subtitle }: { subtitle?: string }) {
                 )}
             </div>
         </div>
-    );
-}
-
-function FloatingCapsule({ tier, index }: { tier: BadgeTier; index: number }) {
-    const color = TIER_COLORS[tier] ?? "#888";
-    // Each capsule bobs with a slightly different phase + vertical range to
-    // look like a loose cluster rather than a locked-step row.
-    const duration = 1.6 + (index % 3) * 0.25;
-    const delay = index * 0.18;
-    const bobHeight = 12 + (index % 2) * 4;
-    return (
-        <motion.div
-            initial={{ y: 0, rotate: 0 }}
-            animate={{
-                y: [0, -bobHeight, 0, bobHeight * 0.6, 0],
-                rotate: [-4, 4, -3, 3, -4],
-            }}
-            transition={{
-                repeat: Infinity,
-                duration,
-                delay,
-                ease: "easeInOut",
-            }}
-            className="relative w-10 h-14 rounded-full"
-            style={{
-                background: `linear-gradient(180deg, ${color} 0%, ${color}aa 48%, ${color}66 100%)`,
-                boxShadow: `0 6px 14px rgba(0,0,0,0.55), 0 0 22px ${color}66, inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -6px 12px rgba(0,0,0,0.35)`,
-                border: `1px solid ${color}`,
-            }}
-        >
-            {/* Specular highlight so the pill reads as a 3D capsule, not a
-                flat pill sticker. */}
-            <div
-                className="absolute top-[6px] left-[5px] w-[10px] h-[14px] rounded-full opacity-80"
-                style={{
-                    background: "radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%)",
-                }}
-            />
-            {/* Seam band in the middle of the capsule, darker than the shell
-                but brighter than the deepest shadow — matches the VibeCapsule
-                aesthetic without being literal about it. */}
-            <div
-                className="absolute left-0 right-0"
-                style={{
-                    top: "calc(50% - 1px)",
-                    height: 2,
-                    background: `linear-gradient(90deg, transparent, rgba(0,0,0,0.45), transparent)`,
-                }}
-            />
-        </motion.div>
     );
 }
 

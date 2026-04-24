@@ -27,6 +27,11 @@ interface VibeCapsuleProps {
     duplicateCount: number;
     quickOpen: boolean;
     onComplete: () => void;
+    /** When true, the animation plays through the crack/explosion and then
+     *  fires onComplete without ever entering the reveal phase — i.e. no
+     *  pin is shown. Used by bulk-open so the summary grid is the "reveal"
+     *  rather than a single representative pin. */
+    skipReveal?: boolean;
 }
 
 type Phase = "idle" | "appear" | "anticipate" | "crack" | "reveal" | "collect";
@@ -1011,6 +1016,7 @@ export default function VibeCapsule({
     duplicateCount,
     quickOpen,
     onComplete,
+    skipReveal,
 }: VibeCapsuleProps) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [showBurst, setShowBurst] = useState(false);
@@ -1068,6 +1074,14 @@ export default function VibeCapsule({
             triggerHaptic(50);
             addTimeout(() => { setShowFlash(false); }, 400);
             addTimeout(() => {
+                if (skipReveal) {
+                    // Bulk hero: explosion is the finale, summary grid is the
+                    // reveal. Don't show the pin.
+                    setShowBurst(false);
+                    setShowShockwave(false);
+                    onComplete();
+                    return;
+                }
                 setPhase("reveal");
                 setShowBurst(false);
                 setShowShockwave(false);
@@ -1089,7 +1103,7 @@ export default function VibeCapsule({
                 playCapsuleAnticipateSound();
             }, PHASE_DURATION.appear);
         }
-    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic, isDuplicate]);
+    }, [isOpen, quickOpen, addTimeout, isGold, isCosmic, isDuplicate, skipReveal, onComplete]);
 
     // Handle tap to crack
     const handleCapsuleTap = useCallback(() => {
@@ -1118,8 +1132,15 @@ export default function VibeCapsule({
             setShowBloom(true);
         }, PHASE_DURATION.crack * 0.55);
 
-        // Reveal — badge materializes from the bloom
+        // Reveal — badge materializes from the bloom. When skipReveal is set
+        // (bulk hero), we stop here and hand off; the summary grid is the
+        // reveal.
         addTimeout(() => {
+            if (skipReveal) {
+                setShowBloom(false);
+                onComplete();
+                return;
+            }
             setPhase("reveal");
             setShowRevealParticles(true);
             if (tier === "gold" || tier === "cosmic") setShowConfetti(true);
@@ -1132,7 +1153,7 @@ export default function VibeCapsule({
             setShowBloom(false);
             setShowRevealParticles(false);
         }, PHASE_DURATION.crack * 0.7 + PHASE_DURATION.reveal);
-    }, [phase, addTimeout, tier, isDuplicate]);
+    }, [phase, addTimeout, tier, isDuplicate, skipReveal, onComplete]);
 
     // Handle collect tap
     const handleCollect = useCallback(() => {
