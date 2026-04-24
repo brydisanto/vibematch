@@ -62,9 +62,10 @@ The board is **8×8**. Each tile is a **badge** (pin artwork) drawn from a per-g
 
 ### Score inputs
 
-- **Match length**: a 3-match is the base, 4-match pays more, 5+ pays a lot more.
-- **Combos**: chain multiple moves without idle time and the multiplier climbs.
-- **Cascades**: when cleared tiles trigger new matches on fall, each subsequent match increases the cascade multiplier.
+- **Match length**: 3-match pays **100** base, 4-match pays **300** (and spawns a Bomb), 5-match pays **600** (and spawns a Laser Party), 6+ spawns a Cosmic Blast.
+- **Tier multiplier**: every match is multiplied by the tier of the matched badge. Common **1x**, Rare **1.5x**, Special **2x**, Legendary **2x** (a handful at 3x), Cosmic **3x**.
+- **Combos & cascades**: when a swap's match clears and tiles falling in form a new match, that's a *cascade*. Every cascade on a turn stacks an extra **+75%** multiplier on every subsequent match that turn (combo 0 = 1x, combo 1 = 1.75x, combo 2 = 2.5x, combo 3 = 3.25x, etc.).
+- **Combo carry-over**: finish a turn with 3 cascades and next turn starts at combo +1. 4 cascades, +2. 5+ cascades, +3. This is the momentum mechanic that makes late-game cascade chains so valuable.
 - **Shape bonuses**: certain geometries trigger heavy multipliers when two matching lines share a tile. Shapes are detected from cascade resolution, not planned with a single swap.
 
 | ![L-Shape](docs/shapes/l-shape.svg) | ![T-Shape](docs/shapes/t-shape.svg) | ![Cross](docs/shapes/cross-shape.svg) |

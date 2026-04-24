@@ -719,12 +719,16 @@ function Scoring() {
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
-                    sub="Three is the minimum match and the base score. Four-matches pay more AND create a Bomb tile. Five-matches pay even more AND create a Laser Party tile. Six or more creates a Cosmic Blast." />
-                <ScoreStat value="xN" label="Combo" color={ORANGE}
-                    sub="Every match you land on a single turn (including cascades) increases the combo meter for that turn. The combo multiplier applies to every subsequent match on the same turn, so holding a long combo compounds fast." />
-                <ScoreStat value=". . ." label="Cascade" color={COSMIC}
-                    sub="When cleared tiles create a gap, the tiles above fall to fill it. If those falling tiles land in a new match you get a cascade. Each cascade stacks another multiplier, and turn-end cascades frequently exceed the original swap's score by many times over." />
+                    sub="Three-match pays 100 base, four-match pays 300 and creates a Bomb, five-match pays 600 and creates a Laser Party. Six or more creates a Cosmic Blast. Longer lines compound with everything else, so a 5-match in the middle of a combo is worth wildly more than the same tiles cleared cold." />
+                <ScoreStat value="+75%" label="Cascade" color={COSMIC}
+                    sub="When cleared tiles create a gap, the tiles above drop to fill it. If those falling tiles form a new match on their own, that is a cascade. Every cascade in a turn bumps your combo multiplier by +75%: the first cascade is 1.75x, the second 2.5x, the third 3.25x, and it just keeps climbing." />
+                <ScoreStat value="+3" label="Momentum" color={ORANGE}
+                    sub="Big cascade turns leak into your next move. Finish a turn with 3 cascades and your NEXT turn starts at combo +1. Finish with 4, start at +2. Finish with 5+, start at +3. This is how top players string entire late-game turns into runaway scoring streaks." />
             </div>
+
+            <Callout tone="cosmic" label="Combos in plain English">
+                A combo is not about tapping fast. It is about how many matches one swap cascades into. Every cascade stacks +75% on the same turn, and if you finish a turn with 3+ cascades, some of that momentum carries over to your next swap as a combo head start.
+            </Callout>
         </section>
     );
 }

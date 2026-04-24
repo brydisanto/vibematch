@@ -157,7 +157,7 @@ function SlideBasics() {
             </ContentCard>
 
             <ContentCard icon={ArrowDown} color="#FF5F1F" title="Cascades" delay={0.2}>
-                <p>When badges clear, new ones drop in from above. If they land into another match, that's a <span className="text-[#FF5F1F] font-semibold">combo chain</span> — free points!</p>
+                <p>When badges clear, new ones drop in from above. If they land into another match, that's a <span className="text-[#FF5F1F] font-semibold">cascade</span>. Each cascade boosts your score multiplier for the rest of the turn.</p>
             </ContentCard>
         </div>
     );
@@ -343,8 +343,9 @@ function SlideScoring() {
                 <div className="flex flex-wrap gap-1.5">
                     {[
                         { name: "Common", mult: "1x", color: TIER_COLORS.blue },
-                        { name: "Uncommon", mult: "1.5x", color: TIER_COLORS.silver },
-                        { name: "Gold", mult: "2x", color: TIER_COLORS.gold },
+                        { name: "Rare", mult: "1.5x", color: TIER_COLORS.silver },
+                        { name: "Special", mult: "2x", color: TIER_COLORS.special },
+                        { name: "Legendary", mult: "2x", color: TIER_COLORS.gold },
                         { name: "Cosmic", mult: "3x", color: TIER_COLORS.cosmic },
                     ].map((t) => (
                         <span
@@ -367,8 +368,14 @@ function SlideScoring() {
             </motion.div>
 
             {/* Combo + Special tile scores */}
-            <ContentCard icon={TrendingUp} color="#FF5F1F" title="Combos" delay={0.15}>
-                <p>Each cascade chain adds <span className="text-white/80 font-semibold">+50%</span> score. Land a 3-chain and you carry <span className="text-[#FFE048]">1</span> into your next turn. 4+ chains carry <span className="text-[#FFE048]">2</span>.</p>
+            <ContentCard icon={TrendingUp} color="#FF5F1F" title="Combos &amp; Cascades" delay={0.15}>
+                <p>A single swap can chain into multiple matches as tiles fall. Each extra match is a <span className="text-[#FF5F1F] font-semibold">cascade</span>, and every cascade multiplies your score by an extra <span className="text-[#FFE048] font-semibold">+75%</span>.</p>
+                <p className="mt-1.5">Finish a turn with lots of cascades and the <span className="text-white/80 font-semibold">momentum carries over</span> into the next turn:</p>
+                <div className="mt-1.5 space-y-0.5 text-white/60">
+                    <p>3 cascades: next turn starts at <span className="text-[#FFE048]">+1</span> combo</p>
+                    <p>4 cascades: next turn starts at <span className="text-[#FFE048]">+2</span> combo</p>
+                    <p>5+ cascades: next turn starts at <span className="text-[#FFE048]">+3</span> combo</p>
+                </div>
             </ContentCard>
 
             <ContentCard icon={Bomb} color="#B366FF" title="Tile Scores" delay={0.2}>
@@ -419,7 +426,7 @@ function SlideScoring() {
                     <Lightbulb size={14} className="text-[#B366FF] mt-0.5 flex-shrink-0" />
                     <p className="text-[11px] text-white/55 font-mundial leading-relaxed">
                         <span className="text-[#B366FF] font-bold">Pro Tip:</span>{" "}
-                        Hunt for Gold and Cosmic badges first — they multiply everything. Set up cascades with high-tier badges and you'll blast past 15k.
+                        Hunt for Legendary and Cosmic badges first: they multiply everything. Set up cascades with high-tier badges and you'll blast past 15K.
                     </p>
                 </div>
             </motion.div>
