@@ -1506,25 +1506,26 @@ export default function LandingPageArcade({
                                             </ChunkyButton>
                                         )}
 
-                                        {/* VIEW LEADERS — filled purple
-                                            ChunkyButton styled to mirror
-                                            the REROLL button in the left
-                                            rail. Opens the leaderboard
-                                            modal on the Daily tab. */}
-                                        <ChunkyButton
-                                            onClick={() => setLeaderboardTab("daily")}
-                                            color={COSMIC}
-                                            deep={COSMIC_DEEP}
-                                            text="#fff"
-                                            style={{
-                                                padding: "6px 14px",
-                                                fontSize: 10,
-                                                fontWeight: 900,
-                                                letterSpacing: "0.18em",
-                                            }}
-                                        >
-                                            VIEW LEADERS
-                                        </ChunkyButton>
+                                        {/* VIEW LEADERS only surfaces after
+                                            today's run is done — keeps the
+                                            box to a single CTA so the pre-play
+                                            action is unambiguous. */}
+                                        {playedDaily && (
+                                            <ChunkyButton
+                                                onClick={() => setLeaderboardTab("daily")}
+                                                color={COSMIC}
+                                                deep={COSMIC_DEEP}
+                                                text="#fff"
+                                                style={{
+                                                    padding: "10px 22px",
+                                                    fontSize: 11,
+                                                    fontWeight: 900,
+                                                    letterSpacing: "0.2em",
+                                                }}
+                                            >
+                                                VIEW LEADERS
+                                            </ChunkyButton>
+                                        )}
                                     </div>
                                 </div>
                             </div>
