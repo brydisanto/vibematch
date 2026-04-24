@@ -27,7 +27,8 @@ type SequencePhase =
     | "idle"
     | "rolling"         // chain: rolling the next capsule between reveals
     | "revealing"       // chain: showing VibeCapsule for the current reveal
-    | "prerolling"      // bulk: server-rolling every capsule before the summary
+    | "prerolling"      // bulk: server-rolling every capsule
+    | "herorevealing"   // bulk: showing a single VibeCapsule at the best-tier pull
     | "summary"
     | "closing";
 
@@ -159,16 +160,24 @@ export default function CapsuleSequence({
             );
             pulledRef.current = sorted;
             setPulled(sorted);
-            setPhase("summary");
+            // Play one capsule reveal at the best-tier pull (first after
+            // sort), then jump to the summary grid on user tap.
+            setCurrentReveal(sorted[0]);
+            setRevealKey(k => k + 1);
+            setPhase("herorevealing");
         })();
         return () => { cancelled = true; };
     }, [isOpen, phase, mode, count]);
 
-    // CHAIN reveal complete: collect + advance. (BULK mode skips per-capsule
-    // reveals entirely — all pulls are pre-rolled and the user jumps straight
-    // to the summary grid.)
+    // Reveal complete. Chain: collect this pull + advance to the next.
+    // Bulk hero-reveal: all pulls were pre-rolled and credited during the
+    // pre-roll loop, so we just hand off to the summary.
     const handleRevealComplete = useCallback(async () => {
         if (!currentReveal) return;
+        if (mode === "bulk") {
+            setPhase("summary");
+            return;
+        }
         const collectingReveal = currentReveal;
         await collectRevealRef.current();
         const nextPulled = [...pulledRef.current, collectingReveal];
@@ -184,7 +193,7 @@ export default function CapsuleSequence({
 
         setCurrentReveal(null);
         setPhase("rolling");
-    }, [currentReveal, onClose]);
+    }, [currentReveal, mode, onClose]);
 
     // Escape from chain mode mid-run — finishes whatever has already been
     // collected and returns to the Pin Book.
@@ -196,7 +205,8 @@ export default function CapsuleSequence({
 
     if (!isOpen) return null;
 
-    const showVibeCapsule = phase === "revealing" && currentReveal !== null;
+    const showVibeCapsule =
+        (phase === "revealing" || phase === "herorevealing") && currentReveal !== null;
 
     return (
         <>
@@ -265,13 +275,25 @@ export default function CapsuleSequence({
 // Overlays
 // -----------------------------------------------------------------------------
 
+// Tier colors used for the idle-floating capsules so the overlay previews the
+// palette the user's about to see in the summary.
+const IDLE_CAPSULE_TIERS: BadgeTier[] = ["blue", "silver", "special", "gold", "cosmic"];
+
 function RollingOverlay({ subtitle }: { subtitle?: string }) {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
             <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(26,6,51,0.92), rgba(6,0,15,0.96))" }} />
-            <div className="relative flex flex-col items-center gap-3">
+            <div className="relative flex flex-col items-center gap-5">
+                {/* Floating capsule cluster — five rarity-tinted pills bobbing
+                    on staggered delays so the counter feels alive instead of
+                    a blank spinner wait. */}
+                <div className="relative h-28 w-[280px] flex items-end justify-center gap-3">
+                    {IDLE_CAPSULE_TIERS.map((tier, i) => (
+                        <FloatingCapsule key={tier} tier={tier} index={i} />
+                    ))}
+                </div>
                 <motion.div
-                    className="w-12 h-12 rounded-full border-2 border-white/10"
+                    className="w-8 h-8 rounded-full border-2 border-white/10"
                     style={{ borderTopColor: "#B366FF", borderRightColor: "#B366FF" }}
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
@@ -283,6 +305,56 @@ function RollingOverlay({ subtitle }: { subtitle?: string }) {
                 )}
             </div>
         </div>
+    );
+}
+
+function FloatingCapsule({ tier, index }: { tier: BadgeTier; index: number }) {
+    const color = TIER_COLORS[tier] ?? "#888";
+    // Each capsule bobs with a slightly different phase + vertical range to
+    // look like a loose cluster rather than a locked-step row.
+    const duration = 1.6 + (index % 3) * 0.25;
+    const delay = index * 0.18;
+    const bobHeight = 12 + (index % 2) * 4;
+    return (
+        <motion.div
+            initial={{ y: 0, rotate: 0 }}
+            animate={{
+                y: [0, -bobHeight, 0, bobHeight * 0.6, 0],
+                rotate: [-4, 4, -3, 3, -4],
+            }}
+            transition={{
+                repeat: Infinity,
+                duration,
+                delay,
+                ease: "easeInOut",
+            }}
+            className="relative w-10 h-14 rounded-full"
+            style={{
+                background: `linear-gradient(180deg, ${color} 0%, ${color}aa 48%, ${color}66 100%)`,
+                boxShadow: `0 6px 14px rgba(0,0,0,0.55), 0 0 22px ${color}66, inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -6px 12px rgba(0,0,0,0.35)`,
+                border: `1px solid ${color}`,
+            }}
+        >
+            {/* Specular highlight so the pill reads as a 3D capsule, not a
+                flat pill sticker. */}
+            <div
+                className="absolute top-[6px] left-[5px] w-[10px] h-[14px] rounded-full opacity-80"
+                style={{
+                    background: "radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%)",
+                }}
+            />
+            {/* Seam band in the middle of the capsule, darker than the shell
+                but brighter than the deepest shadow — matches the VibeCapsule
+                aesthetic without being literal about it. */}
+            <div
+                className="absolute left-0 right-0"
+                style={{
+                    top: "calc(50% - 1px)",
+                    height: 2,
+                    background: `linear-gradient(90deg, transparent, rgba(0,0,0,0.45), transparent)`,
+                }}
+            />
+        </motion.div>
     );
 }
 
