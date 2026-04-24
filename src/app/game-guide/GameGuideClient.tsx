@@ -271,17 +271,11 @@ function AmbientFx() {
    ──────────────────────────────────────────────────────────────── */
 function TopBar() {
     return (
-        <div className="flex items-center justify-between mb-12">
-            <Link href="/" className="group flex items-center gap-2.5 cursor-pointer no-underline">
+        <div className="flex items-center justify-between mb-3">
+            <Link href="/" className="group flex items-center cursor-pointer no-underline">
                 <div className="transition-transform duration-200 group-hover:[transform:rotate(-12deg)_scale(1.08)]">
                     <Shaka size={32} />
                 </div>
-                <span
-                    className="font-display font-black text-[13px] tracking-[0.3em] uppercase"
-                    style={{ color: GOLD, textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 12px ${GOLD}44` }}
-                >
-                    VibeMatch
-                </span>
             </Link>
             <Link href="/" className="no-underline">
                 <ChunkyButton
@@ -299,9 +293,9 @@ function TopBar() {
 
 function Hero() {
     return (
-        <section className="text-center pt-6 pb-10">
+        <section className="text-center pt-1 pb-10">
             <div
-                className="inline-flex items-center gap-2 font-display font-black text-[10px] tracking-[0.35em] uppercase px-4 py-1.5 rounded-full mb-6"
+                className="inline-flex items-center gap-2 font-display font-black text-[10px] tracking-[0.35em] uppercase px-4 py-1.5 rounded-full mb-5"
                 style={{ color: GOLD, background: `${GOLD}12`, border: `1px solid ${GOLD}55` }}
             >
                 <Shaka size={14} />
@@ -322,7 +316,7 @@ function Hero() {
                 />
             </div>
             <p className="font-mundial text-[17px] max-w-[640px] mx-auto mt-2" style={{ color: "rgba(255,255,255,0.82)" }}>
-                Match badges. Score big. Collect every pin. Climb the Collector ladder from{" "}
+                Match badges. Score big. Collect all 101 pins. Climb the Collector ladder from{" "}
                 <span className="font-display font-black" style={{ color: "#9CA3AF" }}>PLASTIC</span>{" "}
                 all the way to{" "}
                 <span
@@ -335,8 +329,7 @@ function Hero() {
                     }}
                 >
                     ONE-OF-ONE
-                </span>
-                . Everything on this page is interactive. Tap the demos to see them animate.
+                </span>.
             </p>
             <div className="flex justify-center gap-5 mt-10 flex-wrap">
                 {(["common","rare","special","gold","cosmic"] as const).map(t => (
@@ -467,7 +460,7 @@ function HowToPlay() {
                 id="how-to-play"
                 tag="The basics"
                 title="How to play"
-                sub="VibeMatch is a match-3 puzzle where the tiles are Good Vibes Club pin artwork. You get 30 moves per run. Every move is a swap between two adjacent tiles; if that swap lines up 3 or more of the same pin in a row or column, they clear and score. Tiles above the cleared spots fall to fill the gap, and fresh tiles drop in from the top. New matches triggered by that fall are cascades, and each cascade ratchets your score multiplier higher. Your whole game is about finding the move where one small swap starts a chain reaction."
+                sub="Match-3 with Good Vibes Club pin art. 30 moves per run. Swap two adjacent tiles to line up 3+ of the same pin and clear them; tiles fall, new ones drop, and fresh matches from those drops are cascades that climb your multiplier. The whole game is finding the swap that triggers a chain."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
@@ -507,7 +500,7 @@ function HowToPlay() {
             </div>
 
             <Callout tone="cosmic" label="Idle hint">
-                If you do not move for 8 seconds, the game will briefly highlight a valid swap you might have missed. It happens once per run and never picks the optimal move for you, just a safe one to keep you unstuck.
+                Stay still for 8 seconds and the game flashes a valid swap once per run. Safe move, not optimal — just enough to keep you unstuck.
             </Callout>
         </section>
     );
@@ -715,19 +708,19 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring your moves"
-                sub="Every match starts with a base score per cleared tile, then multipliers stack on top. Three things drive the multiplier stack: the length of the match itself, the tier of the badge being matched, and the cascade meter that climbs every time a single swap chains into additional matches. All three compound. Hit a 4-match on the second cascade of a turn made of Legendary pins and you are looking at 8-10x the score of the same tiles cleared cold. This is why elite players chase setups rather than first-available matches: the difference between a 6,000 point game and a 60,000 point game is almost entirely in multiplier stacking."
+                sub="Three multipliers stack on every match: match length, tier of the matched badge, and cascade depth. They compound. A 4-match of Legendary pins on the second cascade can outscore the same tiles cleared cold by 8-10x — chasing setups beats grabbing first-available matches every time."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
-                    sub="Three-match pays 100 base, four-match pays 300 and creates a Bomb, five-match pays 600 and creates a Laser Party. Six or more creates a Cosmic Blast. Longer lines compound with everything else, so a 5-match in the middle of a combo is worth wildly more than the same tiles cleared cold." />
+                    sub="3-match: 100 base. 4-match: 300 + Bomb. 5-match: 600 + Laser Party. 6+: Cosmic Blast." />
                 <ScoreStat value="+75%" label="Cascade" color={COSMIC}
-                    sub="When cleared tiles create a gap, the tiles above drop to fill it. If those falling tiles form a new match on their own, that is a cascade. Every cascade in a turn bumps your combo multiplier by +75%: the first cascade is 1.75x, the second 2.5x, the third 3.25x, and it just keeps climbing." />
+                    sub="Every cascade in a turn adds +75% to your multiplier. 1st cascade 1.75x, 2nd 2.5x, 3rd 3.25x, and climbing." />
                 <ScoreStat value="+3" label="Momentum" color={ORANGE}
-                    sub="Big cascade turns leak into your next move. Finish a turn with 3 cascades and your NEXT turn starts at combo +1. Finish with 4, start at +2. Finish with 5+, start at +3. This is how top players string entire late-game turns into runaway scoring streaks." />
+                    sub="Cascade turns leak into the next move. End a turn with 3 cascades → next starts at combo +1. 4 → +2. 5+ → +3." />
             </div>
 
             <Callout tone="cosmic" label="Combos in plain English">
-                A combo is not about tapping fast. It is about how many matches one swap cascades into. Every cascade stacks +75% on the same turn, and if you finish a turn with 3+ cascades, some of that momentum carries over to your next swap as a combo head start.
+                It's not tapping fast. It's how many matches one swap cascades into. End a turn with 3+ cascades and some momentum carries to your next swap as a combo head start.
             </Callout>
         </section>
     );
@@ -757,7 +750,7 @@ function PowerTiles() {
                 id="power-tiles"
                 tag="Power tiles"
                 title="Bombs, Laser Parties and Blasts"
-                sub="Matches of 4 or more automatically create a power tile on the board. Power tiles are visually distinct (you will see them glowing with tier-colored borders) and sit alongside regular tiles until you move them. Swapping a power tile with any adjacent tile detonates it, and chaining one power tile's clear into another's position is one of the single biggest score swings in the game. A Bomb next to a Laser Party both going off in the same turn can easily clear a third of the board."
+                sub="Matches of 4+ spawn a power tile that sits on the board until you swap it with a neighbor to detonate. Chaining two power tiles in one turn is one of the biggest score swings in the game."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PowerTileDemo
@@ -765,7 +758,7 @@ function PowerTiles() {
                     name="Bomb"
                     trigger="Match 4 (non-Cosmic)"
                     effect="Clears a 3x3 area around itself."
-                    detail="The simplest power tile and usually the first one a new player creates. Detonates when swapped with any neighbor. The 3x3 clear is centered on the bomb itself, so positioning matters: a bomb in the middle of a dense column will wipe out far more tiles than one near an edge."
+                    detail="Position matters — a bomb in a dense column wipes far more than one near an edge."
                     accent="#FF3333"
                     glow="rgba(255,51,51,0.45)"
                 />
@@ -774,7 +767,7 @@ function PowerTiles() {
                     name="Laser Party"
                     trigger="Match 5, or Cosmic Match 4"
                     effect="Clears the full row AND column through the tile."
-                    detail="A massive clear in a plus pattern. Because it strikes the entire row and column at once, Laser Parties are the easiest way to set up long cascade chains; a single Laser Party can remove 15+ tiles and cause the rest of the board to settle into multiple new matches."
+                    detail="The easiest way to set up long cascade chains. A single Laser can remove 15+ tiles."
                     accent="#4A9EFF"
                     glow="rgba(74,158,255,0.5)"
                 />
@@ -782,15 +775,15 @@ function PowerTiles() {
                     kind="cosmic"
                     name="Cosmic Blast"
                     trigger="Match 6+, or Cosmic Match 5"
-                    effect="Clears EVERY tile of that badge type from the entire board."
-                    detail="The rarest power tile and always a game-defining moment. A single Cosmic Blast wipes every tile matching the detonated badge's type across all 64 cells of the board. Triggers on any 6-or-more match, or on a 5-match made of Cosmic-tier pins. Expect most runs to produce zero; when one does land, a single detonation can mean a 10,000+ point swing."
+                    effect="Clears EVERY tile of that badge type from the board."
+                    detail="The rarest power tile. Most runs produce zero; when one lands, expect a 10,000+ point swing."
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
                     premium
                 />
             </div>
             <Callout tone="cosmic" label="Cosmic tier is unique">
-                Cosmic-tier badges upgrade the special tile they would normally spawn by one level. A Cosmic match-4 skips the Bomb and creates a Laser Party. A Cosmic match-5 skips the Laser Party and creates a Cosmic Blast. This is one of the biggest reasons to chase Cosmic badges on the board.
+                Cosmic matches upgrade the special they spawn by one level. Cosmic match-4 → Laser Party (skips Bomb). Cosmic match-5 → Cosmic Blast (skips Laser).
             </Callout>
         </section>
     );
@@ -895,7 +888,7 @@ function ShapeBonuses() {
                 id="shapes"
                 tag="Shape bonuses"
                 title="The shape multipliers"
-                sub="Most matches are a straight line of 3, 4, or 5 tiles. But when a cascade lines up two matching runs that share a tile, the game detects the combined shape and applies a huge score multiplier on top of everything else. There are three shape outcomes: L, T, and Cross. They are not made on purpose from a single swap; they happen naturally when a cascade lands just right. Good players read the board for potential shapes and plan moves that set up intersections, rather than clearing the first match they see. Tap a card below to watch the shape light up in the order the engine detects it."
+                sub="When a cascade lines up two matching runs that share a tile, the engine detects the shape and stacks a huge multiplier on top of everything else. Three outcomes: L, T, Cross. Tap a card to see the detection order."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <ShapeCard
@@ -1032,7 +1025,7 @@ function Capsules() {
                 id="capsules"
                 tag="Rewards"
                 title="Earning Pin Capsules"
-                sub="A Pin Capsule is the physical reward for a good game. You earn them when your final score crosses specific thresholds. Every capsule you earn sits in your Pin Book waiting to be opened, and opening one reveals a random pin from the 101-pin catalog. The higher your score, the more capsules you earn from a single run. The capsule you see below behaves exactly like the real one in the game. Tap it to watch the anticipation, crack, and reveal."
+                sub="Score thresholds earn Pin Capsules. Each capsule opens to a random pin from the 101-pin catalog. Higher score = more capsules from a single run. Tap the capsule below to crack one open."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1444,7 +1437,7 @@ function PinsSection() {
                 id="pins"
                 tag="The collection"
                 title="Pins and rarity"
-                sub="The pin catalog is 101 unique pins, distributed across 5 rarity tiers. When you open a capsule, the server first rolls the rarity tier (weighted toward Common and Rare, with Cosmic the rarest), then picks a specific pin from that tier. Rarer pins have lower drop weights within their tier too, so even opening 10 Cosmics does not guarantee you will have all 3 uniques. Your full collection displays on your Pin Book, organized by tier, with every pin either shown in full color (owned) or as a dim silhouette (undiscovered)."
+                sub="101 unique pins across 5 tiers. Capsules roll tier first (weighted toward Common, Cosmic is rarest), then pick a pin from that tier. Rarer pins also have lower drop weights inside their tier."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {tiers.map(t => {
@@ -1497,7 +1490,7 @@ function CollectorLadder() {
                 id="ladder"
                 tag="Status"
                 title="The Collector ladder"
-                sub="Your Collector tier is a single prestige title that reflects how much of the catalog you have collected. It is calculated from your unique-pin percentage, not your total capsule spend, so it is a pure measure of how broad your collection is. Your current tier shows on your profile pill in-game, and tapping it opens a breakdown of every band with thresholds. The top two tiers, Cosmic and One-Of-One, get special visual treatments: Cosmic is a purple nebula pulse, and One-Of-One is the holographic rainbow foil reserved for the player who has collected every single pin."
+                sub="Your prestige title, calculated from unique-pin %, not capsule spend. Cosmic gets a purple nebula pulse; One-Of-One is the holographic rainbow foil reserved for completing the catalog."
             />
             <div className="flex flex-col gap-2">
                 {COLLECTOR_TIERS.map(t => {
@@ -1572,7 +1565,7 @@ function DailyChallenge() {
                 id="daily"
                 tag="Once a day"
                 title="The Daily Challenge"
-                sub="Every 24 hours, VibeMatch seeds a single board using the date, and that same board is served to every player on the planet. You get one attempt at it. No retries, no refresh tricks, no board shopping. The Daily Challenge leaderboard is a pure skill comparison: everyone plays identical tiles in the same starting layout, so the person on top is the person who read the board best and planned their 30 moves most carefully. Daily scores also pay out more capsules per threshold than Classic runs, and the single top player at day's end wins the champion bonus."
+                sub="One board per day, identical for every player. One attempt. No retries. Pure skill comparison — and Daily runs pay more capsules per threshold than Classic. The day's #1 wins the champion bonus."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card accent={COSMIC}>
@@ -1648,7 +1641,7 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
                 id="quests"
                 tag="Long-term chases"
                 title="Quests"
-                sub="VibeMatch has 55+ quests across two tracks, all with their own unlock conditions and all paying out bonus Pin Capsules when completed. The Journey track is sequential first-time-user-experience goals that teach game mechanics (your first bomb, your first combo, your first capsule, a 3-day streak). The Mastery track is long-term play, with pin collection milestones, tier completions, streak ceilings, score thresholds, and referrals. Every quest is sticky: once you unlock it, it stays unlocked forever, and the capsule reward is credited immediately. Here is a sample of what is out there."
+                sub="55+ quests across two tracks: Journey teaches mechanics (first bomb, first capsule, 3-day streak), Mastery is long-term play (collection milestones, tier completions, score thresholds). Every completion pays bonus capsules and stays unlocked forever."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {quests.map(q => (
@@ -1716,7 +1709,7 @@ function Rerolls() {
                 id="rerolls"
                 tag="Dupes to fresh capsules"
                 title="Rerolls"
-                sub="Over time you will accumulate duplicate pins, and Rerolls turn them back into fresh Pin Capsules. The burn cost varies by tier: rarer tiers are worth more, so one Cosmic duplicate is enough to reroll into a whole new capsule on its own, while it takes five Common duplicates to do the same. You always keep at least one of every unique pin you own, so Rerolls never delete progress on your collection percentage. They just convert excess into a new roll."
+                sub="Burn duplicates back into fresh capsules. Rarer tiers are worth more — one Cosmic dupe = a new capsule, five Commons for the same. You always keep at least one of every pin you own, so collection % never moves backwards."
             />
             <Card accent={COSMIC}>
                 <div className="grid gap-y-3" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
@@ -1767,7 +1760,7 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="VibeMatch runs four separate leaderboards, each testing a different thing. Score-based boards only count prize-eligible matches (games played within your daily prize cap), so you cannot farm rank by grinding practice games. The Pins board is a parallel race that only cares about collection breadth, not score. Open the Leaders menu in-game to switch between tabs."
+                sub="Four boards, each testing a different thing. Score boards only count prize-eligible matches (no farming via practice). Pins board races collection breadth instead of score."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
@@ -1806,7 +1799,7 @@ function StreakRefer() {
                 id="streak"
                 tag="Show up, share"
                 title="Streaks and referrals"
-                sub="Two systems reward habit and social growth. Your streak climbs every day you play at least one game (any mode), and resets to 1 if you skip a day. Milestone quests at 3, 7, and 30 days unlock bonus capsules. Referrals are simpler: every player has a unique link, and when someone signs up through your link you both get +2 Pin Capsules credited on the spot, up to a lifetime cap of 50 capsules earned from referrals."
+                sub="Streaks climb each day you play (any mode), reset on skip. Quests at 3, 7, and 30 days pay bonus capsules. Referrals: your link gives you and the new player +2 capsules each, up to a 50-capsule lifetime cap."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
