@@ -59,6 +59,18 @@ export default function CapsuleSequence({
     const rollInFlightRef = useRef(false);
     const onCloseRef = useRef(onClose);
     useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+    // Keep the hook methods behind refs so the bulk/chain effects don't
+    // re-trigger (and restart the loop) every time state changes rebind their
+    // identity. usePinBook's openCapsule depends on state.capsules and
+    // collectReveal depends on pendingReveal, so both rebind on every roll;
+    // before this, the bulk useEffect was restarting mid-loop and
+    // double-opening capsules, which surfaced as "Something went wrong"
+    // because the server rejected the repeat call with a pending-reveal
+    // conflict.
+    const openCapsuleRef = useRef(openCapsule);
+    const collectRevealRef = useRef(collectReveal);
+    useEffect(() => { openCapsuleRef.current = openCapsule; }, [openCapsule]);
+    useEffect(() => { collectRevealRef.current = collectReveal; }, [collectReveal]);
 
     // Kick off the run whenever isOpen flips true (and we have capsules)
     useEffect(() => {
@@ -85,7 +97,7 @@ export default function CapsuleSequence({
         const myRun = runIdRef.current;
         let cancelled = false;
         (async () => {
-            const reveal = await openCapsule();
+            const reveal = await openCapsuleRef.current();
             if (cancelled || myRun !== runIdRef.current) return;
             rollInFlightRef.current = false;
             if (!reveal) {
@@ -98,7 +110,7 @@ export default function CapsuleSequence({
             setPhase("revealing");
         })();
         return () => { cancelled = true; };
-    }, [isOpen, phase, mode, openCapsule]);
+    }, [isOpen, phase, mode]);
 
     // BULK mode: pre-roll every capsule sequentially, then hand off to the
     // hero reveal of the best-tier pull.
@@ -112,7 +124,7 @@ export default function CapsuleSequence({
             const collected: CapsuleReveal[] = [];
             for (let i = 0; i < count; i++) {
                 if (cancelled || myRun !== runIdRef.current) return;
-                const reveal = await openCapsule();
+                const reveal = await openCapsuleRef.current();
                 if (cancelled || myRun !== runIdRef.current) return;
                 if (!reveal) {
                     // Partial failure: whatever we got so far still counts.
@@ -125,7 +137,7 @@ export default function CapsuleSequence({
                 }
                 // Credit the pin server-side immediately so the user owns it
                 // even if they navigate away during the hero reveal.
-                await collectReveal();
+                await collectRevealRef.current();
                 if (cancelled || myRun !== runIdRef.current) return;
                 collected.push(reveal);
                 setPrerollProgress(collected.length);
@@ -146,7 +158,7 @@ export default function CapsuleSequence({
             setPhase("herorevealing");
         })();
         return () => { cancelled = true; };
-    }, [isOpen, phase, mode, count, openCapsule, collectReveal]);
+    }, [isOpen, phase, mode, count]);
 
     // CHAIN reveal complete: collect + advance. BULK reveals were already
     // collected during pre-roll; hero-reveal completion jumps to summary.
@@ -157,7 +169,7 @@ export default function CapsuleSequence({
             return;
         }
         const collectingReveal = currentReveal;
-        await collectReveal();
+        await collectRevealRef.current();
         const nextPulled = [...pulledRef.current, collectingReveal];
         pulledRef.current = nextPulled;
         setPulled(nextPulled);
@@ -171,7 +183,7 @@ export default function CapsuleSequence({
 
         setCurrentReveal(null);
         setPhase("rolling");
-    }, [collectReveal, currentReveal, mode, onClose]);
+    }, [currentReveal, mode, onClose]);
 
     // Escape from chain mode mid-run — finishes whatever has already been
     // collected and returns to the Pin Book.

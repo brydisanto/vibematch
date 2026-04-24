@@ -566,63 +566,51 @@ export default function PinBook({
                             <div className="px-5 sm:px-6 py-5 space-y-3">
                                 {/* Capsules Card */}
                                 <div
-                                    className="p-4 rounded-xl"
+                                    className="flex justify-between items-center p-4 rounded-xl gap-3"
                                     style={{
                                         background: "rgba(179,102,255,0.08)",
                                         border: "1px solid rgba(179,102,255,0.15)",
                                     }}
                                 >
-                                    <div className={unopenedCapsules >= 6 ? "mb-3" : "flex justify-between items-center"}>
-                                        <div>
-                                            <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
-                                            <div className="text-[10px] text-white/40 font-mundial">
-                                                {unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready
-                                            </div>
+                                    <div>
+                                        <div className="text-2xl font-display font-black text-[#B366FF]">{unopenedCapsules}</div>
+                                        <div className="text-[10px] text-white/40 font-mundial">
+                                            {unopenedCapsules === 1 ? 'Capsule' : 'Capsules'} Ready
                                         </div>
-                                        {unopenedCapsules < 6 && (
-                                            <button
-                                                onClick={() => onOpenCapsule("one")}
-                                                disabled={unopenedCapsules <= 0}
-                                                className="px-5 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
-                                                style={{
-                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
-                                                    border: "2px solid rgba(179,102,255,0.6)",
-                                                    color: "#fff",
-                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                                                }}
-                                            >
-                                                {unopenedCapsules >= 2 ? `Open ${unopenedCapsules}` : "Open"}
-                                            </button>
-                                        )}
                                     </div>
-                                    {unopenedCapsules >= 6 && (
-                                        <div className="grid grid-cols-2 gap-2">
+                                    <div className="flex items-center gap-1.5">
+                                        {unopenedCapsules >= 6 && (
                                             <button
                                                 onClick={() => onOpenCapsule("one")}
-                                                className="px-4 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5"
+                                                className="px-3 py-2 rounded-lg text-[10px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5"
                                                 style={{
                                                     background: "rgba(179,102,255,0.12)",
                                                     border: "2px solid rgba(179,102,255,0.45)",
                                                     color: "#fff",
-                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                                                    boxShadow: "0 3px 8px rgba(0,0,0,0.35)",
                                                 }}
                                             >
                                                 Open
                                             </button>
-                                            <button
-                                                onClick={() => onOpenCapsule("all")}
-                                                className="px-4 py-2.5 rounded-xl text-[11px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5"
-                                                style={{
-                                                    background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
-                                                    border: "2px solid rgba(179,102,255,0.6)",
-                                                    color: "#fff",
-                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                                                }}
-                                            >
-                                                Open All
-                                            </button>
-                                        </div>
-                                    )}
+                                        )}
+                                        <button
+                                            onClick={() => onOpenCapsule(unopenedCapsules >= 6 ? "all" : "one")}
+                                            disabled={unopenedCapsules <= 0}
+                                            className="px-3 py-2 rounded-lg text-[10px] font-black font-mundial uppercase tracking-widest transition-all hover:-translate-y-0.5 active:translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                            style={{
+                                                background: "linear-gradient(180deg, #B366FF 0%, #8A2BE2 100%)",
+                                                border: "2px solid rgba(179,102,255,0.6)",
+                                                color: "#fff",
+                                                boxShadow: "0 3px 8px rgba(0,0,0,0.35)",
+                                            }}
+                                        >
+                                            {unopenedCapsules >= 6
+                                                ? "Open All"
+                                                : unopenedCapsules >= 2
+                                                    ? `Open ${unopenedCapsules}`
+                                                    : "Open"}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Duplicates / Reroll Card */}
