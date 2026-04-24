@@ -368,13 +368,14 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
                                 : `${pulled.length} ${pulled.length === 1 ? "Capsule" : "Capsules"} Opened`}
                         </div>
                         {!failed && pulled.length > 0 && (
-                            <div className="mt-1 text-[11px] font-mundial text-white/60">
-                                <span className="text-[#4ADE80] font-bold">{newPins}</span> new ·{" "}
-                                <span className="text-white/80 font-bold">{dupes}</span> duplicate
+                            <div className="mt-1 text-[11px] font-mundial font-bold uppercase tracking-widest text-white/60">
+                                <span className="text-[#4ADE80]">{newPins} New</span>
+                                {" · "}
+                                <span className="text-white/80">{dupes} Duplicate</span>
                                 {bestTier && (
                                     <>
-                                        {" · best pull "}
-                                        <span style={{ color: TIER_COLORS[bestTier] }} className="font-bold uppercase">
+                                        {" · Best Pull "}
+                                        <span style={{ color: TIER_COLORS[bestTier] }}>
                                             {TIER_SHORT_LABELS[bestTier]}
                                         </span>
                                     </>
