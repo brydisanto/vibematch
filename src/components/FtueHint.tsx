@@ -41,10 +41,10 @@ const CONFIG: Record<
     },
     vibestreak: {
         label: "New!",
-        title: "Vibestreak Tile Unlocked",
+        title: "Laser Party Tile Unlocked",
         body: "For matching 5 in a row. Tap twice to clear the whole row and column.",
-        gradient: "linear-gradient(135deg, #B366FF, #6C5CE7)",
-        accent: "#B366FF",
+        gradient: "linear-gradient(135deg, #4A9EFF, #4AE0FF)",
+        accent: "#4A9EFF",
         Icon: Zap,
     },
     cosmicBlast: {
