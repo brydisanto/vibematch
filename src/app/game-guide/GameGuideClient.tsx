@@ -3,22 +3,27 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-    Home, Flame, Trophy, Calendar, Pin, Star, HandHeart, Zap, Target, Sparkles,
-    TrendingUp, ArrowRight, Lock, Globe, Lightbulb,
+    Flame, Trophy, Calendar, Pin, Star, HandHeart, Target, Sparkles,
+    TrendingUp, ArrowRight, Lock, Globe,
 } from "lucide-react";
-import { FloatingBadges, ChunkyButton } from "@/components/arcade";
+import { ChunkyButton } from "@/components/arcade";
 import {
-    GOLD, GOLD_DEEP, GOLD_LIGHT, GOLD_DIM,
+    GOLD, GOLD_DEEP, GOLD_LIGHT,
     COSMIC, COSMIC_DEEP, COSMIC_LIGHT,
-    ORANGE, ORANGE_DEEP, PINK,
-    INK_DEEP, INK_PANEL, INK_PANEL_LIGHT, INK_DARKEST,
+    ORANGE,
+    INK_PANEL, INK_PANEL_LIGHT, INK_DARKEST,
 } from "@/lib/arcade-tokens";
 import { ALL_ACHIEVEMENTS } from "@/lib/achievements";
+import {
+    playMatchSound, playBombSound, playCapsuleAnticipateSound,
+    playCapsuleCrackSound, playCapsuleRevealSound, playNewPinSound,
+    playUIClick,
+} from "@/lib/sounds";
 
 /* ────────────────────────────────────────────────────────────────
-   Tier palette (sourced from VibeCapsule + Pin Book patterns so the
-   guide visually matches the live game).
+   Palette.
    ──────────────────────────────────────────────────────────────── */
 const TIER_META = {
     common:  { label: "Common",    color: "#E5E7EB", glow: "rgba(229,231,235,0.3)",  count: 19, img: "/badges/any_gvc_1759173799963.webp" },
@@ -59,6 +64,13 @@ const SECTIONS: Array<{ id: string; label: string }> = [
     { id: "tips", label: "Tips and tricks" },
 ];
 
+/* Badges used in the interactive demos (same pool the FTUE uses). */
+const B_CITIZEN = { id: "citizen", src: "/badges/any_gvc_1759173799963.webp" };
+const B_DOGE    = { id: "doge",    src: "/badges/doge_1759173842640.webp" };
+const B_ASTRO   = { id: "astro",   src: "/badges/astro_balls_1759173838889.webp" };
+const B_CAPTAIN = { id: "captain", src: "/badges/captain_1759173895611.webp" };
+const B_COSMIC  = { id: "cosmic",  src: "/badges/cosmic_guardian1759173818340.webp" };
+
 /* ────────────────────────────────────────────────────────────────
    Root.
    ──────────────────────────────────────────────────────────────── */
@@ -74,8 +86,7 @@ export default function GameGuideClient() {
                 background: `radial-gradient(ellipse at top, ${INK_PANEL_LIGHT} 0%, ${INK_PANEL} 55%, ${INK_DARKEST} 100%)`,
             }}
         >
-            <FloatingBadges count={80} speed={0.6} />
-            <StarField />
+            <AmbientFx />
 
             <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-8 pt-10 pb-24">
                 <TopBar />
@@ -103,9 +114,8 @@ export default function GameGuideClient() {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   Shared UI primitives.
+   Shaka icon + mini capsule icon.
    ──────────────────────────────────────────────────────────────── */
-
 function Shaka({ size = 24 }: { size?: number }) {
     return (
         <Image
@@ -121,10 +131,7 @@ function Shaka({ size = 24 }: { size?: number }) {
 
 function CapsuleIcon({ size = 14, color = GOLD }: { size?: number; color?: string }) {
     return (
-        <span
-            className="inline-block relative align-middle"
-            style={{ width: size, height: size }}
-        >
+        <span className="inline-block relative align-middle" style={{ width: size, height: size }}>
             <span
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -134,23 +141,25 @@ function CapsuleIcon({ size = 14, color = GOLD }: { size?: number; color?: strin
             />
             <span
                 className="absolute left-0 right-0"
-                style={{
-                    top: "50%",
-                    height: 1.5,
-                    transform: "translateY(-50%)",
-                    background: GOLD_LIGHT,
-                    opacity: 0.9,
-                }}
+                style={{ top: "50%", height: 1.5, transform: "translateY(-50%)", background: GOLD_LIGHT, opacity: 0.9 }}
             />
         </span>
     );
 }
 
-function StarField() {
+/* ────────────────────────────────────────────────────────────────
+   Ambient background:
+   - Starfield underlay (twinkle)
+   - A handful of badges drifting slowly in the far margins so they
+     never cross section copy. Placed at extreme left / right edges
+     with low opacity so the page reads cleanly but still feels alive.
+   ──────────────────────────────────────────────────────────────── */
+function AmbientFx() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     if (!mounted) return null;
-    const stars = Array.from({ length: 70 }, (_, i) => ({
+
+    const stars = Array.from({ length: 80 }, (_, i) => ({
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
@@ -158,32 +167,85 @@ function StarField() {
         delay: Math.random() * 4,
         dur: 3 + Math.random() * 3,
     }));
+
+    // Two columns of drifting badges, one on each extreme edge.
+    const badgePool = [B_CITIZEN, B_DOGE, B_ASTRO, B_CAPTAIN, B_COSMIC];
+    const drifters = [
+        { src: badgePool[0].src, side: "left",  top: "8%",  size: 64, delay: 0    },
+        { src: badgePool[1].src, side: "right", top: "24%", size: 56, delay: 4    },
+        { src: badgePool[2].src, side: "left",  top: "44%", size: 72, delay: 8    },
+        { src: badgePool[3].src, side: "right", top: "62%", size: 60, delay: 12   },
+        { src: badgePool[4].src, side: "left",  top: "82%", size: 64, delay: 16   },
+    ];
+
     return (
         <>
+            {/* Starfield */}
             <div className="pointer-events-none fixed inset-0 z-0">
                 {stars.map(s => (
                     <span
                         key={s.id}
                         className="absolute rounded-full bg-white"
                         style={{
-                            left: `${s.x}%`,
-                            top: `${s.y}%`,
-                            width: s.size,
-                            height: s.size,
-                            opacity: 0.32,
+                            left: `${s.x}%`, top: `${s.y}%`,
+                            width: s.size, height: s.size, opacity: 0.32,
                             animation: `vmGuideTwinkle ${s.dur}s ease-in-out ${s.delay}s infinite`,
                         }}
                     />
                 ))}
             </div>
+            {/* Drifting badges, pinned to edges so they don't cross content */}
+            <div className="pointer-events-none fixed inset-y-0 z-0 hidden lg:block" style={{ left: 0, width: 100 }}>
+                {drifters.filter(d => d.side === "left").map((d, i) => (
+                    <div
+                        key={`L${i}`}
+                        className="absolute"
+                        style={{
+                            top: d.top,
+                            left: 8,
+                            width: d.size,
+                            height: d.size,
+                            opacity: 0.16,
+                            filter: "saturate(0.8)",
+                            animation: `vmGuideDrift 18s ease-in-out ${d.delay}s infinite alternate`,
+                        }}
+                    >
+                        <Image src={d.src} alt="" fill sizes="72px" className="rounded-full object-cover" unoptimized />
+                    </div>
+                ))}
+            </div>
+            <div className="pointer-events-none fixed inset-y-0 z-0 hidden lg:block" style={{ right: 0, width: 100 }}>
+                {drifters.filter(d => d.side === "right").map((d, i) => (
+                    <div
+                        key={`R${i}`}
+                        className="absolute"
+                        style={{
+                            top: d.top,
+                            right: 8,
+                            width: d.size,
+                            height: d.size,
+                            opacity: 0.16,
+                            filter: "saturate(0.8)",
+                            animation: `vmGuideDrift 18s ease-in-out ${d.delay}s infinite alternate`,
+                        }}
+                    >
+                        <Image src={d.src} alt="" fill sizes="72px" className="rounded-full object-cover" unoptimized />
+                    </div>
+                ))}
+            </div>
+
             <style>{`
                 @keyframes vmGuideTwinkle {
                     0%, 100% { opacity: 0.22; transform: scale(1); }
-                    50% { opacity: 0.85; transform: scale(1.4); }
+                    50%      { opacity: 0.85; transform: scale(1.4); }
                 }
                 @keyframes vmGuideBob {
                     0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-6px); }
+                    50%      { transform: translateY(-6px); }
+                }
+                @keyframes vmGuideDrift {
+                    0%   { transform: translateY(0) rotate(-2deg); }
+                    100% { transform: translateY(28px) rotate(3deg); }
                 }
                 @keyframes vmHoloSpin { to { --holo-angle: 360deg; } }
                 @property --holo-angle {
@@ -193,11 +255,11 @@ function StarField() {
                 }
                 @keyframes vmCapsuleBob {
                     0%, 100% { transform: translateY(0) rotate(0deg); }
-                    50% { transform: translateY(-4px) rotate(-2deg); }
+                    50%      { transform: translateY(-4px) rotate(-2deg); }
                 }
                 @keyframes vmShapeFlash {
                     0%, 100% { filter: brightness(1); }
-                    50% { filter: brightness(1.4); }
+                    50%      { filter: brightness(1.4); }
                 }
             `}</style>
         </>
@@ -205,7 +267,7 @@ function StarField() {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   Top bar.
+   Top bar + Hero + TOC.
    ──────────────────────────────────────────────────────────────── */
 function TopBar() {
     return (
@@ -235,9 +297,6 @@ function TopBar() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   Hero.
-   ──────────────────────────────────────────────────────────────── */
 function Hero() {
     return (
         <section className="text-center pt-6 pb-10">
@@ -262,10 +321,7 @@ function Hero() {
                     style={{ filter: `drop-shadow(0 16px 30px ${GOLD}55)` }}
                 />
             </div>
-            <p
-                className="font-mundial text-[17px] max-w-[600px] mx-auto mt-2"
-                style={{ color: "rgba(255,255,255,0.78)" }}
-            >
+            <p className="font-mundial text-[17px] max-w-[640px] mx-auto mt-2" style={{ color: "rgba(255,255,255,0.82)" }}>
                 Match badges. Score big. Collect every pin. Climb the Collector ladder from{" "}
                 <span className="font-display font-black" style={{ color: "#9CA3AF" }}>PLASTIC</span>{" "}
                 all the way to{" "}
@@ -280,7 +336,7 @@ function Hero() {
                 >
                     ONE-OF-ONE
                 </span>
-                .
+                . Everything on this page is interactive. Tap the demos to see them animate.
             </p>
             <div className="flex justify-center gap-5 mt-10 flex-wrap">
                 {(["common","rare","special","gold","cosmic"] as const).map(t => (
@@ -305,9 +361,6 @@ function Hero() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   Section shells.
-   ──────────────────────────────────────────────────────────────── */
 function SectionHeader({ tag, title, sub, id }: { tag: string; title: string; sub?: string; id: string }) {
     return (
         <div id={id} className="mb-8 pt-4">
@@ -328,7 +381,7 @@ function SectionHeader({ tag, title, sub, id }: { tag: string; title: string; su
                 {title}
             </h2>
             {sub && (
-                <p className="font-mundial mt-3 text-[15px] max-w-[680px]" style={{ color: "rgba(255,255,255,0.75)" }}>
+                <p className="font-mundial mt-3 text-[15px] max-w-[720px]" style={{ color: "rgba(255,255,255,0.85)" }}>
                     {sub}
                 </p>
             )}
@@ -336,18 +389,14 @@ function SectionHeader({ tag, title, sub, id }: { tag: string; title: string; su
     );
 }
 
-function Card({
-    children,
-    accent = COSMIC,
-    className = "",
-}: { children: React.ReactNode; accent?: string; className?: string }) {
+function Card({ children, accent = COSMIC, className = "" }: { children: React.ReactNode; accent?: string; className?: string }) {
     return (
         <div
             className={`rounded-2xl p-5 sm:p-6 ${className}`}
             style={{
-                background: "linear-gradient(180deg, rgba(26,10,46,0.85), rgba(12,4,24,0.9))",
+                background: "linear-gradient(180deg, rgba(26,10,46,0.92), rgba(12,4,24,0.96))",
                 border: `1px solid ${accent}33`,
-                boxShadow: `0 4px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                boxShadow: `0 4px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)`,
             }}
         >
             {children}
@@ -361,31 +410,24 @@ function Callout({ tone, label, children }: { tone: "gold" | "cosmic"; label: st
         <div
             className="mt-5 rounded-xl px-5 py-4"
             style={{
-                background: `linear-gradient(90deg, ${c}15, rgba(12,4,24,0.8))`,
+                background: `linear-gradient(90deg, ${c}1a, rgba(12,4,24,0.92))`,
                 borderLeft: `3px solid ${c}`,
-                border: `1px solid ${c}22`,
+                border: `1px solid ${c}33`,
             }}
         >
-            <div className="font-display font-black uppercase text-[10px] tracking-[0.3em] mb-1" style={{ color: c }}>
-                {label}
-            </div>
-            <div className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.92)" }}>
-                {children}
-            </div>
+            <div className="font-display font-black uppercase text-[10px] tracking-[0.3em] mb-1" style={{ color: c }}>{label}</div>
+            <div className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.95)" }}>{children}</div>
         </div>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   TOC.
-   ──────────────────────────────────────────────────────────────── */
 function TableOfContents() {
     return (
         <nav
             className="mt-8 mb-16 rounded-2xl px-6 py-5"
             style={{
-                background: "rgba(12,4,24,0.7)",
-                border: "1px solid rgba(179,102,255,0.2)",
+                background: "rgba(12,4,24,0.82)",
+                border: "1px solid rgba(179,102,255,0.25)",
                 backdropFilter: "blur(4px)",
             }}
         >
@@ -398,7 +440,7 @@ function TableOfContents() {
                         <a
                             href={`#${s.id}`}
                             className="font-mundial text-[13px] no-underline transition-colors hover:text-white"
-                            style={{ color: "rgba(255,255,255,0.7)" }}
+                            style={{ color: "rgba(255,255,255,0.78)" }}
                         >
                             <span
                                 className="font-display font-black tabular-nums mr-2"
@@ -415,9 +457,9 @@ function TableOfContents() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: How to play.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 1: How to Play : now with an interactive match-3 demo
+   ════════════════════════════════════════════════════════════════ */
 function HowToPlay() {
     return (
         <section className="mb-20">
@@ -425,47 +467,247 @@ function HowToPlay() {
                 id="how-to-play"
                 tag="The basics"
                 title="How to play"
-                sub="VibeMatch is match-3 with Good Vibes Club badge artwork as the tiles. Swap adjacent badges to line up 3 or more of the same type. They clear, the board cascades, and your score climbs."
+                sub="VibeMatch is a match-3 puzzle where the tiles are Good Vibes Club pin artwork. You get 30 moves per run. Every move is a swap between two adjacent tiles; if that swap lines up 3 or more of the same pin in a row or column, they clear and score. Tiles above the cleared spots fall to fill the gap, and fresh tiles drop in from the top. New matches triggered by that fall are cascades, and each cascade ratchets your score multiplier higher. Your whole game is about finding the move where one small swap starts a chain reaction."
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                    <div className="w-10 h-10 rounded-full mb-3 flex items-center justify-center" style={{ background: `${COSMIC}22`, border: `1px solid ${COSMIC}66` }}>
-                        <ArrowRight size={18} style={{ color: COSMIC }} />
-                    </div>
-                    <h3 className="font-display font-black text-[17px] mb-2" style={{ color: "#fff" }}>Swap and match</h3>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Tap a badge then a neighbor to swap them. If the swap lines up 3+ same badges in a row or column, they clear.
-                    </p>
-                </Card>
-                <Card>
-                    <div className="w-10 h-10 rounded-full mb-3 flex items-center justify-center" style={{ background: `${COSMIC}22`, border: `1px solid ${COSMIC}66` }}>
-                        <TrendingUp size={18} style={{ color: COSMIC }} />
-                    </div>
-                    <h3 className="font-display font-black text-[17px] mb-2" style={{ color: "#fff" }}>Cascade</h3>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        When tiles clear, the ones above drop down and new tiles appear. Chain matches are cascades and multiply score.
-                    </p>
-                </Card>
-                <Card>
-                    <div className="w-10 h-10 rounded-full mb-3 flex items-center justify-center" style={{ background: `${COSMIC}22`, border: `1px solid ${COSMIC}66` }}>
-                        <Target size={18} style={{ color: COSMIC }} />
-                    </div>
-                    <h3 className="font-display font-black text-[17px] mb-2" style={{ color: "#fff" }}>30 moves</h3>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        You get 30 moves per Classic run. Bigger matches, combos, and shapes all multiply what each move is worth.
-                    </p>
-                </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
+                {/* The interactive demo */}
+                <div className="order-2 md:order-1">
+                    <Card accent={GOLD}>
+                        <div className="flex items-baseline justify-between mb-4">
+                            <div className="font-display font-black uppercase text-[11px] tracking-[0.25em]" style={{ color: GOLD }}>
+                                Try It
+                            </div>
+                            <div className="font-mundial text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                                Tap a glowing tile
+                            </div>
+                        </div>
+                        <MatchDemo />
+                    </Card>
+                </div>
+
+                {/* Copy */}
+                <div className="order-1 md:order-2 space-y-4">
+                    <MiniFact
+                        icon={<ArrowRight size={18} style={{ color: COSMIC }} />}
+                        title="Swap adjacent tiles"
+                        body="Tap a tile, then tap one of its four neighbors (up, down, left, or right). Diagonal swaps are not allowed. If the swap produces a match the tiles clear. If it does not, the tiles swap back and no move is spent."
+                    />
+                    <MiniFact
+                        icon={<TrendingUp size={18} style={{ color: COSMIC }} />}
+                        title="Cascades compound"
+                        body="When matched tiles clear, the ones above fall down to fill the gaps and new tiles spawn at the top. Any new matches that form from that settle count as a cascade, and each cascade adds to your combo multiplier. A single well-planned swap can trigger 3 or 4 cascades in a row."
+                    />
+                    <MiniFact
+                        icon={<Target size={18} style={{ color: COSMIC }} />}
+                        title="30 moves, chosen carefully"
+                        body="You have a hard ceiling of 30 moves. That means deliberate: you are not rewarded for playing fast, you are rewarded for spotting the highest-value move each turn. Bigger matches create power tiles, and specific shapes (see below) multiply your score dramatically."
+                    />
+                </div>
             </div>
-            <Callout tone="cosmic" label="Stuck?">
-                If you do not move for 8 seconds, the game quietly highlights a valid swap for you. You get one hint per run.
+
+            <Callout tone="cosmic" label="Idle hint">
+                If you do not move for 8 seconds, the game will briefly highlight a valid swap you might have missed. It happens once per run and never picks the optimal move for you, just a safe one to keep you unstuck.
             </Callout>
         </section>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Scoring.
-   ──────────────────────────────────────────────────────────────── */
+function MiniFact({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+    return (
+        <div
+            className="rounded-xl p-4"
+            style={{
+                background: "linear-gradient(180deg, rgba(26,10,46,0.85), rgba(12,4,24,0.92))",
+                border: `1px solid ${COSMIC}33`,
+            }}
+        >
+            <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: `${COSMIC}22`, border: `1px solid ${COSMIC}66` }}>
+                    {icon}
+                </div>
+                <h3 className="font-display font-black uppercase text-[13px] tracking-[0.12em]" style={{ color: "#fff" }}>{title}</h3>
+            </div>
+            <p className="font-mundial text-[13.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>{body}</p>
+        </div>
+    );
+}
+
+/* Interactive match-3 demo : direct port of FtuePrimer's MatchPanel. */
+const MATCH_INITIAL = [
+    [{ id: 1, badge: B_CITIZEN }, { id: 2, badge: B_CITIZEN }, { id: 3, badge: B_DOGE }],
+    [{ id: 4, badge: B_ASTRO   }, { id: 5, badge: B_CAPTAIN }, { id: 6, badge: B_CITIZEN }],
+    [{ id: 7, badge: B_DOGE    }, { id: 8, badge: B_ASTRO   }, { id: 9, badge: B_CAPTAIN }],
+];
+const SWAP_A = { row: 0, col: 2 };
+const SWAP_B = { row: 1, col: 2 };
+const DEMO_TILE = 64;
+const DEMO_GAP = 6;
+
+function MatchDemo() {
+    type Phase = "idle" | "swapping" | "matched";
+    const [grid, setGrid] = useState(MATCH_INITIAL);
+    const [phase, setPhase] = useState<Phase>("idle");
+    const [score, setScore] = useState(0);
+    const [scorePop, setScorePop] = useState<number | null>(null);
+    const [cycleKey, setCycleKey] = useState(0);
+
+    const matchedSet = new Set(phase === "matched" ? ["0,0", "0,1", "0,2"] : []);
+    const isHint = (r: number, c: number) =>
+        phase === "idle" && ((r === SWAP_A.row && c === SWAP_A.col) || (r === SWAP_B.row && c === SWAP_B.col));
+
+    const handleTap = (r: number, c: number) => {
+        if (phase !== "idle") return;
+        const ok = (r === SWAP_A.row && c === SWAP_A.col) || (r === SWAP_B.row && c === SWAP_B.col);
+        if (!ok) return;
+        setPhase("swapping");
+        const next = grid.map(row => [...row]);
+        const a = next[SWAP_A.row][SWAP_A.col];
+        next[SWAP_A.row][SWAP_A.col] = next[SWAP_B.row][SWAP_B.col];
+        next[SWAP_B.row][SWAP_B.col] = a;
+        setGrid(next);
+        setTimeout(() => {
+            setPhase("matched");
+            setScore(300);
+            setScorePop(300);
+            playMatchSound(300, 1, 3);
+            setTimeout(() => setScorePop(null), 1400);
+        }, 320);
+    };
+
+    useEffect(() => {
+        if (phase !== "matched") return;
+        const t = setTimeout(() => {
+            setGrid(MATCH_INITIAL);
+            setScore(0);
+            setPhase("idle");
+            setCycleKey(k => k + 1);
+        }, 1500);
+        return () => clearTimeout(t);
+    }, [phase]);
+
+    return (
+        <div className="relative">
+            <div className="flex justify-between items-center mb-3">
+                <div className="text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/45">Score</div>
+                <motion.div
+                    key={score}
+                    className="font-display font-black text-[18px]"
+                    style={{ color: GOLD }}
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1.2, 1] }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                    {score.toLocaleString()}
+                </motion.div>
+            </div>
+
+            <div
+                className="relative grid mx-auto"
+                style={{
+                    gridTemplateColumns: `repeat(3, ${DEMO_TILE}px)`,
+                    gap: `${DEMO_GAP}px`,
+                    width: DEMO_TILE * 3 + DEMO_GAP * 2,
+                }}
+            >
+                {grid.map((row, r) =>
+                    row.map((tile, c) => {
+                        const hinted = isHint(r, c);
+                        const matched = matchedSet.has(`${r},${c}`);
+                        return (
+                            <motion.button
+                                key={`${cycleKey}-${tile.id}`}
+                                onClick={() => handleTap(r, c)}
+                                layout
+                                layoutId={`match-${cycleKey}-${tile.id}`}
+                                className="relative rounded-[12px] overflow-hidden"
+                                style={{
+                                    width: DEMO_TILE,
+                                    height: DEMO_TILE,
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: hinted || matched ? `2px solid ${GOLD}` : "1.5px solid rgba(255,255,255,0.08)",
+                                    boxShadow: hinted
+                                        ? `0 0 18px ${GOLD}88`
+                                        : matched
+                                            ? `0 0 26px ${GOLD}cc`
+                                            : "none",
+                                    cursor: hinted ? "pointer" : "default",
+                                }}
+                                animate={
+                                    matched
+                                        ? { scale: [1, 1.15, 0], opacity: [1, 1, 0] }
+                                        : hinted
+                                            ? { scale: [1, 1.06, 1], opacity: 1 }
+                                            : { scale: 1, opacity: 1 }
+                                }
+                                transition={
+                                    matched
+                                        ? { duration: 0.7, times: [0, 0.35, 1] }
+                                        : hinted
+                                            ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+                                            : { type: "spring", stiffness: 400, damping: 28 }
+                                }
+                                whileTap={hinted ? { scale: 0.94 } : undefined}
+                            >
+                                <Image
+                                    src={tile.badge.src}
+                                    alt=""
+                                    fill
+                                    sizes={`${DEMO_TILE}px`}
+                                    className="object-cover pointer-events-none"
+                                    unoptimized
+                                />
+                            </motion.button>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Score popup */}
+            <AnimatePresence>
+                {scorePop != null && (
+                    <motion.div
+                        className="absolute left-0 right-0 flex justify-center pointer-events-none"
+                        style={{ top: 120 }}
+                        initial={{ opacity: 0, y: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, y: -76, scale: 1.05 }}
+                        exit={{ opacity: 0, y: -84, scale: 0.95 }}
+                        transition={{ duration: 1.1, ease: "easeOut" }}
+                    >
+                        <div
+                            className="font-display font-black text-[30px]"
+                            style={{
+                                color: GOLD,
+                                textShadow: `0 2px 12px ${GOLD}aa, 0 0 18px ${GOLD}`,
+                            }}
+                        >
+                            +{scorePop}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="relative mt-4 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px] text-center">
+                <AnimatePresence mode="wait">
+                    {phase === "idle" && (
+                        <motion.div key="idle" className="absolute inset-0" style={{ color: `${GOLD}cc` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Tap a glowing tile to swap
+                        </motion.div>
+                    )}
+                    {phase === "matched" && (
+                        <motion.div key="match" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                            Match!
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 2: Scoring
+   ════════════════════════════════════════════════════════════════ */
 function Scoring() {
     return (
         <section className="mb-20">
@@ -473,12 +715,15 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring your moves"
-                sub="Every match starts with a base score, then multipliers stack on top. Three things drive the multiplier: match length, combos, and cascades. Hit all three and a 3-match can swing five figures."
+                sub="Every match starts with a base score per cleared tile, then multipliers stack on top. Three things drive the multiplier stack: the length of the match itself, the combo meter that climbs each time you chain a match without idle time, and cascades from tiles falling into new matches. All three compound. Hit a 4-match with a 3x combo on the second cascade of a turn and you are looking at 8-10x the score of the same tiles cleared cold. This is why elite players chase setups rather than first-available matches: the difference between a 6,000 point game and a 60,000 point game is almost entirely in multiplier stacking."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStat value="3+" label="Match length" color={GOLD} sub="3 is base. 4 and 5 pay more AND create power tiles." />
-                <ScoreStat value="xN" label="Combo" color={ORANGE} sub="Chain matches quickly and the combo multiplier climbs." />
-                <ScoreStat value=". . ." label="Cascade" color={COSMIC} sub="New matches triggered on fall stack another multiplier." />
+                <ScoreStat value="3+" label="Match length" color={GOLD}
+                    sub="Three is the minimum match and the base score. Four-matches pay more AND create a Bomb tile. Five-matches pay even more AND create a Laser Party tile. Six or more creates a Cosmic Blast." />
+                <ScoreStat value="xN" label="Combo" color={ORANGE}
+                    sub="Every match you land on a single turn (including cascades) increases the combo meter for that turn. The combo multiplier applies to every subsequent match on the same turn, so holding a long combo compounds fast." />
+                <ScoreStat value=". . ." label="Cascade" color={COSMIC}
+                    sub="When cleared tiles create a gap, the tiles above fall to fill it. If those falling tiles land in a new match you get a cascade. Each cascade stacks another multiplier, and turn-end cascades frequently exceed the original swap's score by many times over." />
             </div>
         </section>
     );
@@ -488,24 +733,19 @@ function ScoreStat({ value, label, sub, color }: { value: string; label: string;
     return (
         <Card accent={color}>
             <div className="text-center">
-                <div
-                    className="font-display font-black leading-none"
-                    style={{ fontSize: 46, color, textShadow: `0 0 22px ${color}55, 0 3px 0 rgba(0,0,0,0.55)` }}
-                >
+                <div className="font-display font-black leading-none" style={{ fontSize: 46, color, textShadow: `0 0 22px ${color}55, 0 3px 0 rgba(0,0,0,0.55)` }}>
                     {value}
                 </div>
-                <h3 className="font-display font-black uppercase text-[13px] tracking-[0.15em] mt-3" style={{ color: "#fff" }}>
-                    {label}
-                </h3>
-                <p className="font-mundial text-[13px] mt-1.5" style={{ color: "rgba(255,255,255,0.72)" }}>{sub}</p>
+                <h3 className="font-display font-black uppercase text-[13px] tracking-[0.15em] mt-3" style={{ color: "#fff" }}>{label}</h3>
+                <p className="font-mundial text-[13px] mt-1.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>{sub}</p>
             </div>
         </Card>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Power tiles (interactive, reuses real overlay look).
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 3: Power tiles
+   ════════════════════════════════════════════════════════════════ */
 function PowerTiles() {
     return (
         <section className="mb-20">
@@ -513,14 +753,15 @@ function PowerTiles() {
                 id="power-tiles"
                 tag="Power tiles"
                 title="Bombs, Laser Parties and Blasts"
-                sub="Bigger matches automatically create special power tiles. They sit on the board until you move them, then they detonate. Chain specials for massive plays."
+                sub="Matches of 4 or more automatically create a power tile on the board. Power tiles are visually distinct (you will see them glowing with tier-colored borders) and sit alongside regular tiles until you move them. Swapping a power tile with any adjacent tile detonates it, and chaining one power tile's clear into another's position is one of the single biggest score swings in the game. A Bomb next to a Laser Party both going off in the same turn can easily clear a third of the board."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PowerTileDemo
                     kind="bomb"
                     name="Bomb"
                     trigger="Match 4 in a row"
-                    effect="Clears a 3x3 area when detonated."
+                    effect="Clears a 3x3 area around itself."
+                    detail="The simplest power tile and usually the first one a new player creates. Detonates when swapped with any neighbor. The 3x3 clear is centered on the bomb itself, so positioning matters: a bomb in the middle of a dense column will wipe out far more tiles than one near an edge."
                     accent="#FF3333"
                     glow="rgba(255,51,51,0.45)"
                 />
@@ -528,7 +769,8 @@ function PowerTiles() {
                     kind="laser"
                     name="Laser Party"
                     trigger="Match 5 in a row"
-                    effect="Lightning strike. Clears a full row and column."
+                    effect="Clears the full row AND column through the tile."
+                    detail="A massive clear in a plus pattern. Because it strikes the entire row and column at once, Laser Parties are the easiest way to set up long cascade chains; a single Laser Party can remove 15+ tiles and cause the rest of the board to settle into multiple new matches."
                     accent="#4A9EFF"
                     glow="rgba(74,158,255,0.5)"
                 />
@@ -536,7 +778,8 @@ function PowerTiles() {
                     kind="cosmic"
                     name="Cosmic Blast"
                     trigger="Match 6+ or any Cosmic 5-match"
-                    effect="The big one. Clears a huge cross pattern."
+                    effect="Huge cross-shaped clear across the whole board."
+                    detail="The rarest power tile and always a game-defining moment. Triggers on 6-or-more matches OR on any 5-match made entirely of Cosmic-tier pins. Expect most runs to produce zero Cosmic Blasts; when they do happen, a single detonation can mean a 10,000+ point swing."
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
                     premium
@@ -547,12 +790,13 @@ function PowerTiles() {
 }
 
 function PowerTileDemo({
-    kind, name, trigger, effect, accent, glow, premium = false,
+    kind, name, trigger, effect, detail, accent, glow, premium = false,
 }: {
     kind: "bomb" | "laser" | "cosmic";
     name: string;
     trigger: string;
     effect: string;
+    detail: string;
     accent: string;
     glow: string;
     premium?: boolean;
@@ -561,7 +805,7 @@ function PowerTileDemo({
         <div
             className="rounded-2xl p-6 text-center relative overflow-hidden"
             style={{
-                background: "linear-gradient(180deg, rgba(26,10,46,0.92), rgba(12,4,24,0.95))",
+                background: "linear-gradient(180deg, rgba(26,10,46,0.94), rgba(12,4,24,0.97))",
                 border: `2px solid ${accent}88`,
                 boxShadow: premium
                     ? `0 0 36px ${glow}, inset 0 0 18px ${accent}18`
@@ -570,10 +814,8 @@ function PowerTileDemo({
         >
             <div
                 className="absolute inset-x-0 top-0 h-[30%] pointer-events-none"
-                style={{ background: `linear-gradient(180deg, ${accent}16, transparent)` }}
+                style={{ background: `linear-gradient(180deg, ${accent}18, transparent)` }}
             />
-
-            {/* Demo tile with the real in-game overlay style. */}
             <div className="relative flex justify-center mb-4">
                 <div
                     className="relative rounded-xl overflow-hidden"
@@ -583,41 +825,23 @@ function PowerTileDemo({
                         border: "1.5px solid rgba(255,255,255,0.1)",
                     }}
                 >
-                    <Image
-                        src="/badges/any_gvc_1759173799963.webp"
-                        alt=""
-                        fill
-                        sizes="96px"
-                        unoptimized
-                        className="object-cover opacity-85"
-                    />
+                    <Image src={B_CITIZEN.src} alt="" fill sizes="96px" unoptimized className="object-cover opacity-85" />
                     {kind === "bomb" && <DemoBombOverlay />}
                     {kind === "laser" && <DemoLaserOverlay />}
                     {kind === "cosmic" && <DemoCosmicOverlay />}
                 </div>
             </div>
-
-            <h3 className="font-display font-black uppercase text-[20px]" style={{ color: "#fff", letterSpacing: "0.06em" }}>
-                {name}
-            </h3>
-            <p className="font-mundial text-[12px] italic mt-1.5" style={{ color: accent }}>
-                {trigger}
-            </p>
-            <p className="font-mundial text-[14px] mt-3" style={{ color: "rgba(255,255,255,0.88)" }}>
-                {effect}
-            </p>
+            <h3 className="font-display font-black uppercase text-[20px]" style={{ color: "#fff", letterSpacing: "0.06em" }}>{name}</h3>
+            <p className="font-mundial text-[12px] italic mt-1.5" style={{ color: accent }}>{trigger}</p>
+            <p className="font-mundial text-[14px] mt-3" style={{ color: "rgba(255,255,255,0.92)" }}>{effect}</p>
+            <p className="font-mundial text-[13px] mt-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>{detail}</p>
         </div>
     );
 }
 
-/* In-guide copies of the real overlays. Same CSS class names as the live
-   game (bomb-border / laser-scan-h / etc.) so they inherit the globals.css
-   keyframe animations and look pixel-identical to the GameBoard rendering. */
-
 function DemoBombOverlay() {
     return (
-        <div className="absolute inset-0 z-20 pointer-events-none rounded-xl overflow-hidden"
-            style={{ boxShadow: "inset 0 0 20px rgba(255,0,0,0.8)" }}>
+        <div className="absolute inset-0 z-20 pointer-events-none rounded-xl overflow-hidden" style={{ boxShadow: "inset 0 0 20px rgba(255,0,0,0.8)" }}>
             <div className="bomb-border absolute inset-0 border-[3px] border-[#FF3333] rounded-xl" />
             <div className="absolute inset-0 flex items-center justify-center opacity-80">
                 <div className="w-[80%] h-[2px] bg-[#FFE048] shadow-[0_0_8px_#FFE048]" />
@@ -630,8 +854,7 @@ function DemoBombOverlay() {
 
 function DemoLaserOverlay() {
     return (
-        <div className="absolute inset-0 z-20 pointer-events-none rounded-xl overflow-hidden"
-            style={{ boxShadow: "inset 0 0 24px rgba(74,158,255,0.9)" }}>
+        <div className="absolute inset-0 z-20 pointer-events-none rounded-xl overflow-hidden" style={{ boxShadow: "inset 0 0 24px rgba(74,158,255,0.9)" }}>
             <div className="laser-border absolute inset-0 border-[3px] border-[#4A9EFF] rounded-xl" />
             <div className="laser-scan-h absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#4AE0FF] to-transparent shadow-[0_0_12px_#4AE0FF,0_0_24px_#4A9EFF] opacity-90" />
             <div className="laser-scan-v absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#4AE0FF] to-transparent shadow-[0_0_12px_#4AE0FF,0_0_24px_#4A9EFF] opacity-90" />
@@ -645,26 +868,19 @@ function DemoLaserOverlay() {
 function DemoCosmicOverlay() {
     return (
         <div className="absolute inset-0 z-20 pointer-events-none rounded-xl overflow-hidden">
-            <div className="cosmic-outer-glow absolute inset-0 rounded-xl"
-                style={{ boxShadow: "inset 0 0 10px rgba(179,102,255,0.7), inset 0 0 20px rgba(255,107,157,0.35)" }} />
-            <div className="cosmic-ring absolute -inset-6"
-                style={{ background: "conic-gradient(from 0deg at 50% 50%, rgba(179,102,255,0) 0%, rgba(255,107,157,0.85) 25%, rgba(179,102,255,0) 50%, rgba(74,158,255,0.85) 75%, rgba(179,102,255,0) 100%)" }} />
-            <div className="cosmic-glow absolute inset-[10%] rounded-full border-2 border-[#B366FF]/60"
-                style={{ background: "radial-gradient(circle, rgba(179,102,255,0.35) 0%, rgba(179,102,255,0.08) 60%, transparent 100%)" }} />
+            <div className="cosmic-outer-glow absolute inset-0 rounded-xl" style={{ boxShadow: "inset 0 0 10px rgba(179,102,255,0.7), inset 0 0 20px rgba(255,107,157,0.35)" }} />
+            <div className="cosmic-ring absolute -inset-6" style={{ background: "conic-gradient(from 0deg at 50% 50%, rgba(179,102,255,0) 0%, rgba(255,107,157,0.85) 25%, rgba(179,102,255,0) 50%, rgba(74,158,255,0.85) 75%, rgba(179,102,255,0) 100%)" }} />
+            <div className="cosmic-glow absolute inset-[10%] rounded-full border-2 border-[#B366FF]/60" style={{ background: "radial-gradient(circle, rgba(179,102,255,0.35) 0%, rgba(179,102,255,0.08) 60%, transparent 100%)" }} />
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="cosmic-core-dot w-2.5 h-2.5 rounded-full"
-                    style={{
-                        background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(179,102,255,0.5) 60%, transparent 100%)",
-                        boxShadow: "0 0 6px rgba(179,102,255,0.9), 0 0 14px rgba(179,102,255,0.5)",
-                    }} />
+                <div className="cosmic-core-dot w-2.5 h-2.5 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(179,102,255,0.5) 60%, transparent 100%)", boxShadow: "0 0 6px rgba(179,102,255,0.9), 0 0 14px rgba(179,102,255,0.5)" }} />
             </div>
         </div>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Shape bonuses (INTERACTIVE).
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 4: Shape bonuses
+   ════════════════════════════════════════════════════════════════ */
 function ShapeBonuses() {
     return (
         <section className="mb-20">
@@ -672,46 +888,38 @@ function ShapeBonuses() {
                 id="shapes"
                 tag="Shape bonuses"
                 title="The shape multipliers"
-                sub="If a match lines up in a specific shape (an L, a T, or a perfect Cross) the whole move gets a massive multiplier on top. These are the secret to huge scores. They trigger when two matching lines share a tile. Tap a card to see the shape animate in."
+                sub="Most matches are a straight line of 3, 4, or 5 tiles. But when a cascade lines up two matching runs that share a tile, the game detects the combined shape and applies a huge score multiplier on top of everything else. There are three shape outcomes: L, T, and Cross. They are not made on purpose from a single swap; they happen naturally when a cascade lands just right. Good players read the board for potential shapes and plan moves that set up intersections, rather than clearing the first match they see. Tap a card below to watch the shape light up in the order the engine detects it."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <ShapeCard
                     name="L-Shape"
                     mult="x1.5"
-                    sub="Two lines meet at a corner"
+                    sub="Two lines meet at a shared corner tile"
                     color="#4A9EFF"
                     glow="rgba(74,158,255,0.45)"
-                    sequence={[
-                        [0,0], [1,0], [2,0], [2,1], [2,2],
-                    ]}
+                    sequence={[[0,0], [1,0], [2,0], [2,1], [2,2]]}
                 />
                 <ShapeCard
                     name="T-Shape"
                     mult="x2.5"
-                    sub="Line meets the middle of another"
+                    sub="A line meets the middle of another"
                     color={ORANGE}
                     glow="rgba(255,95,31,0.5)"
-                    sequence={[
-                        [1,1], [1,2], [1,3], [2,2], [3,2],
-                    ]}
+                    sequence={[[1,1], [1,2], [1,3], [2,2], [3,2]]}
                     highlight
                 />
                 <ShapeCard
                     name="Cross"
                     mult="x4"
-                    sub="Two lines cross at the middle"
+                    sub="Two lines cross at the middle of both"
                     color={COSMIC}
                     glow="rgba(179,102,255,0.55)"
-                    sequence={[
-                        [2,0], [2,1], [2,2], [2,3], [2,4],
-                        [0,2], [1,2], [3,2], [4,2],
-                    ]}
+                    sequence={[[2,0], [2,1], [2,2], [2,3], [2,4], [0,2], [1,2], [3,2], [4,2]]}
                     highlight
                 />
             </div>
-
             <Callout tone="gold" label="Bonus capsule">
-                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> in any match and you earn a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong> for that game (once per game, capped). On top of whatever capsules you earn from your final score.
+                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> anywhere in a match and you earn a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong> for that game. One bonus capsule max per game, so it is worth hunting for on runs you are already going to score well on. The bonus stacks on top of the capsules you earn from your final score.
             </Callout>
         </section>
     );
@@ -725,7 +933,7 @@ function ShapeCard({
     sub: string;
     color: string;
     glow: string;
-    sequence: Array<[number, number]>; // [row, col] order of cells to light
+    sequence: Array<[number, number]>;
     highlight?: boolean;
 }) {
     const [revealCount, setRevealCount] = useState(sequence.length);
@@ -739,7 +947,6 @@ function ShapeCard({
         });
     };
 
-    // On mount, auto-play once after a short delay so the shape reads.
     useEffect(() => {
         const t = setTimeout(play, 600);
         return () => {
@@ -757,11 +964,9 @@ function ShapeCard({
             onClick={play}
             className="rounded-2xl p-5 text-center relative overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none"
             style={{
-                background: `linear-gradient(180deg, ${color}14, rgba(12,4,24,0.95))`,
+                background: `linear-gradient(180deg, ${color}14, rgba(12,4,24,0.97))`,
                 border: `2px solid ${color}`,
-                boxShadow: highlight
-                    ? `0 0 36px ${glow}, inset 0 0 22px ${color}22`
-                    : `0 0 24px ${glow}`,
+                boxShadow: highlight ? `0 0 36px ${glow}, inset 0 0 22px ${color}22` : `0 0 24px ${glow}`,
             }}
         >
             <div
@@ -793,36 +998,26 @@ function ShapeCard({
                     })}
                 </div>
             </div>
-            <div
-                className="relative z-10 font-display font-black uppercase text-[20px]"
-                style={{ color: "#fff", letterSpacing: "0.08em" }}
-            >
+            <div className="relative z-10 font-display font-black uppercase text-[20px]" style={{ color: "#fff", letterSpacing: "0.08em" }}>
                 {name}
             </div>
             <div
                 className="relative z-10 font-display font-black leading-none my-1.5"
-                style={{
-                    fontSize: 44,
-                    color,
-                    textShadow: `0 0 18px ${glow}, 0 3px 0 rgba(0,0,0,0.55)`,
-                    letterSpacing: "-0.02em",
-                }}
+                style={{ fontSize: 44, color, textShadow: `0 0 18px ${glow}, 0 3px 0 rgba(0,0,0,0.55)`, letterSpacing: "-0.02em" }}
             >
                 {mult}
             </div>
-            <div className="relative z-10 font-mundial text-[12px]" style={{ color: "rgba(255,255,255,0.75)" }}>
-                {sub}
-            </div>
-            <div className="relative z-10 font-display font-black text-[9px] tracking-[0.25em] mt-3 uppercase" style={{ color: `${color}cc` }}>
+            <div className="relative z-10 font-mundial text-[12.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</div>
+            <div className="relative z-10 font-display font-black text-[9px] tracking-[0.25em] mt-3 uppercase" style={{ color: `${color}dd` }}>
                 Tap to replay
             </div>
         </button>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Capsules (with interactive Pokeball-style capsule).
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 5: Pin Capsules : identical to FTUE CapsulePanel behavior
+   ════════════════════════════════════════════════════════════════ */
 function Capsules() {
     return (
         <section className="mb-20">
@@ -830,163 +1025,381 @@ function Capsules() {
                 id="capsules"
                 tag="Rewards"
                 title="Earning Pin Capsules"
-                sub="Score high enough and you earn Pin Capsules. Rip them open to reveal a random pin from the 101-pin catalog. Higher scores give more capsules per run."
+                sub="A Pin Capsule is the physical reward for a good game. You earn them when your final score crosses specific thresholds. Every capsule you earn sits in your Pin Book waiting to be opened, and opening one reveals a random pin from the 101-pin catalog. The higher your score, the more capsules you earn from a single run. The capsule you see below behaves exactly like the real one in the game. Tap it to watch the anticipation, crack, and reveal."
             />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStep amount="15,000+" caps="+1 Capsule" sub="Unlock the rewards" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="15,000+" caps="+1 Capsule" sub="Unlocks the reward tier" color={GOLD} intensity={0.35} />
                 <ScoreStep amount="30,000+" caps="+2 Capsules" sub="Solid performance" color={ORANGE} intensity={0.45} />
                 <ScoreStep amount="50,000+" caps="+3 Capsules" sub="Big score club" color={COSMIC} intensity={0.6} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-                <Card accent={GOLD} className="text-center">
-                    <CapsuleVisual />
-                    <h3 className="font-display font-black uppercase text-[18px] mt-4" style={{ color: "#fff" }}>
-                        Rip them open
-                    </h3>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Tap OPEN on a capsule. Tier rolls first (weighted), then a specific pin gets revealed from that tier. Tap the capsule to preview the crack.
-                    </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-stretch">
+                <Card accent={GOLD} className="text-center flex flex-col items-center justify-center">
+                    <CapsuleDemo />
                 </Card>
+
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Calendar size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>
-                            Daily Challenge bonus
-                        </h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Daily Challenge bonus</h3>
                     </div>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Capsule payouts are <strong style={{ color: GOLD }}>doubled</strong> in the Daily Challenge:
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        The Daily Challenge uses the same score thresholds but doubles the capsule payout. Since you only get one attempt per day, that extra value rewards the deliberate, one-shot nature of the format.
                     </p>
-                    <ul className="font-mundial text-[14px] mt-2 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
+                    <ul className="font-mundial text-[14px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
                         <li className="mb-1">15K+ gives <strong style={{ color: GOLD }}>+2 capsules</strong></li>
                         <li className="mb-1">30K+ gives <strong style={{ color: GOLD }}>+4 capsules</strong></li>
                         <li>50K+ gives <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
+                    <p className="font-mundial text-[13px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+                        Combine this with the Daily Champion prize described later and the Daily Challenge can be your single biggest capsule income stream on a given day.
+                    </p>
                 </Card>
             </div>
         </section>
     );
 }
 
-/* Pokeball-style capsule matching the real VibeCapsule visual language.
-   Two hemispheres with a visible seam, dark chrome shell, tier-colored
-   glowing core seen through a gold rim. Tap it to play a crack sequence. */
-function CapsuleVisual() {
-    const [phase, setPhase] = useState<"idle" | "crack">("idle");
+/* ── Interactive capsule demo: mirrors FtuePrimer exactly. ── */
+type CapsulePhase = "idle" | "anticipating" | "cracking" | "revealed";
+const ANTICIPATE_MS = 1800;
+const CRACK_MS = 400;
 
-    const trigger = () => {
-        if (phase === "crack") return;
-        setPhase("crack");
-        setTimeout(() => setPhase("idle"), 1500);
+function CapsuleDemo() {
+    const [phase, setPhase] = useState<CapsulePhase>("idle");
+    const [cycleKey, setCycleKey] = useState(0);
+
+    const handleTap = () => {
+        if (phase !== "idle") return;
+        setPhase("anticipating");
+        playCapsuleAnticipateSound();
+        setTimeout(() => {
+            setPhase("cracking");
+            playCapsuleCrackSound("cosmic");
+            setTimeout(() => {
+                setPhase("revealed");
+                playCapsuleRevealSound("cosmic");
+                playNewPinSound();
+            }, CRACK_MS);
+        }, ANTICIPATE_MS);
     };
 
+    useEffect(() => {
+        if (phase !== "revealed") return;
+        const t = setTimeout(() => {
+            setPhase("idle");
+            setCycleKey(k => k + 1);
+        }, 2800);
+        return () => clearTimeout(t);
+    }, [phase]);
+
     return (
-        <button
-            type="button"
-            onClick={trigger}
-            aria-label="Preview capsule crack"
-            className="relative mx-auto block cursor-pointer focus:outline-none"
-            style={{
-                width: 168,
-                height: 168,
-                background: "none",
-                border: "none",
-                padding: 0,
-                animation: "vmCapsuleBob 3.2s ease-in-out infinite",
-            }}
-        >
-            {/* Halo */}
-            <div
-                className="absolute rounded-full pointer-events-none"
-                style={{
-                    inset: -24,
-                    background: `radial-gradient(circle, ${GOLD}66 0%, ${GOLD}22 40%, transparent 72%)`,
-                    filter: "blur(6px)",
-                }}
-            />
-
-            {/* Top hemisphere: detaches and rises on crack */}
-            <div
-                className="absolute left-0 right-0 overflow-hidden"
-                style={{
-                    top: 0,
-                    height: "50%",
-                    borderRadius: "50% 50% 0 0 / 100% 100% 0 0",
-                    background: `
-                        radial-gradient(circle at 32% 24%, rgba(255,255,255,0.55) 0%, transparent 26%),
-                        radial-gradient(ellipse at 50% 80%, ${GOLD}38, transparent 60%),
-                        linear-gradient(180deg, #1a1508 0%, #0a0806 100%)
-                    `,
-                    boxShadow: `inset 0 -6px 14px ${GOLD_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
-                    transformOrigin: "50% 100%",
-                    transform: phase === "crack" ? "translateY(-32px) rotate(10deg)" : "translateY(0) rotate(0deg)",
-                    transition: "transform 0.35s cubic-bezier(0.3,0.1,0.3,1.2)",
-                    zIndex: 3,
-                }}
-            />
-
-            {/* Bottom hemisphere */}
-            <div
-                className="absolute left-0 right-0 overflow-hidden"
-                style={{
-                    bottom: 0,
-                    height: "50%",
-                    borderRadius: "0 0 50% 50% / 0 0 100% 100%",
-                    background: `
-                        radial-gradient(circle at 60% 80%, rgba(0,0,0,0.55) 0%, transparent 55%),
-                        radial-gradient(ellipse at 50% 20%, ${GOLD}44, transparent 60%),
-                        linear-gradient(180deg, #0e0806 0%, #050202 100%)
-                    `,
-                    boxShadow: `inset 0 6px 14px rgba(0,0,0,0.7), 0 8px 18px rgba(0,0,0,0.5)`,
-                    zIndex: 2,
-                }}
-            />
-
-            {/* Gold seam / equator band */}
-            <div
-                className="absolute left-0 right-0"
-                style={{
-                    top: "calc(50% - 3px)",
-                    height: 6,
-                    background: `linear-gradient(90deg, ${GOLD_DEEP}, ${GOLD_LIGHT} 20%, ${GOLD_LIGHT} 80%, ${GOLD_DEEP})`,
-                    boxShadow: `0 0 10px ${GOLD}, 0 2px 4px rgba(0,0,0,0.55)`,
-                    zIndex: 4,
-                    borderRadius: 2,
-                }}
-            />
-
-            {/* Center emblem disk */}
-            <div
-                className="absolute rounded-full flex items-center justify-center"
-                style={{
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: 42,
-                    height: 42,
-                    background: `radial-gradient(circle at 35% 30%, ${GOLD_LIGHT}, ${GOLD} 55%, ${GOLD_DEEP})`,
-                    border: `2px solid ${GOLD_DEEP}`,
-                    boxShadow: `0 2px 6px rgba(0,0,0,0.6), inset 0 -3px 6px ${GOLD_DEEP}, 0 0 10px ${GOLD}88`,
-                    zIndex: 5,
-                }}
+        <div className="relative mx-auto flex flex-col items-center justify-center" style={{ minHeight: 260 }}>
+            <div className="mb-2 text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/50">
+                Pins Collected
+            </div>
+            <motion.div
+                key={phase === "revealed" ? "r" : "i"}
+                className="mb-3 font-display font-black text-[22px]"
+                style={{ color: GOLD }}
+                initial={{ scale: 1 }}
+                animate={{ scale: phase === "revealed" ? [1.3, 1] : 1 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
             >
-                <Shaka size={24} />
+                {phase === "revealed" ? "+1" : "0"}
+            </motion.div>
+
+            <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+                {/* Gold halo */}
+                {phase !== "revealed" && (
+                    <motion.div
+                        className="absolute rounded-full pointer-events-none"
+                        style={{
+                            width: 180, height: 180,
+                            background: "radial-gradient(circle, rgba(255,215,0,0.35) 0%, rgba(255,215,0,0.08) 50%, transparent 75%)",
+                            filter: "blur(6px)",
+                        }}
+                        animate={{ opacity: [0.6, 1, 0.6], scale: [0.95, 1.05, 0.95] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                )}
+
+                {/* Orbit sparkles */}
+                {phase !== "revealed" && (
+                    <div className="absolute inset-0 pointer-events-none">
+                        {[0,1,2,3,4,5].map(i => (
+                            <motion.div
+                                key={`${cycleKey}-sparkle-${i}`}
+                                className="absolute w-1.5 h-1.5 rounded-full"
+                                style={{
+                                    background: GOLD,
+                                    boxShadow: `0 0 6px ${GOLD}`,
+                                    top: `${18 + (i * 17) % 64}%`,
+                                    left: `${12 + (i * 23) % 76}%`,
+                                }}
+                                animate={{ opacity: [0, 1, 0], scale: [0.5, 1.3, 0.5] }}
+                                transition={{ duration: 1.6, delay: i * 0.25, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Capsule */}
+                <AnimatePresence>
+                    {phase !== "revealed" && (
+                        <motion.button
+                            key={`${cycleKey}-capsule`}
+                            onClick={handleTap}
+                            className="relative cursor-pointer bg-transparent border-none p-0"
+                            style={{ width: 120, height: 120 }}
+                            initial={{ scale: 0.92, opacity: 1 }}
+                            animate={
+                                phase === "idle"
+                                    ? { scale: [0.98, 1.04, 0.98], rotate: [-2, 2, -2], opacity: 1 }
+                                    : phase === "anticipating"
+                                        ? {
+                                            rotate: [
+                                                0, -1.5, 1.5, -2, 2.5, -3, 3.5,
+                                                0, 0,
+                                                -5, 5, -7, 7, -9, 10,
+                                                0, 0,
+                                                -13, 15, -17, 18, -20, 22, 0,
+                                            ],
+                                            x: [
+                                                0, 0, 0, 0, 0, 0, 0,
+                                                0, 0,
+                                                -0.5, 0.6, -0.8, 1, -1.2, 1.5,
+                                                0, 0,
+                                                -1.8, 2, -2.2, 2.4, -2.6, 3, 0,
+                                            ],
+                                            scale: [
+                                                1, 1, 1, 1.01, 1.01, 1.02, 1.02,
+                                                1, 1,
+                                                1.03, 1.02, 1.04, 1.03, 1.05, 1.06,
+                                                1, 1,
+                                                1.07, 1.08, 1.09, 1.1, 1.12, 1.15, 1.18,
+                                            ],
+                                            opacity: 1,
+                                        }
+                                        : { scale: [1.18, 1.25, 0], rotate: [0, 0, 0], opacity: [1, 1, 0] }
+                            }
+                            transition={
+                                phase === "idle"
+                                    ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+                                    : phase === "anticipating"
+                                        ? { duration: ANTICIPATE_MS / 1000, ease: "easeIn" }
+                                        : { duration: CRACK_MS / 1000, times: [0, 0.3, 1] }
+                            }
+                            whileTap={{ scale: 0.94 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <SphericalCapsule
+                                anticipating={phase === "anticipating"}
+                                cracking={phase === "cracking"}
+                            />
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+
+                {/* Revealed pin */}
+                <AnimatePresence>
+                    {phase === "revealed" && (
+                        <motion.div
+                            key={`${cycleKey}-pin`}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <motion.div
+                                className="relative rounded-full overflow-hidden"
+                                style={{
+                                    width: 96, height: 96,
+                                    boxShadow: `0 0 30px ${COSMIC}cc, 0 0 60px ${COSMIC}66`,
+                                    border: `3px solid ${COSMIC}`,
+                                }}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 220, damping: 18 }}
+                            >
+                                <Image src={B_COSMIC.src} alt="" fill sizes="96px" className="object-cover pointer-events-none" unoptimized />
+                            </motion.div>
+                            <motion.div
+                                className="font-display font-black text-white text-[15px] leading-tight text-center"
+                                style={{ textShadow: `0 0 16px ${COSMIC}77` }}
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.15, type: "spring", stiffness: 500, damping: 25 }}
+                            >
+                                Cosmic Guardian
+                            </motion.div>
+                            <motion.div
+                                className="px-3 py-0.5 rounded-full text-[9px] font-mundial font-bold uppercase tracking-[0.2em]"
+                                style={{
+                                    background: `${COSMIC}2e`,
+                                    color: COSMIC,
+                                    border: `1px solid ${COSMIC}66`,
+                                    boxShadow: `0 0 10px ${COSMIC}33`,
+                                }}
+                                initial={{ y: 10, opacity: 0, scale: 0.8 }}
+                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25, delay: 0.28 }}
+                            >
+                                Cosmic
+                            </motion.div>
+                            <motion.div
+                                className="px-3 py-1 rounded-full text-[9px] font-display font-black uppercase tracking-[0.15em]"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(46,255,46,0.22), rgba(46,255,46,0.08))",
+                                    color: "#2EFF2E",
+                                    border: "1px solid rgba(46,255,46,0.4)",
+                                    boxShadow: "0 0 14px rgba(46,255,46,0.25)",
+                                }}
+                                initial={{ y: 12, opacity: 0, scale: 0.7 }}
+                                animate={{ y: 0, opacity: 1, scale: [0.7, 1.1, 1] }}
+                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.42 }}
+                            >
+                                New Pin Collected!
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* Crack-moment light burst */}
-            {phase === "crack" && (
+            <div className="relative mt-3 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px] text-center">
+                <AnimatePresence mode="wait">
+                    {phase === "idle" && (
+                        <motion.div key="idle" className="absolute inset-0" style={{ color: `${GOLD}cc` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Tap the capsule to open
+                        </motion.div>
+                    )}
+                    {phase === "anticipating" && (
+                        <motion.div key="anti" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Shaking...
+                        </motion.div>
+                    )}
+                    {phase === "cracking" && (
+                        <motion.div key="crack" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Cracking...
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+/* SphericalCapsule : direct port of FtuePrimer's capsule shape. Gold
+   tier treatment with dark chrome hemispheres, gold seam, subsurface
+   light leak that ramps on anticipation, specular highlight, and a
+   shaka decal that fades out on crack. */
+function SphericalCapsule({ anticipating, cracking }: { anticipating: boolean; cracking: boolean }) {
+    const SIZE = 120;
+    const HALF = SIZE / 2;
+    const GLOW = "#FFE048";
+
+    return (
+        <div className="absolute inset-0" style={{ filter: `drop-shadow(0 0 22px ${GOLD}55) drop-shadow(0 6px 18px rgba(0,0,0,0.6))` }}>
+            {/* Top hemisphere */}
+            <div
+                className="absolute"
+                style={{
+                    top: 0, left: 0, width: SIZE, height: HALF,
+                    borderRadius: `${HALF}px ${HALF}px 0 0 / ${HALF}px ${HALF}px 0 0`,
+                    background: "radial-gradient(ellipse at 35% 30%, #3a3222 0%, #1a1508 55%, #0a0806 100%)",
+                    boxShadow: "inset 0 2px 6px rgba(255,255,255,0.18), inset 0 -3px 10px rgba(0,0,0,0.45)",
+                }}
+            />
+            {/* Bottom hemisphere */}
+            <div
+                className="absolute"
+                style={{
+                    bottom: 0, left: 0, width: SIZE, height: HALF,
+                    borderRadius: `0 0 ${HALF}px ${HALF}px / 0 0 ${HALF}px ${HALF}px`,
+                    background: "radial-gradient(ellipse at 35% 70%, #2a2010 0%, #14100a 55%, #0a0806 100%)",
+                    boxShadow: "inset 0 -3px 10px rgba(0,0,0,0.7), inset 4px 4px 12px rgba(255,216,72,0.1)",
+                }}
+            />
+            {/* Gold rim ring */}
+            <div
+                className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ border: `1.5px solid ${GOLD}`, boxShadow: `0 0 12px ${GOLD}70, inset 0 0 8px ${GOLD}33` }}
+            />
+            {/* Subsurface light leak */}
+            <motion.div
+                className="absolute pointer-events-none"
+                style={{
+                    top: HALF - 6, left: "8%", width: "84%", height: 12,
+                    background: `radial-gradient(ellipse at center, ${GLOW} 0%, transparent 70%)`,
+                    filter: "blur(3px)",
+                    mixBlendMode: "screen",
+                }}
+                animate={
+                    anticipating ? { opacity: [0.2, 0.2, 0.35, 0.55, 0.8, 1] }
+                    : cracking ? { opacity: [1, 1, 1] }
+                    : { opacity: 0.25 }
+                }
+                transition={
+                    anticipating ? { duration: 1.8, ease: "easeIn" }
+                    : cracking ? { duration: 0.4 }
+                    : {}
+                }
+            />
+            {/* Seam */}
+            <motion.div
+                className="absolute left-0 right-0"
+                style={{
+                    top: HALF - 1, height: 2,
+                    background: `linear-gradient(90deg, transparent 0%, ${GLOW} 20%, ${GOLD} 50%, ${GLOW} 80%, transparent 100%)`,
+                    boxShadow: `0 0 10px ${GOLD}`,
+                }}
+                animate={
+                    anticipating ? { scaleX: [1, 1, 1.02, 1.04, 1.06, 1.1], opacity: [0.9, 1, 1, 1, 1, 1] }
+                    : cracking ? { scaleX: [1.1, 1.15, 1.2], opacity: 1 }
+                    : { scaleX: 1, opacity: 1 }
+                }
+                transition={
+                    anticipating ? { duration: 1.8, ease: "easeIn" }
+                    : cracking ? { duration: 0.4 }
+                    : {}
+                }
+            />
+            {/* Specular highlight */}
+            <div
+                className="absolute"
+                style={{
+                    top: 14, left: 20, width: 30, height: 22,
+                    background: "radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.6) 0%, rgba(255,240,160,0.25) 45%, transparent 75%)",
+                    filter: "blur(2px)",
+                    borderRadius: "50%",
+                }}
+            />
+            {/* Environment reflection arc */}
+            <div className="absolute pointer-events-none rounded-full overflow-hidden" style={{ inset: 0, mixBlendMode: "screen", opacity: 0.5 }}>
                 <div
-                    className="absolute rounded-full pointer-events-none"
-                    style={{
-                        inset: -10,
-                        background: `radial-gradient(circle, ${GOLD}cc 0%, ${GOLD}66 35%, transparent 70%)`,
-                        animation: "vmShapeFlash 0.6s ease-out 1",
-                        zIndex: 1,
-                    }}
+                    className="absolute inset-0"
+                    style={{ background: "conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.08) 15%, transparent 32%, rgba(255,255,255,0.12) 48%, transparent 65%)" }}
                 />
-            )}
-        </button>
+            </div>
+            {/* Shaka decal */}
+            <motion.div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full overflow-hidden"
+                style={{ width: SIZE * 0.55, height: SIZE * 0.55, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
+                animate={
+                    anticipating ? { opacity: [0.85, 0.8, 0.7, 0.55, 0.4, 0.25] }
+                    : cracking ? { opacity: 0 }
+                    : { opacity: 0.85 }
+                }
+                transition={
+                    anticipating ? { duration: 1.8, ease: "easeIn" }
+                    : cracking ? { duration: 0.2 }
+                    : { duration: 0.15 }
+                }
+            >
+                <Image src={B_CITIZEN.src} alt="" fill sizes="66px" className="object-contain" unoptimized />
+            </motion.div>
+        </div>
     );
 }
 
@@ -995,8 +1408,8 @@ function ScoreStep({ amount, caps, sub, color, intensity }: { amount: string; ca
         <div
             className="rounded-2xl text-center py-7 px-5 relative overflow-hidden"
             style={{
-                background: `linear-gradient(180deg, rgba(12,4,24,0.85), rgba(5,2,16,0.95))`,
-                border: `1.5px solid ${color}77`,
+                background: "linear-gradient(180deg, rgba(12,4,24,0.88), rgba(5,2,16,0.96))",
+                border: `1.5px solid ${color}88`,
                 boxShadow: `0 0 ${Math.round(22 + intensity * 24)}px ${color}44, inset 0 1px 0 rgba(255,255,255,0.08)`,
             }}
         >
@@ -1004,25 +1417,18 @@ function ScoreStep({ amount, caps, sub, color, intensity }: { amount: string; ca
                 className="absolute inset-x-0 top-0 h-[40%] pointer-events-none"
                 style={{ background: `linear-gradient(180deg, ${color}22, transparent)` }}
             />
-            <div
-                className="relative font-display font-black leading-none"
-                style={{ fontSize: 32, color, textShadow: `0 3px 0 rgba(0,0,0,0.6), 0 0 20px ${color}66` }}
-            >
+            <div className="relative font-display font-black leading-none" style={{ fontSize: 32, color, textShadow: `0 3px 0 rgba(0,0,0,0.6), 0 0 20px ${color}66` }}>
                 {amount}
             </div>
-            <div className="relative font-display font-black uppercase text-[14px] mt-2" style={{ color: "#fff", letterSpacing: "0.1em" }}>
-                {caps}
-            </div>
-            <div className="relative font-mundial text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
-                {sub}
-            </div>
+            <div className="relative font-display font-black uppercase text-[14px] mt-2" style={{ color: "#fff", letterSpacing: "0.1em" }}>{caps}</div>
+            <div className="relative font-mundial text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.72)" }}>{sub}</div>
         </div>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Pins and rarity.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 6: Pins and rarity
+   ════════════════════════════════════════════════════════════════ */
 function PinsSection() {
     const tiers: Array<keyof typeof TIER_META> = ["common","rare","special","gold","cosmic"];
     return (
@@ -1031,7 +1437,7 @@ function PinsSection() {
                 id="pins"
                 tag="The collection"
                 title="Pins and rarity"
-                sub="The catalog is 101 unique pins across 5 rarity tiers. Capsules roll tier first (weighted by rarity), then pick a specific pin from that tier. Cosmics are the rarest: there are only 3."
+                sub="The pin catalog is 101 unique pins, distributed across 5 rarity tiers. When you open a capsule, the server first rolls the rarity tier (weighted toward Common and Rare, with Cosmic the rarest), then picks a specific pin from that tier. Rarer pins have lower drop weights within their tier too, so even opening 10 Cosmics does not guarantee you will have all 3 uniques. Your full collection displays on your Pin Book, organized by tier, with every pin either shown in full color (owned) or as a dim silhouette (undiscovered)."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {tiers.map(t => {
@@ -1041,8 +1447,8 @@ function PinsSection() {
                             key={t}
                             className="rounded-2xl p-4 text-center"
                             style={{
-                                background: `linear-gradient(180deg, ${m.color}14, rgba(12,4,24,0.92))`,
-                                border: `1.5px solid ${m.color}66`,
+                                background: `linear-gradient(180deg, ${m.color}18, rgba(12,4,24,0.95))`,
+                                border: `1.5px solid ${m.color}77`,
                                 boxShadow: `0 0 20px ${m.glow}`,
                             }}
                         >
@@ -1060,7 +1466,7 @@ function PinsSection() {
                             <div className="font-display font-black uppercase text-[11px] tracking-[0.2em] mt-3" style={{ color: m.color }}>
                                 {m.label}
                             </div>
-                            <div className="font-mundial text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>
+                            <div className="font-mundial text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
                                 {m.count} pins
                             </div>
                         </div>
@@ -1068,15 +1474,15 @@ function PinsSection() {
                 })}
             </div>
             <Callout tone="cosmic" label="Duplicates are useful">
-                Opening a capsule you already have adds to your dupe count. Dupes feed the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow and count toward tier-find quests like &quot;Find 200+ Common pins&quot;. Collecting isn&apos;t wasted.
+                Opening a capsule for a pin you already own adds to your duplicate count for that pin. Duplicates are the fuel for the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow (see below), and they count toward lifetime tier-find quests like &quot;Find 200+ Common pins&quot;. So a capsule is never wasted: even when you pull a pin you already have ten of, that pull still ticks a counter that pays out elsewhere.
             </Callout>
         </section>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Collector ladder.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 7: Collector ladder
+   ════════════════════════════════════════════════════════════════ */
 function CollectorLadder() {
     return (
         <section className="mb-20">
@@ -1084,7 +1490,7 @@ function CollectorLadder() {
                 id="ladder"
                 tag="Status"
                 title="The Collector ladder"
-                sub="Your tier is based on the percent of the catalog you have collected. It shows on your profile. Keep opening capsules to climb."
+                sub="Your Collector tier is a single prestige title that reflects how much of the catalog you have collected. It is calculated from your unique-pin percentage, not your total capsule spend, so it is a pure measure of how broad your collection is. Your current tier shows on your profile pill in-game, and tapping it opens a breakdown of every band with thresholds. The top two tiers, Cosmic and One-Of-One, get special visual treatments: Cosmic is a purple nebula pulse, and One-Of-One is the holographic rainbow foil reserved for the player who has collected every single pin."
             />
             <div className="flex flex-col gap-2">
                 {COLLECTOR_TIERS.map(t => {
@@ -1099,13 +1505,13 @@ function CollectorLadder() {
                                     ? { border: `1px solid rgba(255,255,255,0.55)` }
                                     : isCosmic
                                         ? {
-                                            background: `radial-gradient(circle at 20% 30%, ${COSMIC}33, transparent 55%), radial-gradient(circle at 80% 75%, ${COSMIC_LIGHT}22, transparent 55%), linear-gradient(180deg, rgba(45,14,84,0.88), rgba(21,6,48,0.95))`,
+                                            background: `radial-gradient(circle at 20% 30%, ${COSMIC}33, transparent 55%), radial-gradient(circle at 80% 75%, ${COSMIC_LIGHT}22, transparent 55%), linear-gradient(180deg, rgba(45,14,84,0.9), rgba(21,6,48,0.97))`,
                                             border: `1px solid ${COSMIC}88`,
                                             boxShadow: `0 0 22px ${COSMIC}55`,
                                         }
                                         : {
-                                            background: "rgba(12,4,24,0.78)",
-                                            border: "1px solid rgba(255,255,255,0.08)",
+                                            background: "rgba(12,4,24,0.85)",
+                                            border: "1px solid rgba(255,255,255,0.1)",
                                         }
                             }
                         >
@@ -1123,7 +1529,7 @@ function CollectorLadder() {
                             </span>
                             <span
                                 className="relative z-10 font-mundial text-[12px] tabular-nums"
-                                style={{ color: isHolo ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.7)" }}
+                                style={{ color: isHolo ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.8)" }}
                             >
                                 {t.pct === 100 ? "100% . 101 pins" : `${t.pct}%+ . ${Math.ceil((t.pct/100) * 101)}+ pins`}
                             </span>
@@ -1149,9 +1555,9 @@ function CollectorLadder() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Daily Challenge.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 8: Daily Challenge
+   ════════════════════════════════════════════════════════════════ */
 function DailyChallenge() {
     return (
         <section className="mb-20">
@@ -1159,29 +1565,25 @@ function DailyChallenge() {
                 id="daily"
                 tag="Once a day"
                 title="The Daily Challenge"
-                sub="One run per day. Same board for every player, globally. Pure test of who plays the tile layout best. No luck-of-the-draw on the starting board."
+                sub="Every 24 hours, VibeMatch seeds a single board using the date, and that same board is served to every player on the planet. You get one attempt at it. No retries, no refresh tricks, no board shopping. The Daily Challenge leaderboard is a pure skill comparison: everyone plays identical tiles in the same starting layout, so the person on top is the person who read the board best and planned their 30 moves most carefully. Daily scores also pay out more capsules per threshold than Classic runs, and the single top player at day's end wins the champion bonus."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Globe size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>
-                            Same board, everyone
-                        </h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Same board, everyone</h3>
                     </div>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        The daily board is seeded by the date, so every player gets the identical starting layout. Leaderboard reflects pure skill.
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        The daily board is seeded by the calendar date, so every player sees the identical starting layout. A player on the other side of the world is solving the same puzzle you are. The leaderboard at day's end reflects pure skill on that specific puzzle.
                     </p>
                 </Card>
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Lock size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>
-                            One shot
-                        </h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>One shot</h3>
                     </div>
-                    <p className="font-mundial text-[14px]" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        One attempt per day. No refreshing, no retries. Commit, and the next Daily unlocks at midnight UTC.
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        You get one attempt per day, period. The moment you start, a server marker locks you in. Refreshing, closing the browser, or switching devices will not give you a second try. Commit carefully; the next Daily unlocks at midnight UTC.
                     </p>
                 </Card>
             </div>
@@ -1189,8 +1591,8 @@ function DailyChallenge() {
             <div
                 className="rounded-2xl text-center py-10 px-6 relative overflow-hidden"
                 style={{
-                    background: `radial-gradient(ellipse at center, ${GOLD}22, transparent 70%), linear-gradient(180deg, rgba(26,10,46,0.9), rgba(12,4,24,0.95))`,
-                    border: `2px solid ${GOLD}88`,
+                    background: `radial-gradient(ellipse at center, ${GOLD}28, transparent 70%), linear-gradient(180deg, rgba(26,10,46,0.93), rgba(12,4,24,0.97))`,
+                    border: `2px solid ${GOLD}99`,
                     boxShadow: `0 0 48px ${GOLD}44`,
                 }}
             >
@@ -1200,23 +1602,18 @@ function DailyChallenge() {
                 </div>
                 <div
                     className="font-display font-black leading-none mt-3"
-                    style={{
-                        fontSize: 44,
-                        color: GOLD,
-                        textShadow: `0 3px 0 rgba(0,0,0,0.55), 0 0 24px ${GOLD}66`,
-                    }}
+                    style={{ fontSize: 44, color: GOLD, textShadow: `0 3px 0 rgba(0,0,0,0.55), 0 0 24px ${GOLD}66` }}
                 >
                     +10 PIN CAPSULES
                 </div>
-                <p className="font-mundial text-[14px] mt-3 max-w-[440px] mx-auto" style={{ color: "rgba(255,255,255,0.82)" }}>
-                    Finish #1 on the Daily Challenge leaderboard and the 10-capsule bonus is credited on your next session load.
+                <p className="font-mundial text-[14px] mt-3 max-w-[460px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                    The single #1 finisher on each day's Daily Challenge leaderboard gets 10 Pin Capsules credited on their next session load. Claim is automatic and idempotent: you do not need to do anything special, just win and log in the next day. If you tie with someone else, the earlier submission wins.
                 </p>
             </div>
         </section>
     );
 }
 
-/* SVG crown, matching the gold treatment of VibeMatch's champion pill. */
 function CrownBadge() {
     return (
         <svg viewBox="0 0 64 64" width={60} height={60} aria-hidden="true" style={{ margin: "0 auto", display: "block", filter: `drop-shadow(0 0 20px ${GOLD}aa)` }}>
@@ -1227,22 +1624,16 @@ function CrownBadge() {
                     <stop offset="100%" stopColor={GOLD_DEEP} />
                 </linearGradient>
             </defs>
-            <path
-                d="M8 46 L12 20 L24 32 L32 14 L40 32 L52 20 L56 46 Z"
-                fill="url(#crownGrad)"
-                stroke="#6B4A0F"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-            />
+            <path d="M8 46 L12 20 L24 32 L32 14 L40 32 L52 20 L56 46 Z" fill="url(#crownGrad)" stroke="#6B4A0F" strokeWidth="1.5" strokeLinejoin="round" />
             <rect x="8" y="46" width="48" height="7" rx="2" fill="url(#crownGrad)" stroke="#6B4A0F" strokeWidth="1.5" />
             <circle cx="32" cy="10" r="3" fill={GOLD_LIGHT} />
         </svg>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Quests.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 9: Quests
+   ════════════════════════════════════════════════════════════════ */
 function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: string; description: string; capsules: number }> }) {
     return (
         <section className="mb-20">
@@ -1250,34 +1641,31 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
                 id="quests"
                 tag="Long-term chases"
                 title="Quests"
-                sub="There are 55+ quests across two tracks (Journey teaches the basics, Mastery is long-term). Every one is sticky: once unlocked, always unlocked. Each pays out bonus capsules."
+                sub="VibeMatch has 55+ quests across two tracks, all with their own unlock conditions and all paying out bonus Pin Capsules when completed. The Journey track is sequential first-time-user-experience goals that teach game mechanics (your first bomb, your first combo, your first capsule, a 3-day streak). The Mastery track is long-term play, with pin collection milestones, tier completions, streak ceilings, score thresholds, and referrals. Every quest is sticky: once you unlock it, it stays unlocked forever, and the capsule reward is credited immediately. Here is a sample of what is out there."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {quests.map(q => (
                     <div
                         key={q.id}
                         className="flex items-center gap-3 rounded-xl px-4 py-3"
-                        style={{
-                            background: "rgba(12,4,24,0.78)",
-                            border: `1px solid ${COSMIC}33`,
-                        }}
+                        style={{ background: "rgba(12,4,24,0.85)", border: `1px solid ${COSMIC}44` }}
                     >
                         <div
                             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                             style={{
                                 background: `radial-gradient(circle at 35% 30%, ${COSMIC_LIGHT}44, ${COSMIC}44)`,
-                                border: `1px solid ${COSMIC}77`,
+                                border: `1px solid ${COSMIC}88`,
                             }}
                         >
                             <QuestIcon id={q.id} />
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="font-display font-black text-[13px]" style={{ color: "#fff" }}>{q.title}</div>
-                            <div className="font-mundial text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>{q.description}</div>
+                            <div className="font-mundial text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.82)" }}>{q.description}</div>
                         </div>
                         <div
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0"
-                            style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}55` }}
+                            style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}66` }}
                         >
                             <CapsuleIcon size={12} />
                             <span className="font-display font-black text-[11px]" style={{ color: GOLD }}>x{q.capsules}</span>
@@ -1290,24 +1678,23 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
 }
 
 function QuestIcon({ id }: { id: string }) {
-    // Map a quest id to a lucide icon with a tier-appropriate color.
     const map: Record<string, { icon: React.ReactNode; color: string }> = {
-        first_combo:      { icon: <Flame size={18} />,     color: ORANGE },
-        first_bomb:       { icon: <Target size={18} />,    color: "#FF3333" },
-        score_25k:        { icon: <Trophy size={18} />,    color: GOLD },
-        combo_8:          { icon: <Flame size={18} />,     color: ORANGE },
-        all_cosmic:       { icon: <Sparkles size={18} />,  color: COSMIC },
-        found_cosmic_10:  { icon: <Star size={18} />,      color: COSMIC },
-        streak_7:         { icon: <Calendar size={18} />,  color: ORANGE },
-        pins_69:          { icon: <Pin size={18} />,       color: COSMIC },
+        first_combo:     { icon: <Flame size={18} />,    color: ORANGE },
+        first_bomb:      { icon: <Target size={18} />,   color: "#FF3333" },
+        score_25k:       { icon: <Trophy size={18} />,   color: GOLD },
+        combo_8:         { icon: <Flame size={18} />,    color: ORANGE },
+        all_cosmic:     { icon: <Sparkles size={18} />, color: COSMIC },
+        found_cosmic_10: { icon: <Star size={18} />,     color: COSMIC },
+        streak_7:        { icon: <Calendar size={18} />, color: ORANGE },
+        pins_69:         { icon: <Pin size={18} />,      color: COSMIC },
     };
     const m = map[id] ?? { icon: <Star size={18} />, color: COSMIC };
     return <span style={{ color: m.color }}>{m.icon}</span>;
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Rerolls.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 10: Rerolls
+   ════════════════════════════════════════════════════════════════ */
 function Rerolls() {
     const rows = [
         { tier: "common",  label: "Common",    cost: 5 },
@@ -1322,13 +1709,13 @@ function Rerolls() {
                 id="rerolls"
                 tag="Dupes to fresh capsules"
                 title="Rerolls"
-                sub="Sitting on duplicates? Burn them back into fresh Pin Capsules. Higher-rarity dupes burn more efficiently: one Cosmic dupe is enough on its own."
+                sub="Over time you will accumulate duplicate pins, and Rerolls turn them back into fresh Pin Capsules. The burn cost varies by tier: rarer tiers are worth more, so one Cosmic duplicate is enough to reroll into a whole new capsule on its own, while it takes five Common duplicates to do the same. You always keep at least one of every unique pin you own, so Rerolls never delete progress on your collection percentage. They just convert excess into a new roll."
             />
             <Card accent={COSMIC}>
                 <div className="grid gap-y-3" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
-                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b" style={{ color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }}>Tier</div>
-                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b" style={{ color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }}>Dupes</div>
-                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b text-right" style={{ color: "rgba(255,255,255,0.6)", borderColor: "rgba(255,255,255,0.1)" }}>For</div>
+                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b" style={{ color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.1)" }}>Tier</div>
+                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b" style={{ color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.1)" }}>Dupes</div>
+                    <div className="font-display font-black text-[10px] tracking-[0.25em] uppercase pb-2 border-b text-right" style={{ color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.1)" }}>For</div>
                     {rows.map(r => {
                         const m = TIER_META[r.tier];
                         return (
@@ -1336,7 +1723,7 @@ function Rerolls() {
                                 <div>
                                     <span
                                         className="inline-block font-display font-black text-[10px] tracking-[0.2em] uppercase px-2 py-0.5 rounded-full"
-                                        style={{ color: m.color, border: `1px solid ${m.color}77`, background: `${m.color}18` }}
+                                        style={{ color: m.color, border: `1px solid ${m.color}88`, background: `${m.color}18` }}
                                     >
                                         {r.label}
                                     </span>
@@ -1351,21 +1738,21 @@ function Rerolls() {
                 </div>
             </Card>
             <Callout tone="gold" label="Safety net">
-                Reroll <strong style={{ color: GOLD }}>never</strong> takes your last copy of a pin. You will always keep at least one of each unique pin you own.
+                Reroll <strong style={{ color: GOLD }}>never</strong> takes your last copy of a pin. You will always keep at least one of each unique pin you own, so reroll cannot regress your collection percentage or lock you out of a completed tier set.
             </Callout>
         </section>
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Leaderboards.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 11: Leaderboards
+   ════════════════════════════════════════════════════════════════ */
 function Leaderboards() {
     const boards = [
-        { icon: <Trophy size={26} />, name: "All-Time", color: GOLD,    sub: "Your top Classic score ever. Never resets." },
-        { icon: <Calendar size={26} />, name: "Weekly", color: ORANGE,  sub: "Best Classic score this week. Resets Monday 00:00 UTC." },
-        { icon: <Star size={26} />,    name: "Daily",   color: "#4A9EFF", sub: "Today's Daily Challenge leaderboard. Resets nightly." },
-        { icon: <Pin size={26} />,     name: "Pins",    color: COSMIC,  sub: "Top pin collectors by completion percent." },
+        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your personal best Classic score, all time. Shows the single highest score you have ever posted. Never resets, so your number on this board is the one you are trying to beat forever." },
+        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Your best Classic score for the current week. Resets every Monday at midnight UTC, giving everyone a fresh race. Good for short-term competitive play without needing to beat years of history." },
+        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge only. One score per player, global same-board comparison. Resets at midnight UTC. The top finisher wins the champion bonus." },
+        { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by how much of the catalog you have collected as a percentage. Updates the moment you collect a new pin. Separate race from score." },
     ];
     return (
         <section className="mb-20">
@@ -1373,26 +1760,28 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="Four separate rankings, each testing something different. Open the Leaders menu in-game to switch between them."
+                sub="VibeMatch runs four separate leaderboards, each testing a different thing. Score-based boards only count prize-eligible matches (games played within your daily prize cap), so you cannot farm rank by grinding practice games. The Pins board is a parallel race that only cares about collection breadth, not score. Open the Leaders menu in-game to switch between tabs."
             />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
                     <div
                         key={b.name}
-                        className="rounded-2xl p-5 text-center"
+                        className="rounded-2xl p-5 flex gap-4"
                         style={{
-                            background: `linear-gradient(180deg, ${b.color}14, rgba(12,4,24,0.92))`,
-                            border: `1px solid ${b.color}66`,
-                            boxShadow: `0 0 18px ${b.color}22`,
+                            background: `linear-gradient(180deg, ${b.color}18, rgba(12,4,24,0.95))`,
+                            border: `1px solid ${b.color}77`,
+                            boxShadow: `0 0 20px ${b.color}28`,
                         }}
                     >
-                        <div className="flex justify-center mb-2" style={{ color: b.color }}>{b.icon}</div>
-                        <h3 className="font-display font-black uppercase text-[14px] tracking-[0.15em]" style={{ color: b.color }}>
-                            {b.name}
-                        </h3>
-                        <p className="font-mundial text-[12px] mt-1.5" style={{ color: "rgba(255,255,255,0.72)" }}>
-                            {b.sub}
-                        </p>
+                        <div className="flex-shrink-0" style={{ color: b.color }}>{b.icon}</div>
+                        <div>
+                            <h3 className="font-display font-black uppercase text-[14px] tracking-[0.15em]" style={{ color: b.color }}>
+                                {b.name}
+                            </h3>
+                            <p className="font-mundial text-[13px] mt-1.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                                {b.sub}
+                            </p>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -1400,9 +1789,9 @@ function Leaderboards() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Streak + Referrals.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 12: Streaks + Referrals
+   ════════════════════════════════════════════════════════════════ */
 function StreakRefer() {
     return (
         <section className="mb-20">
@@ -1410,6 +1799,7 @@ function StreakRefer() {
                 id="streak"
                 tag="Show up, share"
                 title="Streaks and referrals"
+                sub="Two systems reward habit and social growth. Your streak climbs every day you play at least one game (any mode), and resets to 1 if you skip a day. Milestone quests at 3, 7, and 30 days unlock bonus capsules. Referrals are simpler: every player has a unique link, and when someone signs up through your link you both get +2 Pin Capsules credited on the spot, up to a lifetime cap of 50 capsules earned from referrals."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
@@ -1417,10 +1807,10 @@ function StreakRefer() {
                         <Flame size={18} style={{ color: ORANGE }} />
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Day streaks</h3>
                     </div>
-                    <p className="font-mundial text-[14px] mb-3" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Play any game mode at least once per day to keep your streak alive. Milestone quests unlock bonus capsules:
+                    <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                        Any game ending (Classic or Daily) counts toward your streak. The counter lives in your profile and is shown on every landing page. Streak quests:
                     </p>
-                    <ul className="font-mundial text-[14px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
+                    <ul className="font-mundial text-[14px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.98)" }}>
                         <li className="mb-1 flex items-center gap-1.5"><strong style={{ color: ORANGE }}>3 days</strong> Streak Starter <span className="inline-flex items-center gap-0.5"><CapsuleIcon size={11} /> x2</span></li>
                         <li className="mb-1 flex items-center gap-1.5"><strong style={{ color: ORANGE }}>7 days</strong> Devoted <span className="inline-flex items-center gap-0.5"><CapsuleIcon size={11} /> x2</span></li>
                         <li className="flex items-center gap-1.5"><strong style={{ color: ORANGE }}>30 days</strong> Committed <span className="inline-flex items-center gap-0.5"><CapsuleIcon size={11} /> x3</span></li>
@@ -1431,17 +1821,17 @@ function StreakRefer() {
                         <HandHeart size={18} style={{ color: COSMIC }} />
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Referral link</h3>
                     </div>
-                    <p className="font-mundial text-[14px] mb-2" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Every player has a referral URL. When a new player signs up with your link:
+                    <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                        Your referral URL lives in your profile. Share it anywhere. When a new player signs up through your link, capsules get credited on registration:
                     </p>
-                    <div className="rounded-lg px-3 py-2 mb-1.5 flex items-center gap-2" style={{ background: `${GOLD}10`, border: `1px solid ${GOLD}44` }}>
-                        <CapsuleIcon size={13} /> <strong style={{ color: GOLD }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.9)" }}>to you</span>
+                    <div className="rounded-lg px-3 py-2 mb-1.5 flex items-center gap-2" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}55` }}>
+                        <CapsuleIcon size={13} /> <strong style={{ color: GOLD }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to you</span>
                     </div>
-                    <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ background: `${COSMIC}14`, border: `1px solid ${COSMIC}44` }}>
-                        <CapsuleIcon size={13} color={COSMIC} /> <strong style={{ color: COSMIC }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.9)" }}>to them</span>
+                    <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ background: `${COSMIC}18`, border: `1px solid ${COSMIC}55` }}>
+                        <CapsuleIcon size={13} color={COSMIC} /> <strong style={{ color: COSMIC }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to them</span>
                     </div>
-                    <p className="font-mundial text-[11px] mt-3" style={{ color: "rgba(255,255,255,0.55)" }}>
-                        Up to 50 capsules earnable from referrals per account.
+                    <p className="font-mundial text-[12px] mt-3" style={{ color: "rgba(255,255,255,0.65)" }}>
+                        Lifetime cap: 50 capsules earnable per account from referrals. Also powers the Good Vibes Ambassador / Vibe Recruiter / Vibe Commander quest line (1 / 5 / 10 referrals).
                     </p>
                 </Card>
             </div>
@@ -1449,17 +1839,23 @@ function StreakRefer() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   SECTION: Tips.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   SECTION 13: Tips
+   ════════════════════════════════════════════════════════════════ */
 function Tips() {
     const tips = [
-        { n: 1, title: "Look for shape setups before clearing", text: "A move that sets up a T or Cross in your next turn can be worth 3x more than a clean clear. Scan for potential intersections before you swap." },
-        { n: 2, title: "Chain power tiles", text: "Swapping a Bomb next to a Laser Party (or two of anything) detonates both at once. A Cosmic Blast adjacent to anything is a guaranteed huge clear." },
-        { n: 3, title: "4-matches are never wasted", text: "Every 4-match creates a Bomb. Every 5-match creates a Laser Party. Even if you are not maxing score, you are stocking power tiles." },
-        { n: 4, title: "Daily Challenge is not Classic", text: "The Daily uses the same board for everyone. Study it at the start and plan a clearing order. You only get 30 moves and one attempt." },
-        { n: 5, title: "Open capsules immediately", text: "Duplicates count toward tier-find quests. The sooner you open, the sooner those lifetime counters tick up." },
-        { n: 6, title: "Watch the Quests rail", text: "The desktop landing shows 3 progressable quests closest to your current progress. Finishing one unlocks bonus capsules on your next game." },
+        { n: 1, title: "Look for shape setups before clearing",
+          text: "A swap that sets up a T or Cross on the next cascade is worth 2 to 4 times more than a clean 3-match. Before you commit to the obvious match, spend a second looking for potential intersections. A Cross bonus plus a high combo multiplier on the same turn is where 10,000-point moves come from." },
+        { n: 2, title: "Chain your power tiles",
+          text: "Power tiles do not just clear tiles, they chain. Swapping a Bomb next to a Laser Party or another Bomb detonates both, and a Cosmic Blast adjacent to any other power tile is often a game-defining play. If you have two power tiles on the board, your next move should almost always be to put them next to each other." },
+        { n: 3, title: "Four-matches are never wasted",
+          text: "Even if a 4-match seems like a wasteful way to clear tiles, it creates a Bomb, and that Bomb sits on the board until you use it. Same for Laser Parties from 5-matches. Late-game, the power tiles you stockpiled earlier become your multiplier stack for your final cascade." },
+        { n: 4, title: "Treat the Daily Challenge differently",
+          text: "In Classic you get ten practice runs a day; you can afford risk. In the Daily Challenge you have one attempt on a board everyone else is playing too. Before you make your first move, scan the entire board. Identify your likely power tile setups and a plan for the last 10 moves. Slower deliberation here pays much more than in Classic." },
+        { n: 5, title: "Open capsules the moment you get them",
+          text: "Every pin you pull increments your lifetime tier-find counter, which drives a separate quest track (\"Find 200+ Common pins,\" \"Find 10+ Cosmic pins\"). The sooner you open, the sooner those counters tick. Do not stockpile sealed capsules, there is no reason to wait." },
+        { n: 6, title: "Watch the QUESTS rail on the landing",
+          text: "The desktop landing page shows three progressable quests closest to completion, refreshed each visit. If one of them is at 9/10 or 45/51, that is your next obvious goal: finish it and pocket the bonus capsules, then the rail rerolls to show the next closest." },
     ];
     return (
         <section className="mb-20">
@@ -1467,6 +1863,7 @@ function Tips() {
                 id="tips"
                 tag="Get good"
                 title="Tips and tricks"
+                sub="A handful of habits separate consistent high scorers from lucky ones. None of these are exotic strategies; they are all simple shifts in how you read the board each turn."
             />
             <div className="flex flex-col gap-3">
                 {tips.map(t => (
@@ -1474,8 +1871,8 @@ function Tips() {
                         key={t.n}
                         className="rounded-xl px-5 py-4 flex gap-4 items-start"
                         style={{
-                            background: "rgba(12,4,24,0.78)",
-                            border: `1px solid ${COSMIC}22`,
+                            background: "rgba(12,4,24,0.85)",
+                            border: `1px solid ${COSMIC}33`,
                             borderLeft: `3px solid ${COSMIC}`,
                         }}
                     >
@@ -1491,7 +1888,7 @@ function Tips() {
                         </div>
                         <div>
                             <div className="font-display font-black text-[14px]" style={{ color: "#fff" }}>{t.title}</div>
-                            <div className="font-mundial text-[13px] mt-1" style={{ color: "rgba(255,255,255,0.78)" }}>{t.text}</div>
+                            <div className="font-mundial text-[13.5px] mt-1 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>{t.text}</div>
                         </div>
                     </div>
                 ))}
@@ -1500,19 +1897,19 @@ function Tips() {
     );
 }
 
-/* ────────────────────────────────────────────────────────────────
-   Footer.
-   ──────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   Footer
+   ════════════════════════════════════════════════════════════════ */
 function Footer() {
     return (
-        <section className="text-center mt-20 pt-12" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <div className="font-display font-black uppercase text-[10px] tracking-[0.35em] mb-3" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <section className="text-center mt-20 pt-12" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="font-display font-black uppercase text-[10px] tracking-[0.35em] mb-3" style={{ color: "rgba(255,255,255,0.45)" }}>
                 Good Vibes Club
             </div>
             <h2 className="font-display font-black uppercase" style={{ fontSize: 34, color: GOLD, textShadow: `0 2px 0 rgba(0,0,0,0.5), 0 0 16px ${GOLD}44` }}>
                 Now go play.
             </h2>
-            <p className="font-mundial text-[14px] mt-2 flex items-center justify-center gap-1.5" style={{ color: "rgba(255,255,255,0.65)" }}>
+            <p className="font-mundial text-[14px] mt-2 flex items-center justify-center gap-1.5" style={{ color: "rgba(255,255,255,0.75)" }}>
                 See you on the leaderboard. <Shaka size={16} />
             </p>
             <div className="flex justify-center mt-6">
