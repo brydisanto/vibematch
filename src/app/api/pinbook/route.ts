@@ -479,11 +479,30 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'No capsules to open' }, { status: 400 });
             }
 
-            // Reject opening if a pending reveal already exists
+            // If a pending reveal exists (user closed the tab mid-reveal,
+            // a bulk run was interrupted, etc.), auto-credit that pin to
+            // the user's pinbook before rolling the new one. The capsule
+            // for that pending was already decremented on its original
+            // open, so we only credit the pin — no double-charge. This
+            // keeps users from getting stuck behind a stale pending and
+            // protects the pin they already rolled.
             const pendingKey = `pinbook:${username}:pending`;
-            const existingPending = await kv.get(pendingKey);
+            const existingPending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number } | null;
             if (existingPending) {
-                return NextResponse.json({ error: 'A pending capsule is already open' }, { status: 400 });
+                const staleBadge = BADGES.find(b => b.id === existingPending.badgeId);
+                if (staleBadge && staleBadge.tier === existingPending.tier) {
+                    const nowIso = new Date().toISOString();
+                    const existingPin = data.pins[staleBadge.id];
+                    if (existingPin) {
+                        existingPin.count += 1;
+                        existingPin.lastPulled = nowIso;
+                    } else {
+                        data.pins[staleBadge.id] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+                    }
+                    const tierFound = ensureTotalFoundByTier(data);
+                    tierFound[staleBadge.tier] = (tierFound[staleBadge.tier] || 0) + 1;
+                }
+                await kv.del(pendingKey);
             }
 
             // Pick a random tier based on weights (server-side)

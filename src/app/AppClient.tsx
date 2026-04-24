@@ -1051,6 +1051,10 @@ export default function AppClient() {
             setShowCapsuleSequence(false);
             setPinBookInitialTab("capsules");
             setShowPinBook(true);
+            // Re-sync server state so anything the server auto-credited
+            // during a bulk run (e.g. a stale pending reveal from a prior
+            // interrupted session) shows up in the UI immediately.
+            pinBook.load();
 
             // Re-check achievements after the full run completes.
             if (userProfile?.username) {
