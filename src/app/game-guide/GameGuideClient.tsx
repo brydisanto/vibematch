@@ -715,7 +715,7 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring your moves"
-                sub="Every match starts with a base score per cleared tile, then multipliers stack on top. Three things drive the multiplier stack: the length of the match itself, the combo meter that climbs each time you chain a match without idle time, and cascades from tiles falling into new matches. All three compound. Hit a 4-match with a 3x combo on the second cascade of a turn and you are looking at 8-10x the score of the same tiles cleared cold. This is why elite players chase setups rather than first-available matches: the difference between a 6,000 point game and a 60,000 point game is almost entirely in multiplier stacking."
+                sub="Every match starts with a base score per cleared tile, then multipliers stack on top. Three things drive the multiplier stack: the length of the match itself, the tier of the badge being matched, and the cascade meter that climbs every time a single swap chains into additional matches. All three compound. Hit a 4-match on the second cascade of a turn made of Legendary pins and you are looking at 8-10x the score of the same tiles cleared cold. This is why elite players chase setups rather than first-available matches: the difference between a 6,000 point game and a 60,000 point game is almost entirely in multiplier stacking."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
@@ -763,7 +763,7 @@ function PowerTiles() {
                 <PowerTileDemo
                     kind="bomb"
                     name="Bomb"
-                    trigger="Match 4 in a row"
+                    trigger="Match 4 (non-Cosmic)"
                     effect="Clears a 3x3 area around itself."
                     detail="The simplest power tile and usually the first one a new player creates. Detonates when swapped with any neighbor. The 3x3 clear is centered on the bomb itself, so positioning matters: a bomb in the middle of a dense column will wipe out far more tiles than one near an edge."
                     accent="#FF3333"
@@ -772,7 +772,7 @@ function PowerTiles() {
                 <PowerTileDemo
                     kind="laser"
                     name="Laser Party"
-                    trigger="Match 5 in a row"
+                    trigger="Match 5, or Cosmic Match 4"
                     effect="Clears the full row AND column through the tile."
                     detail="A massive clear in a plus pattern. Because it strikes the entire row and column at once, Laser Parties are the easiest way to set up long cascade chains; a single Laser Party can remove 15+ tiles and cause the rest of the board to settle into multiple new matches."
                     accent="#4A9EFF"
@@ -781,14 +781,17 @@ function PowerTiles() {
                 <PowerTileDemo
                     kind="cosmic"
                     name="Cosmic Blast"
-                    trigger="Match 6+ or any Cosmic 5-match"
-                    effect="Huge cross-shaped clear across the whole board."
-                    detail="The rarest power tile and always a game-defining moment. Triggers on 6-or-more matches OR on any 5-match made entirely of Cosmic-tier pins. Expect most runs to produce zero Cosmic Blasts; when they do happen, a single detonation can mean a 10,000+ point swing."
+                    trigger="Match 6+, or Cosmic Match 5"
+                    effect="Clears EVERY tile of that badge type from the entire board."
+                    detail="The rarest power tile and always a game-defining moment. A single Cosmic Blast wipes every tile matching the detonated badge's type across all 64 cells of the board. Triggers on any 6-or-more match, or on a 5-match made of Cosmic-tier pins. Expect most runs to produce zero; when one does land, a single detonation can mean a 10,000+ point swing."
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
                     premium
                 />
             </div>
+            <Callout tone="cosmic" label="Cosmic tier is unique">
+                Cosmic-tier badges upgrade the special tile they would normally spawn by one level. A Cosmic match-4 skips the Bomb and creates a Laser Party. A Cosmic match-5 skips the Laser Party and creates a Cosmic Blast. This is one of the biggest reasons to chase Cosmic badges on the board.
+            </Callout>
         </section>
     );
 }

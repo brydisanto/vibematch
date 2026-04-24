@@ -62,7 +62,7 @@ The board is **8×8**. Each tile is a **badge** (pin artwork) drawn from a per-g
 
 ### Score inputs
 
-- **Match length**: 3-match pays **100** base, 4-match pays **300** (and spawns a Bomb), 5-match pays **600** (and spawns a Laser Party), 6+ spawns a Cosmic Blast.
+- **Match length**: 3-match pays **100** base, 4-match pays **300** (and spawns a Bomb), 5-match pays **600** (and spawns a Laser Party), 6+ spawns a Cosmic Blast. Cosmic-tier matches upgrade the spawned special by one tier (see Specials below).
 - **Tier multiplier**: every match is multiplied by the tier of the matched badge. Common **1x**, Rare **1.5x**, Special **2x**, Legendary **2x** (a handful at 3x), Cosmic **3x**.
 - **Combos & cascades**: when a swap's match clears and tiles falling in form a new match, that's a *cascade*. Every cascade on a turn stacks an extra **+75%** multiplier on every subsequent match that turn (combo 0 = 1x, combo 1 = 1.75x, combo 2 = 2.5x, combo 3 = 3.25x, etc.).
 - **Combo carry-over**: finish a turn with 3 cascades and next turn starts at combo +1. 4 cascades, +2. 5+ cascades, +3. This is the momentum mechanic that makes late-game cascade chains so valuable.
@@ -77,9 +77,16 @@ The board is **8×8**. Each tile is a **badge** (pin artwork) drawn from a per-g
 
 Bigger matches create powerful special tiles that detonate on their next swap:
 
-- **4-match** → Bomb (clears a 3×3 area)
-- **5-match** → Laser Party (lightning strike clearing a row + column)
-- **6+ match or cosmic-tier 5-match** → Cosmic Blast (large cross-shaped clear)
+- **4-match** → **Bomb** (clears a 3×3 area around the tile)
+- **5-match** → **Laser Party** (clears the entire row + column through the tile)
+- **6+ match** → **Cosmic Blast** (clears **every tile of the matched badge type** from the entire board)
+
+**Cosmic-tier upgrade rule.** Matches made from Cosmic-tier badges upgrade the special tile they spawn by one level. This applies to both match-4 and match-5:
+
+- **Cosmic 4-match** → upgrades from Bomb to **Laser Party**
+- **Cosmic 5-match** → upgrades from Laser Party to **Cosmic Blast**
+
+This is one of the main reasons Cosmic badges are worth chasing on the board even when they aren't in an active match yet.
 
 ### Move budget
 

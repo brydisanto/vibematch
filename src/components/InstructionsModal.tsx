@@ -241,11 +241,19 @@ function SlidePowerMoves() {
                                 <span className="font-display font-black text-[13px] text-[#B366FF]">Cosmic Blast</span>
                                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mundial bg-[#B366FF]/15 text-[#B366FF]/80">MATCH 6+</span>
                             </div>
-                            <p className="text-white/50 text-[11px] font-mundial">Removes every badge of one type from the board</p>
+                            <p className="text-white/50 text-[11px] font-mundial">Clears <span className="text-white/80 font-semibold">every tile of that badge type</span> from the whole board</p>
                         </div>
                     </div>
                 </div>
             </motion.div>
+
+            <ContentCard icon={Star} color="#B366FF" title="Cosmic Tier Upgrade" delay={0.08}>
+                <p><span className="text-[#B366FF] font-semibold">Cosmic badges</span> are rare and powerful: matching them upgrades the special tile they spawn by one level.</p>
+                <div className="mt-1.5 space-y-0.5 text-white/60">
+                    <p>Cosmic match-4: spawns a <span className="text-[#FFE048]">Laser Party</span> (instead of a Bomb)</p>
+                    <p>Cosmic match-5: spawns a <span className="text-[#B366FF]">Cosmic Blast</span> (instead of a Laser Party)</p>
+                </div>
+            </ContentCard>
 
             <ContentCard icon={Flame} color="#FF5F1F" title="Chain Reactions" delay={0.1}>
                 <p>Tap a special tile to set it off. If the blast hits <span className="text-white/80 font-semibold">another special tile</span>, they chain together for massive clears!</p>
