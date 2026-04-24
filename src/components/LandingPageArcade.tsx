@@ -600,11 +600,16 @@ export default function LandingPageArcade({
                                             {/* Hover card — absolute, escapes
                                                 the tile so the full pin name
                                                 is readable. Column-aligned
-                                                so edge tiles don't clip. */}
+                                                so edge tiles don't clip. Width
+                                                is capped and names wrap so long
+                                                pin names stay inside the rail
+                                                boundary rather than overflowing
+                                                past the right edge. */}
                                             <div
-                                                className="pointer-events-none absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap"
+                                                className="pointer-events-none absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20"
                                                 style={{
                                                     ...tooltipAlign,
+                                                    width: 180,
                                                     background: "rgba(12, 4, 24, 0.96)",
                                                     border: `1px solid ${meta.tint}66`,
                                                     boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 12px ${meta.tint}33`,
@@ -612,8 +617,8 @@ export default function LandingPageArcade({
                                                     padding: "6px 9px",
                                                 }}
                                             >
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-display text-[11px] font-black text-white leading-none">
+                                                <div className="flex items-start gap-1.5 flex-wrap">
+                                                    <span className="font-display text-[11px] font-black text-white leading-tight break-words">
                                                         {pin.name}
                                                     </span>
                                                     {pin.isNew && (
