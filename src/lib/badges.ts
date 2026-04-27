@@ -411,8 +411,8 @@ export const BADGES: Badge[] = [
         id: "vibefoot_fan_club",
         name: "Vibefoot Fan Club",
         image: "/badges/vibefoot_fan_club_1759173939420.webp",
-        tier: "silver",
-        pointMultiplier: 1.5,
+        tier: "gold",
+        pointMultiplier: 2,
     },
     {
         id: "nounish_vibes",

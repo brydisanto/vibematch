@@ -8,7 +8,7 @@ import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 const MAX_PLAUSIBLE_SCORE = 500_000;
 
 // Rarity weights for capsule drops
-// 101 total: 19 blue, 51 silver, 9 special, 19 gold, 3 cosmic
+// 101 total: 19 blue, 50 silver, 9 special, 20 gold, 3 cosmic
 const TIER_WEIGHTS = {
     blue: 45,      // ~45% Common (19 badges)
     silver: 30,    // ~30% Rare (51 badges)
