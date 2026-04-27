@@ -1298,11 +1298,11 @@ function CapsuleDemo() {
                 </AnimatePresence>
             </div>
 
-            <div className="relative mt-3 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px] text-center">
+            <div className="relative mt-3 text-[10px] font-mundial font-bold uppercase tracking-[0.15em] h-[14px] text-center whitespace-nowrap">
                 <AnimatePresence mode="wait">
                     {phase === "idle" && (
                         <motion.div key="idle" className="absolute inset-0" style={{ color: `${GOLD}cc` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            Tap the capsule to open
+                            Tap to Open
                         </motion.div>
                     )}
                     {phase === "anticipating" && (
