@@ -416,10 +416,11 @@ function Callout({ tone, label, children }: { tone: "gold" | "cosmic"; label: st
 
 function TableOfContents() {
     return (
-        <section className="mt-8 mb-16">
+        <section className="mt-8 mb-16 max-w-[720px] mx-auto">
             {/* Header matches the standard SectionHeader rhythm: small COSMIC
-                tag pill above, big GOLD title below. */}
-            <div className="mb-6">
+                tag pill above, big GOLD title below. Centered for the TOC
+                so it reads as a hero index above the rest of the guide. */}
+            <div className="mb-6 text-center">
                 <div
                     className="inline-block font-display font-black text-[10px] tracking-[0.3em] uppercase px-3 py-1 rounded-full mb-3"
                     style={{ color: COSMIC, background: `${COSMIC}18`, border: `1px solid ${COSMIC}44` }}
