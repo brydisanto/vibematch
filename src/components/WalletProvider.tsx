@@ -8,7 +8,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 import VibestrHolderProbe from './VibestrHolderProbe';
 
 const config = getDefaultConfig({
-    appName: 'VibeMatch',
+    appName: 'Pin Drop',
     projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
     chains: [mainnet],
     transports: {

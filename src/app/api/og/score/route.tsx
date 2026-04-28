@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
                         textTransform: 'uppercase',
                     }}
                 >
-                    VibeMatch
+                    Pin Drop
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>

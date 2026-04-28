@@ -70,7 +70,7 @@ export default function VibeDraft({ pool, onDraftComplete, onBack }: VibeDraftPr
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
                 >
-                    Pick {MAX_PICKS} badges to play with
+                    Pick {MAX_PICKS} pins to play with
                 </motion.p>
                 <motion.p
                     className="text-white/40 text-xs mt-1"

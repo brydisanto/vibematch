@@ -697,11 +697,11 @@ export default function AppClient() {
 
                 <div className="pointer-events-none flex items-center justify-center z-50 mt-1 sm:mt-2">
                   <Image
-                    src="/assets/logo.png"
-                    alt="VIBE MATCH"
-                    width={1000}
-                    height={627}
-                    className="w-auto h-16 sm:h-28 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
+                    src="/assets/logo-v3.png"
+                    alt="PIN DROP"
+                    width={1854}
+                    height={1623}
+                    className="w-auto h-20 sm:h-32 lg:h-44 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                     priority
                   />
                 </div>
@@ -748,8 +748,10 @@ export default function AppClient() {
               </div>
             </div>
 
-            {/* Game Layout — Royal Match style: HUD left, Board center */}
-            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
+            {/* Game Layout — Royal Match style: HUD left, Board center.
+                Negative top margin compensates for the larger PIN DROP
+                header logo so the board sits where it did pre-rebrand. */}
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center -mt-4 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
               <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
                 <GameHUD state={game.state} username={userProfile?.username} isExtraPlay={pinBook.currentMatchIsExtra} />

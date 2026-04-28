@@ -33,7 +33,7 @@ type PanelIndex = 0 | 1 | 2;
 const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
     0: {
         title: "Match 3 to Score",
-        body: "Line up 3+ of the same badge in a row to score points. Matches can go horizontal or vertical.",
+        body: "Line up 3+ of the same pin in a row to score points. Matches can go horizontal or vertical.",
     },
     1: {
         title: "Unlock Power-Ups",
@@ -83,7 +83,7 @@ export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
                     className="absolute top-[-12px] left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-[10px] font-mundial font-black tracking-[0.2em] uppercase text-white whitespace-nowrap"
                     style={{ background: "linear-gradient(135deg, #B366FF, #6C5CE7)" }}
                 >
-                    Welcome to VibeMatch!
+                    Welcome to Pin Drop!
                 </div>
 
                 <h2

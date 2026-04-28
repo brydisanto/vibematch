@@ -25,8 +25,8 @@ const CONFIG: Record<
 > = {
     firstMove: {
         label: null,
-        title: "Swap two adjacent badges",
-        body: "Line up 3 of the same badge in a row to make a match, either horizontal or vertical.",
+        title: "Swap two adjacent pins",
+        body: "Line up 3 of the same pin in a row to make a match, either horizontal or vertical.",
         gradient: "linear-gradient(135deg, #4A9EFF, #B366FF)",
         accent: "#4A9EFF",
         Icon: ArrowLeftRight,

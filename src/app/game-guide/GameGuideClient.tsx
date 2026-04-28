@@ -306,17 +306,17 @@ function Hero() {
                 style={{ animation: "vmGuideBob 3.2s ease-in-out infinite", width: 360, maxWidth: "80%" }}
             >
                 <Image
-                    src="/assets/logo.png"
-                    alt="VibeMatch"
-                    width={1000}
-                    height={627}
+                    src="/assets/logo-v3.png"
+                    alt="Pin Drop"
+                    width={1854}
+                    height={1623}
                     priority
                     className="w-full h-auto"
                     style={{ filter: `drop-shadow(0 16px 30px ${GOLD}55)` }}
                 />
             </div>
             <p className="font-mundial text-[17px] max-w-[640px] mx-auto mt-2" style={{ color: "rgba(255,255,255,0.82)" }}>
-                Match badges. Score big. Collect all 101 pins. Climb the Collector ladder from{" "}
+                Match pins. Score big. Collect all 101. Climb the Collector ladder from{" "}
                 <span className="font-display font-black" style={{ color: "#9CA3AF" }}>PLASTIC</span>{" "}
                 all the way to{" "}
                 <span
@@ -525,13 +525,13 @@ function HowToPlay() {
                     <MiniFact
                         icon={<Target size={18} style={{ color: COSMIC }} />}
                         title="30 Moves, Chosen Carefully"
-                        body="Hard ceiling of 30. Speed isn't rewarded — spotting the highest-value swap is. Bigger matches spawn power tiles; certain shapes multiply hard."
+                        body="Hard ceiling of 30. Speed isn't rewarded. Spotting the highest-value swap is. Bigger matches spawn power tiles. Certain shapes multiply hard."
                     />
                 </div>
             </div>
 
             <Callout tone="cosmic" label="Idle hint">
-                Stay still for 8 seconds and the game flashes a valid swap once per run. Safe move, not optimal — just enough to keep you unstuck.
+                Stay still for 8 seconds and the game flashes a valid swap once per run. Safe move, not optimal. Just enough to keep you unstuck.
             </Callout>
         </section>
     );
@@ -739,7 +739,7 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring Your Moves"
-                sub="Three multipliers stack on every match: match length, tier of the matched badge, and cascade depth. They compound. A 4-match of Legendary pins on the second cascade can outscore the same tiles cleared cold by 8-10x — chasing setups beats grabbing first-available matches every time."
+                sub="Every match stacks three multipliers: match length, tier of the matched pin, and cascade depth. They compound. A 4-match of Legendary pins on the second cascade can outscore the same tiles cleared cold by 8-10x. Setups beat grab-and-go every time."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
@@ -789,7 +789,7 @@ function PowerTiles() {
                     name="Bomb"
                     trigger="Match 4 (non-Cosmic)"
                     effect="Clears a 3x3 area around itself."
-                    detail="Position matters — a bomb in a dense column wipes far more than one near an edge."
+                    detail="Position matters. A bomb in a dense column wipes far more than one near an edge."
                     accent="#FF3333"
                     glow="rgba(255,51,51,0.45)"
                 />
@@ -806,7 +806,7 @@ function PowerTiles() {
                     kind="cosmic"
                     name="Cosmic Blast"
                     trigger="Match 6+, or Cosmic Match 5"
-                    effect="Clears EVERY tile of that badge type from the board."
+                    effect="Clears EVERY tile of that pin type from the board."
                     detail="The rarest power tile. Most runs produce zero; when one lands, expect a 10,000+ point swing."
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
@@ -950,7 +950,7 @@ function ShapeBonuses() {
                 />
             </div>
             <Callout tone="gold" label="Bonus capsule">
-                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> anywhere in a match and you earn a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong> for that game. One bonus capsule max per game, so it is worth hunting for on runs you are already going to score well on. The bonus stacks on top of the capsules you earn from your final score.
+                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> in a match and pocket a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong>. One bonus per game, stacked on top of whatever your score earns. Hunt them on runs you're already going to score big.
             </Callout>
         </section>
     );
@@ -1056,7 +1056,7 @@ function Capsules() {
                 id="capsules"
                 tag="Rewards"
                 title="Earning Pin Capsules"
-                sub="Score thresholds earn Pin Capsules. Each capsule opens to a random pin from the 101-pin catalog. Higher score = more capsules from a single run. Tap the capsule below to crack one open."
+                sub="Hit score thresholds, earn capsules. Each capsule cracks open to a random pin from the 101-pin catalog. Higher score = more capsules per run. Tap the capsule below to try one."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1076,15 +1076,15 @@ function Capsules() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Daily Challenge bonus</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        The Daily Challenge uses the same score thresholds but doubles the capsule payout. Since you only get one attempt per day, that extra value rewards the deliberate, one-shot nature of the format.
+                        Same thresholds, double the capsules. One shot a day, so the extra payout rewards taking it seriously.
                     </p>
                     <ul className="font-mundial text-[14px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
-                        <li className="mb-1">15K+ gives <strong style={{ color: GOLD }}>+2 capsules</strong></li>
-                        <li className="mb-1">30K+ gives <strong style={{ color: GOLD }}>+4 capsules</strong></li>
-                        <li>50K+ gives <strong style={{ color: GOLD }}>+6 capsules</strong></li>
+                        <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
+                        <li className="mb-1">30K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
+                        <li>50K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
                     <p className="font-mundial text-[13px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-                        Combine this with the Daily Champion prize described later and the Daily Challenge can be your single biggest capsule income stream on a given day.
+                        Stack the Daily Champion prize on top and Daily becomes your biggest capsule day. By far.
                     </p>
                 </Card>
             </div>
@@ -1468,7 +1468,7 @@ function PinsSection() {
                 id="pins"
                 tag="The collection"
                 title="Pins and Rarity"
-                sub="101 unique pins across 5 tiers. Capsules roll tier first (weighted toward Common, Cosmic is rarest), then pick a pin from that tier. Rarer pins also have lower drop weights inside their tier."
+                sub="101 pins, 5 tiers. Capsules roll tier first (Common most likely, Cosmic rarest), then a pin from that tier. Rarer pins inside a tier also have lower drop weights."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {tiers.map(t => {
@@ -1505,7 +1505,7 @@ function PinsSection() {
                 })}
             </div>
             <Callout tone="cosmic" label="Duplicates are useful">
-                Opening a capsule for a pin you already own adds to your duplicate count for that pin. Duplicates are the fuel for the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow (see below), and they count toward lifetime tier-find quests like &quot;Find 200+ Common pins&quot;. So a capsule is never wasted: even when you pull a pin you already have ten of, that pull still ticks a counter that pays out elsewhere.
+                Pulled a pin you already own? The duplicate stacks. Dupes fuel the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow and tick lifetime tier-find quests. No capsule is ever wasted.
             </Callout>
         </section>
     );
@@ -1521,7 +1521,7 @@ function CollectorLadder() {
                 id="ladder"
                 tag="Status"
                 title="The Collector Ladder"
-                sub="Your prestige title, calculated from unique-pin %, not capsule spend. Cosmic gets a purple nebula pulse; One-Of-One is the holographic rainbow foil reserved for completing the catalog."
+                sub="Your prestige title, ranked on unique-pin %, not capsule spend. Cosmic glows purple. One-Of-One is the holo-rainbow you only get for clearing the full catalog."
             />
             <div className="flex flex-col gap-2">
                 {COLLECTOR_TIERS.map(t => {
@@ -1596,7 +1596,7 @@ function DailyChallenge() {
                 id="daily"
                 tag="Once a day"
                 title="The Daily Challenge"
-                sub="One board per day, identical for every player. One attempt. No retries. Pure skill comparison — and Daily runs pay more capsules per threshold than Classic. The day's #1 wins the champion bonus."
+                sub="One board per day, identical for every player. One attempt. No retries. Pure skill comparison. Daily runs pay more capsules per threshold than Classic. The day's #1 wins the champion bonus."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card accent={COSMIC}>
@@ -1638,7 +1638,7 @@ function DailyChallenge() {
                     +10 PIN CAPSULES
                 </div>
                 <p className="font-mundial text-[14px] mt-3 max-w-[460px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                    The single #1 finisher on each day's Daily Challenge leaderboard gets 10 Pin Capsules credited on their next session load. Claim is automatic and idempotent: you do not need to do anything special, just win and log in the next day. If you tie with someone else, the earlier submission wins.
+                    Top the Daily leaderboard and 10 Pin Capsules land in your account on next login. Automatic. Tie? Earlier submission wins.
                 </p>
             </div>
         </section>
@@ -1672,7 +1672,7 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
                 id="quests"
                 tag="Long-term chases"
                 title="Quests"
-                sub="55+ quests across two tracks: Journey teaches mechanics (first bomb, first capsule, 3-day streak), Mastery is long-term play (collection milestones, tier completions, score thresholds). Every completion pays bonus capsules and stays unlocked forever."
+                sub="55+ quests across two tracks. Journey teaches the mechanics (first bomb, first capsule, 3-day streak). Mastery is the long game (collection milestones, tier sets, score walls). Every finish pays capsules. Unlocks stay forever."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {quests.map(q => (
@@ -1740,7 +1740,7 @@ function Rerolls() {
                 id="rerolls"
                 tag="Dupes to fresh capsules"
                 title="Rerolls"
-                sub="Burn duplicates back into fresh capsules. Rarer tiers are worth more — one Cosmic dupe = a new capsule, five Commons for the same. You always keep at least one of every pin you own, so collection % never moves backwards."
+                sub="Burn duplicates back into fresh capsules. Rarer tiers pay more. One Cosmic dupe = a new capsule. Five Commons for the same. You always keep at least one of every pin you own, so collection % never goes backwards."
             />
             <Card accent={COSMIC}>
                 <div className="grid gap-y-3" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
@@ -1769,7 +1769,7 @@ function Rerolls() {
                 </div>
             </Card>
             <Callout tone="gold" label="Safety net">
-                Reroll <strong style={{ color: GOLD }}>never</strong> takes your last copy of a pin. You will always keep at least one of each unique pin you own, so reroll cannot regress your collection percentage or lock you out of a completed tier set.
+                Reroll <strong style={{ color: GOLD }}>never</strong> takes your last copy of a pin. Your collection % can only go up. Tier sets stay sealed.
             </Callout>
         </section>
     );
@@ -1780,10 +1780,10 @@ function Rerolls() {
    ════════════════════════════════════════════════════════════════ */
 function Leaderboards() {
     const boards = [
-        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your personal best Classic score, all time. Shows the single highest score you have ever posted. Never resets, so your number on this board is the one you are trying to beat forever." },
-        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Your best Classic score for the current week. Resets every Monday at midnight UTC, giving everyone a fresh race. Good for short-term competitive play without needing to beat years of history." },
-        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge only. One score per player, global same-board comparison. Resets at midnight UTC. The top finisher wins the champion bonus." },
-        { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by how much of the catalog you have collected as a percentage. Updates the moment you collect a new pin. Separate race from score." },
+        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your highest Classic score ever. Never resets. The number you're trying to beat forever." },
+        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Best Classic score this week. Fresh race every Monday at midnight UTC." },
+        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. #1 wins the champion bonus." },
+        { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by collection %. Separate race from score. Updates the second you pull a new pin." },
     ];
     return (
         <section className="mb-20">
@@ -1791,7 +1791,7 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="Four boards, each testing a different thing. Score boards only count prize-eligible matches (no farming via practice). Pins board races collection breadth instead of score."
+                sub="Four boards, four flavors. Score boards only count prize-eligible matches, no practice farming. Pins board races collection breadth instead of score."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
@@ -1830,7 +1830,7 @@ function StreakRefer() {
                 id="streak"
                 tag="Show up, share"
                 title="Streaks and Referrals"
-                sub="Streaks climb each day you play (any mode), reset on skip. Quests at 3, 7, and 30 days pay bonus capsules. Referrals: your link gives you and the new player +2 capsules each, up to a 50-capsule lifetime cap."
+                sub="Streaks climb each day you play (any mode), reset on skip. Quests at 3, 7, and 30 days drop bonus capsules. Referrals split +2 capsules each way, lifetime cap of 50."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
@@ -1853,7 +1853,7 @@ function StreakRefer() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Referral Link</h3>
                     </div>
                     <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Your URL is in your profile. New signups via your link credit capsules on registration:
+                        Grab your link from your profile. Every signup via that link credits both sides:
                     </p>
                     <div className="rounded-lg px-3 py-2 mb-1.5 flex items-center gap-2" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}55` }}>
                         <CapsuleIcon size={13} /> <strong style={{ color: GOLD }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to you</span>
@@ -1862,7 +1862,7 @@ function StreakRefer() {
                         <CapsuleIcon size={13} color={COSMIC} /> <strong style={{ color: COSMIC }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to them</span>
                     </div>
                     <p className="font-mundial text-[12px] mt-3" style={{ color: "rgba(255,255,255,0.65)" }}>
-                        Lifetime cap: 50 capsules. Also powers the Ambassador / Recruiter / Commander quest line (1 / 5 / 10 referrals).
+                        Lifetime cap: 50 capsules. Same link feeds the Ambassador / Recruiter / Commander quest line (1 / 5 / 10 referrals).
                     </p>
                 </Card>
             </div>
@@ -1875,18 +1875,18 @@ function StreakRefer() {
    ════════════════════════════════════════════════════════════════ */
 function Tips() {
     const tips = [
-        { n: 1, title: "Look for shape setups before clearing",
-          text: "A swap that sets up a T or Cross on the next cascade is worth 2 to 4 times more than a clean 3-match. Before you commit to the obvious match, spend a second looking for potential intersections. A Cross bonus plus a high combo multiplier on the same turn is where 10,000-point moves come from." },
-        { n: 2, title: "Chain your power tiles",
-          text: "Power tiles do not just clear tiles, they chain. Swapping a Bomb next to a Laser Party or another Bomb detonates both, and a Cosmic Blast adjacent to any other power tile is often a game-defining play. If you have two power tiles on the board, your next move should almost always be to put them next to each other." },
-        { n: 3, title: "Four-matches are never wasted",
-          text: "Even if a 4-match seems like a wasteful way to clear tiles, it creates a Bomb, and that Bomb sits on the board until you use it. Same for Laser Parties from 5-matches. Late-game, the power tiles you stockpiled earlier become your multiplier stack for your final cascade." },
-        { n: 4, title: "Treat the Daily Challenge differently",
-          text: "In Classic you get ten practice runs a day; you can afford risk. In the Daily Challenge you have one attempt on a board everyone else is playing too. Before you make your first move, scan the entire board. Identify your likely power tile setups and a plan for the last 10 moves. Slower deliberation here pays much more than in Classic." },
-        { n: 5, title: "Open capsules the moment you get them",
-          text: "Every pin you pull increments your lifetime tier-find counter, which drives a separate quest track (\"Find 200+ Common pins,\" \"Find 10+ Cosmic pins\"). The sooner you open, the sooner those counters tick. Do not stockpile sealed capsules, there is no reason to wait." },
-        { n: 6, title: "Watch the QUESTS rail on the landing",
-          text: "The desktop landing page shows three progressable quests closest to completion, refreshed each visit. If one of them is at 9/10 or 45/51, that is your next obvious goal: finish it and pocket the bonus capsules, then the rail rerolls to show the next closest." },
+        { n: 1, title: "Hunt shapes before you clear",
+          text: "A T or Cross setup on the next cascade is worth 2 to 4x a clean 3-match. Before you take the obvious move, scan for intersections. Cross + high combo on one turn = 10K-point swings." },
+        { n: 2, title: "Chain power tiles",
+          text: "Bomb next to Laser detonates both. Cosmic Blast next to anything is usually game-defining. Two power tiles on the board, one move: put them together." },
+        { n: 3, title: "4-matches are never wasted",
+          text: "A 4-match leaves a Bomb behind. A 5-match leaves a Laser. They sit there until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
+        { n: 4, title: "Daily Challenge ≠ Classic",
+          text: "Classic gives you ten practice runs. Daily gives you one. Scan the whole board first. Sketch your power-tile setups. Plan the last 10 moves. Slower wins here." },
+        { n: 5, title: "Open capsules immediately",
+          text: "Every pull ticks a lifetime tier-find counter (\"Find 200 Commons\", \"Find 10 Cosmics\"). Hoarding sealed capsules just slows your quest progress. No upside to waiting." },
+        { n: 6, title: "Watch the Quests rail",
+          text: "Desktop landing shows the three quests closest to done. One sitting at 9/10 is your next move. Finish it. Earn the capsules. The rail re-rolls to the next closest." },
     ];
     return (
         <section className="mb-20">
@@ -1894,7 +1894,7 @@ function Tips() {
                 id="tips"
                 tag="Get good"
                 title="Tips and Tricks"
-                sub="A handful of habits separate consistent high scorers from lucky ones. None of these are exotic strategies; they are all simple shifts in how you read the board each turn."
+                sub="Six habits that separate consistent high scorers from lucky ones. Each one a small shift in how you read the board. Each one compounds."
             />
             <div className="flex flex-col gap-3">
                 {tips.map(t => (
@@ -1951,7 +1951,7 @@ function Footer() {
                         text="#1A0E02"
                         style={{ padding: "12px 28px", fontSize: 13, fontWeight: 900, letterSpacing: "0.22em" }}
                     >
-                        OPEN VIBEMATCH
+                        OPEN PIN DROP
                     </ChunkyButton>
                 </Link>
             </div>

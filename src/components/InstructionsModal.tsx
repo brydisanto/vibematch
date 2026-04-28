@@ -145,19 +145,19 @@ function SlideBasics() {
             />
 
             <ContentCard icon={Grid3X3} color="#4A9EFF" title="The Board" delay={0.05}>
-                <p><span className="text-white/80 font-semibold">6 badge types</span> on an 8x8 grid. You've got <span className="text-[#FFE048] font-semibold">30 moves</span> to stack the highest score possible.</p>
+                <p><span className="text-white/80 font-semibold">6 pin types</span> on an 8x8 grid. You've got <span className="text-[#FFE048] font-semibold">30 moves</span> to stack the highest score possible.</p>
             </ContentCard>
 
             <ContentCard icon={MousePointerClick} color="#B366FF" title="Swap It" delay={0.1}>
-                <p>Tap a badge, then tap one <span className="text-white/80 font-semibold">next to it</span> to swap. No match? It bounces back.</p>
+                <p>Tap a pin, then tap one <span className="text-white/80 font-semibold">next to it</span> to swap. No match? It bounces back.</p>
             </ContentCard>
 
             <ContentCard icon={Sparkles} color="#FFE048" title="Match 3+" delay={0.15}>
-                <p>Line up <span className="text-white/80 font-semibold">3 or more</span> of the same badge in a row or column. They clear, you score. That's the vibe.</p>
+                <p>Line up <span className="text-white/80 font-semibold">3 or more</span> of the same pin in a row or column. They clear, you score. That's the vibe.</p>
             </ContentCard>
 
             <ContentCard icon={ArrowDown} color="#FF5F1F" title="Cascades" delay={0.2}>
-                <p>When badges clear, new ones drop in from above. If they land into another match, that's a <span className="text-[#FF5F1F] font-semibold">cascade</span>. Each cascade boosts your score multiplier for the rest of the turn.</p>
+                <p>When pins clear, new ones drop in from above. If they land into another match, that's a <span className="text-[#FF5F1F] font-semibold">cascade</span>. Each cascade boosts your score multiplier for the rest of the turn.</p>
             </ContentCard>
         </div>
     );
@@ -248,7 +248,7 @@ function SlidePowerMoves() {
             </motion.div>
 
             <ContentCard icon={Star} color="#B366FF" title="Cosmic Tier Upgrade" delay={0.08}>
-                <p><span className="text-[#B366FF] font-semibold">Cosmic badges</span> are rare and powerful: matching them upgrades the special tile they spawn by one level.</p>
+                <p><span className="text-[#B366FF] font-semibold">Cosmic pins</span> are rare and powerful: matching them upgrades the special tile they spawn by one level.</p>
                 <div className="mt-1.5 space-y-0.5 text-white/60">
                     <p>Cosmic match-4: spawns a <span className="text-[#FFE048]">Laser Party</span> (instead of a Bomb)</p>
                     <p>Cosmic match-5: spawns a <span className="text-[#B366FF]">Cosmic Blast</span> (instead of a Laser Party)</p>
@@ -434,7 +434,7 @@ function SlideScoring() {
                     <Lightbulb size={14} className="text-[#B366FF] mt-0.5 flex-shrink-0" />
                     <p className="text-[11px] text-white/55 font-mundial leading-relaxed">
                         <span className="text-[#B366FF] font-bold">Pro Tip:</span>{" "}
-                        Hunt for Legendary and Cosmic badges first: they multiply everything. Set up cascades with high-tier badges and you'll blast past 15K.
+                        Hunt for Legendary and Cosmic pins first: they multiply everything. Set up cascades with high-tier pins and you'll blast past 15K.
                     </p>
                 </div>
             </motion.div>

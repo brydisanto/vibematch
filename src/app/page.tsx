@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import AppClient from "./AppClient";
 
 const BASE_URL = "https://vibematch.app";
-const DEFAULT_TITLE = "VibeMatch | Good Vibes Club";
+const DEFAULT_TITLE = "Pin Drop | Good Vibes Club";
 const DEFAULT_DESCRIPTION =
-    "Match-3 puzzle game featuring GVC badges. Match badges, score big, climb the leaderboard.";
+    "Match-3 puzzle game featuring GVC pins. Match pins, score big, climb the leaderboard.";
 
 type SP = {
     user?: string;
@@ -50,11 +50,11 @@ export async function generateMetadata({
     const ogUrl = `${BASE_URL}/api/og/score?user=${encodeURIComponent(
         user,
     )}&score=${score}&capsules=${capsules}`;
-    const title = `${user} scored ${score.toLocaleString()} on VibeMatch`;
+    const title = `${user} scored ${score.toLocaleString()} on Pin Drop`;
     const description =
         capsules > 0
             ? `${capsules} ${capsules === 1 ? "capsule" : "capsules"} earned. A Good Vibes Club Game.`
-            : "Match badges, earn capsules, collect pins. A Good Vibes Club Game.";
+            : "Match pins, earn capsules, collect 'em all. A Good Vibes Club Game.";
 
     return {
         title,
@@ -64,7 +64,7 @@ export async function generateMetadata({
             description,
             url: `${BASE_URL}/?user=${encodeURIComponent(user)}&score=${score}&capsules=${capsules}`,
             images: [{ url: ogUrl, width: 1200, height: 630 }],
-            siteName: "VibeMatch",
+            siteName: "Pin Drop",
             type: "website",
         },
         twitter: {
