@@ -830,22 +830,22 @@ export default function LandingPageArcade({
                         </div>
 
                         {/* Play stack — logo + cabinets + prize strip + nav.
-                            flex-1 with justify-center so the whole cluster
-                            vertically centers in the remaining space under
-                            the marquee. Gaps give the logo clear breathing
-                            room above the cabinets. */}
-                        <div className="relative z-10 flex-1 px-6 pb-6 pt-4 flex flex-col justify-center items-center gap-6">
+                            flex-1 with justify-start anchors the cluster to the
+                            top of the available area so the cabinets don't
+                            float in the middle of the column. Gaps give the
+                            logo clear breathing room above the cabinets. */}
+                        <div className="relative z-10 flex-1 px-6 pb-6 pt-2 flex flex-col justify-start items-center gap-1">
                             {/* Outer wrapper hosts the hover-scale so it doesn't
                                 fight the inline `vmArcadeBob` keyframe on the
-                                Image. Matches the production Quest logo treatment. */}
+                                Image. PIN DROP logo is cropped (1854x1623). */}
                             <div className="cursor-pointer transition-transform duration-300 hover:scale-105">
                                 <Image
-                                    src="/assets/logo.png"
-                                    alt="VIBE MATCH"
-                                    width={1000}
-                                    height={627}
+                                    src="/assets/logo-v3.png"
+                                    alt="PIN DROP"
+                                    width={1854}
+                                    height={1623}
                                     priority
-                                    className="w-[300px] h-auto"
+                                    className="w-[480px] h-auto"
                                     style={{
                                         filter: `drop-shadow(0 16px 30px ${GOLD}55)`,
                                         animation: "vmArcadeBob 3.2s ease-in-out infinite",

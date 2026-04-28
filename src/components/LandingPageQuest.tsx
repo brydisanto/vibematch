@@ -193,8 +193,8 @@ export default function LandingPageQuest({
             {/* Pin-wall background — defaults match production density (55 mobile / 120 desktop) */}
             <FloatingBadges />
 
-            <div className="relative z-10 flex flex-col justify-center w-full max-w-lg mx-auto px-4 py-6 min-h-screen">
-                {/* Logo — tight-cropped 4K treatment (1000x627 source). Now
+            <div className="relative z-10 flex flex-col justify-start w-full max-w-lg mx-auto px-4 pt-6 pb-6 min-h-screen">
+                {/* Logo — PIN DROP cropped treatment (1854x1623 source). Now
                     the topmost element on small screens; the HeaderRail
                     moved down to anchor against the Classic card.
                     Wrapped so hover-scale lives on the outer element without
@@ -203,11 +203,11 @@ export default function LandingPageQuest({
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo-v3.png"
-                            alt="VIBE MATCH"
-                            width={1000}
-                            height={627}
+                            alt="PIN DROP"
+                            width={1854}
+                            height={1623}
                             priority
-                            className="w-[240px] sm:w-[320px] h-auto max-w-full"
+                            className="w-[300px] sm:w-[380px] h-auto max-w-full"
                             style={{
                                 filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
                                 animation: "vmLogoBob 4s ease-in-out infinite",
