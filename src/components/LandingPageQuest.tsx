@@ -194,28 +194,15 @@ export default function LandingPageQuest({
             <FloatingBadges />
 
             <div className="relative z-10 flex flex-col justify-center w-full max-w-lg mx-auto px-4 py-6 min-h-screen">
-                {/* ========== HEADER RAIL ========== */}
-                <HeaderRail
-                    isLoggedIn={isLoggedIn}
-                    username={username}
-                    avatarUrl={avatarUrl}
-                    pinsCollected={pinsCollected}
-                    totalBadges={totalBadges}
-                    pinPct={pinPct}
-                    streak={streak}
-                    countdown={countdown}
-                    onOpenProfile={() => setProfileOpen(true)}
-                    onSignIn={() => setAuthOpen(true)}
-                />
-
-                {/* Logo — tight-cropped 4K treatment (1000x627 source).
-                    mt-10 gives clear breathing room below the header rail.
+                {/* Logo — tight-cropped 4K treatment (1000x627 source). Now
+                    the topmost element on small screens; the HeaderRail
+                    moved down to anchor against the Classic card.
                     Wrapped so hover-scale lives on the outer element without
                     stomping the inner bob keyframe. */}
-                <div className="flex justify-center mt-10">
+                <div className="flex justify-center">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
-                            src="/assets/logo.png"
+                            src="/assets/logo-v3.png"
                             alt="VIBE MATCH"
                             width={1000}
                             height={627}
@@ -235,11 +222,29 @@ export default function LandingPageQuest({
                     `}</style>
                 </div>
 
+                {/* ========== HEADER RAIL ========== */}
+                {/* Anchored just above the quest cards so the rail reads
+                    as part of the action stack rather than a top-of-page
+                    chrome bar. */}
+                <div className="mt-8">
+                    <HeaderRail
+                        isLoggedIn={isLoggedIn}
+                        username={username}
+                        avatarUrl={avatarUrl}
+                        pinsCollected={pinsCollected}
+                        totalBadges={totalBadges}
+                        pinPct={pinPct}
+                        streak={streak}
+                        countdown={countdown}
+                        onOpenProfile={() => setProfileOpen(true)}
+                        onSignIn={() => setAuthOpen(true)}
+                    />
+                </div>
+
                 {/* ========== QUEST CARDS ========== */}
-                {/* mt-8 leaves clear space under the tight-cropped logo.
-                    (Old -mt-5 was compensating for whitespace baked into
-                    logo-v2; the new logo has none.) */}
-                <div className="flex flex-col gap-3 mt-8">
+                {/* mt-3 keeps the rail visually paired with the Classic card
+                    (Bryan's "anchor just above CLASSIC VIBEMATCH"). */}
+                <div className="flex flex-col gap-3 mt-3">
                     {/* Classic */}
                     <button
                         type="button"
