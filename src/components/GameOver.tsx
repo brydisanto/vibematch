@@ -607,7 +607,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
         const capsuleLine = capsuleCount > 0
             ? `${capsuleCount} ${capsuleCount === 1 ? "capsule" : "capsules"} earned.`
             : "";
-        const text = `Scored ${score.toLocaleString()} on VibeMatch.${capsuleLine ? `\n${capsuleLine}` : ""}`;
+        const text = `Scored ${score.toLocaleString()} on Pin Drop.${capsuleLine ? `\n${capsuleLine}` : ""}`;
         const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
 
         const win = window.open(intentUrl, "_blank", "noopener,noreferrer");
@@ -920,7 +920,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             <div className="flex items-center gap-3 mb-3.5">
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                                 <span className="text-[10px] sm:text-xs text-white/30 font-mundial uppercase tracking-[0.2em]">
-                                    Badges Played
+                                    Pins Played
                                 </span>
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                             </div>

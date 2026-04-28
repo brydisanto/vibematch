@@ -194,12 +194,26 @@ export default function LandingPageQuest({
             <FloatingBadges />
 
             <div className="relative z-10 flex flex-col justify-start w-full max-w-lg mx-auto px-4 pt-6 pb-6 min-h-screen">
-                {/* Logo — PIN DROP cropped treatment (1854x1623 source). Now
-                    the topmost element on small screens; the HeaderRail
-                    moved down to anchor against the Classic card.
+                {/* ========== HEADER RAIL ========== */}
+                <HeaderRail
+                    isLoggedIn={isLoggedIn}
+                    username={username}
+                    avatarUrl={avatarUrl}
+                    pinsCollected={pinsCollected}
+                    totalBadges={totalBadges}
+                    pinPct={pinPct}
+                    streak={streak}
+                    countdown={countdown}
+                    onOpenProfile={() => setProfileOpen(true)}
+                    onSignIn={() => setAuthOpen(true)}
+                />
+
+                {/* Logo — PIN DROP cropped treatment (1854x1623 source).
+                    mt-10 gives the logo clear breathing room below the
+                    header rail so it doesn't feel crowded.
                     Wrapped so hover-scale lives on the outer element without
                     stomping the inner bob keyframe. */}
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-10">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo-v3.png"
@@ -207,7 +221,7 @@ export default function LandingPageQuest({
                             width={1854}
                             height={1623}
                             priority
-                            className="w-[300px] sm:w-[380px] h-auto max-w-full"
+                            className="w-[240px] sm:w-[320px] h-auto max-w-full"
                             style={{
                                 filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
                                 animation: "vmLogoBob 4s ease-in-out infinite",
@@ -222,29 +236,10 @@ export default function LandingPageQuest({
                     `}</style>
                 </div>
 
-                {/* ========== HEADER RAIL ========== */}
-                {/* Anchored just above the quest cards so the rail reads
-                    as part of the action stack rather than a top-of-page
-                    chrome bar. */}
-                <div className="mt-8">
-                    <HeaderRail
-                        isLoggedIn={isLoggedIn}
-                        username={username}
-                        avatarUrl={avatarUrl}
-                        pinsCollected={pinsCollected}
-                        totalBadges={totalBadges}
-                        pinPct={pinPct}
-                        streak={streak}
-                        countdown={countdown}
-                        onOpenProfile={() => setProfileOpen(true)}
-                        onSignIn={() => setAuthOpen(true)}
-                    />
-                </div>
-
                 {/* ========== QUEST CARDS ========== */}
-                {/* mt-3 keeps the rail visually paired with the Classic card
-                    (Bryan's "anchor just above CLASSIC VIBEMATCH"). */}
-                <div className="flex flex-col gap-3 mt-3">
+                {/* mt-4 keeps the cards close under the logo so the stack
+                    pulls up in the viewport. */}
+                <div className="flex flex-col gap-3 mt-4">
                     {/* Classic */}
                     <button
                         type="button"
@@ -287,9 +282,11 @@ export default function LandingPageQuest({
                             <div className="flex-1 min-w-0">
                                 <h2
                                     className="font-display font-black uppercase leading-[0.9]"
-                                    style={{ color: GOLD, fontSize: 22, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                    style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                 >
-                                    Classic<br />VibeMatch
+                                    <span style={{ fontSize: 18 }}>Classic</span>
+                                    <br />
+                                    <span style={{ fontSize: 26 }}>Pin Drop</span>
                                 </h2>
                                 <p className="text-white/55 text-[11px] font-mundial mt-1.5">
                                     Match pins and score as high as you can.
@@ -509,15 +506,19 @@ export default function LandingPageQuest({
                     onRules={() => onShowInstructions?.()}
                 />
 
-                {/* Subtle logout — only when logged in, below the nav */}
+                {/* Sign-out pill — matches the desktop Arcade treatment so
+                    the same frosted-pill language reads across breakpoints. */}
                 {isLoggedIn && (
-                    <button
-                        onClick={handleLogout}
-                        className="mt-3 text-white/35 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white/70 transition-colors flex items-center justify-center gap-2 w-full"
-                    >
-                        <LogOut size={12} />
-                        <span>Sign Out</span>
-                    </button>
+                    <div className="mt-3 flex justify-center">
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/70 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer transition-all"
+                        >
+                            <LogOut size={12} />
+                            <span>Sign Out of Pin Drop</span>
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -576,12 +577,16 @@ function HeaderRail({
     onOpenProfile: () => void;
     onSignIn: () => void;
 }) {
+    // Minimal gold-edge banner — picks up the gold accent (matches cards
+    // below) without piling another chunky 3D element on top of the stack.
+    // 2px gold top edge anchors it visually; 1px gold/45 outline on the
+    // rest keeps it light. Slight inset highlight + drop shadow give just
+    // enough depth.
     const backdrop = {
-        background: "rgba(10,4,20,0.72)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        border: `1px solid ${GOLD}33`,
-        boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+        background: "linear-gradient(180deg, rgba(26,6,51,0.88) 0%, rgba(10,4,20,0.92) 100%)",
+        border: `1px solid ${GOLD}73`,
+        borderTop: `2px solid ${GOLD}`,
+        boxShadow: "0 4px 14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
     } as const;
 
     // Hover treatment is identical across guest/logged-in so the bar reads
@@ -595,7 +600,7 @@ function HeaderRail({
             <button
                 type="button"
                 onClick={onSignIn}
-                className={`w-full flex items-center justify-between rounded-full pl-1.5 pr-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[${GOLD}]/60 ${hoverFx}`}
+                className={`w-full flex items-center justify-between rounded-2xl pl-2 pr-3.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[${GOLD}]/60 ${hoverFx}`}
                 style={backdrop}
             >
                 <div className="flex items-center gap-2">
@@ -617,7 +622,7 @@ function HeaderRail({
                 </div>
                 <div className="text-right">
                     <div className="text-[8px] tracking-[0.2em] font-mundial text-white/55">PLAYS RESET</div>
-                    <div className="text-[11px] tabular-nums font-display font-black text-white">{countdown}</div>
+                    <div className="text-[11px] tabular-nums font-display font-black" style={{ color: GOLD }}>{countdown}</div>
                 </div>
             </button>
         );

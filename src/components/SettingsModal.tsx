@@ -101,7 +101,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
                                 <div>
                                     <h2 className="font-display text-xl font-black text-white tracking-wide">Settings</h2>
-                                    <p className="text-white/40 text-[11px] font-mundial mt-0.5">Customize your VibeMatch experience</p>
+                                    <p className="text-white/40 text-[11px] font-mundial mt-0.5">Customize your Pin Drop experience</p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -131,7 +131,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                             {/* Footer */}
                             <div className="px-5 py-4 mt-1 border-t border-white/10 flex items-center justify-between">
-                                <span className="text-white/25 text-[10px] font-mundial uppercase tracking-widest">VibeMatch v1.0</span>
+                                <span className="text-white/25 text-[10px] font-mundial uppercase tracking-widest">Pin Drop v1.0</span>
                                 <button
                                     onClick={onClose}
                                     className="px-4 py-2 rounded-xl bg-[#B366FF] hover:bg-[#C48CFF] text-white text-sm font-black font-mundial transition-colors"

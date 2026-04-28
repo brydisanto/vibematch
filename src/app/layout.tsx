@@ -26,8 +26,8 @@ const mundial = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "VibeMatch | Good Vibes Club",
-  description: "Match-3 puzzle game featuring GVC badges. Match badges, score big, climb the leaderboard.",
+  title: "Pin Drop | Good Vibes Club",
+  description: "Match-3 puzzle game featuring GVC pins. Match pins, score big, climb the leaderboard.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon-192x192.png",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "VibeMatch",
+    title: "Pin Drop",
   },
 };
 
