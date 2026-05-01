@@ -32,6 +32,7 @@ import {
     GOLD,
     GOLD_DIM,
     GOLD_DEEP,
+    GOLD_LIGHT,
     COSMIC,
     COSMIC_DEEP,
     ORANGE,
@@ -1307,10 +1308,11 @@ export default function LandingPageArcade({
                                 </div>
                                 {/* 10× Pin Capsule prize indicator. Tap /
                                     hover reveals an explainer tooltip with
-                                    the SPECIAL PRIZE copy. Positioned next
-                                    to the header so it reads as "here's
-                                    what you're competing for". */}
-                                <div className="relative group">
+                                    the SPECIAL PRIZE copy. ml-auto pushes
+                                    it to the right edge of the rail header
+                                    so it reads as "here's what you're
+                                    competing for" anchored to the box. */}
+                                <div className="relative group ml-auto">
                                     <div
                                         className="flex items-center gap-1 rounded-full pl-1 pr-1.5 py-[2px] cursor-help transition-all hover:brightness-125"
                                         style={{
@@ -1320,17 +1322,23 @@ export default function LandingPageArcade({
                                         }}
                                         tabIndex={0}
                                     >
-                                        <Image
-                                            src="/badges/any_gvc_1759173799963.webp"
-                                            alt=""
-                                            width={14}
-                                            height={14}
-                                            unoptimized
-                                            style={{
-                                                objectFit: "contain",
-                                                filter: `drop-shadow(0 0 4px ${GOLD}88)`,
-                                            }}
-                                        />
+                                        {/* Pin Capsule glyph — matches the SVG icon used
+                                            on the game guide CapsuleIcon so the prize
+                                            indicator reads as "+10 capsules" instead of
+                                            a generic GVC pin. */}
+                                        <span className="inline-block relative align-middle" style={{ width: 14, height: 14 }}>
+                                            <span
+                                                className="absolute inset-0 rounded-full"
+                                                style={{
+                                                    background: `radial-gradient(circle at 35% 28%, ${GOLD_LIGHT}, ${GOLD} 60%, ${GOLD_DEEP})`,
+                                                    boxShadow: `inset 0 -2px 3px rgba(0,0,0,0.5), 0 0 4px ${GOLD}`,
+                                                }}
+                                            />
+                                            <span
+                                                className="absolute left-0 right-0"
+                                                style={{ top: "50%", height: 1.5, transform: "translateY(-50%)", background: GOLD_LIGHT, opacity: 0.9 }}
+                                            />
+                                        </span>
                                         <span
                                             className="font-display font-black text-[9px] tracking-[0.1em]"
                                             style={{ color: GOLD }}

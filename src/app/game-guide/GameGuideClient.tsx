@@ -515,17 +515,17 @@ function HowToPlay() {
                     <MiniFact
                         icon={<ArrowRight size={18} style={{ color: COSMIC }} />}
                         title="Swap Adjacent Tiles"
-                        body="Tap a tile, then tap a neighbor up/down/left/right. No diagonals. No-match swaps revert and don't cost a move."
+                        body="Tap a tile, then tap a neighbor (up, down, left, right). No diagonals. A swap that doesn't make a match reverts for free."
                     />
                     <MiniFact
                         icon={<TrendingUp size={18} style={{ color: COSMIC }} />}
                         title="Cascades Compound"
-                        body="Cleared tiles drop, new ones spawn, and any fresh matches from the settle stack a +75% multiplier. One smart swap can chain 3-4 cascades."
+                        body="Tiles clear, new ones drop. Fresh matches from the drop add +75% to your multiplier. One smart swap can chain 3 to 4 cascades."
                     />
                     <MiniFact
                         icon={<Target size={18} style={{ color: COSMIC }} />}
-                        title="30 Moves, Chosen Carefully"
-                        body="Hard ceiling of 30. Speed isn't rewarded. Spotting the highest-value swap is. Bigger matches spawn power tiles. Certain shapes multiply hard."
+                        title="30 Moves, Spend Wisely"
+                        body="30 moves max. Speed doesn't pay. The best swap does. Big matches spawn power tiles. Special shapes multiply."
                     />
                 </div>
             </div>
@@ -739,19 +739,19 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring Your Moves"
-                sub="Every match stacks three multipliers: match length, tier of the matched pin, and cascade depth. They compound. A 4-match of Legendary pins on the second cascade can outscore the same tiles cleared cold by 8-10x. Setups beat grab-and-go every time."
+                sub="Three multipliers stack on every match: match length, pin tier, cascade depth. They compound. A 4-match of Legendary pins on the second cascade can score 8 to 10x what the same tiles do cleared cold. Setups beat grab-and-go."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
                     sub="3-match: 100 base. 4-match: 300 + Bomb. 5-match: 600 + Laser Party. 6+: Cosmic Blast." />
                 <ScoreStat value="+75%" label="Cascade" color={COSMIC}
-                    sub="Every cascade in a turn adds +75% to your multiplier. 1st cascade 1.75x, 2nd 2.5x, 3rd 3.25x, and climbing." />
+                    sub="Every cascade adds +75% to your multiplier. 1st: 1.75x. 2nd: 2.5x. 3rd: 3.25x. And climbing." />
                 <ScoreStat value="+3" label="Momentum" color={ORANGE}
-                    sub="Cascade turns leak into the next move. End a turn with 3 cascades → next starts at combo +1. 4 → +2. 5+ → +3." />
+                    sub="End a turn with 3 cascades → next move starts at combo +1. 4 → +2. 5+ → +3. Momentum carries." />
             </div>
 
             <Callout tone="cosmic" label="Combos in plain English">
-                It's not tapping fast. It's how many matches one swap cascades into. End a turn with 3+ cascades and some momentum carries to your next swap as a combo head start.
+                It's not how fast you tap. It's how many matches one swap cascades into. 3+ cascades in a turn? Some of that momentum carries to the next swap.
             </Callout>
         </section>
     );
@@ -781,7 +781,7 @@ function PowerTiles() {
                 id="power-tiles"
                 tag="Power tiles"
                 title="Bombs, Laser Parties and Blasts"
-                sub="Matches of 4+ spawn a power tile that sits on the board until you swap it with a neighbor to detonate. Chaining two power tiles in one turn is one of the biggest score swings in the game."
+                sub="Match 4+ to spawn a power tile. It sits on the board until you swap it with a neighbor to detonate. Chain two in one turn for one of the biggest score swings in the game."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PowerTileDemo
@@ -798,7 +798,7 @@ function PowerTiles() {
                     name="Laser Party"
                     trigger="Match 5, or Cosmic Match 4"
                     effect="Clears the full row AND column through the tile."
-                    detail="The easiest way to set up long cascade chains. A single Laser can remove 15+ tiles."
+                    detail="The easiest way to chain long cascades. A single Laser can wipe 15+ tiles."
                     accent="#4A9EFF"
                     glow="rgba(74,158,255,0.5)"
                 />
@@ -807,14 +807,14 @@ function PowerTiles() {
                     name="Cosmic Blast"
                     trigger="Match 6+, or Cosmic Match 5"
                     effect="Clears EVERY tile of that pin type from the board."
-                    detail="The rarest power tile. Most runs produce zero; when one lands, expect a 10,000+ point swing."
+                    detail="The rarest power tile. Most runs see zero. When one lands, expect a 10,000+ point swing."
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
                     premium
                 />
             </div>
             <Callout tone="cosmic" label="Cosmic tier is unique">
-                Cosmic matches upgrade the special they spawn by one level. Cosmic match-4 → Laser Party (skips Bomb). Cosmic match-5 → Cosmic Blast (skips Laser).
+                Cosmic matches upgrade the power tile they spawn by one tier. Cosmic 4-match → Laser Party (skips Bomb). Cosmic 5-match → Cosmic Blast (skips Laser).
             </Callout>
         </section>
     );
@@ -919,7 +919,7 @@ function ShapeBonuses() {
                 id="shapes"
                 tag="Shape bonuses"
                 title="The Shape Multipliers"
-                sub="When a cascade lines up two matching runs that share a tile, the engine detects the shape and stacks a huge multiplier on top of everything else. Three outcomes: L, T, Cross. Tap a card to see the detection order."
+                sub="Two matching runs share a tile in a cascade, the engine detects the shape and stacks a huge multiplier on top. Three outcomes: L, T, Cross. Tap a card to see how detection works."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <ShapeCard
@@ -950,7 +950,7 @@ function ShapeBonuses() {
                 />
             </div>
             <Callout tone="gold" label="Bonus capsule">
-                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> in a match and pocket a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong>. One bonus per game, stacked on top of whatever your score earns. Hunt them on runs you're already going to score big.
+                A <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> in a match earns a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong>. One per game, stacked on top of your score capsules. Worth hunting on runs you're already crushing.
             </Callout>
         </section>
     );
@@ -1056,34 +1056,34 @@ function Capsules() {
                 id="capsules"
                 tag="Rewards"
                 title="Earning Pin Capsules"
-                sub="Hit score thresholds, earn capsules. Each capsule cracks open to a random pin from the 101-pin catalog. Higher score = more capsules per run. Tap the capsule below to try one."
+                sub="Hit score thresholds, earn capsules. Each capsule cracks to a random pin from the 101-pin catalog. Higher score, more capsules. Tap below to try one."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStep amount="15,000+" caps="+1 Capsule" sub="Unlocks the reward tier" color={GOLD} intensity={0.35} />
-                <ScoreStep amount="30,000+" caps="+2 Capsules" sub="Solid performance" color={ORANGE} intensity={0.45} />
-                <ScoreStep amount="50,000+" caps="+3 Capsules" sub="Big score club" color={COSMIC} intensity={0.6} />
+                <ScoreStep amount="15,000+" caps="+1 Capsule" sub="Reward tier unlocks" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="30,000+" caps="+2 Capsules" sub="Solid run" color={ORANGE} intensity={0.45} />
+                <ScoreStep amount="50,000+" caps="+3 Capsules" sub="Top of the board" color={COSMIC} intensity={0.6} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-start">
                 <Card accent={GOLD} className="text-center flex flex-col items-center justify-center">
                     <CapsuleDemo />
                 </Card>
 
                 <Card accent={COSMIC}>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Calendar size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Daily Challenge bonus</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                        <Calendar size={20} style={{ color: COSMIC }} />
+                        <h3 className="font-display font-black uppercase text-[18px]" style={{ color: "#fff" }}>Daily Challenge bonus</h3>
                     </div>
-                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Same thresholds, double the capsules. One shot a day, so the extra payout rewards taking it seriously.
+                    <p className="font-mundial text-[15px] leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                        Same thresholds, double the capsules. One shot a day, extra payout rewards taking it seriously.
                     </p>
-                    <ul className="font-mundial text-[14px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
+                    <ul className="font-mundial text-[15px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
                         <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
                         <li className="mb-1">30K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
                         <li>50K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
-                    <p className="font-mundial text-[13px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+                    <p className="font-mundial text-[14px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
                         Stack the Daily Champion prize on top and Daily becomes your biggest capsule day. By far.
                     </p>
                 </Card>
@@ -1126,20 +1126,27 @@ function CapsuleDemo() {
     }, [phase]);
 
     return (
-        <div className="relative mx-auto flex flex-col items-center justify-center" style={{ minHeight: 260 }}>
-            <div className="mb-2 text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/50">
-                Pins Collected
+        <div className="relative mx-auto flex flex-col items-center justify-center w-full gap-3">
+            {/* Header cluster — Pins Collected label + count read as one unit
+                so justify-around spreads three groups (header / capsule /
+                footer label) evenly down the card. w-full so its internal
+                items-center anchors against the demo's full width instead
+                of its own content width. */}
+            <div className="w-full flex flex-col items-center">
+                <div className="text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/50">
+                    Pins Collected
+                </div>
+                <motion.div
+                    key={phase === "revealed" ? "r" : "i"}
+                    className="font-display font-black text-[22px] mt-1"
+                    style={{ color: GOLD }}
+                    initial={{ scale: 1 }}
+                    animate={{ scale: phase === "revealed" ? [1.3, 1] : 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                    {phase === "revealed" ? "+1" : "0"}
+                </motion.div>
             </div>
-            <motion.div
-                key={phase === "revealed" ? "r" : "i"}
-                className="mb-3 font-display font-black text-[22px]"
-                style={{ color: GOLD }}
-                initial={{ scale: 1 }}
-                animate={{ scale: phase === "revealed" ? [1.3, 1] : 1 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-                {phase === "revealed" ? "+1" : "0"}
-            </motion.div>
 
             <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
                 {/* Gold halo */}
@@ -1288,8 +1295,8 @@ function CapsuleDemo() {
                                     boxShadow: "0 0 14px rgba(46,255,46,0.25)",
                                 }}
                                 initial={{ y: 12, opacity: 0, scale: 0.7 }}
-                                animate={{ y: 0, opacity: 1, scale: [0.7, 1.1, 1] }}
-                                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.42 }}
+                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 14, delay: 0.42 }}
                             >
                                 New Pin Collected!
                             </motion.div>
@@ -1298,22 +1305,25 @@ function CapsuleDemo() {
                 </AnimatePresence>
             </div>
 
-            <div className="relative mt-3 text-[10px] font-mundial font-bold uppercase tracking-[0.15em] h-[14px] text-center whitespace-nowrap">
+            {/* Footer label — same 220px reference width as the capsule
+                wrapper above. The motion.span uses framer-motion's x prop
+                (translateX(-50%)) anchored from left:50% for foolproof
+                horizontal centering that doesn't rely on text-align or
+                flex inheritance. */}
+            <div className="relative h-[14px]" style={{ width: 220 }}>
                 <AnimatePresence mode="wait">
-                    {phase === "idle" && (
-                        <motion.div key="idle" className="absolute inset-0" style={{ color: `${GOLD}cc` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            Tap to Open
-                        </motion.div>
-                    )}
-                    {phase === "anticipating" && (
-                        <motion.div key="anti" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            Shaking...
-                        </motion.div>
-                    )}
-                    {phase === "cracking" && (
-                        <motion.div key="crack" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            Cracking...
-                        </motion.div>
+                    {(phase === "idle" || phase === "anticipating" || phase === "cracking") && (
+                        <motion.span
+                            key={phase}
+                            className="absolute top-0 left-1/2 text-[10px] font-mundial font-bold uppercase tracking-[0.15em] whitespace-nowrap"
+                            style={{ color: phase === "idle" ? `${GOLD}cc` : GOLD, x: "-50%" }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            {phase === "idle" ? "Tap to Open" : phase === "anticipating" ? "Shaking..." : "Cracking..."}
+                        </motion.span>
                     )}
                 </AnimatePresence>
             </div>
@@ -1468,7 +1478,7 @@ function PinsSection() {
                 id="pins"
                 tag="The collection"
                 title="Pins and Rarity"
-                sub="101 pins, 5 tiers. Capsules roll tier first (Common most likely, Cosmic rarest), then a pin from that tier. Rarer pins inside a tier also have lower drop weights."
+                sub="101 pins across 5 tiers. Capsules roll tier first (Common most likely, Cosmic rarest), then pick a pin from that tier. Rarer pins drop less often within their tier."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {tiers.map(t => {
@@ -1521,7 +1531,7 @@ function CollectorLadder() {
                 id="ladder"
                 tag="Status"
                 title="The Collector Ladder"
-                sub="Your prestige title, ranked on unique-pin %, not capsule spend. Cosmic glows purple. One-Of-One is the holo-rainbow you only get for clearing the full catalog."
+                sub="Your prestige title. Ranked on unique-pin %, not capsule spend. Cosmic glows purple. One-Of-One is the holo-rainbow reserved for clearing the full catalog."
             />
             <div className="flex flex-col gap-2">
                 {COLLECTOR_TIERS.map(t => {
@@ -1596,7 +1606,7 @@ function DailyChallenge() {
                 id="daily"
                 tag="Once a day"
                 title="The Daily Challenge"
-                sub="One board per day, identical for every player. One attempt. No retries. Pure skill comparison. Daily runs pay more capsules per threshold than Classic. The day's #1 wins the champion bonus."
+                sub="One board, every player. One attempt, no retries. Pure skill. Daily pays more capsules per threshold than Classic, and the day's #1 wins the champion bonus."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card accent={COSMIC}>
@@ -1672,7 +1682,7 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
                 id="quests"
                 tag="Long-term chases"
                 title="Quests"
-                sub="55+ quests across two tracks. Journey teaches the mechanics (first bomb, first capsule, 3-day streak). Mastery is the long game (collection milestones, tier sets, score walls). Every finish pays capsules. Unlocks stay forever."
+                sub="55+ quests, two tracks. Journey teaches the mechanics: first bomb, first capsule, 3-day streak. Mastery is the long game: collection milestones, tier sets, score walls. Every finish pays capsules. Unlocks are permanent."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {quests.map(q => (
@@ -1740,7 +1750,7 @@ function Rerolls() {
                 id="rerolls"
                 tag="Dupes to fresh capsules"
                 title="Rerolls"
-                sub="Burn duplicates back into fresh capsules. Rarer tiers pay more. One Cosmic dupe = a new capsule. Five Commons for the same. You always keep at least one of every pin you own, so collection % never goes backwards."
+                sub="Burn duplicates back into fresh capsules. Rarer tiers pay more. One Cosmic dupe = a new capsule. Five Commons for the same. You always keep at least one of every pin, so collection % only goes up."
             />
             <Card accent={COSMIC}>
                 <div className="grid gap-y-3" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
@@ -1791,7 +1801,7 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="Four boards, four flavors. Score boards only count prize-eligible matches, no practice farming. Pins board races collection breadth instead of score."
+                sub="Four boards, four flavors. Score boards only count prize-eligible matches (no practice farming). The Pins board races collection breadth instead of score."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
@@ -1830,7 +1840,7 @@ function StreakRefer() {
                 id="streak"
                 tag="Show up, share"
                 title="Streaks and Referrals"
-                sub="Streaks climb each day you play (any mode), reset on skip. Quests at 3, 7, and 30 days drop bonus capsules. Referrals split +2 capsules each way, lifetime cap of 50."
+                sub="Play any mode, any day, the streak climbs. Skip a day, it resets. Quests at 3, 7, and 30 days pay bonus capsules. Referrals credit +2 capsules to each side, lifetime cap of 50."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
