@@ -83,7 +83,15 @@ export function usePinBook() {
         }
     }, []);
 
-    const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{ ok: boolean; error?: string }> => {
+    const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{
+        ok: boolean;
+        error?: string;
+        outOfPlays?: boolean;
+        classicPlays?: number;
+        cap?: number;
+        baseCap?: number;
+        bonusPrizeGames?: number;
+    }> => {
         try {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
@@ -92,6 +100,23 @@ export function usePinBook() {
             });
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
+                // 429 = hard daily-cap reached. Surface structured info so
+                // the caller can prompt the user to buy bonus games or
+                // come back tomorrow instead of just toasting an error.
+                if (res.status === 429) {
+                    if (typeof errData.classicPlays === 'number') {
+                        setState(prev => ({ ...prev, classicPlays: errData.classicPlays }));
+                    }
+                    return {
+                        ok: false,
+                        outOfPlays: true,
+                        error: errData.error || 'Out of plays today',
+                        classicPlays: errData.classicPlays,
+                        cap: errData.cap,
+                        baseCap: errData.baseCap,
+                        bonusPrizeGames: errData.bonusPrizeGames,
+                    };
+                }
                 console.error("pinbook trackGame failed:", res.status, errData);
                 return { ok: false, error: errData.error || `HTTP ${res.status}` };
             }
@@ -102,11 +127,11 @@ export function usePinBook() {
             if (data.matchId) {
                 activeMatchIdRef.current = data.matchId;
                 setActiveMatchId(data.matchId);
-                // Classic-only: flag the match as "extra" so the HUD can
-                // surface a practice banner. Daily matches never use the
-                // cap, so always eligible.
+                // Every classic run that gets past the cap check is now
+                // capsule-eligible. The only thing that still flips this
+                // is the abandoned-previous-match guard.
                 setCurrentMatchIsExtra(
-                    gameMode === 'classic' && (!!data.capped || !!data.abandonedPrevious)
+                    gameMode === 'classic' && !!data.abandonedPrevious
                 );
                 console.log("[usePinBook] trackGame matchId:", data.matchId, "mode:", gameMode, "abandonedPrevious:", data.abandonedPrevious);
             } else {

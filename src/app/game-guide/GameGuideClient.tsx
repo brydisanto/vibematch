@@ -1953,6 +1953,13 @@ function Footer() {
             <p className="font-mundial text-[14px] mt-2 flex items-center justify-center gap-1.5" style={{ color: "rgba(255,255,255,0.75)" }}>
                 See you on the leaderboard. <Shaka size={16} />
             </p>
+            {/* Free-path parity + legal disclaimer. Required wherever
+                $VIBESTR purchase surfaces are present, kept here so the
+                site footer carries the same line. */}
+            <p className="font-mundial text-[12px] mt-5 max-w-[640px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.6)" }}>
+                Every pin is earnable for free.<br />
+                Use of $VIBESTR does not increase the probability of any specific outcome.
+            </p>
             <div className="flex justify-center mt-6">
                 <Link href="/" className="no-underline">
                     <ChunkyButton

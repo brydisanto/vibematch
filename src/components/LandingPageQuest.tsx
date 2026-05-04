@@ -419,7 +419,7 @@ export default function LandingPageQuest({
                                             className="font-display font-black uppercase leading-none"
                                             style={{ color: prizeAccent, fontSize: 13, letterSpacing: "0.05em" }}
                                         >
-                                            {empty ? "Out of Plays" : "Prize Games"}
+                                            {empty ? "Out of Plays" : "Daily Plays"}
                                         </div>
                                         <div className="text-[9px] font-mundial text-white/45 mt-0.5">
                                             {remaining} of {totalCap} remaining

@@ -271,9 +271,9 @@ export default function AppClient() {
           // daily-cap exhaustion and the copy should say so.
           const r = result as { capped?: boolean; abandonedPrevious?: boolean; reason?: string };
           if (r.abandonedPrevious) {
-            toast.error("No capsule — previous game wasn't finished before starting this one.");
+            toast.error("No capsule. Previous game wasn't finished before starting this one.");
           } else if (r.capped) {
-            toast.error("Daily play cap reached — buy prize games for more capsules.");
+            toast.error("Daily play cap reached. Buy bonus games for more capsules.");
           } else if (r.reason) {
             toast.error(`Capsule not awarded: ${r.reason}`);
           } else {
@@ -497,7 +497,12 @@ export default function AppClient() {
     if (username) {
       const result = await pinBook.trackGame(mode);
       if (!result.ok) {
-        if (result.error === 'Daily already played today') {
+        if (result.outOfPlays) {
+          // Hard cap hit. Open the buy-bonus-games modal so the player
+          // can get more attempts or come back tomorrow.
+          toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+          setShowBuyPrizeGames(true);
+        } else if (result.error === 'Daily already played today') {
           toast.error("You already played the Daily Challenge today! Come back tomorrow.");
         } else {
           toast.error("Could not start game. Try again.");
@@ -571,6 +576,14 @@ export default function AppClient() {
       }
       const result = await pinBook.trackGame(mode);
       if (!result.ok) {
+        if (result.outOfPlays) {
+          // Cap hit on play-again. Bounce them home and pop the buy modal.
+          toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+          setShowBuyPrizeGames(true);
+          stopBGM();
+          setView("landing");
+          return;
+        }
         toast.error("Could not start game. Try again.");
         return;
       }
@@ -785,7 +798,7 @@ export default function AppClient() {
                     hintCells={game.hintCells}
                     invalidSwapCells={game.invalidSwapCells}
                     swapAnim={game.swapAnim}
-                    isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && pinBook.state.classicPlays < (10 + pinBook.state.bonusPrizeGames)}
+                    isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && !pinBook.currentMatchIsExtra}
                   />
                 </div>
               </div>
@@ -1192,6 +1205,12 @@ export default function AppClient() {
                       setFtueHint(null);
                       setIsDealing(true);
                       game.resetGame();
+                    } else if (result.outOfPlays) {
+                      // Hard cap hit. Bounce home + open the buy modal.
+                      toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+                      stopBGM();
+                      setView("landing");
+                      setShowBuyPrizeGames(true);
                     }
                   });
                 }
@@ -1208,6 +1227,12 @@ export default function AppClient() {
                       setFtueHint(null);
                       setIsDealing(true);
                       game.resetGame();
+                    } else if (result.outOfPlays) {
+                      // Hard cap hit. Bounce home + open the buy modal.
+                      toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+                      stopBGM();
+                      setView("landing");
+                      setShowBuyPrizeGames(true);
                     }
                   });
                 }

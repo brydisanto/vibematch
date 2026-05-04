@@ -968,7 +968,7 @@ export default function LandingPageArcade({
                                                     className="font-display font-black uppercase text-[11px]"
                                                     style={{ color: accent }}
                                                 >
-                                                    {empty ? "Out of Plays" : "Prize Games"}
+                                                    {empty ? "Out of Plays" : "Daily Plays"}
                                                 </span>
                                                 <span className="text-[9px] text-white/45 tracking-wider mt-0.5">
                                                     {remaining} OF {total}{bonusPrizeGames > 0 ? ` · +${bonusPrizeGames} BONUS` : ""}

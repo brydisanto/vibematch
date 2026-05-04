@@ -217,21 +217,35 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Classic: count plays toward the daily cap. Daily games don't count.
-            let capped = false;
+            // Classic: enforce hard daily cap before incrementing. Every
+            // run is capsule-eligible now (no more "non-prize" runs after
+            // cap). Hitting the cap returns 429 so the client can prompt
+            // the player to buy more bonus games or come back tomorrow.
+            // Daily games don't count toward the classic cap.
             let classicPlays = 0;
             if (gameMode === 'classic') {
-                const tracker = await incrementClassicPlays(username);
+                const tracker = await getDailyTracker(username);
                 const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
-                capped = tracker.classicPlays > effectiveCap;
-                classicPlays = tracker.classicPlays;
+                if (tracker.classicPlays >= effectiveCap) {
+                    return NextResponse.json({
+                        error: 'Out of plays today',
+                        classicPlays: tracker.classicPlays,
+                        cap: effectiveCap,
+                        baseCap: CLASSIC_DAILY_CAP,
+                        bonusPrizeGames: tracker.bonusPrizeGames || 0,
+                    }, { status: 429 });
+                }
+                const updated = await incrementClassicPlays(username);
+                classicPlays = updated.classicPlays;
             }
 
             // Generate match token. Bound to user and single-use.
             const matchId = crypto.randomUUID();
             const matchKey = `pinbook:${username}:match:${matchId}`;
-            // prizeEligible: false if capped OR if this is a refresh within 5 min of a prior game.
-            const prizeEligible = !capped && !abandonedPrevious;
+            // Every run that gets past the cap check is capsule-eligible.
+            // The only thing that can still flip prizeEligible to false is
+            // the abandoned-previous-match guard (refresh-shop exploit).
+            const prizeEligible = !abandonedPrevious;
             await kv.set(matchKey, {
                 username,
                 gameMode,
@@ -249,7 +263,7 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 tracked: true,
                 classicPlays,
-                capped,
+                capped: false,
                 abandonedPrevious,
                 matchId,
             });

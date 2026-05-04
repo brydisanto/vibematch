@@ -280,7 +280,7 @@ function ConnectState({ currentBonus }: { currentBonus: number }) {
                 className="font-display font-black uppercase leading-none mb-2"
                 style={{ color: GOLD, fontSize: 22, textShadow: "0 2px 0 rgba(0,0,0,0.4)" }}
             >
-                Restock Prize Games
+                Restock Bonus Games
             </h3>
             <p className="text-white/55 text-[12px] font-mundial mb-5 tracking-wide">
                 Connect a wallet to pay with $VIBESTR.
@@ -319,12 +319,13 @@ function PurchaseState({
                         className="font-display font-black uppercase leading-none"
                         style={{ color: GOLD, fontSize: 22, textShadow: "0 2px 0 rgba(0,0,0,0.4)" }}
                     >
-                        Restock Prize Games
+                        Restock Bonus Games
                     </h3>
-                    <p className="text-white/45 text-[11px] font-mundial mt-1 tracking-wide">
-                        Buy more games &amp; find more capsules with $VIBESTR
-                        {currentBonus > 0 ? ` · +${currentBonus} bonus today` : ""}
-                    </p>
+                    {currentBonus > 0 && (
+                        <p className="text-white/45 text-[11px] font-mundial mt-1 tracking-wide">
+                            +{currentBonus} bonus today
+                        </p>
+                    )}
                 </div>
                 <button
                     onClick={onClose}
@@ -415,7 +416,7 @@ function PurchaseState({
                                             {p.label}
                                         </span>
                                         <span className="text-white/40 text-[10px] font-mundial">
-                                            {p.size} Prize Game{p.size === 1 ? "" : "s"}
+                                            {p.size} Bonus Game{p.size === 1 ? "" : "s"}
                                         </span>
                                     </div>
                                     {p.discount && (
@@ -492,7 +493,7 @@ function PurchaseState({
                         Confirming…
                     </span>
                 ) : (
-                    `Load ${selectedPack.size} · ${selectedPack.price} $VIBESTR`
+                    `Buy for ${selectedPack.price} $VIBESTR`
                 )}
             </ChunkyButton>
 
@@ -501,7 +502,10 @@ function PurchaseState({
             `}</style>
 
             <p className="text-white/25 text-[9px] font-mundial text-center mt-3 tracking-wider">
-                Bonus games reset at midnight UTC · Max {MAX_BONUS_PER_DAY}/day
+                You may purchase up to {MAX_BONUS_PER_DAY} Bonus Games per day. Resets at midnight UTC.
+            </p>
+            <p className="text-white/30 text-[9px] font-mundial text-center mt-1.5 leading-snug">
+                Using $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.
             </p>
         </>
     );

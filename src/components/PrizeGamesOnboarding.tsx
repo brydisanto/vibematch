@@ -76,11 +76,11 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                 <p className="text-white/70 text-sm font-mundial leading-relaxed mb-5">
                                     {isCapped ? (
                                         <>
-                                            Bummer! You just maxed out your daily prize games. Grab more with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep stacking pins all day.
+                                            You just hit your daily play cap. Grab bonus games with <strong className="text-[#FFE048]">$VIBESTR</strong> for additional gameplay throughput today.
                                         </>
                                     ) : (
                                         <>
-                                            Running low on prize games? Grab more with <strong className="text-[#FFE048]">$VIBESTR</strong> and keep the pin drops flowing.
+                                            Running low on plays? Grab bonus games with <strong className="text-[#FFE048]">$VIBESTR</strong> for additional gameplay throughput today.
                                         </>
                                     )}
                                 </p>

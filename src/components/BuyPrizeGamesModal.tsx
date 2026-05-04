@@ -236,10 +236,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                 </div>
                             ) : (
                                 <>
-                                    <h2 className="font-display text-2xl font-black text-[#FFE048] mb-1 uppercase">More Prize Games</h2>
-                                    <p className="text-white/50 text-xs font-mundial mb-4">
-                                        Out of prize games? Pay with $VIBESTR to keep playing for capsules.
-                                    </p>
+                                    <h2 className="font-display text-2xl font-black text-[#FFE048] mb-4 uppercase">More Bonus Games</h2>
 
                                     {currentBonus > 0 && (
                                         <p className="text-[#FFE048]/70 text-[10px] font-mundial mb-3">
@@ -281,7 +278,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                                     {pkg.size}
                                                                 </span>
                                                                 <span className="text-white/60 text-xs font-mundial">
-                                                                    {pkg.size === 1 ? 'prize game' : 'prize games'}
+                                                                    {pkg.size === 1 ? 'bonus game' : 'bonus games'}
                                                                 </span>
                                                             </div>
                                                             {pkg.discount && (
@@ -351,7 +348,10 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                     )}
 
                                     <p className="text-white/30 text-[10px] font-mundial text-center mt-3">
-                                        Bonus games reset at midnight UTC · Max 10 purchased games per day
+                                        You may purchase up to 10 Bonus Games per day. Resets at midnight UTC.
+                                    </p>
+                                    <p className="text-white/35 text-[9px] font-mundial text-center mt-2 leading-snug">
+                                        Using $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.
                                     </p>
                                 </>
                             )}

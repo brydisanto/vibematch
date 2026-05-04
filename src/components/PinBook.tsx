@@ -324,12 +324,12 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                 }}
             >
                 <p className="font-display font-black text-base text-white uppercase tracking-wide mb-1">
-                    10 Free Prize Games Per Day
+                    10 Free Games Per Day
                 </p>
                 <p className="text-white/50 text-[11px] font-mundial leading-relaxed">
                     Plus the <strong className="text-[#B366FF] font-bold">Daily Challenge</strong> for bonus capsules.
                     <br />
-                    Need more? Grab extra prize games with <strong className="text-[#FFE048] font-bold">$VIBESTR</strong>.
+                    Need more? Grab bonus games with <strong className="text-[#FFE048] font-bold">$VIBESTR</strong>. Every pin is earnable for free.
                 </p>
             </div>
 

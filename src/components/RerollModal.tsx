@@ -350,6 +350,9 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                     <p className="text-white/25 text-[10px] font-mundial text-center mt-3">
                                         Duplicates only burned. You always keep at least 1 of each pin.
                                     </p>
+                                    <p className="text-white/35 text-[9px] font-mundial text-center mt-1.5 leading-snug">
+                                        Use of $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.
+                                    </p>
                                 </>
                             )}
                         </div>

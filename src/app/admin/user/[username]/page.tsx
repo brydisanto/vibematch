@@ -132,7 +132,7 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
                             <div key={tx.txHash} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                                 <div>
                                     <div className="font-bold text-sm">
-                                        {tx.packageSize} {tx.packageSize === 1 ? "prize game" : "prize games"}
+                                        {tx.packageSize} {tx.packageSize === 1 ? "bonus game" : "bonus games"}
                                     </div>
                                     <div className="text-xs text-white/50">
                                         {new Date(tx.timestamp).toLocaleString()} · {tx.wallet.slice(0, 6)}...{tx.wallet.slice(-4)}
