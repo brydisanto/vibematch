@@ -229,11 +229,11 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             </p>
                             <div className="flex gap-2">
                                 <div className="flex-1 rounded-lg px-2.5 py-1.5 text-[10px] font-mono text-white/60 truncate" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                    vibematch.app?ref={currentUsername}
+                                    pindropgame.com?ref={currentUsername}
                                 </div>
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername}`);
+                                        navigator.clipboard.writeText(`https://pindropgame.com?ref=${currentUsername}`);
                                         setCopied(true);
                                         setTimeout(() => setCopied(false), 2000);
                                     }}

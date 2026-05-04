@@ -686,11 +686,11 @@ export default function PinBook({
                                             className="flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono text-white/50 truncate"
                                             style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
                                         >
-                                            vibematch.app?ref={currentUsername}
+                                            pindropgame.com?ref={currentUsername}
                                         </div>
                                         <button
                                             onClick={() => {
-                                                navigator.clipboard.writeText(`https://vibematch.app?ref=${currentUsername || ''}`);
+                                                navigator.clipboard.writeText(`https://pindropgame.com?ref=${currentUsername || ''}`);
                                                 // Brief visual feedback
                                                 const btn = document.activeElement as HTMLButtonElement;
                                                 if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }

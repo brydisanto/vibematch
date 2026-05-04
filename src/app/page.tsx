@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import AppClient from "./AppClient";
 
-const BASE_URL = "https://vibematch.app";
+const BASE_URL = "https://pindropgame.com";
 const DEFAULT_TITLE = "Pin Drop | Good Vibes Club";
 const DEFAULT_DESCRIPTION =
     "Match-3 puzzle game featuring GVC pins. Match pins, score big, climb the leaderboard.";

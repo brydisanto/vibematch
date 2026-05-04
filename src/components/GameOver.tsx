@@ -603,7 +603,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     const handleShareX = () => {
         if (!canShare) return;
         const user = userProfile!.username;
-        const shareUrl = `https://vibematch.app/?ref=${encodeURIComponent(user)}&user=${encodeURIComponent(user)}&score=${score}&capsules=${capsuleCount}`;
+        const shareUrl = `https://pindropgame.com/?ref=${encodeURIComponent(user)}&user=${encodeURIComponent(user)}&score=${score}&capsules=${capsuleCount}`;
         const capsuleLine = capsuleCount > 0
             ? `${capsuleCount} ${capsuleCount === 1 ? "capsule" : "capsules"} earned.`
             : "";

@@ -8,6 +8,9 @@ import type { LeaderboardEntry } from '@/app/api/pinbook/leaderboard/route';
 // else gets rejected before being stored, so a compromised session can't persist
 // a `javascript:` / `data:text/html` URL that would XSS other players on render.
 const AVATAR_HOST_ALLOWLIST = new Set([
+    'pindropgame.com',
+    'www.pindropgame.com',
+    'cdn.pindropgame.com',
     'vibematch.app',
     'www.vibematch.app',
     'cdn.vibematch.app',
