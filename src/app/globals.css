@@ -1592,6 +1592,13 @@ body {
   }
 }
 
+/* In-game PIN DROP logo idle bob — same vibe as the landing page logo so
+   the header doesn't feel inert during gameplay. */
+@keyframes vmInGameLogoBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 /* ===== Reduce Motion Accessibility ===== */
 .reduce-motion *,
 .reduce-motion *::before,

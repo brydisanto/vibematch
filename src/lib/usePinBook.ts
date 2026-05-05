@@ -57,7 +57,7 @@ export function usePinBook() {
     // Ref mirror of activeMatchId so async flows always read the latest value
     const activeMatchIdRef = useRef<string | null>(null);
 
-    const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<{ earned: boolean; reason?: string; capped?: boolean }> => {
+    const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<{ earned: boolean; reason?: string; capped?: boolean; abandonedPrevious?: boolean }> => {
         if (score < CAPSULE_SCORE_THRESHOLD) return { earned: false, reason: 'Score below threshold' };
         try {
             const res = await fetch("/api/pinbook", {
@@ -76,7 +76,10 @@ export function usePinBook() {
                 return { earned: true };
             }
             console.warn("pinbook earn rejected:", data);
-            return { earned: false, reason: data?.reason, capped: data?.capped };
+            // Pass through abandonedPrevious so the client can show the
+            // accurate "previous game wasn't finished" copy instead of the
+            // generic "Capsule not awarded: <reason>" toast.
+            return { earned: false, reason: data?.reason, capped: data?.capped, abandonedPrevious: data?.abandonedPrevious };
         } catch (e) {
             console.error("pinbook earn error:", e);
             return { earned: false, reason: String(e) };

@@ -716,6 +716,7 @@ export default function AppClient() {
                     height={1623}
                     className="w-auto h-20 sm:h-32 lg:h-44 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                     priority
+                    style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite" }}
                   />
                 </div>
 
@@ -1191,7 +1192,7 @@ export default function AppClient() {
           <FtuePostGame
             variant={ftuePostGame}
             score={game.state.score}
-            onPrimary={() => {
+            onPrimary={async () => {
               const variant = ftuePostGame;
               setFtuePostGame(null);
               if (variant === "capsule") {
@@ -1200,41 +1201,49 @@ export default function AppClient() {
               } else {
                 // "Play Again" on try-again variant
                 if (game.state?.gameMode === "classic" && userProfile?.username) {
-                  pinBook.trackGame("classic").then(result => {
-                    if (result.ok) {
-                      setFtueHint(null);
-                      setIsDealing(true);
-                      game.resetGame();
-                    } else if (result.outOfPlays) {
-                      // Hard cap hit. Bounce home + open the buy modal.
-                      toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
-                      stopBGM();
-                      setView("landing");
-                      setShowBuyPrizeGames(true);
-                    }
-                  });
+                  // Wait for the just-finished game's logGame to land before
+                  // issuing the new trackGame. Otherwise the server still
+                  // sees the previous match as unlogged + recent and burns
+                  // the new match's prizeEligible flag.
+                  if (gameEndPromiseRef.current) {
+                    await gameEndPromiseRef.current.catch(() => {});
+                  }
+                  const result = await pinBook.trackGame("classic");
+                  if (result.ok) {
+                    setFtueHint(null);
+                    setIsDealing(true);
+                    game.resetGame();
+                  } else if (result.outOfPlays) {
+                    // Hard cap hit. Bounce home + open the buy modal.
+                    toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+                    stopBGM();
+                    setView("landing");
+                    setShowBuyPrizeGames(true);
+                  }
                 }
               }
             }}
-            onSecondary={() => {
+            onSecondary={async () => {
               const variant = ftuePostGame;
               setFtuePostGame(null);
               if (variant === "capsule") {
                 // "Play Again" secondary on capsule variant
                 if (game.state?.gameMode === "classic" && userProfile?.username) {
-                  pinBook.trackGame("classic").then(result => {
-                    if (result.ok) {
-                      setFtueHint(null);
-                      setIsDealing(true);
-                      game.resetGame();
-                    } else if (result.outOfPlays) {
-                      // Hard cap hit. Bounce home + open the buy modal.
-                      toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
-                      stopBGM();
-                      setView("landing");
-                      setShowBuyPrizeGames(true);
-                    }
-                  });
+                  if (gameEndPromiseRef.current) {
+                    await gameEndPromiseRef.current.catch(() => {});
+                  }
+                  const result = await pinBook.trackGame("classic");
+                  if (result.ok) {
+                    setFtueHint(null);
+                    setIsDealing(true);
+                    game.resetGame();
+                  } else if (result.outOfPlays) {
+                    // Hard cap hit. Bounce home + open the buy modal.
+                    toast.error("Out of plays today! Buy bonus games or come back tomorrow.");
+                    stopBGM();
+                    setView("landing");
+                    setShowBuyPrizeGames(true);
+                  }
                 }
               } else {
                 // "Home" secondary on try-again variant
