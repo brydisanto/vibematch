@@ -123,22 +123,28 @@ export function useGame(): UseGameReturn {
     }, []);
 
     const preloadBadgeImages = useCallback((badges: Badge[]): Promise<void> => {
+        // Tiles render with a plain <img>, not Next's optimizer. So we only
+        // need to warm the cache for the raw badge URL — the prior dual-URL
+        // fetch (raw + /_next/image?...) was paying for an optimizer URL the
+        // <img> never actually requests, doubling network work for no benefit.
+        // We use decode() rather than just onload so the bitmap is decoded
+        // and ready to paint the moment the board mounts. Without decode(),
+        // tiles can render briefly empty while the browser does the decode
+        // step on first paint.
         const seen = new Set<string>();
         const promises: Promise<void>[] = [];
         for (const badge of badges) {
             if (seen.has(badge.image)) continue;
             seen.add(badge.image);
-            // Preload both the original and the Next.js optimized URL (96px width)
-            // so the browser cache is warm for whichever the Image component requests
-            const optimizedUrl = `/_next/image?url=${encodeURIComponent(badge.image)}&w=96&q=75`;
-            for (const src of [badge.image, optimizedUrl]) {
-                promises.push(new Promise((resolve) => {
-                    const img = new window.Image();
+            const img = new window.Image();
+            img.src = badge.image;
+            const p = img.decode
+                ? img.decode().catch(() => undefined)
+                : new Promise<void>((resolve) => {
                     img.onload = () => resolve();
-                    img.onerror = () => resolve(); // don't block on failure
-                    img.src = src;
-                }));
-            }
+                    img.onerror = () => resolve();
+                });
+            promises.push(Promise.resolve(p).then(() => undefined));
         }
         return Promise.all(promises).then(() => {});
     }, []);

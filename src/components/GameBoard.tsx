@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect } from "@/lib/useGame";
@@ -787,27 +786,26 @@ export default function GameBoard({
                                         }}
                                         disabled={isAnimating}
                                     >
-                                        {/* Badge image */}
+                                        {/* Badge image. Plain <img> instead of next/image:
+                                            with unoptimized=true Next was adding zero value
+                                            (no transformer, no blur), but loading="lazy" on
+                                            non-priority tiles plus IntersectionObserver
+                                            wakeup was leaving rows 3-7 blank for ~1s after
+                                            the board mounted. Plain img + eager + sync
+                                            decoding pulls from the warm cache (via
+                                            preloadBadgeImages) and paints immediately. */}
                                         <div
                                             className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden"
                                             style={{ backgroundColor: `${tierColor}40` }}
                                         >
-                                            <Image
+                                            <img
                                                 src={cell.badge.image}
                                                 alt={cell.badge.name}
-                                                fill
-                                                sizes="(max-width: 640px) 56px, 80px"
-                                                className="object-cover"
-                                                priority={rowIdx < 3}
-                                                quality={60}
-                                                // Serve the preloaded raw webp
-                                                // directly. Without this, Next
-                                                // generates optimizer URLs
-                                                // (w=128/256/etc.) that don't
-                                                // match what preloadBadgeImages
-                                                // warmed, so tiles still pop in
-                                                // while the optimizer works.
-                                                unoptimized
+                                                loading="eager"
+                                                decoding="sync"
+                                                fetchPriority="high"
+                                                draggable={false}
+                                                className="absolute inset-0 w-full h-full object-cover"
                                             />
                                         </div>
 
