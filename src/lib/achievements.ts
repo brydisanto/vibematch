@@ -1,5 +1,5 @@
 /**
- * Achievement definitions for VibeMatch.
+ * Achievement definitions for Pin Drop.
  *
  * Two categories:
  * - Journey: sequential FTUE achievements that teach game mechanics

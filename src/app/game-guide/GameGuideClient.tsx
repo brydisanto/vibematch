@@ -194,45 +194,6 @@ function AmbientFx() {
                     />
                 ))}
             </div>
-            {/* Drifting badges, pinned to edges so they don't cross content */}
-            <div className="pointer-events-none fixed inset-y-0 z-0 hidden lg:block" style={{ left: 0, width: 100 }}>
-                {drifters.filter(d => d.side === "left").map((d, i) => (
-                    <div
-                        key={`L${i}`}
-                        className="absolute"
-                        style={{
-                            top: d.top,
-                            left: 8,
-                            width: d.size,
-                            height: d.size,
-                            opacity: 0.16,
-                            filter: "saturate(0.8)",
-                            animation: `vmGuideDrift 18s ease-in-out ${d.delay}s infinite alternate`,
-                        }}
-                    >
-                        <Image src={d.src} alt="" fill sizes="72px" className="rounded-full object-cover" unoptimized />
-                    </div>
-                ))}
-            </div>
-            <div className="pointer-events-none fixed inset-y-0 z-0 hidden lg:block" style={{ right: 0, width: 100 }}>
-                {drifters.filter(d => d.side === "right").map((d, i) => (
-                    <div
-                        key={`R${i}`}
-                        className="absolute"
-                        style={{
-                            top: d.top,
-                            right: 8,
-                            width: d.size,
-                            height: d.size,
-                            opacity: 0.16,
-                            filter: "saturate(0.8)",
-                            animation: `vmGuideDrift 18s ease-in-out ${d.delay}s infinite alternate`,
-                        }}
-                    >
-                        <Image src={d.src} alt="" fill sizes="72px" className="rounded-full object-cover" unoptimized />
-                    </div>
-                ))}
-            </div>
 
             <style>{`
                 @keyframes vmGuideTwinkle {
@@ -270,13 +231,12 @@ function AmbientFx() {
    Top bar + Hero + TOC.
    ──────────────────────────────────────────────────────────────── */
 function TopBar() {
+    // Absolute-positioned so the Hero (PLAYER GUIDE pill + logo) can pull up
+    // and sit at the same vertical level as the OPEN GAME button on the right.
+    // top-10 / right-5 sm:right-8 matches the parent container's pt-10 px-5
+    // sm:px-8 padding, so the button visually nests inside the content edge.
     return (
-        <div className="flex items-center justify-between mb-3">
-            <Link href="/" className="group flex items-center cursor-pointer no-underline">
-                <div className="transition-transform duration-200 group-hover:[transform:rotate(-12deg)_scale(1.08)]">
-                    <Shaka size={32} />
-                </div>
-            </Link>
+        <div className="absolute top-10 right-5 sm:right-8 z-20">
             <Link href="/" className="no-underline">
                 <ChunkyButton
                     color={GOLD}
@@ -316,9 +276,9 @@ function Hero() {
                 />
             </div>
             <p className="font-mundial text-[17px] max-w-[640px] mx-auto mt-2" style={{ color: "rgba(255,255,255,0.82)" }}>
-                Match pins. Score big. Collect all 101. Climb the Collector ladder from{" "}
+                A new match-3 puzzle game from Good Vibes Club! Match pins. Score big. Rip capsules. Complete your collection of 101. Players can climb the ladder from{" "}
                 <span className="font-display font-black" style={{ color: "#9CA3AF" }}>PLASTIC</span>{" "}
-                all the way to{" "}
+                all the way up to{" "}
                 <span
                     className="font-display font-black"
                     style={{
@@ -329,7 +289,7 @@ function Hero() {
                     }}
                 >
                     ONE-OF-ONE
-                </span>.
+                </span>!
             </p>
             <div className="flex justify-center gap-5 mt-10 flex-wrap">
                 {(["common","rare","special","gold","cosmic"] as const).map(t => (
@@ -491,23 +451,13 @@ function HowToPlay() {
                 id="how-to-play"
                 tag="The basics"
                 title="How to Play"
-                sub="Match-3 with GVC pin art. 30 moves per run. Find the swap that triggers a chain reaction."
+                sub="Players get 30 moves per game. Swap tiles to match 3, 4, or 5+ of the same pin in a row. Look for long streaks or moves that trigger a chain reaction to hit combos and score big points."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
-                {/* The interactive demo */}
+                {/* The interactive demo : tabbed (Basic Match / Cascade) */}
                 <div className="order-2 md:order-1">
-                    <Card accent={GOLD}>
-                        <div className="flex items-baseline justify-between mb-4">
-                            <div className="font-display font-black uppercase text-[11px] tracking-[0.25em]" style={{ color: GOLD }}>
-                                Try It
-                            </div>
-                            <div className="font-mundial text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-                                Tap a glowing tile
-                            </div>
-                        </div>
-                        <MatchDemo />
-                    </Card>
+                    <HowToPlayDemo />
                 </div>
 
                 {/* Copy */}
@@ -515,23 +465,27 @@ function HowToPlay() {
                     <MiniFact
                         icon={<ArrowRight size={18} style={{ color: COSMIC }} />}
                         title="Swap Adjacent Tiles"
-                        body="Tap a tile, then tap a neighbor (up, down, left, right). No diagonals. A swap that doesn't make a match reverts for free."
+                        body="Tap a tile, then tap a neighbor in any direction (up, down, left, or right). No diagonals. If your swap doesn't make a match, it reverts for free."
                     />
                     <MiniFact
                         icon={<TrendingUp size={18} style={{ color: COSMIC }} />}
                         title="Cascades Compound"
-                        body="Tiles clear, new ones drop. Fresh matches from the drop add +75% to your multiplier. One smart swap can chain 3 to 4 cascades."
+                        body="When tiles clear, new ones drop in. Any fresh matches from those new tiles trigger a cascade and add +75% to your multiplier. A smart swap can chain 3 to 4 cascades together."
                     />
                     <MiniFact
                         icon={<Target size={18} style={{ color: COSMIC }} />}
                         title="30 Moves, Spend Wisely"
-                        body="30 moves max. Speed doesn't pay. The best swap does. Big matches spawn power tiles. Special shapes multiply."
+                        body="Players get 30 moves per game with no time pressure. Speed doesn't pay. The best swap does. Big matches spawn power tiles, and special shapes can multiply your score."
                     />
                 </div>
             </div>
 
             <Callout tone="cosmic" label="Idle hint">
                 Stay still for 8 seconds and the game flashes a valid swap once per run. Safe move, not optimal. Just enough to keep you unstuck.
+            </Callout>
+
+            <Callout tone="gold" label="Good to know">
+                Badges from the GVC ecosystem are always referred to as <strong style={{ color: GOLD }}>Pins</strong> in the game environment.
             </Callout>
         </section>
     );
@@ -557,18 +511,104 @@ function MiniFact({ icon, title, body }: { icon: React.ReactNode; title: string;
     );
 }
 
-/* Interactive match-3 demo : direct port of FtuePrimer's MatchPanel. */
+/* Tabbed demo shell : Basic Match | Cascade. After the basic match completes
+   once, the Cascade tab pulses to nudge the player to try the chain. */
+function HowToPlayDemo() {
+    const [tab, setTab] = useState<"basic" | "cascade">("basic");
+    const [basicCompleted, setBasicCompleted] = useState(false);
+    const [nudge, setNudge] = useState(false);
+
+    const handleBasicCycle = () => {
+        if (!basicCompleted) {
+            setBasicCompleted(true);
+            setNudge(true);
+        }
+    };
+
+    const switchTab = (t: "basic" | "cascade") => {
+        setTab(t);
+        if (t === "cascade") setNudge(false);
+    };
+
+    const accent = tab === "basic" ? GOLD : COSMIC;
+
+    const tabs = [
+        { id: "basic" as const, label: "Basic Match", color: GOLD },
+        { id: "cascade" as const, label: "Cascade", color: COSMIC },
+    ];
+
+    return (
+        <Card accent={accent}>
+            <div className="flex items-end gap-1 mb-5 border-b border-white/10">
+                {tabs.map(t => {
+                    const active = tab === t.id;
+                    const showNudge = t.id === "cascade" && nudge && !active;
+                    return (
+                        <button
+                            key={t.id}
+                            onClick={() => switchTab(t.id)}
+                            className="relative px-4 py-2.5 font-display font-black uppercase text-[11.5px] tracking-[0.2em] transition-colors -mb-px"
+                            style={{
+                                color: active ? t.color : "rgba(255,255,255,0.45)",
+                                borderBottom: active ? `2px solid ${t.color}` : "2px solid transparent",
+                            }}
+                        >
+                            {t.label}
+                            {showNudge && (
+                                <motion.span
+                                    className="absolute top-1.5 -right-0.5 w-2 h-2 rounded-full"
+                                    style={{ background: t.color, boxShadow: `0 0 10px ${t.color}` }}
+                                    animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                            )}
+                        </button>
+                    );
+                })}
+                <AnimatePresence>
+                    {nudge && tab === "basic" && (
+                        <motion.div
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="ml-auto self-center pb-2 font-mundial font-bold text-[10px] tracking-[0.2em] uppercase"
+                            style={{ color: COSMIC }}
+                        >
+                            Try a cascade →
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            <AnimatePresence mode="wait">
+                {tab === "basic" ? (
+                    <motion.div key="basic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                        <MatchDemo onCycleComplete={handleBasicCycle} />
+                    </motion.div>
+                ) : (
+                    <motion.div key="cascade" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                        <CascadeDemo />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </Card>
+    );
+}
+
+/* Interactive match-3 demo : 4x4 board, swap glowing tiles to form a row of 3. */
 const MATCH_INITIAL = [
-    [{ id: 1, badge: B_CITIZEN }, { id: 2, badge: B_CITIZEN }, { id: 3, badge: B_DOGE }],
-    [{ id: 4, badge: B_ASTRO   }, { id: 5, badge: B_CAPTAIN }, { id: 6, badge: B_CITIZEN }],
-    [{ id: 7, badge: B_DOGE    }, { id: 8, badge: B_ASTRO   }, { id: 9, badge: B_CAPTAIN }],
+    [{ id: 1,  badge: B_CITIZEN }, { id: 2,  badge: B_CITIZEN }, { id: 3,  badge: B_DOGE    }, { id: 10, badge: B_ASTRO   }],
+    [{ id: 4,  badge: B_ASTRO   }, { id: 5,  badge: B_CAPTAIN }, { id: 6,  badge: B_CITIZEN }, { id: 11, badge: B_DOGE    }],
+    [{ id: 7,  badge: B_DOGE    }, { id: 8,  badge: B_ASTRO   }, { id: 9,  badge: B_CAPTAIN }, { id: 12, badge: B_ASTRO   }],
+    [{ id: 13, badge: B_CAPTAIN }, { id: 14, badge: B_CITIZEN }, { id: 15, badge: B_ASTRO   }, { id: 16, badge: B_DOGE    }],
 ];
 const SWAP_A = { row: 0, col: 2 };
 const SWAP_B = { row: 1, col: 2 };
 const DEMO_TILE = 64;
 const DEMO_GAP = 6;
+const DEMO_COLS = 4;
 
-function MatchDemo() {
+function MatchDemo({ onCycleComplete }: { onCycleComplete?: () => void }) {
     type Phase = "idle" | "swapping" | "matched";
     const [grid, setGrid] = useState(MATCH_INITIAL);
     const [phase, setPhase] = useState<Phase>("idle");
@@ -592,9 +632,9 @@ function MatchDemo() {
         setGrid(next);
         setTimeout(() => {
             setPhase("matched");
-            setScore(300);
-            setScorePop(300);
-            playMatchSound(300, 1, 3);
+            setScore(100);
+            setScorePop(100);
+            playMatchSound(100, 1, 3);
             setTimeout(() => setScorePop(null), 1400);
         }, 320);
     };
@@ -602,22 +642,22 @@ function MatchDemo() {
     useEffect(() => {
         if (phase !== "matched") return;
         const t = setTimeout(() => {
+            onCycleComplete?.();
             setGrid(MATCH_INITIAL);
             setScore(0);
             setPhase("idle");
             setCycleKey(k => k + 1);
         }, 1500);
         return () => clearTimeout(t);
-    }, [phase]);
+    }, [phase, onCycleComplete]);
 
     return (
         <div className="relative">
-            <div className="flex justify-between items-center mb-3">
-                <div className="text-[9px] font-mundial font-black tracking-[0.22em] uppercase text-white/45">Score</div>
+            <div className="flex justify-end items-baseline mb-3">
                 <motion.div
                     key={score}
-                    className="font-display font-black text-[18px]"
-                    style={{ color: GOLD }}
+                    className="font-display font-black text-[28px] leading-none"
+                    style={{ color: GOLD, textShadow: `0 0 18px ${GOLD}55` }}
                     initial={{ scale: 1 }}
                     animate={{ scale: [1.2, 1] }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
@@ -629,9 +669,9 @@ function MatchDemo() {
             <div
                 className="relative grid mx-auto"
                 style={{
-                    gridTemplateColumns: `repeat(3, ${DEMO_TILE}px)`,
+                    gridTemplateColumns: `repeat(${DEMO_COLS}, ${DEMO_TILE}px)`,
                     gap: `${DEMO_GAP}px`,
-                    width: DEMO_TILE * 3 + DEMO_GAP * 2,
+                    width: DEMO_TILE * DEMO_COLS + DEMO_GAP * (DEMO_COLS - 1),
                 }}
             >
                 {grid.map((row, r) =>
@@ -685,31 +725,11 @@ function MatchDemo() {
                         );
                     })
                 )}
-            </div>
 
-            {/* Score popup */}
-            <AnimatePresence>
-                {scorePop != null && (
-                    <motion.div
-                        className="absolute left-0 right-0 flex justify-center pointer-events-none"
-                        style={{ top: 120 }}
-                        initial={{ opacity: 0, y: 0, scale: 0.7 }}
-                        animate={{ opacity: 1, y: -76, scale: 1.05 }}
-                        exit={{ opacity: 0, y: -84, scale: 0.95 }}
-                        transition={{ duration: 1.1, ease: "easeOut" }}
-                    >
-                        <div
-                            className="font-display font-black text-[30px]"
-                            style={{
-                                color: GOLD,
-                                textShadow: `0 2px 12px ${GOLD}aa, 0 0 18px ${GOLD}`,
-                            }}
-                        >
-                            +{scorePop}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                {/* Score popup pinned to the board so it floats over the
+                    cleared row instead of pushing layout below. */}
+                <ScorePopup pop={scorePop != null ? { amount: scorePop } : null} />
+            </div>
 
             <div className="relative mt-4 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px] text-center">
                 <AnimatePresence mode="wait">
@@ -729,6 +749,299 @@ function MatchDemo() {
     );
 }
 
+/* Shared score popup : a solid backdrop pill that appears briefly above the
+   board. Pop in fast, hold, fade out. No translation, so the eye doesn't
+   chase a moving target. */
+function ScorePopup({ pop }: { pop: { amount: number; mult?: string } | null }) {
+    return (
+        <AnimatePresence>
+            {pop != null && (
+                <motion.div
+                    key={`${pop.amount}-${pop.mult ?? ""}`}
+                    className="absolute pointer-events-none z-10"
+                    style={{ left: "50%", top: -18 }}
+                    initial={{ opacity: 0, scale: 0.7, x: "-50%", y: 8 }}
+                    animate={{ opacity: 1, scale: 1, x: "-50%", y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, x: "-50%", y: -4 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                    <div
+                        className="flex items-center gap-2 px-3.5 py-1.5 rounded-full whitespace-nowrap"
+                        style={{
+                            background: `linear-gradient(180deg, rgba(26,10,46,0.95), rgba(12,4,24,0.95))`,
+                            border: `1.5px solid ${pop.mult ? COSMIC : GOLD}`,
+                            boxShadow: `0 6px 22px rgba(0,0,0,0.55), 0 0 18px ${pop.mult ? COSMIC : GOLD}55`,
+                        }}
+                    >
+                        <span
+                            className="font-display font-black text-[20px] leading-none whitespace-nowrap"
+                            style={{ color: pop.mult ? COSMIC : GOLD }}
+                        >
+                            +{pop.amount}
+                        </span>
+                        {pop.mult && (
+                            <span
+                                className="font-display font-black text-[9px] tracking-[0.22em] uppercase px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                                style={{
+                                    color: COSMIC,
+                                    background: `${COSMIC}1f`,
+                                    border: `1px solid ${COSMIC}66`,
+                                }}
+                            >
+                                {pop.mult} cascade
+                            </span>
+                        )}
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
+
+/* Cascade demo: same 4x4 grid layout, but the swap clears a row, tiles fall,
+   and the falling tiles form a second match (cascade) for a +1.75x bonus. */
+const CASCADE_INITIAL = [
+    [{ id: 101, badge: B_DOGE    }, { id: 102, badge: B_ASTRO   }, { id: 103, badge: B_CAPTAIN }, { id: 104, badge: B_ASTRO   }],
+    [{ id: 105, badge: B_DOGE    }, { id: 106, badge: B_CAPTAIN }, { id: 107, badge: B_CITIZEN }, { id: 108, badge: B_ASTRO   }],
+    [{ id: 109, badge: B_CITIZEN }, { id: 110, badge: B_CITIZEN }, { id: 111, badge: B_CAPTAIN }, { id: 112, badge: B_DOGE    }],
+    [{ id: 113, badge: B_DOGE    }, { id: 114, badge: B_ASTRO   }, { id: 115, badge: B_ASTRO   }, { id: 116, badge: B_CITIZEN }],
+];
+
+/* After the row-2 match clears (id109, id110, id107 cleared) and tiles fall.
+   Surviving ids keep their identity so layoutId animates them down smoothly.
+   New tiles (201/202/203) spawn at the top. */
+const CASCADE_AFTER_FALL = [
+    [{ id: 201, badge: B_ASTRO   }, { id: 202, badge: B_DOGE    }, { id: 203, badge: B_ASTRO   }, { id: 104, badge: B_ASTRO   }],
+    [{ id: 101, badge: B_DOGE    }, { id: 102, badge: B_ASTRO   }, { id: 103, badge: B_CAPTAIN }, { id: 108, badge: B_ASTRO   }],
+    [{ id: 105, badge: B_DOGE    }, { id: 106, badge: B_CAPTAIN }, { id: 111, badge: B_CAPTAIN }, { id: 112, badge: B_DOGE    }],
+    [{ id: 113, badge: B_DOGE    }, { id: 114, badge: B_ASTRO   }, { id: 115, badge: B_ASTRO   }, { id: 116, badge: B_CITIZEN }],
+];
+
+const CASCADE_SWAP_A = { row: 1, col: 2 };
+const CASCADE_SWAP_B = { row: 2, col: 2 };
+
+/* Tiles cleared during the first match (the row-2 trio after the swap). */
+const CASCADE_MATCHED_IDS = new Set([109, 110, 107]);
+/* Tiles cleared during the cascade match (column 0 trio after the fall). */
+const CASCADE_CASCADED_IDS = new Set([101, 105, 113]);
+
+function CascadeDemo() {
+    type Phase = "idle" | "swapping" | "matched" | "falling" | "cascade-matched" | "done";
+    const [grid, setGrid] = useState(CASCADE_INITIAL);
+    const [phase, setPhase] = useState<Phase>("idle");
+    const [score, setScore] = useState(0);
+    const [scorePop, setScorePop] = useState<{ amount: number; mult?: string } | null>(null);
+    const [cycleKey, setCycleKey] = useState(0);
+
+    const isHint = (r: number, c: number) =>
+        phase === "idle" && ((r === CASCADE_SWAP_A.row && c === CASCADE_SWAP_A.col) || (r === CASCADE_SWAP_B.row && c === CASCADE_SWAP_B.col));
+
+    const handleTap = (r: number, c: number) => {
+        if (phase !== "idle") return;
+        const ok = (r === CASCADE_SWAP_A.row && c === CASCADE_SWAP_A.col) || (r === CASCADE_SWAP_B.row && c === CASCADE_SWAP_B.col);
+        if (!ok) return;
+
+        // Phase 1 (t=0): swap. The two swapped tiles animate to each other's slots.
+        setPhase("swapping");
+        const swapped = grid.map(row => [...row]);
+        const a = swapped[CASCADE_SWAP_A.row][CASCADE_SWAP_A.col];
+        swapped[CASCADE_SWAP_A.row][CASCADE_SWAP_A.col] = swapped[CASCADE_SWAP_B.row][CASCADE_SWAP_B.col];
+        swapped[CASCADE_SWAP_B.row][CASCADE_SWAP_B.col] = a;
+        setGrid(swapped);
+
+        // Phase 2 (t=320ms): matched. Highlight the row 2 match + score popup.
+        setTimeout(() => {
+            setPhase("matched");
+            setScore(100);
+            setScorePop({ amount: 100 });
+            playMatchSound(100, 1, 3);
+            setTimeout(() => setScorePop(null), 950);
+        }, 320);
+
+        // Phase 3 (t=1200ms): falling. Snap grid to post-fall state. Each tile
+        // keeps its id, so the absolute layout interpolates to the new (row,col).
+        setTimeout(() => {
+            setPhase("falling");
+            setGrid(CASCADE_AFTER_FALL);
+        }, 1200);
+
+        // Phase 4 (t=2100ms): cascade match in col 0. +175 with the 1.75x label.
+        setTimeout(() => {
+            setPhase("cascade-matched");
+            setScore(s => s + 175);
+            setScorePop({ amount: 175, mult: "1.75x" });
+            playMatchSound(175, 2, 3);
+            setTimeout(() => setScorePop(null), 1100);
+        }, 2100);
+
+        // Phase 5 (t=3400ms): done. Show final score for a beat.
+        setTimeout(() => {
+            setPhase("done");
+        }, 3400);
+    };
+
+    useEffect(() => {
+        if (phase !== "done") return;
+        const t = setTimeout(() => {
+            setGrid(CASCADE_INITIAL);
+            setScore(0);
+            setPhase("idle");
+            setCycleKey(k => k + 1);
+        }, 2200);
+        return () => clearTimeout(t);
+    }, [phase]);
+
+    // Flatten the grid to a per-id list, then sort by id so DOM order is
+    // stable across renders. Sorting matters: when the array order changes
+    // between renders, React reorders DOM nodes — which can cause framer-motion
+    // to drop the in-flight transition for that node. Stable order = smooth
+    // interpolation from previous (x,y) to new (x,y) for every surviving tile.
+    const flat = grid
+        .flatMap((row, r) => row.map((tile, c) => ({ id: tile.id, badge: tile.badge, row: r, col: c })))
+        .sort((a, b) => a.id - b.id);
+
+    const STEP = DEMO_TILE + DEMO_GAP;
+    const boardSize = DEMO_TILE * DEMO_COLS + DEMO_GAP * (DEMO_COLS - 1);
+
+    return (
+        <div className="relative">
+            <div className="flex justify-end items-baseline mb-3">
+                <motion.div
+                    key={score}
+                    className="font-display font-black text-[28px] leading-none"
+                    style={{ color: GOLD, textShadow: `0 0 18px ${GOLD}55` }}
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1.2, 1] }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                    {score.toLocaleString()}
+                </motion.div>
+            </div>
+
+            <div
+                className="relative mx-auto"
+                style={{ width: boardSize, height: boardSize }}
+            >
+                {flat.map(t => {
+                    const hinted = isHint(t.row, t.col);
+                    const matched = phase === "matched" && CASCADE_MATCHED_IDS.has(t.id);
+                    const cascaded = phase === "cascade-matched" && CASCADE_CASCADED_IDS.has(t.id);
+                    const highlighted = hinted || matched || cascaded;
+                    const targetX = t.col * STEP;
+                    const targetY = t.row * STEP;
+                    // New tiles spawned by the cascade fall in from above.
+                    const isSpawn = t.id >= 200;
+                    return (
+                        <motion.button
+                            key={`${cycleKey}-${t.id}`}
+                            onClick={() => handleTap(t.row, t.col)}
+                            className="absolute rounded-[12px] overflow-hidden"
+                            style={{
+                                left: 0,
+                                top: 0,
+                                width: DEMO_TILE,
+                                height: DEMO_TILE,
+                                background: "rgba(255,255,255,0.04)",
+                                border: highlighted
+                                    ? `2px solid ${cascaded ? COSMIC : GOLD}`
+                                    : "1.5px solid rgba(255,255,255,0.08)",
+                                boxShadow: hinted
+                                    ? `0 0 18px ${GOLD}88`
+                                    : matched
+                                        ? `0 0 26px ${GOLD}cc`
+                                        : cascaded
+                                            ? `0 0 26px ${COSMIC}cc`
+                                            : "none",
+                                cursor: hinted ? "pointer" : "default",
+                            }}
+                            initial={{
+                                x: targetX,
+                                y: isSpawn ? -DEMO_TILE - 8 : targetY,
+                                scale: 1,
+                                opacity: 1,
+                            }}
+                            animate={
+                                matched || cascaded
+                                    ? { x: targetX, y: targetY, scale: [1, 1.15, 0], opacity: [1, 1, 0] }
+                                    : hinted
+                                        ? { x: targetX, y: targetY, scale: [1, 1.06, 1], opacity: 1 }
+                                        : { x: targetX, y: targetY, scale: 1, opacity: 1 }
+                            }
+                            transition={
+                                matched || cascaded
+                                    ? {
+                                        scale: { duration: 0.55, times: [0, 0.35, 1], ease: "easeOut" },
+                                        opacity: { duration: 0.55, times: [0, 0.35, 1], ease: "easeOut" },
+                                        x: { duration: 0.25, ease: "easeOut" },
+                                        y: { duration: 0.25, ease: "easeOut" },
+                                    }
+                                    : hinted
+                                        ? {
+                                            scale: { duration: 1.4, repeat: Infinity, ease: "easeInOut" },
+                                            x: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                                            y: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                                        }
+                                        : {
+                                            // Tween with gravity-feel ease on y so the fall
+                                            // accelerates from rest like real gravity.
+                                            x: { duration: 0.32, ease: [0.4, 0, 0.2, 1] },
+                                            y: { duration: 0.5, ease: [0.55, 0.085, 0.68, 0.53] },
+                                            scale: { duration: 0.25 },
+                                            opacity: { duration: 0.25 },
+                                        }
+                            }
+                            whileTap={hinted ? { scale: 0.94 } : undefined}
+                        >
+                            <Image
+                                src={t.badge.src}
+                                alt=""
+                                fill
+                                sizes={`${DEMO_TILE}px`}
+                                className="object-cover pointer-events-none"
+                                unoptimized
+                            />
+                        </motion.button>
+                    );
+                })}
+
+                {/* Score popup pinned to the board so it floats above the action
+                    without taking up vertical space below the grid. */}
+                <ScorePopup pop={scorePop} />
+            </div>
+
+            <div className="relative mt-4 text-[10px] font-mundial font-bold uppercase tracking-[0.2em] h-[14px] text-center">
+                <AnimatePresence mode="wait">
+                    {phase === "idle" && (
+                        <motion.div key="idle" className="absolute inset-0" style={{ color: `${GOLD}cc` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Tap a glowing tile to swap
+                        </motion.div>
+                    )}
+                    {phase === "matched" && (
+                        <motion.div key="match" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Match!
+                        </motion.div>
+                    )}
+                    {phase === "falling" && (
+                        <motion.div key="fall" className="absolute inset-0" style={{ color: `${COSMIC}aa` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Tiles fall...
+                        </motion.div>
+                    )}
+                    {phase === "cascade-matched" && (
+                        <motion.div key="cascade" className="absolute inset-0" style={{ color: COSMIC }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Cascade!
+                        </motion.div>
+                    )}
+                    {phase === "done" && (
+                        <motion.div key="done" className="absolute inset-0" style={{ color: GOLD }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            Total: {score}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
 /* ════════════════════════════════════════════════════════════════
    SECTION 2: Scoring
    ════════════════════════════════════════════════════════════════ */
@@ -739,7 +1052,7 @@ function Scoring() {
                 id="scoring"
                 tag="Score math"
                 title="Scoring Your Moves"
-                sub="Three multipliers stack on every match: match length, pin tier, cascade depth. They compound. A 4-match of Legendary pins on the second cascade can score 8 to 10x what the same tiles do cleared cold. Setups beat grab-and-go."
+                sub="Every match you make stacks three multipliers: match length, pin tier, and cascade depth. They all compound together. A 4-match of Legendary pins on the second cascade can score 8 to 10x what the same tiles would score cleared cold. Setups always beat grab-and-go."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
@@ -747,11 +1060,11 @@ function Scoring() {
                 <ScoreStat value="+75%" label="Cascade" color={COSMIC}
                     sub="Every cascade adds +75% to your multiplier. 1st: 1.75x. 2nd: 2.5x. 3rd: 3.25x. And climbing." />
                 <ScoreStat value="+3" label="Momentum" color={ORANGE}
-                    sub="End a turn with 3 cascades → next move starts at combo +1. 4 → +2. 5+ → +3. Momentum carries." />
+                    sub="End a turn with 3 cascades and your next move starts at combo +1. 4 cascades → +2. 5+ → +3. Momentum carries between turns." />
             </div>
 
             <Callout tone="cosmic" label="Combos in plain English">
-                It's not how fast you tap. It's how many matches one swap cascades into. 3+ cascades in a turn? Some of that momentum carries to the next swap.
+                It's not about how fast you tap. It's about how many matches one swap cascades into. End a turn with 3+ cascades and some of that momentum carries to your next swap as a combo head start.
             </Callout>
         </section>
     );
@@ -781,13 +1094,13 @@ function PowerTiles() {
                 id="power-tiles"
                 tag="Power tiles"
                 title="Bombs, Laser Parties and Blasts"
-                sub="Match 4+ to spawn a power tile. It sits on the board until you swap it with a neighbor to detonate. Chain two in one turn for one of the biggest score swings in the game."
+                sub="Match 4+ pins and you'll spawn a power tile. It sits on the board until you double tap it, or swap it with a neighbor tile, and detonate. Chain multiple power tiles in one turn for massive score swings!"
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PowerTileDemo
                     kind="bomb"
                     name="Bomb"
-                    trigger="Match 4 (non-Cosmic)"
+                    trigger="Match 4"
                     effect="Clears a 3x3 area around itself."
                     detail="Position matters. A bomb in a dense column wipes far more than one near an edge."
                     accent="#FF3333"
@@ -796,25 +1109,25 @@ function PowerTiles() {
                 <PowerTileDemo
                     kind="laser"
                     name="Laser Party"
-                    trigger="Match 5, or Cosmic Match 4"
-                    effect="Clears the full row AND column through the tile."
-                    detail="The easiest way to chain long cascades. A single Laser can wipe 15+ tiles."
+                    trigger="Match 5"
+                    effect="Clears the full row AND column."
+                    detail="An easy way to set up long cascades. A single Laser can wipe out 15+ tiles in one move."
                     accent="#4A9EFF"
                     glow="rgba(74,158,255,0.5)"
                 />
                 <PowerTileDemo
                     kind="cosmic"
                     name="Cosmic Blast"
-                    trigger="Match 6+, or Cosmic Match 5"
-                    effect="Clears EVERY tile of that pin type from the board."
-                    detail="The rarest power tile. Most runs see zero. When one lands, expect a 10,000+ point swing."
+                    trigger="Match 6+"
+                    effect="Clears EVERY tile of that pin type."
+                    detail="The rarest power tile in the game. Most runs see zero of these. When one lands, expect a 10,000+ point score swing!"
                     accent={COSMIC}
                     glow="rgba(179,102,255,0.55)"
                     premium
                 />
             </div>
-            <Callout tone="cosmic" label="Cosmic tier is unique">
-                Cosmic matches upgrade the power tile they spawn by one tier. Cosmic 4-match → Laser Party (skips Bomb). Cosmic 5-match → Cosmic Blast (skips Laser).
+            <Callout tone="cosmic" label="Cosmic tier pins are unique">
+                Matching Cosmic-tier pins automatically upgrades the power tile they spawn by one tier. A Cosmic 4-match skips the Bomb and creates a Laser Party. A Cosmic 5-match skips the Laser and creates a Cosmic Blast.
             </Callout>
         </section>
     );
@@ -919,7 +1232,7 @@ function ShapeBonuses() {
                 id="shapes"
                 tag="Shape bonuses"
                 title="The Shape Multipliers"
-                sub="Two matching runs share a tile in a cascade, the engine detects the shape and stacks a huge multiplier on top. Three outcomes: L, T, Cross. Tap a card to see how detection works."
+                sub="When two separate matches share a tile, the game detects the shape they form and stacks a big multiplier on top of everything else. There are three shapes worth chasing: L, T, and Cross."
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <ShapeCard
@@ -950,7 +1263,7 @@ function ShapeBonuses() {
                 />
             </div>
             <Callout tone="gold" label="Bonus capsule">
-                A <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> in a match earns a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong>. One per game, stacked on top of your score capsules. Worth hunting on runs you're already crushing.
+                Land a <strong style={{ color: GOLD }}>T</strong> or <strong style={{ color: GOLD }}>Cross</strong> shape in a match and you'll earn a <strong style={{ color: GOLD }}>+1 bonus Pin Capsule</strong>. One bonus per game, stacked on top of whatever your score earns. Worth hunting on runs you're already crushing!
             </Callout>
         </section>
     );
@@ -1056,13 +1369,13 @@ function Capsules() {
                 id="capsules"
                 tag="Rewards"
                 title="Earning Pin Capsules"
-                sub="Hit score thresholds, earn capsules. Each capsule cracks to a random pin from the 101-pin catalog. Higher score, more capsules. Tap below to try one."
+                sub="Hit certain score thresholds in a game and you'll earn Pin Capsules. Each capsule cracks open to reveal a random pin from the 101-pin catalog. The higher your score, the more capsules you'll earn. Tap the capsule below to try one!"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStep amount="15,000+" caps="+1 Capsule" sub="Reward tier unlocks" color={GOLD} intensity={0.35} />
-                <ScoreStep amount="30,000+" caps="+2 Capsules" sub="Solid run" color={ORANGE} intensity={0.45} />
-                <ScoreStep amount="50,000+" caps="+3 Capsules" sub="Top of the board" color={COSMIC} intensity={0.6} />
+                <ScoreStep amount="15,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="30,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
+                <ScoreStep amount="50,000+" caps="+3 Capsules" color={COSMIC} intensity={0.6} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-start">
@@ -1076,7 +1389,7 @@ function Capsules() {
                         <h3 className="font-display font-black uppercase text-[18px]" style={{ color: "#fff" }}>Daily Challenge bonus</h3>
                     </div>
                     <p className="font-mundial text-[15px] leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Same thresholds, double the capsules. One shot a day, extra payout rewards taking it seriously.
+                        Same score thresholds, but you'll earn double the capsules! Players only get one shot per day, so the extra payout rewards taking it seriously.
                     </p>
                     <ul className="font-mundial text-[15px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
                         <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
@@ -1084,7 +1397,7 @@ function Capsules() {
                         <li>50K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
                     <p className="font-mundial text-[14px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
-                        Stack the Daily Champion prize on top and Daily becomes your biggest capsule day. By far.
+                        Stack the Daily Champion prize on top and Daily becomes your biggest capsule day of the week. By far.
                     </p>
                 </Card>
             </div>
@@ -1444,7 +1757,7 @@ function SphericalCapsule({ anticipating, cracking }: { anticipating: boolean; c
     );
 }
 
-function ScoreStep({ amount, caps, sub, color, intensity }: { amount: string; caps: string; sub: string; color: string; intensity: number }) {
+function ScoreStep({ amount, caps, sub, color, intensity }: { amount: string; caps: string; sub?: string; color: string; intensity: number }) {
     return (
         <div
             className="rounded-2xl text-center py-7 px-5 relative overflow-hidden"
@@ -1462,7 +1775,9 @@ function ScoreStep({ amount, caps, sub, color, intensity }: { amount: string; ca
                 {amount}
             </div>
             <div className="relative font-display font-black uppercase text-[14px] mt-2" style={{ color: "#fff", letterSpacing: "0.1em" }}>{caps}</div>
-            <div className="relative font-mundial text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.72)" }}>{sub}</div>
+            {sub && (
+                <div className="relative font-mundial text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.72)" }}>{sub}</div>
+            )}
         </div>
     );
 }
@@ -1478,7 +1793,7 @@ function PinsSection() {
                 id="pins"
                 tag="The collection"
                 title="Pins and Rarity"
-                sub="101 pins across 5 tiers. Capsules roll tier first (Common most likely, Cosmic rarest), then pick a pin from that tier. Rarer pins drop less often within their tier."
+                sub="There are 101 unique pins to collect across 5 rarity tiers. Each capsule rolls the tier first (Common is the most likely, Cosmic the rarest), then picks a specific pin from inside that tier. Rarer pins also drop less often within their own tier."
             />
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {tiers.map(t => {
@@ -1515,7 +1830,7 @@ function PinsSection() {
                 })}
             </div>
             <Callout tone="cosmic" label="Duplicates are useful">
-                Pulled a pin you already own? The duplicate stacks. Dupes fuel the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow and tick lifetime tier-find quests. No capsule is ever wasted.
+                Pulled a pin you already own? The duplicate stacks up in your collection. Dupes fuel the <em style={{ color: COSMIC, fontStyle: "normal", fontWeight: 800 }}>Reroll</em> flow and tick up your lifetime tier-find quests. No capsule is ever wasted.
             </Callout>
         </section>
     );
@@ -1531,7 +1846,7 @@ function CollectorLadder() {
                 id="ladder"
                 tag="Status"
                 title="The Collector Ladder"
-                sub="Your prestige title. Ranked on unique-pin %, not capsule spend. Cosmic glows purple. One-Of-One is the holo-rainbow reserved for clearing the full catalog."
+                sub="Your collector tier is a prestige title ranked by your unique-pin %, not by how much you've spent. Cosmic gets a purple glow treatment. One-Of-One is the holographic rainbow status reserved for clearing the entire catalog."
             />
             <div className="flex flex-col gap-2">
                 {COLLECTOR_TIERS.map(t => {
@@ -1606,7 +1921,7 @@ function DailyChallenge() {
                 id="daily"
                 tag="Once a day"
                 title="The Daily Challenge"
-                sub="One board, every player. One attempt, no retries. Pure skill. Daily pays more capsules per threshold than Classic, and the day's #1 wins the champion bonus."
+                sub="One identical board for every player around the world. One attempt per day, no retries. A pure skill comparison. Daily pays out more capsules per threshold than Classic, and the day's #1 finisher wins the champion bonus."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <Card accent={COSMIC}>
@@ -1615,7 +1930,7 @@ function DailyChallenge() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Same Board, Everyone</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Daily board is seeded by date. Identical layout for every player on the planet.
+                        The Daily board is seeded by the date, so the layout is identical for every player on the planet.
                     </p>
                 </Card>
                 <Card accent={COSMIC}>
@@ -1624,7 +1939,7 @@ function DailyChallenge() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>One Shot</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        One attempt per day. Server locks you in the moment you start. Next Daily unlocks at midnight UTC.
+                        Players get just one attempt per day. The server locks you in the moment you start the game. The next Daily unlocks at midnight UTC.
                     </p>
                 </Card>
             </div>
@@ -1648,7 +1963,7 @@ function DailyChallenge() {
                     +10 PIN CAPSULES
                 </div>
                 <p className="font-mundial text-[14px] mt-3 max-w-[460px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                    Top the Daily leaderboard and 10 Pin Capsules land in your account on next login. Automatic. Tie? Earlier submission wins.
+                    Top the Daily leaderboard and 10 Pin Capsules will land in your account on your next login. It's automatic, no claim needed. If players tie, the earlier submission wins.
                 </p>
             </div>
         </section>
@@ -1682,7 +1997,7 @@ function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: s
                 id="quests"
                 tag="Long-term chases"
                 title="Quests"
-                sub="55+ quests, two tracks. Journey teaches the mechanics: first bomb, first capsule, 3-day streak. Mastery is the long game: collection milestones, tier sets, score walls. Every finish pays capsules. Unlocks are permanent."
+                sub="There are 55+ quests across two tracks. The Journey track teaches game mechanics with quests like first bomb, first capsule, and 3-day streak. The Mastery track is the long game: collection milestones, full tier sets, big score walls. Every quest you finish pays out capsules, and unlocks are permanent."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {quests.map(q => (
@@ -1750,7 +2065,7 @@ function Rerolls() {
                 id="rerolls"
                 tag="Dupes to fresh capsules"
                 title="Rerolls"
-                sub="Burn duplicates back into fresh capsules. Rarer tiers pay more. One Cosmic dupe = a new capsule. Five Commons for the same. You always keep at least one of every pin, so collection % only goes up."
+                sub="Burn duplicate pins back into fresh capsules. Rarer tiers pay out more: a single Cosmic duplicate gets you a new capsule, while it takes five Commons for the same payout. Players always keep at least one of every pin they own, so collection % can only go up."
             />
             <Card accent={COSMIC}>
                 <div className="grid gap-y-3" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
@@ -1779,7 +2094,7 @@ function Rerolls() {
                 </div>
             </Card>
             <Callout tone="gold" label="Safety net">
-                Reroll <strong style={{ color: GOLD }}>never</strong> takes your last copy of a pin. Your collection % can only go up. Tier sets stay sealed.
+                Reroll will <strong style={{ color: GOLD }}>never</strong> take your last copy of any pin. Your collection % can only go up. Completed tier sets stay sealed.
             </Callout>
         </section>
     );
@@ -1790,10 +2105,10 @@ function Rerolls() {
    ════════════════════════════════════════════════════════════════ */
 function Leaderboards() {
     const boards = [
-        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your highest Classic score ever. Never resets. The number you're trying to beat forever." },
-        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Best Classic score this week. Fresh race every Monday at midnight UTC." },
-        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. #1 wins the champion bonus." },
-        { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by collection %. Separate race from score. Updates the second you pull a new pin." },
+        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your highest Classic score of all time. Never resets. The number you're trying to beat forever." },
+        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Your best Classic score this week. A fresh race kicks off every Monday at midnight UTC." },
+        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. The #1 finisher wins the champion bonus." },
+        { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by collection %. A separate race from score. Updates the moment you pull a new pin." },
     ];
     return (
         <section className="mb-20">
@@ -1801,7 +2116,7 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="Four boards, four flavors. Score boards only count prize-eligible matches (no practice farming). The Pins board races collection breadth instead of score."
+                sub="Four leaderboards, each tracking something different. The score boards only count eligible matches, so no practice farming. The Pins board races collection breadth instead of score."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
@@ -1840,7 +2155,7 @@ function StreakRefer() {
                 id="streak"
                 tag="Show up, share"
                 title="Streaks and Referrals"
-                sub="Play any mode, any day, the streak climbs. Skip a day, it resets. Quests at 3, 7, and 30 days pay bonus capsules. Referrals credit +2 capsules to each side, lifetime cap of 50."
+                sub="Play any mode on any given day and your streak climbs by one. Skip a day and it resets back to 1. Quests at 3, 7, and 30 days each pay out bonus capsules. Referrals credit +2 capsules to both sides, with a lifetime cap of 50."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card accent={ORANGE}>
@@ -1849,7 +2164,7 @@ function StreakRefer() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Day Streaks</h3>
                     </div>
                     <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Any game ending counts. Counter lives on your profile.
+                        Any completed game counts toward your streak. The counter lives on your profile.
                     </p>
                     <ul className="font-mundial text-[14px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.98)" }}>
                         <li className="mb-1 flex items-center gap-1.5"><strong style={{ color: ORANGE }}>3 days</strong> Streak Starter <span className="inline-flex items-center gap-0.5"><CapsuleIcon size={11} /> x2</span></li>
@@ -1863,7 +2178,7 @@ function StreakRefer() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Referral Link</h3>
                     </div>
                     <p className="font-mundial text-[14px] mb-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        Grab your link from your profile. Every signup via that link credits both sides:
+                        Grab your referral link from your profile. Every signup through your link credits both sides:
                     </p>
                     <div className="rounded-lg px-3 py-2 mb-1.5 flex items-center gap-2" style={{ background: `${GOLD}15`, border: `1px solid ${GOLD}55` }}>
                         <CapsuleIcon size={13} /> <strong style={{ color: GOLD }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to you</span>
@@ -1872,7 +2187,7 @@ function StreakRefer() {
                         <CapsuleIcon size={13} color={COSMIC} /> <strong style={{ color: COSMIC }}>+2</strong> <span style={{ color: "rgba(255,255,255,0.95)" }}>to them</span>
                     </div>
                     <p className="font-mundial text-[12px] mt-3" style={{ color: "rgba(255,255,255,0.65)" }}>
-                        Lifetime cap: 50 capsules. Same link feeds the Ambassador / Recruiter / Commander quest line (1 / 5 / 10 referrals).
+                        Lifetime cap is 50 capsules. The same link feeds the Ambassador, Recruiter, and Commander quest line (at 1, 5, and 10 referrals).
                     </p>
                 </Card>
             </div>
@@ -1886,17 +2201,17 @@ function StreakRefer() {
 function Tips() {
     const tips = [
         { n: 1, title: "Hunt shapes before you clear",
-          text: "A T or Cross setup on the next cascade is worth 2 to 4x a clean 3-match. Before you take the obvious move, scan for intersections. Cross + high combo on one turn = 10K-point swings." },
+          text: "A T or Cross setup on the next cascade is worth 2 to 4x a clean 3-match. Before you take the obvious move, scan the board for intersections. A Cross plus a high combo on a single turn can swing 10K points your way." },
         { n: 2, title: "Chain power tiles",
-          text: "Bomb next to Laser detonates both. Cosmic Blast next to anything is usually game-defining. Two power tiles on the board, one move: put them together." },
+          text: "A Bomb next to a Laser detonates both at once. A Cosmic Blast next to anything is usually a game-defining move. If you have two power tiles on the board, your next move should almost always be to put them together." },
         { n: 3, title: "4-matches are never wasted",
-          text: "A 4-match leaves a Bomb behind. A 5-match leaves a Laser. They sit there until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
+          text: "A 4-match always leaves a Bomb behind, and a 5-match leaves a Laser. They sit on the board until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
         { n: 4, title: "Daily Challenge ≠ Classic",
-          text: "Classic gives you ten practice runs. Daily gives you one. Scan the whole board first. Sketch your power-tile setups. Plan the last 10 moves. Slower wins here." },
+          text: "Classic gives you ten games per day. Daily gives you just one. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
         { n: 5, title: "Open capsules immediately",
-          text: "Every pull ticks a lifetime tier-find counter (\"Find 200 Commons\", \"Find 10 Cosmics\"). Hoarding sealed capsules just slows your quest progress. No upside to waiting." },
+          text: "Every pin you pull ticks up a lifetime tier-find counter for quests like \"Find 200 Commons\" or \"Find 10 Cosmics\". Hoarding sealed capsules just slows your quest progress. There's no upside to waiting." },
         { n: 6, title: "Watch the Quests rail",
-          text: "Desktop landing shows the three quests closest to done. One sitting at 9/10 is your next move. Finish it. Earn the capsules. The rail re-rolls to the next closest." },
+          text: "The desktop landing shows the three quests closest to completion. If one's sitting at 9/10, that's your next obvious move. Finish it, earn the capsules, and the rail re-rolls to the next closest one." },
     ];
     return (
         <section className="mb-20">
@@ -1904,7 +2219,7 @@ function Tips() {
                 id="tips"
                 tag="Get good"
                 title="Tips and Tricks"
-                sub="Six habits that separate consistent high scorers from lucky ones. Each one a small shift in how you read the board. Each one compounds."
+                sub="Six habits that separate consistent high scorers from lucky ones. Each one is a small shift in how you read the board, and each one compounds over time."
             />
             <div className="flex flex-col gap-3">
                 {tips.map(t => (

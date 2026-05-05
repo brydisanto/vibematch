@@ -14,6 +14,11 @@ export interface Cell {
     isNew?: boolean;
     isMatched?: boolean;
     dropDistance?: number; // rows this tile dropped during gravity (for animation)
+    // For cosmic_blast specials: the badge id whose tiles get cleared on
+    // detonation. Set to the source match's badge so the player's "clear all
+    // of this type" semantic is preserved even if the spawn cell's visible
+    // badge was swapped to avoid an immediate self-trigger cascade.
+    cosmicTargetBadgeId?: string;
 }
 
 export type SpecialTileType = "bomb" | "vibestreak" | "cosmic_blast";
@@ -377,14 +382,28 @@ export function applySpecialTile(
             break;
         }
         case "cosmic_blast": {
-            // Clear all tiles of the same badge type
-            const targetBadge = board[pos.row][pos.col].badge.id;
+            // Clear all tiles of the cosmic blast's target badge. The target
+            // is set at spawn time to the source match's badge, so detonation
+            // clears the type the player just matched — not whatever random
+            // badge gravity dropped under the cosmic overlay.
+            const cell = board[pos.row][pos.col];
+            const targetBadge = cell.cosmicTargetBadgeId ?? cell.badge.id;
+            const seen = new Set<string>();
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     if (board[r][c].badge.id === targetBadge) {
                         affected.push({ row: r, col: c });
+                        seen.add(`${r},${c}`);
                     }
                 }
+            }
+            // Always include the cosmic blast cell itself, even if its visible
+            // badge differs from the target (which it will when we swapped to
+            // avoid auto-trigger). Otherwise the spent special tile lingers
+            // on the board.
+            const selfKey = `${pos.row},${pos.col}`;
+            if (!seen.has(selfKey)) {
+                affected.push({ row: pos.row, col: pos.col });
             }
             break;
         }
@@ -587,7 +606,9 @@ export function processTurn(
 
         // Determine which specials to create from this iteration's matches.
         // Store them by a stable cell ID so they survive gravity shifts.
-        const iterationSpecials: { cellId: string; type: SpecialTileType }[] = [];
+        // We also track sourceBadge so cosmic_blast knows which badge type
+        // to clear on detonation (the type the player just matched).
+        const iterationSpecials: { cellId: string; type: SpecialTileType; sourceBadge: Badge }[] = [];
         for (const match of matches) {
             const specialType = getSpecialTileForMatch(match);
             if (specialType) {
@@ -597,7 +618,7 @@ export function processTurn(
                 // Only keep the highest-tier special per cell
                 const posKey = `${midPos.row},${midPos.col}`;
                 if (!pendingSpecials.has(posKey)) {
-                    iterationSpecials.push({ cellId, type: specialType });
+                    iterationSpecials.push({ cellId, type: specialType, sourceBadge: match.badge });
                     pendingSpecials.set(posKey, specialType);
                     // cascadeCount === 0 → this iteration is processing the
                     // player's initial swap match; anything later is a
@@ -647,13 +668,13 @@ export function processTurn(
         // Track where specials should be placed (by position before gravity).
         // We record the row/col of each special so we can place it on the
         // NEW cell that fills that position after gravity.
-        const specialPlacements: { row: number; col: number; type: SpecialTileType }[] = [];
+        const specialPlacements: { row: number; col: number; type: SpecialTileType; sourceBadge: Badge }[] = [];
         for (const special of iterationSpecials) {
             // Find the current position of this cell
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     if (currentBoard[r][c].id === special.cellId) {
-                        specialPlacements.push({ row: r, col: c, type: special.type });
+                        specialPlacements.push({ row: r, col: c, type: special.type, sourceBadge: special.sourceBadge });
                     }
                 }
             }
@@ -696,6 +717,10 @@ export function processTurn(
                     badge: chosenBadge,
                     isSpecial: sp.type,
                     isMatched: false,
+                    // Cosmic Blast: remember the source match's badge so
+                    // detonation clears that type, regardless of what the
+                    // visible (non-conflicting) badge ended up being.
+                    cosmicTargetBadgeId: sp.type === "cosmic_blast" ? sp.sourceBadge.id : undefined,
                 };
             }
         }

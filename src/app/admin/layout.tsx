@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/admin" className="font-display font-black text-xl text-[#FFE048] uppercase tracking-wider">
-                            VibeMatch Admin
+                            Pin Drop Admin
                         </Link>
                         <nav className="flex gap-4 text-sm text-white/70">
                             <Link href="/admin" className="hover:text-[#FFE048] transition-colors">Overview</Link>

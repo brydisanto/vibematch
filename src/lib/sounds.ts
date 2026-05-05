@@ -1,6 +1,6 @@
 "use client";
 
-// ===== Web Audio API Sound Engine for VibeMatch =====
+// ===== Web Audio API Sound Engine for Pin Drop =====
 // Generates all sounds procedurally — no audio files needed.
 
 let audioCtx: AudioContext | null = null;
