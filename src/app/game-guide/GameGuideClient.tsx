@@ -61,6 +61,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
     { id: "rerolls", label: "Rerolls" },
     { id: "leaderboards", label: "Leaderboards" },
     { id: "streak", label: "Streaks and Referrals" },
+    { id: "rewards", label: "Rewards" },
     { id: "tips", label: "Tips and Tricks" },
 ];
 
@@ -105,6 +106,7 @@ export default function GameGuideClient() {
                 <Rerolls />
                 <Leaderboards />
                 <StreakRefer />
+                <Prizes />
                 <Tips />
 
                 <Footer />
@@ -2249,6 +2251,62 @@ function Tips() {
                     </div>
                 ))}
             </div>
+        </section>
+    );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION: Rewards
+   ════════════════════════════════════════════════════════════════ */
+function Prizes() {
+    return (
+        <section className="mb-20">
+            <SectionHeader
+                id="rewards"
+                tag="What's at stake"
+                title="Rewards"
+                sub="There are 2 different types of GVC rewards up for grabs."
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <Card accent={GOLD}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <div
+                            className="font-display font-black uppercase text-[10px] tracking-[0.28em] px-2.5 py-1 rounded-full"
+                            style={{ color: GOLD, background: `${GOLD}1f`, border: `1px solid ${GOLD}66` }}
+                        >
+                            Launch event
+                        </div>
+                    </div>
+                    <h3 className="font-display font-black uppercase text-[20px] leading-tight mb-2" style={{ color: "#fff" }}>
+                        GVC NFT Raffle
+                    </h3>
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                        During the launch event, multiple GVC NFTs are up for grabs for the top Pin collectors. Anyone who completes the Pinbook (i.e. 100%, all 101 Pins found) before <strong style={{ color: GOLD }}>June 5th</strong>, or otherwise progresses the furthest (by %), will be entered into an exclusive raffle.
+                    </p>
+                </Card>
+
+                <Card accent={COSMIC}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <div
+                            className="font-display font-black uppercase text-[10px] tracking-[0.28em] px-2.5 py-1 rounded-full"
+                            style={{ color: COSMIC, background: `${COSMIC}1f`, border: `1px solid ${COSMIC}66` }}
+                        >
+                            Evergreen reward
+                        </div>
+                    </div>
+                    <h3 className="font-display font-black uppercase text-[20px] leading-tight mb-2" style={{ color: "#fff" }}>
+                        Exclusive &quot;Pin Drop&quot; Badge
+                    </h3>
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
+                        Do it for the flex! Any player that collects all 101 Pins and completes the entire Pinbook (100%) unlocks an exclusive <strong style={{ color: COSMIC }}>Pin Drop Badge</strong>. There is no end date announced at this time.
+                    </p>
+                </Card>
+            </div>
+
+            <Callout tone="cosmic" label="Heads up">
+                To receive the Pin Drop badge, players must connect a wallet that&apos;s also tied to their GVC profile.
+            </Callout>
         </section>
     );
 }
