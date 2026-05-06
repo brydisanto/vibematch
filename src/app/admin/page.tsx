@@ -10,6 +10,8 @@ interface Overview {
     totalCapsulesEarned: number;
     totalPinsCollected: number;
     totalTransactions: number;
+    totalPurchaseTxs?: number;
+    totalRerolls?: number;
     totalVibestrSpent: number;
     totalGamesGranted: number;
 }
@@ -27,6 +29,7 @@ interface User {
     highScore: number;
     vibestrSpent: number;
     purchaseCount: number;
+    rerollCount?: number;
 }
 
 export default function AdminDashboard() {
@@ -72,11 +75,7 @@ export default function AdminDashboard() {
                     <StatCard label="Transactions" value={overview?.totalTransactions ?? "—"} accent />
                     <StatCard label="VIBESTR Spent" value={overview ? Number(overview.totalVibestrSpent).toLocaleString() : "—"} accent />
                     <StatCard label="Games Purchased" value={overview?.totalGamesGranted ?? "—"} accent />
-                    <StatCard label="Avg / Tx" value={
-                        overview && overview.totalTransactions > 0
-                            ? (overview.totalVibestrSpent / overview.totalTransactions).toFixed(1)
-                            : "—"
-                    } accent />
+                    <StatCard label="Pin Rerolls" value={overview?.totalRerolls ?? "—"} accent />
                 </div>
             </div>
 
@@ -116,15 +115,16 @@ export default function AdminDashboard() {
                                 <th className="px-4 py-3 text-right">Opened</th>
                                 <th className="px-4 py-3 text-right">VIBESTR Spent</th>
                                 <th className="px-4 py-3 text-right">Purchases</th>
+                                <th className="px-4 py-3 text-right">Rerolls</th>
                                 <th className="px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading && users.length === 0 && (
-                                <tr><td colSpan={11} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
+                                <tr><td colSpan={12} className="px-4 py-8 text-center text-white/40">Loading...</td></tr>
                             )}
                             {!loading && users.length === 0 && (
-                                <tr><td colSpan={11} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
+                                <tr><td colSpan={12} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
                             )}
                             {users.map(u => (
                                 <tr key={u.lowercaseUsername} className="border-b border-white/5 hover:bg-white/[0.02]">
@@ -147,6 +147,9 @@ export default function AdminDashboard() {
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         {u.purchaseCount > 0 ? u.purchaseCount : "—"}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-[#B366FF]">
+                                        {u.rerollCount && u.rerollCount > 0 ? u.rerollCount : "—"}
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <Link

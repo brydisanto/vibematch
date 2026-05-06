@@ -36,9 +36,13 @@ export async function GET(req: Request) {
         // Count transactions
         const txKeys = await scanKeys("tx:*:processed");
 
-        // Aggregate tx data
+        // Aggregate tx data. Reroll txs (type === "reroll") are tracked
+        // separately so the dashboard can surface "Pin Rerolls" as its own
+        // metric distinct from bonus-game purchases.
         let totalVibestrSpent = 0;
         let totalGamesGranted = 0;
+        let totalPurchaseTxs = 0;
+        let totalRerolls = 0;
         const txRecords: any[] = [];
 
         for (const key of txKeys) {
@@ -48,7 +52,12 @@ export async function GET(req: Request) {
                 const data = typeof raw === "string" ? JSON.parse(raw) : raw;
                 txRecords.push(data);
                 totalVibestrSpent += parseFloat(data.amount || "0");
-                totalGamesGranted += Number(data.packageSize || 0);
+                if (data.type === "reroll") {
+                    totalRerolls += 1;
+                } else {
+                    totalPurchaseTxs += 1;
+                    totalGamesGranted += Number(data.packageSize || 0);
+                }
             } catch {
                 continue;
             }
@@ -69,6 +78,8 @@ export async function GET(req: Request) {
             totalCapsulesEarned,
             totalPinsCollected,
             totalTransactions: txRecords.length,
+            totalPurchaseTxs,
+            totalRerolls,
             totalVibestrSpent,
             totalGamesGranted,
         });

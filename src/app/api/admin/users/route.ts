@@ -16,9 +16,20 @@ async function scanKeys(pattern: string, limit: number = 5000): Promise<string[]
     return keys;
 }
 
-// Aggregate all tx records into per-user totals — done once per request
-async function buildUserSpendMap(): Promise<Map<string, { spent: number; txCount: number; bonusGames: number }>> {
-    const spendMap = new Map<string, { spent: number; txCount: number; bonusGames: number }>();
+// Aggregate all tx records into per-user totals — done once per request.
+// Splits txs into bonus-game purchases (no `type` field) vs rerolls
+// (`type === "reroll"`) so the admin dashboard can surface them as
+// distinct columns. Both kinds count toward `txCount` for the legacy
+// "Purchases" column, but `rerollCount` lets us show rerolls separately.
+interface UserSpend {
+    spent: number;
+    txCount: number;
+    bonusGames: number;
+    rerollCount: number;
+}
+
+async function buildUserSpendMap(): Promise<Map<string, UserSpend>> {
+    const spendMap = new Map<string, UserSpend>();
     const txKeys = await scanKeys("tx:*:processed");
     for (const key of txKeys) {
         const raw = await kv.get(key);
@@ -26,10 +37,14 @@ async function buildUserSpendMap(): Promise<Map<string, { spent: number; txCount
         try {
             const data = typeof raw === "string" ? JSON.parse(raw) : raw;
             if (!data?.username) continue;
-            const entry = spendMap.get(data.username) || { spent: 0, txCount: 0, bonusGames: 0 };
+            const entry = spendMap.get(data.username) || { spent: 0, txCount: 0, bonusGames: 0, rerollCount: 0 };
             entry.spent += parseFloat(data.amount || "0");
-            entry.txCount += 1;
-            entry.bonusGames += Number(data.packageSize || 0);
+            if (data.type === "reroll") {
+                entry.rerollCount += 1;
+            } else {
+                entry.txCount += 1;
+                entry.bonusGames += Number(data.packageSize || 0);
+            }
             spendMap.set(data.username, entry);
         } catch {
             continue;
@@ -74,7 +89,7 @@ export async function GET(req: Request) {
                 highScore = await kv.zscore('classic_leaderboard', username) as number | null;
             }
 
-            const spend = spendMap.get(username) || { spent: 0, txCount: 0, bonusGames: 0 };
+            const spend = spendMap.get(username) || { spent: 0, txCount: 0, bonusGames: 0, rerollCount: 0 };
 
             return {
                 username: canonicalUsername,
@@ -89,6 +104,7 @@ export async function GET(req: Request) {
                 highScore: highScore ?? 0,
                 vibestrSpent: spend.spent,
                 purchaseCount: spend.txCount,
+                rerollCount: spend.rerollCount,
             };
         }));
 

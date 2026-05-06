@@ -29,18 +29,28 @@ export interface AnomalyFlag {
     severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
+// Thresholds tuned around what team testers (mauxfaux et al) actually
+// produce on a great run. Original numbers were too aggressive — players
+// in the 90th-percentile of skill on a hot streak can:
+//   - score 200K+ on a lucky board (hard cap is 30 moves but cascades +
+//     power tile chains can push a single move to 5K-15K)
+//   - chain 15+ cascades on a single move when power tiles compound
+//   - rack up 25+ bombs across a deep cascade run
+// Floor anything that requires rule-bending math (e.g. score/match ratios
+// far above what power-tile detonations can mathematically produce) at
+// the "impossible" tier — those almost certainly indicate a forged log.
 const THRESHOLDS = {
-    score: 200_000,
-    combo: 15,
-    cascades: 50,
-    bombs: 20,
-    matches: 500,
-    vibestreaks: 15,
-    cosmicBlasts: 10,
-    scorePerMatch: 500,
+    score: 300_000,
+    combo: 25,
+    cascades: 100,
+    bombs: 35,
+    matches: 800,
+    vibestreaks: 25,
+    cosmicBlasts: 20,
+    scorePerMatch: 800,
     // Impossibility checks (if triggered, almost certainly forged)
-    scoreImpossible: 400_000,
-    scorePerMatchImpossible: 2000,
+    scoreImpossible: 500_000,
+    scorePerMatchImpossible: 3000,
 } as const;
 
 export function detectAnomalies(game: GameLogEntry): AnomalyFlag[] {
@@ -59,22 +69,22 @@ export function detectAnomalies(game: GameLogEntry): AnomalyFlag[] {
         flags.push({ id: 'score-high', label: 'Very high score', severity: 'high' });
     }
     if (game.maxCombo >= THRESHOLDS.combo) {
-        flags.push({ id: 'combo-high', label: 'Combo > 15', severity: 'high' });
+        flags.push({ id: 'combo-high', label: `Combo > ${THRESHOLDS.combo}`, severity: 'high' });
     }
     if (game.totalCascades >= THRESHOLDS.cascades) {
-        flags.push({ id: 'cascades-high', label: 'Cascades > 50', severity: 'medium' });
+        flags.push({ id: 'cascades-high', label: `Cascades > ${THRESHOLDS.cascades}`, severity: 'medium' });
     }
     if (game.bombsCreated >= THRESHOLDS.bombs) {
-        flags.push({ id: 'bombs-high', label: 'Bombs > 20', severity: 'medium' });
+        flags.push({ id: 'bombs-high', label: `Bombs > ${THRESHOLDS.bombs}`, severity: 'medium' });
     }
     if (game.matchCount >= THRESHOLDS.matches) {
-        flags.push({ id: 'matches-high', label: 'Matches > 500', severity: 'medium' });
+        flags.push({ id: 'matches-high', label: `Matches > ${THRESHOLDS.matches}`, severity: 'medium' });
     }
     if (game.cosmicBlastsCreated >= THRESHOLDS.cosmicBlasts) {
-        flags.push({ id: 'cosmic-high', label: 'Cosmic blasts > 10', severity: 'medium' });
+        flags.push({ id: 'cosmic-high', label: `Cosmic blasts > ${THRESHOLDS.cosmicBlasts}`, severity: 'medium' });
     }
     if (game.vibestreaksCreated >= THRESHOLDS.vibestreaks) {
-        flags.push({ id: 'vibestreaks-high', label: 'Vibestreaks > 15', severity: 'medium' });
+        flags.push({ id: 'vibestreaks-high', label: `Vibestreaks > ${THRESHOLDS.vibestreaks}`, severity: 'medium' });
     }
 
     // LOW — suspicious but could be legitimate
