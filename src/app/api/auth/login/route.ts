@@ -70,6 +70,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
+        // Banned users can authenticate but never get a session. Generic
+        // copy on purpose — we don't tell the user "you're banned" so the
+        // ban surface stays opaque.
+        if (user.banned === true) {
+            return NextResponse.json(
+                { error: "This account is not currently active. Reach out to support if you think this is a mistake." },
+                { status: 403 }
+            );
+        }
+
         // Password verified. Now check whether the stored hash is legacy.
         const legacy = isLegacyHash(user.password);
 

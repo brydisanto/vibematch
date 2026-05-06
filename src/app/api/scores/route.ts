@@ -1,6 +1,6 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession, isUserBanned } from '@/lib/auth';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos.
@@ -61,6 +61,11 @@ export async function POST(req: Request) {
         }
 
         const sessionUsername = session.username as string;
+
+        // Banned users can't post scores even with a valid session.
+        if (await isUserBanned(sessionUsername)) {
+            return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
+        }
 
         // Ensure canonical casing from profile
         const profileKey = `user:${sessionUsername.toLowerCase()}`;

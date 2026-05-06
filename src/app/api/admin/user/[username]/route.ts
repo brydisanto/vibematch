@@ -58,15 +58,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         }
 
         const auth = authRaw as any;
-        if (!auth) {
+        const tombstone = (await kv.get(`deleted_user:${username}`)) as
+            | { deletedAt?: number; deletedBy?: string; reason?: string; canonicalUsername?: string }
+            | null;
+        if (!auth && !tombstone) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         const pinbook = pinbookRaw as any;
         const profile = profileRaw as any;
 
-        // Strip password hash from auth object before returning
-        const safeAuth = auth ? { username: auth.username, createdAt: auth.createdAt } : null;
+        // Strip password hash from auth object before returning. Surface
+        // ban metadata + tombstone so the admin UI can render the right
+        // controls (Ban vs Unban vs already-deleted).
+        const safeAuth = auth
+            ? {
+                username: auth.username,
+                createdAt: auth.createdAt,
+                banned: auth.banned === true,
+                bannedAt: auth.bannedAt,
+                bannedBy: auth.bannedBy,
+                bannedReason: auth.bannedReason,
+                preBanScore: auth.preBanScore,
+            }
+            : null;
 
         // Get all daily trackers for this user (last 30 days)
         const dailyKeys = await scanKeys(`pinbook:${username}:daily:*`);
@@ -130,6 +145,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             gameLog: gameLogWithFlags,
             referralStats: referralRaw,
             referredBy: referredByRaw,
+            tombstone,
         });
     } catch (e) {
         console.error("Admin user detail error:", e);

@@ -1,6 +1,6 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession, isUserBanned } from '@/lib/auth';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 
@@ -172,6 +172,13 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         const username = (session.username as string).toLowerCase();
+
+        // Banned users keep their session cookie until it expires, but
+        // every game-affecting mutation (trackGame, earn, bonus, open)
+        // hits this POST handler — gate them all here.
+        if (await isUserBanned(username)) {
+            return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
+        }
 
         // Serialize all pinbook mutations per user to prevent read-modify-write races
         return await withUserLock(username, async () => {

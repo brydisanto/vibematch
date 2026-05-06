@@ -175,3 +175,30 @@ export async function getSession() {
     }
 }
 
+/**
+ * Check whether a user is banned. Reads `user_auth:<username>` and looks
+ * for a `banned: true` flag. Returns false if the user doesn't exist
+ * (deleted users get the same treatment as banned for play-gating).
+ *
+ * Call this from auth-gated endpoints that should reject banned users —
+ * login, game-start, score submission. Browsing endpoints (leaderboards,
+ * profile reads) don't need this check; banned users see the public
+ * surfaces but can't progress.
+ */
+export async function isUserBanned(username: string): Promise<boolean> {
+    if (!username) return false;
+    try {
+        const user = (await kv.get(`user_auth:${username.toLowerCase()}`)) as
+            | { banned?: boolean }
+            | null;
+        if (!user) return true; // deleted = treated as banned for play-gating
+        return user.banned === true;
+    } catch {
+        // KV blip — fail open so we don't lock everyone out on a transient
+        // outage. The cost of a false negative (one banned user keeps
+        // playing for a few seconds) is much lower than locking the whole
+        // user base out.
+        return false;
+    }
+}
+

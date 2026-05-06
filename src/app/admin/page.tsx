@@ -1,8 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminFetch, adminDownload } from "./_lib/adminFetch";
+
+// Sortable columns. The string union doubles as the column id for the
+// header click handlers and as the discriminator for the sort comparator.
+type SortKey =
+    | "username"
+    | "wallet"
+    | "createdAt"
+    | "highScore"
+    | "uniquePins"
+    | "capsules"
+    | "totalEarned"
+    | "totalOpened"
+    | "vibestrSpent"
+    | "purchaseCount"
+    | "rerollCount";
+
+type SortDir = "asc" | "desc";
+
+interface SortableHeaderProps {
+    label: string;
+    column: SortKey;
+    activeKey: SortKey;
+    dir: SortDir;
+    onClick: (k: SortKey) => void;
+    align?: "left" | "right";
+}
+
+function SortableHeader({ label, column, activeKey, dir, onClick, align = "left" }: SortableHeaderProps) {
+    const active = column === activeKey;
+    const arrow = active ? (dir === "asc" ? "▲" : "▼") : "";
+    return (
+        <th className={`px-4 py-3 ${align === "right" ? "text-right" : "text-left"} cursor-pointer select-none hover:text-white`}
+            onClick={() => onClick(column)}
+            title={`Sort by ${label}`}
+        >
+            <span>{label}</span>
+            {arrow && <span className="ml-1 text-[#FFE048] text-[10px]">{arrow}</span>}
+        </th>
+    );
+}
 
 interface Overview {
     totalUsers: number;
@@ -39,6 +79,58 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [shown, setShown] = useState(0);
+    const [sortKey, setSortKey] = useState<SortKey>("highScore");
+    const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+    const sortedUsers = useMemo(() => {
+        const arr = [...users];
+        const cmp = (a: User, b: User): number => {
+            const dir = sortDir === "asc" ? 1 : -1;
+            switch (sortKey) {
+                case "username":
+                    return dir * a.username.localeCompare(b.username);
+                case "wallet":
+                    return dir * (a.walletAddress || "").localeCompare(b.walletAddress || "");
+                case "createdAt": {
+                    const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dir * (aT - bT);
+                }
+                case "highScore":
+                    return dir * ((a.highScore || 0) - (b.highScore || 0));
+                case "uniquePins":
+                    return dir * ((a.uniquePins || 0) - (b.uniquePins || 0));
+                case "capsules":
+                    return dir * ((a.capsules || 0) - (b.capsules || 0));
+                case "totalEarned":
+                    return dir * ((a.totalEarned || 0) - (b.totalEarned || 0));
+                case "totalOpened":
+                    return dir * ((a.totalOpened || 0) - (b.totalOpened || 0));
+                case "vibestrSpent":
+                    return dir * ((a.vibestrSpent || 0) - (b.vibestrSpent || 0));
+                case "purchaseCount":
+                    return dir * ((a.purchaseCount || 0) - (b.purchaseCount || 0));
+                case "rerollCount":
+                    return dir * ((a.rerollCount || 0) - (b.rerollCount || 0));
+                default:
+                    return 0;
+            }
+        };
+        arr.sort(cmp);
+        return arr;
+    }, [users, sortKey, sortDir]);
+
+    const handleSort = (col: SortKey) => {
+        if (col === sortKey) {
+            // Toggle direction if same column.
+            setSortDir(d => (d === "asc" ? "desc" : "asc"));
+        } else {
+            // New column: default to descending for numeric-ish columns,
+            // ascending for username so alphabetical reads naturally.
+            setSortKey(col);
+            setSortDir(col === "username" || col === "wallet" ? "asc" : "desc");
+        }
+    };
 
     useEffect(() => {
         adminFetch("/api/admin/overview").then(r => r.json()).then(setOverview).catch(() => {});
@@ -105,17 +197,17 @@ export default function AdminDashboard() {
                     <table className="w-full text-sm">
                         <thead className="bg-white/5 border-b border-white/10">
                             <tr className="text-left text-white/60">
-                                <th className="px-4 py-3">Username</th>
-                                <th className="px-4 py-3">Wallet</th>
-                                <th className="px-4 py-3">Created</th>
-                                <th className="px-4 py-3 text-right">High Score</th>
-                                <th className="px-4 py-3 text-right">Unique Pins</th>
-                                <th className="px-4 py-3 text-right">Capsules</th>
-                                <th className="px-4 py-3 text-right">Earned</th>
-                                <th className="px-4 py-3 text-right">Opened</th>
-                                <th className="px-4 py-3 text-right">VIBESTR Spent</th>
-                                <th className="px-4 py-3 text-right">Purchases</th>
-                                <th className="px-4 py-3 text-right">Rerolls</th>
+                                <SortableHeader label="Username"     column="username"     activeKey={sortKey} dir={sortDir} onClick={handleSort} />
+                                <SortableHeader label="Wallet"       column="wallet"       activeKey={sortKey} dir={sortDir} onClick={handleSort} />
+                                <SortableHeader label="Created"      column="createdAt"    activeKey={sortKey} dir={sortDir} onClick={handleSort} />
+                                <SortableHeader label="High Score"   column="highScore"    activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Unique Pins"  column="uniquePins"   activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Capsules"     column="capsules"     activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Earned"       column="totalEarned"  activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Opened"       column="totalOpened"  activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="VIBESTR Spent" column="vibestrSpent" activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Purchases"    column="purchaseCount" activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
+                                <SortableHeader label="Rerolls"      column="rerollCount"  activeKey={sortKey} dir={sortDir} onClick={handleSort} align="right" />
                                 <th className="px-4 py-3"></th>
                             </tr>
                         </thead>
@@ -126,7 +218,7 @@ export default function AdminDashboard() {
                             {!loading && users.length === 0 && (
                                 <tr><td colSpan={12} className="px-4 py-8 text-center text-white/40">No users found</td></tr>
                             )}
-                            {users.map(u => (
+                            {sortedUsers.map(u => (
                                 <tr key={u.lowercaseUsername} className="border-b border-white/5 hover:bg-white/[0.02]">
                                     <td className="px-4 py-3 font-bold whitespace-nowrap">{u.username}</td>
                                     <td className="px-4 py-3 text-white/40 text-xs font-mono whitespace-nowrap">

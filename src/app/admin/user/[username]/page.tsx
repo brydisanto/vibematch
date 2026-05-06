@@ -42,7 +42,15 @@ interface TxRecord {
 }
 
 interface UserDetail {
-    auth: { username: string; createdAt: string } | null;
+    auth: {
+        username: string;
+        createdAt: string;
+        banned?: boolean;
+        bannedAt?: number;
+        bannedBy?: string;
+        bannedReason?: string;
+        preBanScore?: number;
+    } | null;
     profile: { username: string; avatarUrl: string } | null;
     pinbook: {
         pins: Record<string, { count: number; firstEarned: string }>;
@@ -64,14 +72,21 @@ interface UserDetail {
     }>;
     transactions: TxRecord[];
     gameLog: GameLogEntry[];
+    tombstone?: {
+        deletedAt?: number;
+        deletedBy?: string;
+        reason?: string;
+        canonicalUsername?: string;
+    } | null;
 }
 
-interface GrantAuditEntry {
+interface AuditEntry {
     timestamp: number;
     admin: string;
-    type: "plays" | "capsules";
-    amount: number;
+    type: "plays" | "capsules" | "ban" | "unban" | "delete";
+    amount?: number;
     note?: string;
+    reason?: string;
 }
 
 /**
@@ -118,7 +133,7 @@ export default function AdminUserPage({ params }: { params: Promise<{ username: 
     const [data, setData] = useState<UserDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [grants, setGrants] = useState<GrantAuditEntry[]>([]);
+    const [grants, setGrants] = useState<AuditEntry[]>([]);
 
     const refresh = useCallback(() => {
         setLoading(true);
@@ -164,7 +179,7 @@ function UserDetailView({
 }: {
     data: UserDetail;
     username: string;
-    grants: GrantAuditEntry[];
+    grants: AuditEntry[];
     onAfterGrant: () => void;
 }) {
     // Defensive normalizers — every field is treated as potentially missing
@@ -189,14 +204,60 @@ function UserDetailView({
     const purchaseTxs = transactions.filter(tx => tx.type !== "reroll");
     const rerollTxs = transactions.filter(tx => tx.type === "reroll");
 
+    const isBanned = data.auth?.banned === true;
+    const isDeleted = !!data.tombstone && !data.auth;
+
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-display font-black text-[#FFE048] uppercase">
-                    {data.profile?.username || data.auth?.username || username}
-                </h1>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl font-display font-black text-[#FFE048] uppercase">
+                        {data.profile?.username || data.auth?.username || username}
+                    </h1>
+                    {isBanned && (
+                        <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/50 text-red-300">
+                            Banned
+                        </span>
+                    )}
+                    {isDeleted && (
+                        <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-white/10 border border-white/30 text-white/70">
+                            Deleted
+                        </span>
+                    )}
+                </div>
                 <Link href="/admin" className="text-sm text-white/50 hover:text-white">← Back</Link>
             </div>
+
+            {isBanned && (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-4 text-sm">
+                    <div className="font-display font-black uppercase tracking-wider text-red-300 text-xs mb-1">
+                        Account banned
+                    </div>
+                    <div className="text-white/80">
+                        Banned {data.auth?.bannedAt ? new Date(data.auth.bannedAt).toLocaleString() : "—"}
+                        {data.auth?.bannedBy && <> by <span className="font-mono">{data.auth.bannedBy}</span></>}
+                        {data.auth?.bannedReason && <> &middot; <span className="italic">&ldquo;{data.auth.bannedReason}&rdquo;</span></>}
+                    </div>
+                    {typeof data.auth?.preBanScore === "number" && data.auth.preBanScore > 0 && (
+                        <div className="text-white/60 text-xs mt-1">
+                            Pre-ban classic high score: {data.auth.preBanScore.toLocaleString()} (will be restored on unban)
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {isDeleted && (
+                <div className="rounded-xl border border-white/30 bg-white/5 p-4 text-sm">
+                    <div className="font-display font-black uppercase tracking-wider text-white/70 text-xs mb-1">
+                        Account deleted
+                    </div>
+                    <div className="text-white/70">
+                        Deleted {data.tombstone?.deletedAt ? new Date(data.tombstone.deletedAt).toLocaleString() : "—"}
+                        {data.tombstone?.deletedBy && <> by <span className="font-mono">{data.tombstone.deletedBy}</span></>}
+                        {data.tombstone?.reason && <> &middot; <span className="italic">&ldquo;{data.tombstone.reason}&rdquo;</span></>}
+                    </div>
+                </div>
+            )}
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -220,6 +281,15 @@ function UserDetailView({
                 <Row label="Created" value={data.auth?.createdAt ? new Date(data.auth.createdAt).toLocaleString() : "—"} />
                 <Row label="Last Played" value={data.streak?.lastPlayed || "—"} />
             </Section>
+
+            {/* Account actions: ban / unban / delete */}
+            {!isDeleted && (
+                <AccountActionsSection
+                    username={username}
+                    isBanned={isBanned}
+                    onActed={onAfterGrant}
+                />
+            )}
 
             {/* Admin grants */}
             <GrantSection username={username} grants={grants} onGranted={onAfterGrant} />
@@ -422,13 +492,155 @@ function TransactionRow({ tx }: { tx: TxRecord }) {
     );
 }
 
+function AccountActionsSection({
+    username,
+    isBanned,
+    onActed,
+}: {
+    username: string;
+    isBanned: boolean;
+    onActed: () => void;
+}) {
+    const [reason, setReason] = useState("");
+    const [pending, setPending] = useState<null | "ban" | "unban" | "delete">(null);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleteEcho, setDeleteEcho] = useState(""); // type-to-confirm
+    const [feedback, setFeedback] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
+
+    const submit = async (action: "ban" | "unban" | "delete") => {
+        if (action === "delete" && deleteEcho.toLowerCase() !== username.toLowerCase()) {
+            setFeedback({ kind: "err", msg: `Type "${username}" exactly to confirm deletion` });
+            return;
+        }
+        setPending(action);
+        setFeedback(null);
+        try {
+            const res = await adminFetch("/api/admin/account-action", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, action, reason: reason.trim() || undefined }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data?.ok) {
+                setFeedback({ kind: "err", msg: data?.error || `HTTP ${res.status}` });
+            } else {
+                const msg = action === "ban"
+                    ? `Banned. Pre-ban high score saved: ${data.preBanScore != null ? Number(data.preBanScore).toLocaleString() : "—"}`
+                    : action === "unban"
+                        ? `Unbanned. Restored leaderboard score: ${data.restoredScore != null ? Number(data.restoredScore).toLocaleString() : "—"}`
+                        : `Deleted. ${data.keysDeleted ?? 0} KV key(s) removed.`;
+                setFeedback({ kind: "ok", msg });
+                setReason("");
+                setConfirmDelete(false);
+                setDeleteEcho("");
+                onActed();
+            }
+        } catch (e) {
+            setFeedback({ kind: "err", msg: (e as Error)?.message || "Request failed" });
+        } finally {
+            setPending(null);
+        }
+    };
+
+    return (
+        <Section title="Account Actions">
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-white/50 font-bold mb-1">
+                        Reason (recorded in audit log)
+                    </label>
+                    <input
+                        type="text"
+                        value={reason}
+                        onChange={e => setReason(e.target.value)}
+                        placeholder="e.g. impossible-score forgery in game log"
+                        className="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm w-full focus:outline-none focus:border-[#FFE048]"
+                        disabled={!!pending}
+                        maxLength={500}
+                    />
+                </div>
+
+                <div className="flex flex-wrap gap-3 items-center">
+                    {!isBanned ? (
+                        <button
+                            onClick={() => submit("ban")}
+                            disabled={!!pending}
+                            className="bg-orange-500/20 border border-orange-500/50 text-orange-200 font-display font-black uppercase text-sm tracking-wider px-5 py-2 rounded hover:bg-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {pending === "ban" ? "Banning..." : "Ban"}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => submit("unban")}
+                            disabled={!!pending}
+                            className="bg-green-500/20 border border-green-500/50 text-green-200 font-display font-black uppercase text-sm tracking-wider px-5 py-2 rounded hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {pending === "unban" ? "Unbanning..." : "Unban"}
+                        </button>
+                    )}
+
+                    {!confirmDelete ? (
+                        <button
+                            onClick={() => setConfirmDelete(true)}
+                            disabled={!!pending}
+                            className="bg-red-500/15 border border-red-500/50 text-red-200 font-display font-black uppercase text-sm tracking-wider px-5 py-2 rounded hover:bg-red-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Delete account
+                        </button>
+                    ) : (
+                        <div className="flex flex-wrap items-center gap-2 bg-red-500/5 border border-red-500/30 rounded px-3 py-2 w-full md:w-auto">
+                            <span className="text-xs text-red-200">
+                                Type <span className="font-mono font-bold">{username}</span> to confirm:
+                            </span>
+                            <input
+                                type="text"
+                                value={deleteEcho}
+                                onChange={e => setDeleteEcho(e.target.value)}
+                                className="bg-black/40 border border-red-500/40 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-red-400 w-40"
+                                disabled={!!pending}
+                            />
+                            <button
+                                onClick={() => submit("delete")}
+                                disabled={!!pending || deleteEcho.toLowerCase() !== username.toLowerCase()}
+                                className="bg-red-600 text-white font-display font-black uppercase text-xs tracking-wider px-3 py-1.5 rounded hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {pending === "delete" ? "Deleting..." : "Confirm delete"}
+                            </button>
+                            <button
+                                onClick={() => { setConfirmDelete(false); setDeleteEcho(""); }}
+                                disabled={!!pending}
+                                className="text-white/60 hover:text-white text-xs px-2 py-1.5"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {feedback && (
+                    <div className={`text-sm rounded px-3 py-2 ${feedback.kind === "ok" ? "bg-green-500/10 border border-green-500/30 text-green-300" : "bg-red-500/10 border border-red-500/30 text-red-300"}`}>
+                        {feedback.msg}
+                    </div>
+                )}
+
+                <p className="text-[10px] text-white/40 leading-relaxed">
+                    <strong>Ban</strong> blocks login + game starts + score submission and removes the user from leaderboards.
+                    Reversible: Unban restores their pre-ban classic high score to the leaderboard.
+                    {" "}<strong>Delete</strong> wipes the auth record, pinbook, profile, daily trackers, and leaderboard entries.
+                    Game logs and on-chain transaction records are preserved for forensics. A tombstone is written so the audit trail survives.
+                </p>
+            </div>
+        </Section>
+    );
+}
+
 function GrantSection({
     username,
     grants,
     onGranted,
 }: {
     username: string;
-    grants: GrantAuditEntry[];
+    grants: AuditEntry[];
     onGranted: () => void;
 }) {
     const [type, setType] = useState<"plays" | "capsules">("capsules");
@@ -530,18 +742,30 @@ function GrantSection({
 
                 {grants.length > 0 && (
                     <div className="mt-4">
-                        <div className="text-[10px] uppercase tracking-wider text-white/50 font-bold mb-2">Recent grants ({grants.length})</div>
+                        <div className="text-[10px] uppercase tracking-wider text-white/50 font-bold mb-2">Audit log ({grants.length})</div>
                         <div className="space-y-1">
-                            {grants.map((g, i) => (
-                                <div key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs py-1.5 border-b border-white/5 last:border-0">
-                                    <span className="text-white/40 font-mono whitespace-nowrap">
-                                        {new Date(g.timestamp).toLocaleString()}
-                                    </span>
-                                    <span className="font-bold text-[#FFE048] whitespace-nowrap">+{g.amount} {g.type}</span>
-                                    <span className="text-white/50 whitespace-nowrap">by {g.admin}</span>
-                                    {g.note && <span className="text-white/70 italic">&ldquo;{g.note}&rdquo;</span>}
-                                </div>
-                            ))}
+                            {grants.map((g, i) => {
+                                const isAccountAction = g.type === "ban" || g.type === "unban" || g.type === "delete";
+                                const accentClass = g.type === "ban" || g.type === "delete"
+                                    ? "text-red-300"
+                                    : g.type === "unban"
+                                        ? "text-green-300"
+                                        : "text-[#FFE048]";
+                                const label = isAccountAction
+                                    ? g.type.toUpperCase()
+                                    : `+${g.amount ?? 0} ${g.type}`;
+                                const note = g.note || g.reason;
+                                return (
+                                    <div key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs py-1.5 border-b border-white/5 last:border-0">
+                                        <span className="text-white/40 font-mono whitespace-nowrap">
+                                            {new Date(g.timestamp).toLocaleString()}
+                                        </span>
+                                        <span className={`font-bold whitespace-nowrap ${accentClass}`}>{label}</span>
+                                        <span className="text-white/50 whitespace-nowrap">by {g.admin}</span>
+                                        {note && <span className="text-white/70 italic">&ldquo;{note}&rdquo;</span>}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
