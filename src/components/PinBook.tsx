@@ -88,6 +88,81 @@ function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry
     );
 }
 
+// --- PinBook Podium (top 3) ---
+//
+// Mirrors the LeaderboardModal's podium so the two leaderboards feel like
+// part of the same family. Differences from LeaderboardModal: the "score"
+// here is `percentComplete` (the pin completion %), and the secondary
+// stat under each podium spot is the pins-collected breakdown rather
+// than score formatting.
+
+function PinPodiumSection({ entries, currentUsername }: { entries: PinLeaderboardEntry[]; currentUsername?: string }) {
+    if (entries.length < 3) return null;
+
+    // Visual order: 2nd on left, 1st in middle (taller pedestal), 3rd on right.
+    const podiumOrder = [entries[1], entries[0], entries[2]];
+    const ranks = [2, 1, 3];
+    const medalColors = [
+        { border: "#C0C0C0", glow: "rgba(192,192,192,0.2)", bg: "linear-gradient(135deg,#E8E8E8,#A0A0A0)" },
+        { border: "#FFD700", glow: "rgba(255,215,0,0.3)", bg: "linear-gradient(135deg,#FFD700,#FFA500)" },
+        { border: "#CD7F32", glow: "rgba(205,127,50,0.2)", bg: "linear-gradient(135deg,#CD7F32,#A0522D)" },
+    ];
+    const pedestalHeights = [52, 72, 40];
+    const avatarSizes = [56, 72, 56];
+
+    return (
+        <div className="relative flex items-end justify-center gap-2 px-5 pt-2 pb-0">
+            {/* Radial glow behind podium */}
+            <div className="absolute top-[-20px] left-1/2 -translate-x-1/2 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,215,0,0.08)_0%,transparent_70%)] pointer-events-none" />
+
+            {podiumOrder.map((entry, i) => {
+                const rank = ranks[i];
+                const medal = medalColors[i];
+                const isUser = entry.username.toLowerCase() === currentUsername?.toLowerCase();
+                return (
+                    <div key={entry.username} className="flex flex-col items-center relative z-10">
+                        <div style={{
+                            borderRadius: "50%",
+                            border: rank === 1 ? "3px solid #FFD700" : `2px solid ${medal.border}`,
+                            boxShadow: `0 0 ${rank === 1 ? 20 : 15}px ${medal.glow}`,
+                            animation: rank === 1 ? "goldPulse 2s ease-in-out infinite" : undefined,
+                        }}>
+                            <PinLeaderboardAvatar entry={entry} size={avatarSizes[i]} />
+                        </div>
+                        {/* Medal badge */}
+                        <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center font-display text-[11px] font-black text-[#110D17] -mt-[10px] relative z-20"
+                            style={{ background: medal.bg, boxShadow: rank === 1 ? `0 0 12px rgba(255,215,0,0.4)` : undefined }}>
+                            {rank}
+                        </div>
+                        <div className={`font-display mt-1.5 text-xs font-black max-w-[90px] truncate text-center ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
+                            {isUser ? "You" : entry.username}
+                        </div>
+                        <div
+                            className="font-display text-sm font-black mt-0.5"
+                            style={{ color: entry.percentComplete === 100 ? "#FFD700" : "#B366FF" }}
+                        >
+                            {entry.percentComplete}%
+                        </div>
+                        <div className="text-[9px] text-white/45 mt-0.5 text-center leading-tight">
+                            {entry.uniqueCount}/{BADGES.length} pins
+                            <span className="block opacity-80">{entry.totalPins} total</span>
+                        </div>
+                        {/* Pedestal */}
+                        <div className="w-[100px] rounded-t-lg mt-2"
+                            style={{
+                                height: pedestalHeights[i],
+                                background: `linear-gradient(180deg, ${medal.border}22, ${medal.border}08)`,
+                                border: `1px solid ${medal.border}33`,
+                                borderBottom: "none",
+                            }}
+                        />
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: string; refreshKey?: number }) {
     const [entries, setEntries] = useState<PinLeaderboardEntry[]>([]);
     const [totalPlayers, setTotalPlayers] = useState(0);
@@ -135,6 +210,10 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
         );
     }
 
+    const hasPodium = entries.length >= 3;
+    const top3 = hasPodium ? entries.slice(0, 3) : [];
+    const restOfList = hasPodium ? entries.slice(3) : entries;
+
     return (
         <div className="px-3 py-2">
             {totalPlayers > 0 && (
@@ -144,11 +223,18 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
                     </span>
                 </div>
             )}
-            {entries.map((entry, i) => {
-                const rank = i + 1;
+
+            {hasPodium && <PinPodiumSection entries={top3} currentUsername={currentUsername} />}
+
+            {/* Visual separator below the podium pedestals so the list
+                doesn't butt right up against the bases. */}
+            {hasPodium && (
+                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-3" />
+            )}
+
+            {restOfList.map((entry, i) => {
+                const rank = hasPodium ? i + 4 : i + 1;
                 const isUser = entry.username.toLowerCase() === currentUsername?.toLowerCase();
-                const isTop3 = rank <= 3;
-                const medalColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
                 return (
                     <div
@@ -158,8 +244,7 @@ function PinLeaderboard({ currentUsername, refreshKey }: { currentUsername?: str
                         }`}
                     >
                         {/* Rank */}
-                        <div className="flex-shrink-0 w-7 text-center font-bold text-sm"
-                            style={{ color: isTop3 ? medalColors[rank - 1] : "rgba(255,255,255,0.4)" }}>
+                        <div className="flex-shrink-0 w-7 text-center font-display font-black text-sm text-white/40">
                             {rank}
                         </div>
 
