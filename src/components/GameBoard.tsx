@@ -521,11 +521,12 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
 
 /* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only =====
  *
- * Juice pass v1: every tier got bigger text, larger radial flash,
- * thicker stroke, and a continuous glow-pulse so the banner stays
- * energetic for its whole 1.6s lifetime instead of just popping
- * once and sitting still. The combo-6+ tier is now "TRANSCENDENT"
- * (was placeholder gibberish).
+ * Reverted to the existing production treatment per user feedback:
+ * the pulsing radial wash + conic ray sweep + drop-shadow glow throb
+ * added in the juice pass were reading as an overwhelming color
+ * burst that obscured the board. Only the keysmash label string and
+ * the tier color palette are juice-pass; everything else here is
+ * the pre-juice production banner exactly.
  */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     if (effect.combo < 2) return null;
@@ -533,18 +534,12 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
-    //
-    // Headline sizes match the originals (text-6xl/8xl for VIBES /
-    // ELECTRIC / MAX STOKED / keysmash; text-7xl/9xl for NICE). The
-    // amplification this pass added comes from the radial wash pulse,
-    // conic ray sweep, continuous glow throb, screen shake, and the
-    // bumped stroke widths — NOT from making the headline bigger.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,1)",   rotate: -2, size: "text-6xl sm:text-8xl", italic: true,  flashColor: "rgba(179,102,255,0.9)", strokeWidth: 8 },
-        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.95)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false, flashColor: "rgba(255,224,72,0.85)", strokeWidth: 7 },
-        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,1)",     rotate: -2, size: "text-6xl sm:text-8xl", italic: true,  flashColor: "rgba(255,224,72,0.9)",  strokeWidth: 7 },
-        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.95)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false, flashColor: "rgba(255,95,31,0.85)",  strokeWidth: 7 },
-        { minCombo: 2, label: "NICE!",           fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,1)",     rotate: -3, size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,255,255,0.7)", strokeWidth: 6 },
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 2, label: "NICE!",           fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)",    rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
@@ -553,59 +548,36 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         <div
             className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
         >
-            {/* Mobile: simple static radial flash matching the original
-                pre-juice version. The pulsing wash + conic rays felt
-                like a chaotic color burst on smaller screens (the
-                gradients fill a much higher % of the visible area on
-                mobile than desktop). Tailwind sm:hidden hides this on
-                desktop where the bigger version takes over. */}
+            {/* Static radial background flash — original production
+                treatment. Single layer at 30% opacity. */}
             <div
-                className="absolute inset-0 opacity-30 sm:hidden"
+                className="absolute inset-0 opacity-30"
                 style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
             />
 
-            {/* Desktop only: pulsing radial wash. */}
+            {/* Main combo text */}
             <div
-                className="absolute inset-0 hidden sm:block combo-banner-flash"
-                style={{ background: `radial-gradient(ellipse at center, ${tier.flashColor} 0%, transparent 70%)` }}
-            />
-
-            {/* Desktop only: conic-gradient ray sweep on combo 3+. */}
-            {effect.combo >= 3 && (
-                <div
-                    className="absolute hidden sm:block combo-banner-rays"
-                    style={{
-                        background: `repeating-conic-gradient(from 0deg, transparent 0deg, ${tier.shadow} 8deg, transparent 16deg)`,
-                    }}
-                />
-            )}
-
-            {/* Main combo text — popped in via spring, then pulsing glow
-                while it sits, plus the slight tilt and italic where set. */}
-            <div
-                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop combo-text-glow-pulse`}
+                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop`}
                 style={{
                     color: tier.fill,
-                    WebkitTextStroke: `${tier.strokeWidth}px ${tier.stroke}`,
+                    WebkitTextStroke: `4px ${tier.stroke}`,
                     paintOrder: "stroke fill",
-                    textShadow: `0 0 60px ${tier.shadow}, 0 0 120px ${tier.shadow}, 0 8px 0 ${tier.stroke}, 0 12px 30px rgba(0,0,0,0.9)`,
+                    textShadow: `0 0 40px ${tier.shadow}, 0 0 80px ${tier.shadow}, 0 6px 0 ${tier.stroke}, 0 8px 20px rgba(0,0,0,0.8)`,
                     letterSpacing: "-0.02em",
                     '--combo-rotate': `${tier.rotate}deg`,
                     '--combo-rotate-start': `${tier.rotate * 2}deg`,
-                    '--combo-glow-color': tier.shadow,
                 } as React.CSSProperties}
             >
                 {tier.label}
             </div>
 
-            {/* xN COMBO sub-label — original sizing kept. Glow + stroke
-                were already amplified vs. the pre-juice baseline. */}
+            {/* xN COMBO sub-label */}
             <div
                 className="font-display font-black tracking-[0.2em] text-white text-2xl sm:text-3xl uppercase mt-2 select-none combo-sublabel-enter"
                 style={{
-                    WebkitTextStroke: "2px rgba(0,0,0,0.7)",
+                    WebkitTextStroke: "1.5px rgba(0,0,0,0.6)",
                     paintOrder: "stroke fill",
-                    textShadow: `0 0 28px ${tier.shadow}, 0 2px 10px rgba(0,0,0,0.95)`,
+                    textShadow: `0 0 20px ${tier.shadow}, 0 2px 8px rgba(0,0,0,0.9)`,
                 }}
             >
                 x{effect.combo} COMBO
