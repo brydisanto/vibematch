@@ -869,19 +869,30 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                         {capsuleEarned && onOpenPinBook && (
                             <motion.button
                                 onClick={onOpenPinBook}
-                                className="w-full mb-5 py-3.5 px-4 rounded-2xl border relative overflow-hidden group"
+                                className="w-full mb-5 py-4 px-4 rounded-2xl border-2 relative overflow-hidden group"
                                 style={{
-                                    background: "linear-gradient(135deg, rgba(108,92,231,0.15), rgba(179,102,255,0.1))",
-                                    borderColor: "rgba(108,92,231,0.4)",
-                                    boxShadow: "0 0 25px rgba(108,92,231,0.2)",
+                                    // Capsule-themed: gold-leaning gradient with a
+                                    // cosmic accent so the whole tile reads as
+                                    // "you won the gold prize", not just another
+                                    // cosmic-purple action button.
+                                    background: "linear-gradient(135deg, rgba(255,224,72,0.18), rgba(179,102,255,0.14) 60%, rgba(255,224,72,0.18))",
+                                    borderColor: "rgba(255,224,72,0.65)",
+                                    boxShadow:
+                                        "0 0 0 1px rgba(255,224,72,0.25), " +    // crisp inner ring
+                                        "0 0 28px rgba(255,224,72,0.45), " +     // primary gold glow
+                                        "0 0 60px rgba(179,102,255,0.25), " +    // cosmic ambient halo
+                                        "inset 0 1px 0 rgba(255,243,160,0.35)",  // top sheen
+                                    animation: "goldPulse 2s ease-in-out infinite",
                                 }}
                                 initial={{ scale: 0, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay: 1.8, type: "spring", stiffness: 300, damping: 20 }}
-                                whileHover={{ scale: 1.02, borderColor: "rgba(108,92,231,0.7)" }}
+                                whileHover={{ scale: 1.03, borderColor: "rgba(255,224,72,0.95)" }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-[#6C5CE7]/0 via-[#6C5CE7]/10 to-[#6C5CE7]/0 group-hover:via-[#6C5CE7]/20 transition-all" />
+                                {/* Diagonal shimmer sweep — matches the prize-game
+                                    rail treatment so the tile reads as "the prize". */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFF4B0]/15 to-transparent group-hover:via-[#FFF4B0]/25 transition-all" />
                                 <div className="relative flex items-center justify-center gap-3">
                                     {/* Pin Capsule glyph — matches the spherical
                                         capsule used on /game-guide and the Daily
@@ -914,7 +925,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                         </div>
                                     </div>
                                     <motion.div
-                                        className="text-[#6C5CE7] text-lg"
+                                        className="text-[#FFE048] text-lg drop-shadow-[0_0_4px_rgba(255,224,72,0.6)]"
                                         animate={{ x: [0, 4, 0] }}
                                         transition={{ duration: 1, repeat: Infinity }}
                                     >

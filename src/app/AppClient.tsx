@@ -933,7 +933,7 @@ export default function AppClient() {
                   onGoHome={handleGoHome}
                   onRequestLogin={() => setShowSystemAuthModal(true)}
                   capsuleEarned={capsuleEarned}
-                  onOpenPinBook={() => setShowPinBook(true)}
+                  onOpenPinBook={() => { setPinBookInitialTab("capsules"); setShowPinBook(true); }}
                   matchId={pinBook.getActiveMatchId() ?? undefined}
                 />
               )}
