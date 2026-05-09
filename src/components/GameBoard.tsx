@@ -486,8 +486,11 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     if (effect.combo < 2) return null;
 
+    // Combo 6+ falls back to MAX STOKED (the combo-5 tier) — we don't
+    // currently have a name for combo 6+, and rather than invent one,
+    // the existing top-tier name keeps escalating the visual intensity
+    // through particle/glow/screen-shake amplification at the same label.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "TRANSCENDENT!!!", fill: "#FFE048", stroke: "#1a0533", shadow: "rgba(179,102,255,1)",   rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(179,102,255,0.9)", strokeWidth: 8 },
         { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.95)", rotate: 3,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,224,72,0.85)", strokeWidth: 7 },
         { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,1)",     rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(255,224,72,0.9)",  strokeWidth: 7 },
         { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.95)",  rotate: 2,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,95,31,0.85)",  strokeWidth: 7 },
