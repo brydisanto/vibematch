@@ -497,7 +497,12 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
                 );
             })}
 
-            {/* Slammed-in headline label, screen-center. */}
+            {/* Slammed-in headline label, screen-center. Uses the same
+                layered treatment as the combo banners: white fill +
+                tier-colored stroke + solid drop-shadow band beneath in
+                the same color, so the text reads as four stacked layers
+                (white body → colored outline → colored shadow band →
+                blurry black shadow). */}
             <div
                 className="absolute inset-0 flex items-center justify-center pointer-events-none z-39 power-tile-create-label"
                 style={{ top: "-15%" }}
@@ -505,10 +510,10 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
                 <div
                     className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
                     style={{
-                        color: headline.color,
-                        WebkitTextStroke: "5px #000",
+                        color: "#FFFFFF",
+                        WebkitTextStroke: `5px ${headline.color}`,
                         paintOrder: "stroke fill",
-                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 #000, 0 8px 16px rgba(0,0,0,0.85)`,
+                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
                         letterSpacing: "-0.01em",
                     }}
                 >
