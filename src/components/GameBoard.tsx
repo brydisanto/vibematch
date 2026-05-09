@@ -507,7 +507,7 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
 
     return (
         <div
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter combo-banner-shake"
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
         >
             {/* Big radial wash — pulses while the banner is up so the
                 whole board feels charged, not just the text. */}

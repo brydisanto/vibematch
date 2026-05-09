@@ -166,6 +166,71 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
         prevScoreBumpRef.current = score;
     }, [score]);
 
+    // Displayed score lags the real `score` and tweens up smoothly so
+    // the visible number ticks UP as score-fly popups arrive at the
+    // box, instead of jumping immediately on state update. Tween length
+    // is matched roughly to the score-fly hold + flight (~1s) so the
+    // counter finishes climbing right around when the last popup lands.
+    const [displayedScore, setDisplayedScore] = useState(score);
+    const tweenStartRef = useRef<number | null>(null);
+    const tweenFromRef = useRef(score);
+    const tweenRafRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        // Snap immediately on score reset (game start / new game) so we
+        // don't see a count-down to 0 from the previous run.
+        if (score === 0) {
+            if (tweenRafRef.current) cancelAnimationFrame(tweenRafRef.current);
+            tweenStartRef.current = null;
+            tweenFromRef.current = 0;
+            setDisplayedScore(0);
+            return;
+        }
+
+        if (score === displayedScore) return;
+
+        // Hold a beat before starting the tween so the popup can pop +
+        // hold at its match position before the counter starts moving.
+        // After this delay, tween from current displayed value to the
+        // new score over ~700ms.
+        const HOLD_MS = 220;
+        const TWEEN_MS = 750;
+        const fromValue = displayedScore;
+        const targetValue = score;
+        tweenFromRef.current = fromValue;
+
+        const startTween = (t: number) => {
+            tweenStartRef.current = t;
+            const step = (now: number) => {
+                if (tweenStartRef.current == null) return;
+                const elapsed = now - tweenStartRef.current;
+                if (elapsed >= TWEEN_MS) {
+                    setDisplayedScore(targetValue);
+                    tweenStartRef.current = null;
+                    return;
+                }
+                // Ease-out cubic so the ticker decelerates as it lands.
+                const t01 = elapsed / TWEEN_MS;
+                const eased = 1 - Math.pow(1 - t01, 3);
+                const val = Math.round(fromValue + (targetValue - fromValue) * eased);
+                setDisplayedScore(val);
+                tweenRafRef.current = requestAnimationFrame(step);
+            };
+            tweenRafRef.current = requestAnimationFrame(step);
+        };
+
+        const holdTimer = setTimeout(() => {
+            startTween(performance.now());
+        }, HOLD_MS);
+
+        return () => {
+            clearTimeout(holdTimer);
+            if (tweenRafRef.current) cancelAnimationFrame(tweenRafRef.current);
+            tweenStartRef.current = null;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [score]);
+
     // Track moves changes for bump animation
     const [movesBumping, setMovesBumping] = useState(false);
     const prevMovesRef = useRef(movesLeft);
@@ -262,7 +327,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 className={scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >
-                                {score.toLocaleString()}
+                                {displayedScore.toLocaleString()}
                             </span>
                         </div>
                     </HudCard>
@@ -317,7 +382,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 className={scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >
-                                {formatScoreWithCommas(score)}
+                                {formatScoreWithCommas(displayedScore)}
                             </span>
                         </div>
                     </HudCard>
