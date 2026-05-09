@@ -366,6 +366,115 @@ function ScreenFlash({ intensity }: { intensity: string }) {
 
 
 
+/* ===== POWER TILE DETONATION FLASH =====
+ *
+ * Full-screen tinted wash when a power tile detonates. Color-coded so
+ * the player feels which TYPE of explosion happened, not just "boom":
+ *  - Bomb        → red wash (3x3 area destruction)
+ *  - Vibestreak  → cyan/blue wash (laser row + column)
+ *  - Cosmic Blast → purple/pink wash (clears every tile of a type)
+ *
+ * If multiple power tiles trigger in one turn (chain reaction), the
+ * highest-impact type wins (cosmic > vibestreak > bomb).
+ */
+function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
+    const triggered = effect.specialTilesTriggered;
+    if (!triggered || triggered.length === 0) return null;
+
+    // Pick dominant type — cosmic always wins, then vibestreak, then bomb.
+    const types = new Set(triggered.map(t => t.type));
+    const dominant = types.has("cosmic_blast") ? "cosmic_blast"
+        : types.has("vibestreak") ? "vibestreak"
+            : "bomb";
+
+    const palette = {
+        bomb:         { color: "rgba(255, 50, 50, 0.45)",  className: "power-tile-flash-bomb" },
+        vibestreak:   { color: "rgba(74, 224, 255, 0.45)", className: "power-tile-flash-laser" },
+        cosmic_blast: { color: "rgba(179, 102, 255, 0.5)", className: "power-tile-flash-cosmic" },
+    }[dominant];
+
+    return (
+        <div
+            className={`absolute inset-0 pointer-events-none z-30 rounded-2xl ${palette.className}`}
+            style={{ backgroundColor: palette.color }}
+        />
+    );
+}
+
+/* ===== POWER TILE CREATION MOMENT =====
+ *
+ * Slammed-in label + tier-colored expanding ring at each spawn position
+ * when a 4+ match creates a power tile. Currently the spawn is silent
+ * visually — the player just notices a special tile sitting on the
+ * board after the cascade settles. Now they get a beat to register
+ * "I just made this."
+ */
+function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; cellSize: number }) {
+    const created = effect.specialTilesCreated;
+    if (!created || created.length === 0 || cellSize === 0) return null;
+
+    const STYLES = {
+        bomb:         { label: "BOMB!",         color: "#FF3333", glow: "rgba(255,51,51,0.85)" },
+        vibestreak:   { label: "LASER PARTY!",  color: "#4AE0FF", glow: "rgba(74,224,255,0.85)" },
+        cosmic_blast: { label: "COSMIC BLAST!", color: "#B366FF", glow: "rgba(179,102,255,0.95)" },
+    };
+
+    // Pick the highest-tier creation as the headline label (one banner
+    // even if a turn happens to spawn multiple specials — rare but
+    // happens on cascade-side-effect creations).
+    const types = new Set(created.map(c => c.type));
+    const headline = types.has("cosmic_blast") ? STYLES.cosmic_blast
+        : types.has("vibestreak") ? STYLES.vibestreak
+            : STYLES.bomb;
+
+    return (
+        <>
+            {/* Per-spawn rings — color-coded to the special being made. */}
+            {created.map((c, i) => {
+                const style = STYLES[c.type];
+                return (
+                    <div
+                        key={i}
+                        className="absolute pointer-events-none power-tile-create-ring"
+                        style={{
+                            left: cellSize * c.pos.col + cellSize / 2,
+                            top: cellSize * c.pos.row + cellSize / 2,
+                            zIndex: 38,
+                            width: cellSize * 1.4,
+                            height: cellSize * 1.4,
+                            marginLeft: -(cellSize * 1.4) / 2,
+                            marginTop: -(cellSize * 1.4) / 2,
+                            border: `4px solid ${style.color}`,
+                            borderRadius: "50%",
+                            boxShadow: `0 0 30px ${style.glow}, inset 0 0 20px ${style.glow}`,
+                            animationDelay: `${i * 0.08}s`,
+                        }}
+                    />
+                );
+            })}
+
+            {/* Slammed-in headline label, screen-center. */}
+            <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-39 power-tile-create-label"
+                style={{ top: "-15%" }}
+            >
+                <div
+                    className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
+                    style={{
+                        color: headline.color,
+                        WebkitTextStroke: "5px #000",
+                        paintOrder: "stroke fill",
+                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 #000, 0 8px 16px rgba(0,0,0,0.85)`,
+                        letterSpacing: "-0.01em",
+                    }}
+                >
+                    {headline.label}
+                </div>
+            </div>
+        </>
+    );
+}
+
 /* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only =====
  *
  * Juice pass v1: every tier got bigger text, larger radial flash,
@@ -938,6 +1047,14 @@ export default function GameBoard({
 
                     {/* Screen flash */}
                     {shouldShowEffect('ScreenFlash') && <ScreenFlash intensity={effect.intensity} />}
+
+                    {/* Power tile detonation tint — overlays on top of
+                        ScreenFlash, color-coded to the special type. */}
+                    <PowerTileDetonationFlash effect={effect} />
+
+                    {/* Power tile creation moment — slammed-in label +
+                        tier ring at each spawn. */}
+                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} />
 
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}

@@ -58,6 +58,13 @@ export interface MatchEffect {
      *  popped without reading any text. */
     matchedBadgeTier?: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special';
     bonusCapsuleTriggered?: boolean;
+    /** Power tiles spawned this turn (from 4+ matches) — drives the
+     *  big "BOMB CREATED" / "LASER PARTY" / "COSMIC BLAST" slam-in
+     *  label + ring at the spawn position. */
+    specialTilesCreated?: { pos: { row: number; col: number }; type: 'bomb' | 'vibestreak' | 'cosmic_blast' }[];
+    /** Power tiles that detonated this turn — drives the tinted full-
+     *  screen flash (red for bomb, cyan for laser, purple for cosmic). */
+    specialTilesTriggered?: { pos: { row: number; col: number }; type: 'bomb' | 'vibestreak' | 'cosmic_blast' }[];
 }
 
 export interface UseGameReturn {
@@ -319,6 +326,8 @@ export function useGame(): UseGameReturn {
             matchedBadgeName,
             matchedBadgeTier,
             bonusCapsuleTriggered,
+            specialTilesCreated: result.specialTilesCreated.map(s => ({ pos: s.pos, type: s.type })),
+            specialTilesTriggered: result.specialTilesTriggered,
         });
 
         // Haptic feedback on mobile
