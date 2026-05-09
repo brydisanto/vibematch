@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
     GameState,
     GameMode,
@@ -451,9 +451,28 @@ export function useGame(): UseGameReturn {
         return applyResultState(prev, result, costMove);
     }, [triggerMatchEffects, applyResultState]);
 
+    // Input queueing — when the player taps during the isAnimating
+    // window (swap anim + hit-stop + cascade settle = up to ~530ms on
+    // an ultra match), the tap was being silently dropped. Felt like
+    // "tap does nothing" on mobile especially during cascade-heavy
+    // play. Now we buffer the most recent tap intent and replay it
+    // the moment input opens. Only the LAST queued tap is kept (so
+    // mashing doesn't queue up a backlog) and stale ones (>600ms old)
+    // are discarded so the player doesn't get a delayed action they
+    // forgot about.
+    const queuedTapRef = useRef<{ pos: Position; ts: number } | null>(null);
+    const queuedSwipeRef = useRef<{ from: Position; to: Position; ts: number } | null>(null);
+    const QUEUE_STALENESS_MS = 600;
+
     const selectTile = useCallback(
         (pos: Position) => {
-            if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            if (!state || state.gamePhase !== "playing") return;
+            if (isAnimating) {
+                queuedTapRef.current = { pos, ts: performance.now() };
+                queuedSwipeRef.current = null;
+                return;
+            }
+            queuedTapRef.current = null;
             setHintCells(new Set());
             setHintMessage(null);
 
@@ -527,8 +546,14 @@ export function useGame(): UseGameReturn {
 
     const swipeTiles = useCallback(
         (from: Position, to: Position) => {
-            if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            if (!state || state.gamePhase !== "playing") return;
             if (!isAdjacentSwap(from, to)) return;
+            if (isAnimating) {
+                queuedSwipeRef.current = { from, to, ts: performance.now() };
+                queuedTapRef.current = null;
+                return;
+            }
+            queuedSwipeRef.current = null;
             setHintCells(new Set());
             setHintMessage(null);
 
@@ -558,6 +583,24 @@ export function useGame(): UseGameReturn {
         },
         [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
     );
+
+    // Replay queued input when the animating window clears. Only one
+    // queued action exists at a time (selectTile / swipeTiles each
+    // clear the other when buffering) so we just check both and fire
+    // the freshest if not stale.
+    useEffect(() => {
+        if (isAnimating) return;
+        const now = performance.now();
+        const tap = queuedTapRef.current;
+        const swipe = queuedSwipeRef.current;
+        queuedTapRef.current = null;
+        queuedSwipeRef.current = null;
+        if (swipe && now - swipe.ts <= QUEUE_STALENESS_MS) {
+            swipeTiles(swipe.from, swipe.to);
+        } else if (tap && now - tap.ts <= QUEUE_STALENESS_MS) {
+            selectTile(tap.pos);
+        }
+    }, [isAnimating, selectTile, swipeTiles]);
 
     return {
         state,

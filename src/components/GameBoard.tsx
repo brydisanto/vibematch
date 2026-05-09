@@ -534,11 +534,17 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
+    //
+    // All tiers share the "layered" treatment that RAD! had: WHITE fill
+    // + tier-colored stroke + matching solid drop-shadow underneath.
+    // The white body + colored outline + colored shadow band gives the
+    // text a stacked, dimensional read that solid-color fills (the old
+    // VIBES / ELECTRIC / MAX STOKED treatment) didn't have.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
         { minCombo: 2, label: "RAD!",            fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)",    rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
