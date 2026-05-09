@@ -541,7 +541,11 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // text a stacked, dimensional read that solid-color fills (the old
     // VIBES / ELECTRIC / MAX STOKED treatment) didn't have.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
+        // overflows the viewport on mobile. Drop to text-3xl on phones
+        // (still chunky enough to read as a combo banner) while keeping
+        // text-7xl on sm+ where there's room.
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!",     fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
         { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
         { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
