@@ -258,6 +258,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
                         >
                             <span
+                                data-hud-score-target
                                 className={scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >
@@ -312,6 +313,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             }}
                         >
                             <span
+                                data-hud-score-target
                                 className={scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >

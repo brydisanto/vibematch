@@ -3,7 +3,7 @@
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect } from "@/lib/useGame";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 
 const EMPTY_HINT_SET = new Set<string>();
 
@@ -1070,78 +1070,148 @@ export default function GameBoard({
                 </div>
             ))}
 
-            {/* Score popups layer — size, color, and glow scale with the
-                magnitude of the score gained. Old version rendered every
-                popup at the same size, so a +200 looked identical to a
-                +12,000 — magnitude wasn't legible at a glance. */}
-            {scorePopups.map((popup) => {
-                const driftX = ((popup.x % 3) - 1) * 14;
-                // Tier the popup by score magnitude. Five buckets so the
-                // visual scales smoothly from a basic 3-match through the
-                // big chain-reaction-with-cascades moments.
-                const v = popup.value;
-                const popupTier = v >= 10000 ? "epic"
-                    : v >= 5000 ? "huge"
-                        : v >= 2000 ? "big"
-                            : v >= 750 ? "medium"
-                                : "small";
-                const tierStyles: Record<string, {
-                    text: string; px: string; py: string; border: string;
-                    color: string; glow: string; bg: string; gradient?: string;
-                }> = {
-                    small:  { text: "text-xl sm:text-2xl",       px: "px-2.5", py: "py-0.5", border: "1.5px solid rgba(255,224,72,0.4)",  color: "#FFE048", glow: "0 0 10px rgba(255,224,72,0.6)",                          bg: "rgba(0,0,0,0.7)" },
-                    medium: { text: "text-2xl sm:text-3xl",      px: "px-3",   py: "py-1",   border: "2px solid rgba(255,224,72,0.6)",    color: "#FFE048", glow: "0 0 16px rgba(255,224,72,0.85), 0 0 32px rgba(255,224,72,0.4)", bg: "rgba(0,0,0,0.78)" },
-                    big:    { text: "text-3xl sm:text-4xl",      px: "px-3.5", py: "py-1",   border: "2.5px solid rgba(255,184,0,0.85)",  color: "#FFE048", glow: "0 0 22px rgba(255,184,0,1), 0 0 44px rgba(255,95,31,0.55)",     bg: "rgba(0,0,0,0.82)" },
-                    huge:   { text: "text-4xl sm:text-5xl",      px: "px-4",   py: "py-1.5", border: "3px solid rgba(255,224,72,1)",      color: "#FFF4B0", glow: "0 0 28px rgba(255,224,72,1), 0 0 56px rgba(255,95,31,0.85)",     bg: "rgba(20,8,40,0.92)", gradient: "linear-gradient(135deg, #FFF4B0 0%, #FFE048 50%, #FF8C00 100%)" },
-                    epic:   { text: "text-5xl sm:text-6xl",      px: "px-5",   py: "py-2",   border: "3px solid rgba(255,255,255,1)",     color: "#FFFFFF", glow: "0 0 36px rgba(179,102,255,1), 0 0 72px rgba(255,224,72,0.85), 0 0 100px rgba(255,107,157,0.6)", bg: "rgba(10,4,28,0.95)", gradient: "linear-gradient(135deg, #FFE048 0%, #FF6B9D 33%, #B366FF 66%, #FFE048 100%)" },
-                };
-                const t = tierStyles[popupTier];
-                return (
-                    <div
-                        key={popup.id}
-                        className={`absolute pointer-events-none z-50 flex items-center justify-center ${popupTier === "epic" || popupTier === "huge" ? "score-popup-float-big" : "score-popup-float"}`}
+            {/* Score popups layer. Each popup pops at its match position,
+                holds, then accelerates toward the HUD score box (Candy
+                Crush-style) — so the player sees the points "fly into"
+                the score they're growing. ScoreFlyPopup encapsulates
+                the per-popup target lookup. */}
+            {scorePopups.map((popup) => (
+                <ScoreFlyPopup key={popup.id} popup={popup} />
+            ))}
+        </div>
+    );
+}
+
+/* ===== SCORE FLY POPUP =====
+ *
+ * Pops at the match position with magnitude-scaled styling, holds
+ * briefly so the player can read the number, then flies toward the
+ * HUD score box and fades out as if "absorbed" into the score total.
+ *
+ * The target-x / target-y CSS variables are computed at mount time
+ * via getBoundingClientRect on this popup vs. the marked HUD score
+ * element ([data-hud-score-target]). The CSS animation interpolates
+ * to those values in its second half.
+ *
+ * If the HUD target can't be found (initial render race, layout
+ * change), the popup falls back to the original drift-up behavior.
+ */
+function ScoreFlyPopup({ popup }: { popup: ScorePopup }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        const popupRect = ref.current.getBoundingClientRect();
+        // Multiple HUDs can mount on mobile (top + bottom) — pick the
+        // one with non-zero size, i.e. actually visible at this break.
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-score-target]"));
+        const targetEl = candidates.find(el => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        });
+        if (!targetEl) return;
+        const targetRect = targetEl.getBoundingClientRect();
+        const dx = (targetRect.left + targetRect.width / 2) - (popupRect.left + popupRect.width / 2);
+        const dy = (targetRect.top + targetRect.height / 2) - (popupRect.top + popupRect.height / 2);
+        setTarget({ x: dx, y: dy });
+    }, []);
+
+    // When the popup arrives at the HUD score box, briefly pulse the
+    // score number so it reads as "absorbed". Uses the same target
+    // element we computed delta to. Re-queries on fire because the
+    // ref'd HUD element could have been unmounted (e.g. on mobile
+    // breakpoint switch mid-flight) — fail silently if so.
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || !target) return;
+        const onEnd = () => {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-score-target]"));
+            const targetEl = candidates.find(c => {
+                const r = c.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+            if (!targetEl) return;
+            // Restart the animation by removing/re-adding the class —
+            // chained popups landing in quick succession should each
+            // re-pulse, not just the first.
+            targetEl.classList.remove("score-arrived-pulse");
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            targetEl.offsetWidth; // force reflow so the class re-add re-runs the keyframe
+            targetEl.classList.add("score-arrived-pulse");
+            setTimeout(() => targetEl.classList.remove("score-arrived-pulse"), 420);
+        };
+        el.addEventListener("animationend", onEnd, { once: true });
+        return () => el.removeEventListener("animationend", onEnd);
+    }, [target]);
+
+    // Magnitude-tier styling — same five buckets as before.
+    const v = popup.value;
+    const popupTier = v >= 10000 ? "epic"
+        : v >= 5000 ? "huge"
+            : v >= 2000 ? "big"
+                : v >= 750 ? "medium"
+                    : "small";
+    const tierStyles: Record<string, {
+        text: string; px: string; py: string; border: string;
+        color: string; glow: string; bg: string; gradient?: string;
+    }> = {
+        small:  { text: "text-xl sm:text-2xl",       px: "px-2.5", py: "py-0.5", border: "1.5px solid rgba(255,224,72,0.4)",  color: "#FFE048", glow: "0 0 10px rgba(255,224,72,0.6)",                          bg: "rgba(0,0,0,0.7)" },
+        medium: { text: "text-2xl sm:text-3xl",      px: "px-3",   py: "py-1",   border: "2px solid rgba(255,224,72,0.6)",    color: "#FFE048", glow: "0 0 16px rgba(255,224,72,0.85), 0 0 32px rgba(255,224,72,0.4)", bg: "rgba(0,0,0,0.78)" },
+        big:    { text: "text-3xl sm:text-4xl",      px: "px-3.5", py: "py-1",   border: "2.5px solid rgba(255,184,0,0.85)",  color: "#FFE048", glow: "0 0 22px rgba(255,184,0,1), 0 0 44px rgba(255,95,31,0.55)",     bg: "rgba(0,0,0,0.82)" },
+        huge:   { text: "text-4xl sm:text-5xl",      px: "px-4",   py: "py-1.5", border: "3px solid rgba(255,224,72,1)",      color: "#FFF4B0", glow: "0 0 28px rgba(255,224,72,1), 0 0 56px rgba(255,95,31,0.85)",     bg: "rgba(20,8,40,0.92)", gradient: "linear-gradient(135deg, #FFF4B0 0%, #FFE048 50%, #FF8C00 100%)" },
+        epic:   { text: "text-5xl sm:text-6xl",      px: "px-5",   py: "py-2",   border: "3px solid rgba(255,255,255,1)",     color: "#FFFFFF", glow: "0 0 36px rgba(179,102,255,1), 0 0 72px rgba(255,224,72,0.85), 0 0 100px rgba(255,107,157,0.6)", bg: "rgba(10,4,28,0.95)", gradient: "linear-gradient(135deg, #FFE048 0%, #FF6B9D 33%, #B366FF 66%, #FFE048 100%)" },
+    };
+    const t = tierStyles[popupTier];
+
+    // Pick the animation: fly-to-hud if we have a target, fall back to
+    // the original drift-up otherwise. Big tiers (huge/epic) get a
+    // longer hold + slower flight so they have presence before they
+    // fly into the score box.
+    const driftX = ((popup.x % 3) - 1) * 14;
+    const isBig = popupTier === "epic" || popupTier === "huge";
+    const animClass = target
+        ? (isBig ? "score-fly-to-hud-big" : "score-fly-to-hud")
+        : (isBig ? "score-popup-float-big" : "score-popup-float");
+
+    return (
+        <div
+            ref={ref}
+            className={`absolute pointer-events-none z-50 flex items-center justify-center ${animClass}`}
+            style={{
+                left: `${(popup.x / 8) * 100 + 6.25}%`,
+                top: `${(popup.y / 8) * 100 + 6.25}%`,
+                '--popup-drift-x': `${driftX}px`,
+                '--target-x': target ? `${target.x}px` : "0px",
+                '--target-y': target ? `${target.y}px` : "-60px",
+            } as React.CSSProperties}
+        >
+            <span
+                className={`font-display font-black ${t.text} ${t.px} ${t.py} rounded-full whitespace-nowrap`}
+                style={{
+                    color: t.color,
+                    background: t.bg,
+                    border: t.border,
+                    textShadow: t.gradient ? "none" : t.glow,
+                    boxShadow: t.gradient ? t.glow : undefined,
+                }}
+            >
+                {t.gradient ? (
+                    <span
                         style={{
-                            left: `${(popup.x / 8) * 100 + 6.25}%`,
-                            top: `${(popup.y / 8) * 100 + 6.25}%`,
-                            '--popup-drift-x': `${driftX}px`,
-                        } as React.CSSProperties}
+                            backgroundImage: t.gradient,
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.85))",
+                        }}
                     >
-                        <span
-                            className={`font-display font-black ${t.text} ${t.px} ${t.py} rounded-full whitespace-nowrap`}
-                            style={{
-                                color: t.color,
-                                background: t.bg,
-                                border: t.border,
-                                textShadow: t.gradient ? "none" : t.glow,
-                                // Outer pill keeps the dark bg + colored border +
-                                // glow. The text-shadow only applies when there's
-                                // no gradient — gradient-clipped text can't show
-                                // its own text-shadow, so the glow lives on the
-                                // pill's box-shadow on huge/epic instead.
-                                boxShadow: t.gradient ? t.glow : undefined,
-                            }}
-                        >
-                            {/* Gradient-clipped fill on huge/epic so big scores
-                                read as a rainbow "this was massive" moment. */}
-                            {t.gradient ? (
-                                <span
-                                    style={{
-                                        backgroundImage: t.gradient,
-                                        WebkitBackgroundClip: "text",
-                                        backgroundClip: "text",
-                                        WebkitTextFillColor: "transparent",
-                                        filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.85))",
-                                    }}
-                                >
-                                    +{popup.value.toLocaleString()}
-                                </span>
-                            ) : (
-                                <>+{popup.value.toLocaleString()}</>
-                            )}
-                        </span>
-                    </div>
-                );
-            })}
+                        +{popup.value.toLocaleString()}
+                    </span>
+                ) : (
+                    <>+{popup.value.toLocaleString()}</>
+                )}
+            </span>
         </div>
     );
 }
