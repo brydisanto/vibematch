@@ -1434,6 +1434,18 @@ body {
     animation: shape-subtext-fade 0.3s ease-out 0.15s both;
 }
 
+/* Confetti sparkle that fans out from the shape badge on land. CSS
+   vars set per-particle in the JSX (--cf-tx, --cf-ty). */
+@keyframes shape-confetti-fly {
+    0% { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
+    20% { transform: translate(-50%, -50%) translate(calc(var(--cf-tx, 0px) * 0.35), calc(var(--cf-ty, 0px) * 0.35)) scale(1.1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) translate(var(--cf-tx, 0px), var(--cf-ty, 0px)) scale(0); opacity: 0; }
+}
+.shape-confetti-particle {
+    animation: shape-confetti-fly 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    will-change: transform, opacity;
+}
+
 /* ===== MILESTONE BANNER — CSS entry/exit ===== */
 @keyframes milestone-banner-anim {
     0% { opacity: 0; transform: translateY(-20px) scale(0.7); }

@@ -360,7 +360,9 @@ export default function AppClient() {
       pinBook.earnBonusCapsule(mode).then(earned => {
         if (earned) {
           setBonusCapsuleFlash(true);
-          setTimeout(() => setBonusCapsuleFlash(false), 2000);
+          // Was 2s — bumped to 2.6s so the bigger confetti + longer
+          // hold of the headline have room to breathe before fade.
+          setTimeout(() => setBonusCapsuleFlash(false), 2600);
         }
       });
     }
@@ -847,28 +849,65 @@ export default function AppClient() {
                     transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
                   />
 
-                  {/* Radial burst particles */}
-                  {Array.from({ length: 16 }, (_, i) => {
-                    const angle = (i / 16) * Math.PI * 2;
-                    const dist = 150 + Math.random() * 100;
+                  {/* Big confetti burst — bumped from 16 → 56 particles
+                      across two waves (32 fast inner + 24 slower outer)
+                      with rectangular streamer shapes mixed in to read
+                      as proper celebration confetti, not just sparkles. */}
+                  {Array.from({ length: 32 }, (_, i) => {
+                    const angle = (i / 32) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                    const dist = 180 + Math.random() * 140;
+                    const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FF6B9D", "#4A9EFF", "#FFFFFF"];
+                    const color = colors[i % colors.length];
+                    const isStreamer = i % 4 === 0;
                     return (
                       <motion.div
                         key={`bonus-particle-${i}`}
-                        className="absolute rounded-full"
+                        className={`absolute ${isStreamer ? "rounded-sm" : "rounded-full"}`}
                         style={{
-                          width: 4 + Math.random() * 4,
-                          height: 4 + Math.random() * 4,
-                          background: i % 3 === 0 ? "#FFE048" : i % 3 === 1 ? "#FF5F1F" : "#B366FF",
-                          boxShadow: `0 0 8px ${i % 3 === 0 ? "#FFE048" : i % 3 === 1 ? "#FF5F1F" : "#B366FF"}`,
+                          width: isStreamer ? 4 + Math.random() * 3 : 5 + Math.random() * 5,
+                          height: isStreamer ? 14 + Math.random() * 8 : 5 + Math.random() * 5,
+                          background: color,
+                          boxShadow: `0 0 10px ${color}`,
                         }}
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                        initial={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
                         animate={{
                           x: Math.cos(angle) * dist,
                           y: Math.sin(angle) * dist,
                           opacity: 0,
                           scale: 0,
+                          rotate: (i % 2 === 0 ? 1 : -1) * (180 + Math.random() * 360),
                         }}
-                        transition={{ duration: 0.6 + Math.random() * 0.3, ease: [0.22, 1, 0.36, 1], delay: Math.random() * 0.1 }}
+                        transition={{ duration: 0.75 + Math.random() * 0.35, ease: [0.22, 1, 0.36, 1], delay: Math.random() * 0.08 }}
+                      />
+                    );
+                  })}
+
+                  {/* Outer wave: bigger, slower, longer travel — gives
+                      the burst a sense of depth instead of one flat ring. */}
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+                    const dist = 320 + Math.random() * 180;
+                    const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FF6B9D", "#FFFFFF"];
+                    const color = colors[i % colors.length];
+                    return (
+                      <motion.div
+                        key={`bonus-outer-${i}`}
+                        className="absolute rounded-full"
+                        style={{
+                          width: 8 + Math.random() * 6,
+                          height: 8 + Math.random() * 6,
+                          background: color,
+                          boxShadow: `0 0 14px ${color}, 0 0 28px ${color}80`,
+                        }}
+                        initial={{ x: 0, y: 0, opacity: 1, scale: 0.6 }}
+                        animate={{
+                          x: Math.cos(angle) * dist,
+                          y: Math.sin(angle) * dist + 80,    // slight gravity drift
+                          opacity: 0,
+                          scale: 0.4,
+                          rotate: (i % 2 === 0 ? 1 : -1) * 180,
+                        }}
+                        transition={{ duration: 1.4 + Math.random() * 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.05 + Math.random() * 0.15 }}
                       />
                     );
                   })}
@@ -877,40 +916,48 @@ export default function AppClient() {
                   <div className="relative text-center">
                     {/* Pulsing glow behind */}
                     <motion.div
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,224,72,0.4) 0%, rgba(179,102,255,0.15) 50%, transparent 70%)" }}
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,224,72,0.55) 0%, rgba(179,102,255,0.25) 45%, transparent 75%)" }}
                       initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: [0, 1.5, 1.2], opacity: [0, 1, 0.6] }}
-                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      animate={{ scale: [0, 1.6, 1.3], opacity: [0, 1, 0.7] }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
                     />
 
                     <motion.div
                       initial={{ scale: 0, y: 20 }}
-                      animate={{ scale: [0, 1.3, 1], y: -10 }}
-                      transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+                      animate={{ scale: [0, 1.35, 1], y: -10 }}
+                      transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
                     >
+                      {/* Layered text — white fill + gold stroke + matching
+                          gold drop-shadow band underneath, same family as
+                          the combo banners and power tile labels. Bigger
+                          than the previous gradient version (5xl/7xl vs
+                          4xl/5xl) to match the moment. */}
                       <div
-                        className="text-4xl sm:text-5xl font-black tracking-wider font-display"
+                        className="text-5xl sm:text-7xl font-black tracking-wide font-display uppercase"
                         style={{
-                          background: "linear-gradient(135deg, #FFE048, #FF5F1F, #B366FF, #FFE048)",
-                          backgroundSize: "200% 200%",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          animation: "ath-gradient-shift 1s ease-in-out infinite",
-                          filter: "drop-shadow(0 0 20px rgba(255,224,72,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
-                          WebkitTextStroke: "1px rgba(255,255,255,0.2)",
+                          color: "#FFFFFF",
+                          WebkitTextStroke: "5px #FFE048",
+                          paintOrder: "stroke fill",
+                          textShadow: "0 0 36px rgba(255,224,72,1), 0 0 72px rgba(255,224,72,0.6), 0 0 100px rgba(179,102,255,0.5), 0 6px 0 #FFE048, 0 9px 18px rgba(0,0,0,0.85)",
+                          letterSpacing: "-0.01em",
                         }}
                       >
                         BONUS CAPSULE!
                       </div>
                       <motion.div
-                        className="text-sm sm:text-base text-white/80 mt-2 font-display tracking-[0.2em] uppercase"
+                        className="text-base sm:text-lg mt-3 font-display font-black tracking-[0.22em] uppercase"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.25, duration: 0.3 }}
-                        style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+                        style={{
+                          color: "#FFFFFF",
+                          WebkitTextStroke: "1.5px #FFE048",
+                          paintOrder: "stroke fill",
+                          textShadow: "0 0 18px rgba(255,224,72,0.85), 0 2px 0 #FFE048, 0 4px 10px rgba(0,0,0,0.9)",
+                        }}
                       >
-                        Shape match bonus
+                        Shape Match Bonus
                       </motion.div>
                     </motion.div>
                   </div>

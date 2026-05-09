@@ -637,6 +637,9 @@ function CascadeLabel({ effect }: { effect: MatchEffect }) {
 
 /* ===== SHAPE ANNOUNCEMENT — top zone, CSS-only ===== */
 function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const SHAPE_INFO: Record<string, { label: string; multiplierLabel: string }> = {
         L: { label: "L-SHAPE!", multiplierLabel: "1.5\u00D7" },
         T: { label: "T-SHAPE!", multiplierLabel: "2.5\u00D7" },
@@ -647,7 +650,7 @@ function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
     const hasShape = shapeType != null && shapeType in SHAPE_INFO;
     const hasRowStreak = effect.maxMatchSize >= 5;
 
-    if (!hasShape && !hasRowStreak) return null;
+    if (!mounted || (!hasShape && !hasRowStreak)) return null;
 
     let label: string;
     let subtext: string | null = null;
@@ -660,36 +663,76 @@ function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
         label = effect.maxMatchSize >= 6 ? "SIX IN A ROW!" : "5 IN A ROW!";
     }
 
-    return (
+    return createPortal(
         <div
-            className="absolute top-[4%] left-0 right-0 flex flex-col items-center pointer-events-none z-40 shape-announce-enter"
+            className="fixed left-0 right-0 flex flex-col items-center pointer-events-none shape-announce-enter"
+            style={{ top: "10vh", zIndex: 75 }}
+            key={effect.timestamp}
         >
-            <span
-                className="font-display font-black text-2xl sm:text-3xl tracking-widest uppercase select-none px-4 py-1.5 rounded-full"
-                style={{
-                    color: "#FFE048",
-                    background: "rgba(0,0,0,0.7)",
-                    border: "1.5px solid rgba(255,224,72,0.4)",
-                    WebkitTextStroke: "1.5px #8b6b15",
-                    paintOrder: "stroke fill",
-                    textShadow: "0 0 20px rgba(255,224,72,0.9), 0 0 40px rgba(255,224,72,0.4), 0 2px 8px rgba(0,0,0,0.9)",
-                }}
-            >
-                {hasShape ? label : `\u2B50 ${label} \u2B50`}
-            </span>
+            {/* Confetti burst from the badge \u2014 12 sparkles fanning out
+                while the label slams in. Pure CSS positioning + transform
+                via inline keyframes through CSS vars. */}
+            <div className="relative">
+                {Array.from({ length: 12 }).map((_, i) => {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const dist = 80 + (i % 3) * 18;
+                    const tx = Math.cos(angle) * dist;
+                    const ty = Math.sin(angle) * dist - 8;
+                    const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FFFFFF", "#FF6B9D"];
+                    const color = colors[i % colors.length];
+                    return (
+                        <span
+                            key={i}
+                            className="absolute left-1/2 top-1/2 rounded-full shape-confetti-particle"
+                            style={{
+                                width: 6 + (i % 3) * 2,
+                                height: 6 + (i % 3) * 2,
+                                background: color,
+                                boxShadow: `0 0 8px ${color}`,
+                                '--cf-tx': `${tx}px`,
+                                '--cf-ty': `${ty}px`,
+                                animationDelay: `${(i % 4) * 30}ms`,
+                            } as React.CSSProperties}
+                        />
+                    );
+                })}
+
+                {/* Layered headline label (white fill + gold stroke +
+                    matching drop-shadow band \u2014 same family as the combo
+                    banner / power tile labels). */}
+                <span
+                    className="relative font-display font-black text-3xl sm:text-5xl tracking-widest uppercase select-none px-5 py-2 rounded-full"
+                    style={{
+                        color: "#FFFFFF",
+                        background: "rgba(10,5,28,0.55)",
+                        backdropFilter: "blur(2px)",
+                        border: "2px solid rgba(255,224,72,0.85)",
+                        WebkitTextStroke: "3px #FFE048",
+                        paintOrder: "stroke fill",
+                        textShadow: "0 0 28px rgba(255,224,72,0.95), 0 0 56px rgba(255,224,72,0.5), 0 4px 0 #FFE048, 0 6px 14px rgba(0,0,0,0.9)",
+                        boxShadow: "0 0 24px rgba(255,224,72,0.45), 0 0 60px rgba(255,224,72,0.2)",
+                    }}
+                >
+                    {hasShape ? label : `\u2B50 ${label} \u2B50`}
+                </span>
+            </div>
+
             {subtext && (
                 <span
-                    className="font-display font-black text-base sm:text-lg tracking-wider uppercase select-none mt-1 shape-subtext-enter"
+                    className="font-display font-black text-lg sm:text-2xl tracking-[0.18em] uppercase select-none mt-2 shape-subtext-enter px-3 py-0.5 rounded-full"
                     style={{
-                        color: "#FFE048",
-                        textShadow: "0 0 14px rgba(255,224,72,0.8), 0 1px 6px rgba(0,0,0,0.9)",
-                        opacity: 0.85,
+                        color: "#FFFFFF",
+                        background: "rgba(10,5,28,0.6)",
+                        WebkitTextStroke: "1.5px #FFE048",
+                        paintOrder: "stroke fill",
+                        textShadow: "0 0 16px rgba(255,224,72,0.85), 0 2px 0 #FFE048, 0 4px 10px rgba(0,0,0,0.9)",
                     }}
                 >
                     {subtext} BONUS
                 </span>
             )}
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -697,38 +740,55 @@ function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
 const MILESTONE_THRESHOLDS = [1000, 5000, 10000, 25000, 50000];
 
 function MilestoneBanner({ milestone }: { milestone: number }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+
     const label = milestone >= 10000 ? `${milestone / 1000}K` : `${milestone}`;
-    return (
+
+    return createPortal(
         <div
-            className="absolute left-0 right-0 flex flex-col items-center justify-center pointer-events-none z-50 milestone-banner-enter"
-            style={{ top: "22%" }}
+            className="fixed left-0 right-0 flex flex-col items-center justify-center pointer-events-none milestone-banner-enter"
+            // Stacks slightly below the ShapeAnnouncement (10vh) so the
+            // two don't collide when a milestone-crossing turn also
+            // landed an L/T/Cross. Still well above the board so it
+            // stays out of the centered combo banner's lane.
+            style={{ top: "20vh", zIndex: 76 }}
+            key={milestone}
         >
-            {/* Main text */}
+            {/* Layered headline — white fill + cosmic stroke + matching
+                cosmic drop-shadow band underneath, same family as the
+                rest of the banners. Cosmic color marks milestones as
+                "permanence" beats vs the gold "you scored" beats. */}
             <span
-                className="relative font-display font-black text-3xl sm:text-4xl tracking-wider uppercase select-none px-5 py-2 rounded-full"
+                className="relative font-display font-black text-3xl sm:text-5xl tracking-wider uppercase select-none px-6 py-2 rounded-full"
                 style={{
-                    color: "#FFE048",
-                    background: "rgba(0,0,0,0.75)",
-                    border: "2px solid rgba(255,224,72,0.45)",
-                    WebkitTextStroke: "2px #5a3800",
+                    color: "#FFFFFF",
+                    background: "rgba(10,5,28,0.6)",
+                    backdropFilter: "blur(2px)",
+                    border: "2px solid rgba(179,102,255,0.85)",
+                    WebkitTextStroke: "3px #B366FF",
                     paintOrder: "stroke fill",
-                    textShadow: "0 0 30px rgba(255,224,72,0.95), 0 0 60px rgba(255,224,72,0.5), 0 3px 8px rgba(0,0,0,0.9)",
+                    textShadow: "0 0 32px rgba(179,102,255,0.95), 0 0 64px rgba(179,102,255,0.5), 0 4px 0 #B366FF, 0 6px 16px rgba(0,0,0,0.9)",
+                    boxShadow: "0 0 28px rgba(179,102,255,0.5), 0 0 60px rgba(179,102,255,0.25)",
                 }}
             >
                 {label} MILESTONE!
             </span>
-            {/* Sub-text */}
             <span
-                className="relative font-mundial font-black tracking-[0.2em] text-sm sm:text-base uppercase mt-2 select-none"
+                className="relative font-mundial font-black tracking-[0.2em] text-xs sm:text-sm uppercase mt-2 select-none px-2.5 py-0.5 rounded-full"
                 style={{
-                    color: "#FFE048",
-                    textShadow: "0 0 12px rgba(255,224,72,0.8), 0 1px 4px rgba(0,0,0,0.9)",
-                    opacity: 0.85,
+                    color: "#FFFFFF",
+                    background: "rgba(10,5,28,0.55)",
+                    WebkitTextStroke: "1px #B366FF",
+                    paintOrder: "stroke fill",
+                    textShadow: "0 0 14px rgba(179,102,255,0.8), 0 2px 0 #B366FF, 0 3px 8px rgba(0,0,0,0.9)",
                 }}
             >
                 BONUS SCORE!
             </span>
-        </div>
+        </div>,
+        document.body
     );
 }
 
