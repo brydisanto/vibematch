@@ -1452,39 +1452,53 @@ body {
  * to the visible [data-hud-score-target] element). Shrink + fade as
  * we approach the target so it reads as "absorbed" into the score.
  *
- * The flight uses a cubic ease-in so the popup feels gravitationally
- * pulled toward the score — slow start, fast finish.
+ * Per-keyframe `animation-timing-function` controls each segment so
+ * the pop has spring overshoot, the hold is linear, and the flight
+ * has a strong ease-in (slow start, fast finish — feels yanked by
+ * the score). The previous version used one global ease-in-out across
+ * the whole animation which made the start AND end of the flight
+ * slow, reading as draggy. The mid-flight keyframe at 72% also forced
+ * the path through a specific point, creating a visible kink.
  */
 @keyframes score-fly-to-hud {
-    /* Pop in at match position */
-    0%  { transform: translate(0, 0) scale(0.4); opacity: 0; }
-    7%  { transform: translate(0, -8px) scale(1.2); opacity: 1; }
-    14% { transform: translate(0, -14px) scale(1); opacity: 1; }
-    /* Hold briefly so the player can read it */
-    32% { transform: translate(0, -16px) scale(1); opacity: 1; }
-    /* Cubic ease-in pull toward the HUD score box */
-    72% { transform: translate(calc(var(--target-x, 0px) * 0.55), calc(var(--target-y, -60px) * 0.55 + -16px)) scale(0.85); opacity: 0.95; }
-    /* Arrive at target, shrink + fade */
-    100% { transform: translate(var(--target-x, 0px), var(--target-y, -60px)) scale(0.35); opacity: 0; }
+    /* Pop in with spring overshoot */
+    0%  { transform: translate(0, 0) scale(0.4); opacity: 0;
+          animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+    /* Peak scale */
+    12% { transform: translate(0, -10px) scale(1.18); opacity: 1;
+          animation-timing-function: ease-out; }
+    /* Settle */
+    22% { transform: translate(0, -14px) scale(1); opacity: 1;
+          animation-timing-function: linear; }
+    /* End of hold — readable beat for the player */
+    32% { transform: translate(0, -14px) scale(1); opacity: 1;
+          animation-timing-function: cubic-bezier(0.6, 0.04, 0.85, 0.34); }
+    /* Yanked toward the score box. Single curve carries the whole
+       flight, no mid-flight constraint. */
+    100% { transform: translate(var(--target-x, 0px), var(--target-y, -60px)) scale(0.4); opacity: 0; }
 }
 .score-fly-to-hud {
-    animation: score-fly-to-hud 1.4s cubic-bezier(0.55, 0.05, 0.65, 0.95) forwards;
+    animation: score-fly-to-hud 0.95s linear forwards;
     will-change: transform, opacity;
 }
 
-/* Big version — longer hold (~500ms vs ~250ms) and slower flight so
-   huge/epic popups have presence before they fly into the box. */
+/* Big version — longer hold (~280ms vs ~140ms) so huge/epic popups
+   have presence before they fly into the box. Same easing structure;
+   timing tightened from the original 1.85s drag. */
 @keyframes score-fly-to-hud-big {
-    0%  { transform: translate(0, 0) scale(0.3); opacity: 0; }
-    6%  { transform: translate(0, -12px) scale(1.4); opacity: 1; }
-    13% { transform: translate(0, -20px) scale(1); opacity: 1; }
+    0%  { transform: translate(0, 0) scale(0.3); opacity: 0;
+          animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+    10% { transform: translate(0, -14px) scale(1.4); opacity: 1;
+          animation-timing-function: ease-out; }
+    20% { transform: translate(0, -22px) scale(1); opacity: 1;
+          animation-timing-function: linear; }
     /* Longer hold for the big-magnitude moment */
-    40% { transform: translate(0, -22px) scale(1); opacity: 1; }
-    78% { transform: translate(calc(var(--target-x, 0px) * 0.55), calc(var(--target-y, -100px) * 0.55 - 22px)) scale(0.7); opacity: 0.95; }
-    100% { transform: translate(var(--target-x, 0px), var(--target-y, -100px)) scale(0.3); opacity: 0; }
+    40% { transform: translate(0, -22px) scale(1); opacity: 1;
+          animation-timing-function: cubic-bezier(0.6, 0.04, 0.85, 0.34); }
+    100% { transform: translate(var(--target-x, 0px), var(--target-y, -100px)) scale(0.32); opacity: 0; }
 }
 .score-fly-to-hud-big {
-    animation: score-fly-to-hud-big 1.85s cubic-bezier(0.55, 0.05, 0.65, 0.95) forwards;
+    animation: score-fly-to-hud-big 1.25s linear forwards;
     will-change: transform, opacity;
 }
 

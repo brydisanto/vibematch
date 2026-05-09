@@ -489,12 +489,18 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
+    //
+    // Headline sizes match the originals (text-6xl/8xl for VIBES /
+    // ELECTRIC / MAX STOKED / keysmash; text-7xl/9xl for NICE). The
+    // amplification this pass added comes from the radial wash pulse,
+    // conic ray sweep, continuous glow throb, screen shake, and the
+    // bumped stroke widths — NOT from making the headline bigger.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,1)",   rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(179,102,255,0.9)", strokeWidth: 8 },
-        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.95)", rotate: 3,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,224,72,0.85)", strokeWidth: 7 },
-        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,1)",     rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(255,224,72,0.9)",  strokeWidth: 7 },
-        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.95)",  rotate: 2,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,95,31,0.85)",  strokeWidth: 7 },
-        { minCombo: 2, label: "NICE!",           fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,1)",     rotate: -3, size: "text-8xl sm:text-9xl", italic: false, flashColor: "rgba(255,255,255,0.7)", strokeWidth: 6 },
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,1)",   rotate: -2, size: "text-6xl sm:text-8xl", italic: true,  flashColor: "rgba(179,102,255,0.9)", strokeWidth: 8 },
+        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.95)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false, flashColor: "rgba(255,224,72,0.85)", strokeWidth: 7 },
+        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,1)",     rotate: -2, size: "text-6xl sm:text-8xl", italic: true,  flashColor: "rgba(255,224,72,0.9)",  strokeWidth: 7 },
+        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.95)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false, flashColor: "rgba(255,95,31,0.85)",  strokeWidth: 7 },
+        { minCombo: 2, label: "NICE!",           fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,1)",     rotate: -3, size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,255,255,0.7)", strokeWidth: 6 },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
@@ -539,9 +545,10 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
                 {tier.label}
             </div>
 
-            {/* xN COMBO sub-label */}
+            {/* xN COMBO sub-label — original sizing kept. Glow + stroke
+                were already amplified vs. the pre-juice baseline. */}
             <div
-                className="font-display font-black tracking-[0.2em] text-white text-3xl sm:text-4xl uppercase mt-3 select-none combo-sublabel-enter"
+                className="font-display font-black tracking-[0.2em] text-white text-2xl sm:text-3xl uppercase mt-2 select-none combo-sublabel-enter"
                 style={{
                     WebkitTextStroke: "2px rgba(0,0,0,0.7)",
                     paintOrder: "stroke fill",
