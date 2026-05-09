@@ -3,7 +3,8 @@
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect } from "@/lib/useGame";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const EMPTY_HINT_SET = new Set<string>();
 
@@ -137,22 +138,43 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
     const particleCap = useMemo(() => getParticleCap(), []);
 
     useEffect(() => {
-        const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#4A9EFF", "#FF6B9D", "#2EFF2E", "#fff"];
+        // Tier-biased color palettes — the burst tells the player WHICH
+        // tier they popped without reading any text. The dominant matched
+        // tier picks the palette; if no tier (rare edge case) we fall back
+        // to the neutral mixed palette.
+        const PALETTES: Record<string, string[]> = {
+            // Cosmic match → purple/pink/magenta with white sparkle
+            cosmic: ["#B366FF", "#FF6B9D", "#D8B4FE", "#FF6BD8", "#FFFFFF", "#E879F9", "#FFE048"],
+            // Gold match → warm yellows/oranges + white
+            gold:   ["#FFE048", "#FFB800", "#FFF4B0", "#FF8C00", "#FFFFFF", "#FF5F1F", "#FFD700"],
+            // Silver match → cool blues/cyans + white
+            silver: ["#4A9EFF", "#7DD3FC", "#22D3EE", "#A5F3FC", "#FFFFFF", "#0EA5E9", "#FFE048"],
+            // Blue (common) tier → green/cyan tints. Still vibrant so a
+            // basic 3-match doesn't feel drab.
+            blue:   ["#2EFF2E", "#4ADE80", "#22D3EE", "#A7F3D0", "#FFFFFF", "#FFE048", "#86EFAC"],
+            // Special collection-only badges — same neutral mix as fallback.
+            special: ["#FFE048", "#FF5F1F", "#B366FF", "#4A9EFF", "#FF6B9D", "#2EFF2E", "#FFFFFF"],
+        };
+        const colors = PALETTES[effect.matchedBadgeTier ?? "blue"] ?? PALETTES.blue;
+
+        // Particle counts bumped on every tier — baseline 3-matches were
+        // feeling flat. Mobile cap (16) still applies, so the bigger
+        // numbers only fully express on tablet/desktop.
         const rawCount =
-            effect.intensity === "ultra" ? 140
-                : effect.intensity === "mega" ? 95
-                    : effect.intensity === "big" ? 65
-                        : 40;
+            effect.intensity === "ultra" ? 160
+                : effect.intensity === "mega" ? 110
+                    : effect.intensity === "big" ? 80
+                        : 55;
         const count = Math.min(rawCount, particleCap);
 
         const newParticles = Array.from({ length: count }, (_, i) => {
             const origin = effect.positions[Math.floor(Math.random() * effect.positions.length)];
             const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.8;
             const distance =
-                effect.intensity === "ultra" ? 160 + Math.random() * 290
-                    : effect.intensity === "mega" ? 130 + Math.random() * 240
-                        : effect.intensity === "big" ? 110 + Math.random() * 210
-                            : 90 + Math.random() * 170;
+                effect.intensity === "ultra" ? 180 + Math.random() * 320
+                    : effect.intensity === "mega" ? 145 + Math.random() * 260
+                        : effect.intensity === "big" ? 120 + Math.random() * 220
+                            : 100 + Math.random() * 180;
 
             const tx = Math.cos(angle) * distance;
             const ty = Math.sin(angle) * distance + 50 + Math.random() * 40;
@@ -164,12 +186,17 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
                 tx,
                 ty,
                 color: colors[Math.floor(Math.random() * colors.length)],
-                size: effect.intensity === "ultra" ? 6 + Math.random() * 14 : 4 + Math.random() * 11,
+                // Slightly larger particles across every tier for more
+                // legibility, especially on the baseline tier.
+                size: effect.intensity === "ultra" ? 8 + Math.random() * 16
+                    : effect.intensity === "mega" ? 6 + Math.random() * 13
+                        : effect.intensity === "big" ? 5 + Math.random() * 12
+                            : 5 + Math.random() * 10,
                 delay: Math.random() * 0.1,
                 rotate: Math.random() * 720 - 360,
                 isSquare: Math.random() > 0.55,
-                duration: 0.7 + Math.random() * 0.5,
-                initialScale: 1.8 + Math.random() * 2.2,
+                duration: 0.75 + Math.random() * 0.55,
+                initialScale: 2 + Math.random() * 2.4,
             };
         });
 
@@ -201,16 +228,26 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
     );
 }
 
-/* ===== TILE RING BURST — CSS-only expanding ring from each matched tile (big+) ===== */
+/* ===== TILE RING BURST — CSS-only expanding ring from each matched tile =====
+ *
+ * Now fires on every tier (was big+ only). Baseline 3-matches felt flat
+ * without it; a small ring here is a cheap, legible "yes, that landed"
+ * cue. Color is tier-keyed: gold base, escalates to orange/cosmic on
+ * bigger matches.
+ */
 function TileRingBurst({ effect }: { effect: MatchEffect }) {
-    if (effect.intensity === "normal") return null;
-
     const ringColor =
         effect.intensity === "ultra" ? "#B366FF"
             : effect.intensity === "mega" ? "#FF5F1F"
                 : "#FFE048";
 
-    const finalScale = effect.intensity === "ultra" ? 6 : effect.intensity === "mega" ? 5 : 4;
+    // Baseline scale ~3, escalates up to 6 for ultra. Smaller ring on
+    // normal matches feels right — pop, not boom.
+    const finalScale =
+        effect.intensity === "ultra" ? 6
+            : effect.intensity === "mega" ? 5
+                : effect.intensity === "big" ? 4
+                    : 3;
 
     return (
         <>
@@ -225,7 +262,7 @@ function TileRingBurst({ effect }: { effect: MatchEffect }) {
                         height: 28,
                         marginLeft: -14,
                         marginTop: -14,
-                        border: `3px solid ${ringColor}`,
+                        border: `${effect.intensity === "normal" ? 2 : 3}px solid ${ringColor}`,
                         '--ring-final-scale': finalScale,
                         animationDelay: `${i * 0.035}s`,
                     } as React.CSSProperties}
@@ -266,15 +303,19 @@ function TileMatchFlash({ effect, cellSize }: { effect: MatchEffect; cellSize: n
     );
 }
 
-/* ===== SHOCKWAVE RING — Big+ matches ===== */
+/* ===== SHOCKWAVE RING — every match tier =====
+ *
+ * Was big+ only; now fires on basic 3-matches too with a smaller scale
+ * (handled in CSS via the .shockwave-ring base class). Single radial
+ * wave at the match center sells the impact cheaply.
+ */
 function ShockwaveRing({ effect }: { effect: MatchEffect }) {
-    if (effect.intensity === "normal") return null;
-
     const centerPos = effect.positions[Math.floor(effect.positions.length / 2)];
     const extraClass =
         effect.intensity === "ultra" ? "shockwave-ring-ultra"
             : effect.intensity === "mega" ? "shockwave-ring-mega"
-                : "";
+                : effect.intensity === "big" ? ""
+                    : "shockwave-ring-baseline";
 
     return (
         <div
@@ -297,13 +338,19 @@ function ScreenEdgeGlow({ intensity }: { intensity: string }) {
     return <div className={`screen-edge-glow ${cls}`} />;
 }
 
-/* ===== SCREEN FLASH — CSS-only ===== */
+/* ===== SCREEN FLASH — CSS-only =====
+ *
+ * Baseline matches now flash gold-tinted (was a faint neutral white)
+ * and at a noticeably stronger opacity so even a basic 3-match has a
+ * visible "crack" of brightness across the board. Bigger tiers were
+ * already fine; just bumped baseline.
+ */
 function ScreenFlash({ intensity }: { intensity: string }) {
     const color =
-        intensity === "ultra" ? "rgba(179, 102, 255, 0.25)"
-            : intensity === "mega" ? "rgba(255, 95, 31, 0.2)"
-                : intensity === "big" ? "rgba(255, 224, 72, 0.15)"
-                    : "rgba(255, 255, 255, 0.08)";
+        intensity === "ultra" ? "rgba(179, 102, 255, 0.30)"
+            : intensity === "mega" ? "rgba(255, 95, 31, 0.24)"
+                : intensity === "big" ? "rgba(255, 224, 72, 0.18)"
+                    : "rgba(255, 224, 72, 0.14)";
 
     const durClass =
         intensity === "ultra" ? "screen-flash--ultra"
@@ -320,16 +367,194 @@ function ScreenFlash({ intensity }: { intensity: string }) {
 
 
 
-/* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only ===== */
+/* ===== POWER TILE DETONATION FLASH — full viewport via portal =====
+ *
+ * Type-coded full-screen detonation effect when a power tile triggers.
+ * Renders to document.body via portal so it covers the entire viewport
+ * including everything outside the board (HUD, padding, edges) — the
+ * board has transformed ancestors (Framer Motion) which would
+ * otherwise constrain `position: fixed` to the board's bounding box.
+ *
+ *  - Bomb        → red shockwave + dark vignette ring expanding outward
+ *  - Vibestreak  → cyan flash + horizontal scan-line streaks
+ *  - Cosmic Blast → purple/pink radial vortex with conic ray sweep
+ *
+ * If multiple power tiles trigger in one turn (chain reaction), the
+ * highest-impact type wins (cosmic > vibestreak > bomb).
+ */
+function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    const triggered = effect.specialTilesTriggered;
+    if (!mounted || !triggered || triggered.length === 0) return null;
+
+    // Pick dominant type — cosmic always wins, then vibestreak, then bomb.
+    const types = new Set(triggered.map(t => t.type));
+    const dominant = types.has("cosmic_blast") ? "cosmic_blast"
+        : types.has("vibestreak") ? "vibestreak"
+            : "bomb";
+
+    const overlay = (() => {
+        if (dominant === "bomb") {
+            return (
+                <>
+                    {/* Red wash, brightest at center, fading to dark edges */}
+                    <div className="absolute inset-0 power-screen-bomb-wash" />
+                    {/* Dark vignette ring expanding outward — explosion shockwave */}
+                    <div className="absolute inset-0 power-screen-bomb-vignette" />
+                </>
+            );
+        }
+        if (dominant === "vibestreak") {
+            return (
+                <>
+                    {/* Cyan tint flash */}
+                    <div className="absolute inset-0 power-screen-laser-wash" />
+                    {/* Horizontal scan-line streaks across the viewport */}
+                    <div className="absolute inset-0 power-screen-laser-streaks" />
+                </>
+            );
+        }
+        // cosmic_blast
+        return (
+            <>
+                {/* Radial purple/pink wash */}
+                <div className="absolute inset-0 power-screen-cosmic-wash" />
+                {/* Slow-spinning conic ray sweep — galactic vortex */}
+                <div className="absolute inset-0 power-screen-cosmic-vortex" />
+            </>
+        );
+    })();
+
+    return createPortal(
+        <div
+            // The wrapper is `position: fixed` so it covers the whole
+            // viewport. z-index sits above the game UI but below any
+            // top-of-screen modals (toasts, primer, capsule sequence).
+            className="fixed inset-0 pointer-events-none overflow-hidden"
+            style={{ zIndex: 80 }}
+            // Key on timestamp so two consecutive detonations re-mount
+            // and re-run their entry keyframes instead of the second one
+            // being a no-op because the elements are already there.
+            key={effect.timestamp}
+        >
+            {overlay}
+        </div>,
+        document.body
+    );
+}
+
+/* ===== POWER TILE CREATION MOMENT =====
+ *
+ * Slammed-in label + tier-colored expanding ring at each spawn position
+ * when a 4+ match creates a power tile. Currently the spawn is silent
+ * visually — the player just notices a special tile sitting on the
+ * board after the cascade settles. Now they get a beat to register
+ * "I just made this."
+ */
+function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; cellSize: number }) {
+    const created = effect.specialTilesCreated;
+    if (!created || created.length === 0 || cellSize === 0) return null;
+
+    const STYLES = {
+        bomb:         { label: "BOMB!",         color: "#FF3333", glow: "rgba(255,51,51,0.85)" },
+        vibestreak:   { label: "LASER PARTY!",  color: "#4AE0FF", glow: "rgba(74,224,255,0.85)" },
+        cosmic_blast: { label: "COSMIC BLAST!", color: "#B366FF", glow: "rgba(179,102,255,0.95)" },
+    };
+
+    // Pick the highest-tier creation as the headline label (one banner
+    // even if a turn happens to spawn multiple specials — rare but
+    // happens on cascade-side-effect creations).
+    const types = new Set(created.map(c => c.type));
+    const headline = types.has("cosmic_blast") ? STYLES.cosmic_blast
+        : types.has("vibestreak") ? STYLES.vibestreak
+            : STYLES.bomb;
+
+    return (
+        <>
+            {/* Per-spawn rings — color-coded to the special being made. */}
+            {created.map((c, i) => {
+                const style = STYLES[c.type];
+                return (
+                    <div
+                        key={i}
+                        className="absolute pointer-events-none power-tile-create-ring"
+                        style={{
+                            left: cellSize * c.pos.col + cellSize / 2,
+                            top: cellSize * c.pos.row + cellSize / 2,
+                            zIndex: 38,
+                            width: cellSize * 1.4,
+                            height: cellSize * 1.4,
+                            marginLeft: -(cellSize * 1.4) / 2,
+                            marginTop: -(cellSize * 1.4) / 2,
+                            border: `4px solid ${style.color}`,
+                            borderRadius: "50%",
+                            boxShadow: `0 0 30px ${style.glow}, inset 0 0 20px ${style.glow}`,
+                            animationDelay: `${i * 0.08}s`,
+                        }}
+                    />
+                );
+            })}
+
+            {/* Slammed-in headline label, screen-center. Uses the same
+                layered treatment as the combo banners: white fill +
+                tier-colored stroke + solid drop-shadow band beneath in
+                the same color, so the text reads as four stacked layers
+                (white body → colored outline → colored shadow band →
+                blurry black shadow). */}
+            <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-39 power-tile-create-label"
+                style={{ top: "-15%" }}
+            >
+                <div
+                    className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
+                    style={{
+                        color: "#FFFFFF",
+                        WebkitTextStroke: `5px ${headline.color}`,
+                        paintOrder: "stroke fill",
+                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
+                        letterSpacing: "-0.01em",
+                    }}
+                >
+                    {headline.label}
+                </div>
+            </div>
+        </>
+    );
+}
+
+/* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only =====
+ *
+ * Reverted to the existing production treatment per user feedback:
+ * the pulsing radial wash + conic ray sweep + drop-shadow glow throb
+ * added in the juice pass were reading as an overwhelming color
+ * burst that obscured the board. Only the keysmash label string and
+ * the tier color palette are juice-pass; everything else here is
+ * the pre-juice production banner exactly.
+ */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     if (effect.combo < 2) return null;
 
+    // Combo 6+ uses the intentional keysmash label — the joke is that
+    // hitting a 6-combo is so overwhelming you just bash the keyboard.
+    // Don't "fix" this string. It's the punchline.
+    //
+    // All tiers share the "layered" treatment that RAD! had: WHITE fill
+    // + tier-colored stroke + matching solid drop-shadow underneath.
+    // The white body + colored outline + colored shadow band gives the
+    // text a stacked, dimensional read that solid-color fills (the old
+    // VIBES / ELECTRIC / MAX STOKED treatment) didn't have.
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 5, label: "MAX STOKED!", fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.85)", rotate: 3, size: "text-6xl sm:text-8xl" },
-        { minCombo: 4, label: "ELECTRIC!!", fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "VIBES!", fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.85)", rotate: 2, size: "text-6xl sm:text-8xl" },
-        { minCombo: 2, label: "NICE!", fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl" },
+        // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
+        // overflows the viewport on mobile. Drop to text-3xl on phones
+        // (still chunky enough to read as a combo banner) while keeping
+        // text-7xl on sm+ where there's room.
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
+        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 2, label: "RAD!",            fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)",    rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
@@ -338,7 +563,8 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         <div
             className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
         >
-            {/* Radial background flash */}
+            {/* Static radial background flash — original production
+                treatment. Single layer at 30% opacity. */}
             <div
                 className="absolute inset-0 opacity-30"
                 style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
@@ -872,6 +1098,14 @@ export default function GameBoard({
                     {/* Screen flash */}
                     {shouldShowEffect('ScreenFlash') && <ScreenFlash intensity={effect.intensity} />}
 
+                    {/* Power tile detonation tint — overlays on top of
+                        ScreenFlash, color-coded to the special type. */}
+                    <PowerTileDetonationFlash effect={effect} />
+
+                    {/* Power tile creation moment — slammed-in label +
+                        tier ring at each spawn. */}
+                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} />
+
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}
 
@@ -883,33 +1117,148 @@ export default function GameBoard({
                 </div>
             ))}
 
-            {/* Score popups layer — CSS only */}
-            {scorePopups.map((popup) => {
-                const driftX = ((popup.x % 3) - 1) * 14;
-                return (
-                    <div
-                        key={popup.id}
-                        className="absolute pointer-events-none z-50 flex items-center justify-center score-popup-float"
+            {/* Score popups layer. Each popup pops at its match position,
+                holds, then accelerates toward the HUD score box (Candy
+                Crush-style) — so the player sees the points "fly into"
+                the score they're growing. ScoreFlyPopup encapsulates
+                the per-popup target lookup. */}
+            {scorePopups.map((popup) => (
+                <ScoreFlyPopup key={popup.id} popup={popup} />
+            ))}
+        </div>
+    );
+}
+
+/* ===== SCORE FLY POPUP =====
+ *
+ * Pops at the match position with magnitude-scaled styling, holds
+ * briefly so the player can read the number, then flies toward the
+ * HUD score box and fades out as if "absorbed" into the score total.
+ *
+ * The target-x / target-y CSS variables are computed at mount time
+ * via getBoundingClientRect on this popup vs. the marked HUD score
+ * element ([data-hud-score-target]). The CSS animation interpolates
+ * to those values in its second half.
+ *
+ * If the HUD target can't be found (initial render race, layout
+ * change), the popup falls back to the original drift-up behavior.
+ */
+function ScoreFlyPopup({ popup }: { popup: ScorePopup }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        const popupRect = ref.current.getBoundingClientRect();
+        // Multiple HUDs can mount on mobile (top + bottom) — pick the
+        // one with non-zero size, i.e. actually visible at this break.
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-score-target]"));
+        const targetEl = candidates.find(el => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        });
+        if (!targetEl) return;
+        const targetRect = targetEl.getBoundingClientRect();
+        const dx = (targetRect.left + targetRect.width / 2) - (popupRect.left + popupRect.width / 2);
+        const dy = (targetRect.top + targetRect.height / 2) - (popupRect.top + popupRect.height / 2);
+        setTarget({ x: dx, y: dy });
+    }, []);
+
+    // When the popup arrives at the HUD score box, briefly pulse the
+    // score number so it reads as "absorbed". Uses the same target
+    // element we computed delta to. Re-queries on fire because the
+    // ref'd HUD element could have been unmounted (e.g. on mobile
+    // breakpoint switch mid-flight) — fail silently if so.
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || !target) return;
+        const onEnd = () => {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-score-target]"));
+            const targetEl = candidates.find(c => {
+                const r = c.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+            if (!targetEl) return;
+            // Restart the animation by removing/re-adding the class —
+            // chained popups landing in quick succession should each
+            // re-pulse, not just the first.
+            targetEl.classList.remove("score-arrived-pulse");
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            targetEl.offsetWidth; // force reflow so the class re-add re-runs the keyframe
+            targetEl.classList.add("score-arrived-pulse");
+            setTimeout(() => targetEl.classList.remove("score-arrived-pulse"), 420);
+        };
+        el.addEventListener("animationend", onEnd, { once: true });
+        return () => el.removeEventListener("animationend", onEnd);
+    }, [target]);
+
+    // Magnitude-tier styling — same five buckets as before.
+    const v = popup.value;
+    const popupTier = v >= 10000 ? "epic"
+        : v >= 5000 ? "huge"
+            : v >= 2000 ? "big"
+                : v >= 750 ? "medium"
+                    : "small";
+    const tierStyles: Record<string, {
+        text: string; px: string; py: string; border: string;
+        color: string; glow: string; bg: string; gradient?: string;
+    }> = {
+        small:  { text: "text-xl sm:text-2xl",       px: "px-2.5", py: "py-0.5", border: "1.5px solid rgba(255,224,72,0.4)",  color: "#FFE048", glow: "0 0 10px rgba(255,224,72,0.6)",                          bg: "rgba(0,0,0,0.7)" },
+        medium: { text: "text-2xl sm:text-3xl",      px: "px-3",   py: "py-1",   border: "2px solid rgba(255,224,72,0.6)",    color: "#FFE048", glow: "0 0 16px rgba(255,224,72,0.85), 0 0 32px rgba(255,224,72,0.4)", bg: "rgba(0,0,0,0.78)" },
+        big:    { text: "text-3xl sm:text-4xl",      px: "px-3.5", py: "py-1",   border: "2.5px solid rgba(255,184,0,0.85)",  color: "#FFE048", glow: "0 0 22px rgba(255,184,0,1), 0 0 44px rgba(255,95,31,0.55)",     bg: "rgba(0,0,0,0.82)" },
+        huge:   { text: "text-4xl sm:text-5xl",      px: "px-4",   py: "py-1.5", border: "3px solid rgba(255,224,72,1)",      color: "#FFF4B0", glow: "0 0 28px rgba(255,224,72,1), 0 0 56px rgba(255,95,31,0.85)",     bg: "rgba(20,8,40,0.92)", gradient: "linear-gradient(135deg, #FFF4B0 0%, #FFE048 50%, #FF8C00 100%)" },
+        epic:   { text: "text-5xl sm:text-6xl",      px: "px-5",   py: "py-2",   border: "3px solid rgba(255,255,255,1)",     color: "#FFFFFF", glow: "0 0 36px rgba(179,102,255,1), 0 0 72px rgba(255,224,72,0.85), 0 0 100px rgba(255,107,157,0.6)", bg: "rgba(10,4,28,0.95)", gradient: "linear-gradient(135deg, #FFE048 0%, #FF6B9D 33%, #B366FF 66%, #FFE048 100%)" },
+    };
+    const t = tierStyles[popupTier];
+
+    // Pick the animation: fly-to-hud if we have a target, fall back to
+    // the original drift-up otherwise. Big tiers (huge/epic) get a
+    // longer hold + slower flight so they have presence before they
+    // fly into the score box.
+    const driftX = ((popup.x % 3) - 1) * 14;
+    const isBig = popupTier === "epic" || popupTier === "huge";
+    const animClass = target
+        ? (isBig ? "score-fly-to-hud-big" : "score-fly-to-hud")
+        : (isBig ? "score-popup-float-big" : "score-popup-float");
+
+    return (
+        <div
+            ref={ref}
+            className={`absolute pointer-events-none z-50 flex items-center justify-center ${animClass}`}
+            style={{
+                left: `${(popup.x / 8) * 100 + 6.25}%`,
+                top: `${(popup.y / 8) * 100 + 6.25}%`,
+                '--popup-drift-x': `${driftX}px`,
+                '--target-x': target ? `${target.x}px` : "0px",
+                '--target-y': target ? `${target.y}px` : "-60px",
+            } as React.CSSProperties}
+        >
+            <span
+                className={`font-display font-black ${t.text} ${t.px} ${t.py} rounded-full whitespace-nowrap`}
+                style={{
+                    color: t.color,
+                    background: t.bg,
+                    border: t.border,
+                    textShadow: t.gradient ? "none" : t.glow,
+                    boxShadow: t.gradient ? t.glow : undefined,
+                }}
+            >
+                {t.gradient ? (
+                    <span
                         style={{
-                            left: `${(popup.x / 8) * 100 + 6.25}%`,
-                            top: `${(popup.y / 8) * 100 + 6.25}%`,
-                            '--popup-drift-x': `${driftX}px`,
-                        } as React.CSSProperties}
+                            backgroundImage: t.gradient,
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.85))",
+                        }}
                     >
-                        <span
-                            className="font-display font-black text-xl sm:text-2xl px-2.5 py-0.5 rounded-full whitespace-nowrap"
-                            style={{
-                                color: "#FFE048",
-                                background: "rgba(0,0,0,0.7)",
-                                border: "1.5px solid rgba(255,224,72,0.4)",
-                                textShadow: "0 0 10px rgba(255,224,72,0.6)",
-                            }}
-                        >
-                            +{popup.value.toLocaleString()}
-                        </span>
-                    </div>
-                );
-            })}
+                        +{popup.value.toLocaleString()}
+                    </span>
+                ) : (
+                    <>+{popup.value.toLocaleString()}</>
+                )}
+            </span>
         </div>
     );
 }

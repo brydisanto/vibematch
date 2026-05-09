@@ -307,48 +307,20 @@ body {
 }
 
 /* Board shake on big matches */
+/* Damped shake: fewer steps with progressively smaller amplitude.
+   Old version had 10 keyframes 10% apart — at 0.25-0.4s total that
+   meant 25-40ms per step, which read as a choppy stair-stepped
+   jitter rather than an impact-and-decay. 6 stops with bigger
+   spacing between direction reversals + a true exponential decay
+   on amplitude reads as a single weighty thud. */
 @keyframes board-shake {
-
-  0%,
-  100% {
-    transform: translateX(0) translateY(0);
-  }
-
-  10% {
-    transform: translateX(-4px) translateY(-2px);
-  }
-
-  20% {
-    transform: translateX(4px) translateY(2px);
-  }
-
-  30% {
-    transform: translateX(-3px) translateY(-1px);
-  }
-
-  40% {
-    transform: translateX(3px) translateY(1px);
-  }
-
-  50% {
-    transform: translateX(-2px) translateY(-1px);
-  }
-
-  60% {
-    transform: translateX(2px) translateY(1px);
-  }
-
-  70% {
-    transform: translateX(-1px);
-  }
-
-  80% {
-    transform: translateX(1px);
-  }
-
-  90% {
-    transform: translateX(0);
-  }
+  0%   { transform: translate(0, 0); }
+  16%  { transform: translate(-5px, 1px); }
+  33%  { transform: translate(4px, -2px); }
+  50%  { transform: translate(-2.5px, 1.5px); }
+  66%  { transform: translate(1.5px, -0.8px); }
+  83%  { transform: translate(-0.6px, 0.3px); }
+  100% { transform: translate(0, 0); }
 }
 
 /* ===== TILE DEPTH & TIER IDLE ANIMATIONS ===== */
@@ -471,6 +443,164 @@ body {
   width: 150px;
   height: 150px;
   animation-duration: 1s;
+}
+
+/* Baseline (normal-intensity) shockwave — smaller + thinner so a
+   basic 3-match still gets a single radial pop without competing
+   with the bigger tiers. */
+.shockwave-ring-baseline {
+  border-width: 2.5px;
+  border-color: var(--gvc-gold);
+  width: 70px;
+  height: 70px;
+  animation-duration: 0.65s;
+  opacity: 0.85;
+}
+
+/* ===== POWER TILE DETONATION — FULL-VIEWPORT FLASH =====
+ *
+ * Each power tile gets a multi-layer effect that covers the entire
+ * viewport (rendered via portal at document.body so transformed
+ * ancestors don't constrain the fixed positioning).
+ *
+ * Composition per type:
+ *  - Bomb:    red wash + dark vignette ring shockwave (~0.7s)
+ *  - Laser:   cyan flash + horizontal scan-line streaks (~0.8s)
+ *  - Cosmic:  radial purple wash + slow-spinning conic vortex (~1.1s)
+ */
+
+/* --- BOMB --- */
+@keyframes power-screen-bomb-wash-anim {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+.power-screen-bomb-wash {
+  background: radial-gradient(circle at center,
+    rgba(255, 80, 60, 0.55) 0%,
+    rgba(255, 50, 30, 0.40) 40%,
+    rgba(180, 20, 10, 0.30) 80%,
+    rgba(60, 5, 0, 0.45) 100%);
+  animation: power-screen-bomb-wash-anim 0.7s ease-out forwards;
+  will-change: opacity;
+}
+@keyframes power-screen-bomb-vignette-anim {
+  0%   { transform: scale(0.4); opacity: 0; }
+  18%  { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.power-screen-bomb-vignette {
+  background: radial-gradient(circle at center,
+    transparent 35%,
+    rgba(255, 80, 50, 0.55) 50%,
+    rgba(120, 10, 0, 0.85) 75%,
+    rgba(0, 0, 0, 0.95) 100%);
+  animation: power-screen-bomb-vignette-anim 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* --- LASER PARTY --- */
+@keyframes power-screen-laser-wash-anim {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  35%  { opacity: 0.55; }   /* secondary strobe beat */
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.power-screen-laser-wash {
+  background: radial-gradient(ellipse at center,
+    rgba(180, 240, 255, 0.55) 0%,
+    rgba(74, 224, 255, 0.40) 50%,
+    rgba(20, 60, 180, 0.35) 100%);
+  animation: power-screen-laser-wash-anim 0.8s ease-out forwards;
+  will-change: opacity;
+}
+@keyframes power-screen-laser-streaks-anim {
+  0%   { opacity: 0; transform: translateX(-100%); }
+  15%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+.power-screen-laser-streaks {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 18px,
+    rgba(74, 224, 255, 0.5) 18px,
+    rgba(180, 240, 255, 0.85) 22px,
+    rgba(74, 224, 255, 0.5) 26px,
+    transparent 26px,
+    transparent 70px
+  );
+  mix-blend-mode: screen;
+  animation: power-screen-laser-streaks-anim 0.8s linear forwards;
+  will-change: transform, opacity;
+}
+
+/* --- COSMIC BLAST --- */
+@keyframes power-screen-cosmic-wash-anim {
+  0%   { opacity: 0; transform: scale(0.7); }
+  12%  { opacity: 1; transform: scale(1); }
+  60%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+.power-screen-cosmic-wash {
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 230, 0.5) 0%,
+    rgba(255, 107, 157, 0.45) 25%,
+    rgba(179, 102, 255, 0.45) 55%,
+    rgba(40, 5, 80, 0.55) 100%);
+  animation: power-screen-cosmic-wash-anim 1.1s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes power-screen-cosmic-vortex-anim {
+  0%   { opacity: 0; transform: rotate(0deg) scale(0.4); }
+  18%  { opacity: 0.7; }
+  100% { opacity: 0; transform: rotate(120deg) scale(1.6); }
+}
+.power-screen-cosmic-vortex {
+  /* Tight conic gradient with many alternating bands → reads as
+     spinning rays radiating from the center of the screen. */
+  background: conic-gradient(from 0deg at 50% 50%,
+    rgba(179, 102, 255, 0)  0deg,
+    rgba(179, 102, 255, 0.55) 12deg,
+    rgba(255, 107, 157, 0)  24deg,
+    rgba(74, 158, 255, 0.4) 36deg,
+    rgba(179, 102, 255, 0)  48deg,
+    rgba(255, 224, 72, 0.35) 60deg,
+    rgba(179, 102, 255, 0)  72deg,
+    rgba(255, 107, 157, 0.5) 84deg,
+    rgba(179, 102, 255, 0)  96deg);
+  background-size: 100% 100%;
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+  animation: power-screen-cosmic-vortex-anim 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* ===== POWER TILE CREATION RING ===== */
+@keyframes power-tile-create-ring-anim {
+  0%   { transform: scale(0.4) rotate(0deg);   opacity: 0; }
+  20%  { transform: scale(1.1) rotate(45deg);  opacity: 1; }
+  60%  { transform: scale(1.5) rotate(180deg); opacity: 0.7; }
+  100% { transform: scale(2.2) rotate(360deg); opacity: 0; }
+}
+.power-tile-create-ring {
+  animation: power-tile-create-ring-anim 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* ===== POWER TILE CREATION LABEL — slams in like the combo banner ===== */
+@keyframes power-tile-create-label-anim {
+  0%   { transform: scale(2.2) translateY(-14px); opacity: 0; }
+  18%  { transform: scale(0.92) translateY(0);    opacity: 1; }
+  35%  { transform: scale(1) translateY(0);       opacity: 1; }
+  78%  { transform: scale(1) translateY(0);       opacity: 1; }
+  100% { transform: scale(0.95) translateY(-8px); opacity: 0; }
+}
+.power-tile-create-label {
+  animation: power-tile-create-label-anim 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* Screen edge glow — big matches */
@@ -980,11 +1110,18 @@ body {
     to   { transform: translate(var(--swap-dx), var(--swap-dy)); }
 }
 .game-tile--swapping {
-    animation: tile-swap 0.22s cubic-bezier(0.18, 1.4, 0.4, 1) forwards;
+    /* Mild spring on desktop — 1.15 control point = ~15% overshoot then
+       settle. The previous 1.4 control was 40% overshoot which sailed
+       way past the destination on every swap. */
+    animation: tile-swap 0.22s cubic-bezier(0.18, 1.15, 0.4, 1) forwards;
 }
 @media (max-width: 767px) {
+    /* Mobile: no overshoot at all. The smaller cell size meant even a
+       small overshoot percentage looked like the tile was visibly
+       flying past its destination (~15-20px overshoot on 40-50px cells
+       reads as a glitch, not a spring). */
     .game-tile--swapping {
-        animation-duration: 0.26s;
+        animation: tile-swap 0.24s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
 }
 
@@ -1243,6 +1380,14 @@ body {
     animation: combo-banner-fade 1.6s ease-out forwards;
 }
 
+/* combo-banner-shake / combo-banner-flash / combo-banner-rays /
+   combo-text-glow-pulse were added in the juice pass to amplify the
+   banner — but the resulting color burst was overwhelming and
+   obscured the board. Reverted to the original production banner
+   treatment (single static radial wash, plain pop-in spring).
+   Keyframes intentionally removed too; the JSX no longer references
+   any of them. */
+
 @keyframes combo-text-pop-in {
     0% { transform: scale(2.2) rotate(var(--combo-rotate-start, 0deg)); }
     100% { transform: scale(1) rotate(var(--combo-rotate, 0deg)); }
@@ -1310,6 +1455,78 @@ body {
 }
 .score-popup-float {
     animation: score-float 2.2s ease-out forwards;
+}
+
+/* Huge / epic score popups slam in with overshoot, hold longer, and
+   drift further up so they have the room to breathe at their bigger
+   size. Same float curve, just amplified. */
+@keyframes score-float-big {
+    0%   { transform: translateY(0)    translateX(0)                                                 scale(0.3);  opacity: 0; }
+    8%   { transform: translateY(-12px) translateX(calc(var(--popup-drift-x, 0px) * 0.3))            scale(1.35); opacity: 1; }
+    18%  { transform: translateY(-20px) translateX(calc(var(--popup-drift-x, 0px) * 0.55))           scale(1);    opacity: 1; }
+    78%  { transform: translateY(-78px) translateX(var(--popup-drift-x, 0px))                        scale(1);    opacity: 1; }
+    100% { transform: translateY(-100px) translateX(var(--popup-drift-x, 0px))                       scale(0.85); opacity: 0; }
+}
+.score-popup-float-big {
+    animation: score-float-big 2.6s ease-out forwards;
+}
+
+/* ===== SCORE-FLY-TO-HUD ANIMATION =====
+ *
+ * Candy Crush-style: pop at the match position, hold briefly so the
+ * player can read the number, then accelerate toward the HUD score
+ * box (--target-x, --target-y are computed at mount time as the delta
+ * to the visible [data-hud-score-target] element). Shrink + fade as
+ * we approach the target so it reads as "absorbed" into the score.
+ *
+ * Per-keyframe `animation-timing-function` controls each segment so
+ * the pop has spring overshoot, the hold is linear, and the flight
+ * has a strong ease-in (slow start, fast finish — feels yanked by
+ * the score). The previous version used one global ease-in-out across
+ * the whole animation which made the start AND end of the flight
+ * slow, reading as draggy. The mid-flight keyframe at 72% also forced
+ * the path through a specific point, creating a visible kink.
+ */
+@keyframes score-fly-to-hud {
+    /* Pop in with spring overshoot */
+    0%  { transform: translate(0, 0) scale(0.4); opacity: 0;
+          animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+    /* Peak scale */
+    12% { transform: translate(0, -10px) scale(1.18); opacity: 1;
+          animation-timing-function: ease-out; }
+    /* Settle */
+    22% { transform: translate(0, -14px) scale(1); opacity: 1;
+          animation-timing-function: linear; }
+    /* End of hold — readable beat for the player */
+    32% { transform: translate(0, -14px) scale(1); opacity: 1;
+          animation-timing-function: cubic-bezier(0.6, 0.04, 0.85, 0.34); }
+    /* Yanked toward the score box. Single curve carries the whole
+       flight, no mid-flight constraint. */
+    100% { transform: translate(var(--target-x, 0px), var(--target-y, -60px)) scale(0.4); opacity: 0; }
+}
+.score-fly-to-hud {
+    animation: score-fly-to-hud 0.95s linear forwards;
+    will-change: transform, opacity;
+}
+
+/* Big version — longer hold (~280ms vs ~140ms) so huge/epic popups
+   have presence before they fly into the box. Same easing structure;
+   timing tightened from the original 1.85s drag. */
+@keyframes score-fly-to-hud-big {
+    0%  { transform: translate(0, 0) scale(0.3); opacity: 0;
+          animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+    10% { transform: translate(0, -14px) scale(1.4); opacity: 1;
+          animation-timing-function: ease-out; }
+    20% { transform: translate(0, -22px) scale(1); opacity: 1;
+          animation-timing-function: linear; }
+    /* Longer hold for the big-magnitude moment */
+    40% { transform: translate(0, -22px) scale(1); opacity: 1;
+          animation-timing-function: cubic-bezier(0.6, 0.04, 0.85, 0.34); }
+    100% { transform: translate(var(--target-x, 0px), var(--target-y, -100px)) scale(0.32); opacity: 0; }
+}
+.score-fly-to-hud-big {
+    animation: score-fly-to-hud-big 1.25s linear forwards;
+    will-change: transform, opacity;
 }
 
 /* ===== FLAME BACKGROUND PARTICLES — CSS only ===== */
@@ -1387,13 +1604,18 @@ body {
     animation: final-move-pulse 0.8s ease-in-out infinite;
 }
 
+/* score-bump used to use transform: scale(1.15) which got clipped by
+   the HudCard parent's .truncate (overflow:hidden) — the sides of
+   the number visibly cut off mid-pulse. Switched to a glow-only
+   pulse via drop-shadow + brightness so the punch reads without
+   triggering the clip. */
 @keyframes score-bump {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.15); }
-    100% { transform: scale(1); }
+    0%   { filter: brightness(1)   drop-shadow(0 0 0px  rgba(255,224,72,0));   }
+    35%  { filter: brightness(1.5) drop-shadow(0 0 12px rgba(255,224,72,0.95)); }
+    100% { filter: brightness(1)   drop-shadow(0 0 0px  rgba(255,224,72,0));   }
 }
 .hud-score-bump {
-    animation: score-bump 0.3s ease-out;
+    animation: score-bump 0.32s ease-out;
 }
 
 @keyframes score-flash {
@@ -1402,6 +1624,23 @@ body {
 }
 .hud-score-flash {
     animation: score-flash 0.6s ease-out;
+}
+
+/* ===== HUD SCORE — POPUP ARRIVAL PULSE =====
+ *
+ * Fires when a score-fly popup reaches the HUD score box (driven by
+ * the popup's animationend listener in GameBoard). Glow + brightness
+ * punch only — NO scale. The HudCard parent uses .truncate which
+ * clips overflow, so a scale pulse would visibly cut off the sides
+ * of the number. Glow gives the impact without the clipping.
+ */
+@keyframes score-arrived-pulse {
+    0%   { filter: brightness(1)   drop-shadow(0 0 0px  rgba(255,224,72,0));   }
+    35%  { filter: brightness(1.7) drop-shadow(0 0 14px rgba(255,224,72,1)) drop-shadow(0 0 24px rgba(255,224,72,0.7)); }
+    100% { filter: brightness(1)   drop-shadow(0 0 0px  rgba(255,224,72,0));   }
+}
+.score-arrived-pulse {
+    animation: score-arrived-pulse 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes hud-fade-in {

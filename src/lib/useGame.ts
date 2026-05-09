@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
     GameState,
     GameMode,
@@ -53,7 +53,18 @@ export interface MatchEffect {
     cascadeCount: number;
     shapeBonusType?: 'L' | 'T' | 'cross' | null;
     matchedBadgeName?: string;
+    /** Tier of the dominant matched badge — drives particle color in
+     *  MatchParticles so the burst tells the player WHICH tier they
+     *  popped without reading any text. */
+    matchedBadgeTier?: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special';
     bonusCapsuleTriggered?: boolean;
+    /** Power tiles spawned this turn (from 4+ matches) — drives the
+     *  big "BOMB CREATED" / "LASER PARTY" / "COSMIC BLAST" slam-in
+     *  label + ring at the spawn position. */
+    specialTilesCreated?: { pos: { row: number; col: number }; type: 'bomb' | 'vibestreak' | 'cosmic_blast' }[];
+    /** Power tiles that detonated this turn — drives the tinted full-
+     *  screen flash (red for bomb, cyan for laser, purple for cosmic). */
+    specialTilesTriggered?: { pos: { row: number; col: number }; type: 'bomb' | 'vibestreak' | 'cosmic_blast' }[];
 }
 
 export interface UseGameReturn {
@@ -189,18 +200,39 @@ export function useGame(): UseGameReturn {
     }, [state?.gameMode, resetHintTimer, preloadBadgeImages]);
 
     // Shared helper: apply a TurnResult to game state with effects
-    const applyResult = useCallback((
-        prev: GameState,
+    /**
+     * Hit-stop budget by match intensity. The board's actual state update
+     * is deferred by this many ms after the impact effects fire, so the
+     * player sees the matched tiles flash IN PLACE for a beat before they
+     * dissolve into the cascade. Single most underrated juice trick — the
+     * micro-pause makes mega+ matches feel weighty.
+     */
+    const getHitStopMs = useCallback((intensity: MatchIntensity): number => {
+        if (intensity === "ultra") return 130;
+        if (intensity === "mega") return 80;
+        return 0;
+    }, []);
+
+    /**
+     * Fires the immediate side-effects of a match result: sounds, haptic,
+     * matchEffect (drives the visual flash + particles + ring burst),
+     * score popup, and isAnimating=true. Returns the computed intensity
+     * so the caller can decide hit-stop length.
+     *
+     * Split out from the state-update path so we can fire effects NOW
+     * (during the swap-anim → settle window) but defer the actual board
+     * state update by hit-stop ms on bigger matches. The board sits in
+     * its post-swap state during the freeze, the flash plays on the
+     * matched cells, then the cascade plays out.
+     */
+    const triggerMatchEffects = useCallback((
         result: TurnResult,
         effectPos: Position,
         costMove: boolean,
-    ): GameState => {
-        const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
-        const newScore = prev.score + result.scoreGained;
-        const newMatchCount = prev.matchCount + result.matchesFound.length;
-        const newMaxCombo = Math.max(prev.maxCombo, result.combo);
-        // Only count real run matches (max 8 positions = board width) for announcements.
-        // Special tile blasts create synthetic matches with 20+ positions that aren't real runs.
+        prevMovesLeft: number,
+        prevBonusCapsuleAwarded: boolean,
+    ): MatchIntensity => {
+        const newMovesLeft = costMove ? prevMovesLeft - 1 : prevMovesLeft;
         const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
         const maxMatchSize = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.positions.length)) : 3;
         const allPositions = result.matchesFound.flatMap(m => m.positions);
@@ -252,29 +284,34 @@ export function useGame(): UseGameReturn {
         // Calculate match intensity for visual effects
         const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
 
-        // Find the most common badge name across all matches for the flash effect
-        const badgeCounts = new Map<string, { count: number; name: string }>();
+        // Find the most common badge across all matches for flash + tinted
+        // particles. Track tier alongside name so MatchParticles can color
+        // the burst by the dominant matched tier (gold burst on a gold-tier
+        // match, cosmic burst on cosmic, etc).
+        const badgeCounts = new Map<string, { count: number; name: string; tier: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special' }>();
         for (const match of result.matchesFound) {
             const key = match.badge.id;
             const existing = badgeCounts.get(key);
             if (existing) {
                 existing.count += match.positions.length;
             } else {
-                badgeCounts.set(key, { count: match.positions.length, name: match.badge.name });
+                badgeCounts.set(key, { count: match.positions.length, name: match.badge.name, tier: match.badge.tier });
             }
         }
         let matchedBadgeName: string | undefined;
+        let matchedBadgeTier: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special' | undefined;
         let highestCount = 0;
         for (const [, entry] of badgeCounts) {
             if (entry.count > highestCount) {
                 highestCount = entry.count;
                 matchedBadgeName = entry.name;
+                matchedBadgeTier = entry.tier;
             }
         }
 
         // Check for T/cross bonus capsule (capped at 1 per game)
         const isBonusShape = result.shapeBonus?.type === 'T' || result.shapeBonus?.type === 'cross';
-        const bonusCapsuleTriggered = isBonusShape && !prev.bonusCapsuleAwarded;
+        const bonusCapsuleTriggered = isBonusShape && !prevBonusCapsuleAwarded;
 
         // Set match effect for board to consume
         setMatchEffect({
@@ -287,7 +324,10 @@ export function useGame(): UseGameReturn {
             cascadeCount: result.cascadeCount,
             shapeBonusType: result.shapeBonus?.type ?? null,
             matchedBadgeName,
+            matchedBadgeTier,
             bonusCapsuleTriggered,
+            specialTilesCreated: result.specialTilesCreated.map(s => ({ pos: s.pos, type: s.type })),
+            specialTilesTriggered: result.specialTilesTriggered,
         });
 
         // Haptic feedback on mobile
@@ -323,17 +363,41 @@ export function useGame(): UseGameReturn {
 
         setLastTurnResult(result);
 
-        // Check game over
+        // Start animation sequence — blocks new input until cascade settles.
+        setIsAnimating(true);
+
+        return intensity;
+    }, []);
+
+    /**
+     * Pure state update for a turn result. No side effects — those fire
+     * via triggerMatchEffects(). Returns the next GameState. Schedules
+     * its own settle / game-over timers internally.
+     */
+    const applyResultState = useCallback((
+        prev: GameState,
+        result: TurnResult,
+        costMove: boolean,
+    ): GameState => {
+        const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
+        const newScore = prev.score + result.scoreGained;
+        const newMatchCount = prev.matchCount + result.matchesFound.length;
+        const newMaxCombo = Math.max(prev.maxCombo, result.combo);
+
+        // Bonus capsule check — recomputed here since triggerMatchEffects
+        // ran on `prev` separately (could be a stale snapshot if hit-stop
+        // delayed us). Re-deriving from the current `prev` keeps the
+        // bonus flag flipping based on the latest game state.
+        const isBonusShape = result.shapeBonus?.type === 'T' || result.shapeBonus?.type === 'cross';
+        const bonusCapsuleTriggered = isBonusShape && !prev.bonusCapsuleAwarded;
+
+        // Game-over wind-down + post-cascade cleanup are scheduled here
+        // because they need to fire AFTER the state update applies.
         const noMovesLeft = newMovesLeft <= 0;
         const noValidMoves = !noMovesLeft && !hasValidMoves(result.board);
         const gameOver = noMovesLeft || noValidMoves;
 
-        // Start animation sequence
-        setIsAnimating(true);
-
         if (gameOver) {
-            // Wind-down delay: keep isAnimating true to block input,
-            // then transition to gameover after effects play out
             setTimeout(() => {
                 playGameOverSound();
                 setState(prev2 => prev2 ? {
@@ -346,7 +410,6 @@ export function useGame(): UseGameReturn {
         } else {
             setTimeout(() => {
                 setIsAnimating(false);
-                // Clear stale dropDistance so animation-fill-mode doesn't block future swap transitions
                 setState(prev2 => {
                     if (!prev2) return prev2;
                     const cleaned = prev2.board.map(row =>
@@ -366,17 +429,50 @@ export function useGame(): UseGameReturn {
             comboCarry: result.comboCarry,
             maxCombo: newMaxCombo,
             selectedTile: null,
-            gamePhase: "playing", // stays "playing" during wind-down; setTimeout sets "gameover"
+            gamePhase: "playing",
             gameOverReason: prev.gameOverReason,
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,
             bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
         };
-    }, []);
+    }, [isMobile]);
+
+    /**
+     * Convenience wrapper for paths that DON'T need hit-stop (e.g. tap-
+     * activated power tiles). Fires effects + applies state immediately.
+     */
+    const applyResult = useCallback((
+        prev: GameState,
+        result: TurnResult,
+        effectPos: Position,
+        costMove: boolean,
+    ): GameState => {
+        triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded);
+        return applyResultState(prev, result, costMove);
+    }, [triggerMatchEffects, applyResultState]);
+
+    // Input queueing — when the player taps during the isAnimating
+    // window (swap anim + hit-stop + cascade settle = up to ~530ms on
+    // an ultra match), the tap was being silently dropped. Felt like
+    // "tap does nothing" on mobile especially during cascade-heavy
+    // play. Now we buffer the most recent tap intent and replay it
+    // the moment input opens. Only the LAST queued tap is kept (so
+    // mashing doesn't queue up a backlog) and stale ones (>600ms old)
+    // are discarded so the player doesn't get a delayed action they
+    // forgot about.
+    const queuedTapRef = useRef<{ pos: Position; ts: number } | null>(null);
+    const queuedSwipeRef = useRef<{ from: Position; to: Position; ts: number } | null>(null);
+    const QUEUE_STALENESS_MS = 600;
 
     const selectTile = useCallback(
         (pos: Position) => {
-            if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            if (!state || state.gamePhase !== "playing") return;
+            if (isAnimating) {
+                queuedTapRef.current = { pos, ts: performance.now() };
+                queuedSwipeRef.current = null;
+                return;
+            }
+            queuedTapRef.current = null;
             setHintCells(new Set());
             setHintMessage(null);
 
@@ -435,16 +531,29 @@ export function useGame(): UseGameReturn {
             setIsAnimating(true);
             setTimeout(() => {
                 setSwapAnim(null);
-                setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
+                // Hit-stop pipeline: fire match effects (sounds, flash,
+                // particles) immediately, then defer the actual board
+                // state update by hit-stop ms on mega/ultra so the player
+                // sees the matched tiles flash IN PLACE before the cascade.
+                const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
+                const hitStop = getHitStopMs(intensity);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true) : prev);
+                if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },
-        [state, isAnimating, applyResult, resetHintTimer, isMobile]
+        [state, isAnimating, applyResult, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
     );
 
     const swipeTiles = useCallback(
         (from: Position, to: Position) => {
-            if (!state || state.gamePhase !== "playing" || isAnimating) return;
+            if (!state || state.gamePhase !== "playing") return;
             if (!isAdjacentSwap(from, to)) return;
+            if (isAnimating) {
+                queuedSwipeRef.current = { from, to, ts: performance.now() };
+                queuedTapRef.current = null;
+                return;
+            }
+            queuedSwipeRef.current = null;
             setHintCells(new Set());
             setHintMessage(null);
 
@@ -466,11 +575,32 @@ export function useGame(): UseGameReturn {
             setIsAnimating(true);
             setTimeout(() => {
                 setSwapAnim(null);
-                setState(prev => prev ? applyResult(prev, result, to, true) : prev);
+                const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
+                const hitStop = getHitStopMs(intensity);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true) : prev);
+                if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },
-        [state, isAnimating, applyResult, resetHintTimer, isMobile]
+        [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
     );
+
+    // Replay queued input when the animating window clears. Only one
+    // queued action exists at a time (selectTile / swipeTiles each
+    // clear the other when buffering) so we just check both and fire
+    // the freshest if not stale.
+    useEffect(() => {
+        if (isAnimating) return;
+        const now = performance.now();
+        const tap = queuedTapRef.current;
+        const swipe = queuedSwipeRef.current;
+        queuedTapRef.current = null;
+        queuedSwipeRef.current = null;
+        if (swipe && now - swipe.ts <= QUEUE_STALENESS_MS) {
+            swipeTiles(swipe.from, swipe.to);
+        } else if (tap && now - tap.ts <= QUEUE_STALENESS_MS) {
+            selectTile(tap.pos);
+        }
+    }, [isAnimating, selectTile, swipeTiles]);
 
     return {
         state,
