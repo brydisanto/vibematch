@@ -473,6 +473,18 @@ body {
   animation-duration: 1s;
 }
 
+/* Baseline (normal-intensity) shockwave — smaller + thinner so a
+   basic 3-match still gets a single radial pop without competing
+   with the bigger tiers. */
+.shockwave-ring-baseline {
+  border-width: 2.5px;
+  border-color: var(--gvc-gold);
+  width: 70px;
+  height: 70px;
+  animation-duration: 0.65s;
+  opacity: 0.85;
+}
+
 /* Screen edge glow — big matches */
 @keyframes edge-glow {
   0% {

@@ -137,22 +137,43 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
     const particleCap = useMemo(() => getParticleCap(), []);
 
     useEffect(() => {
-        const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#4A9EFF", "#FF6B9D", "#2EFF2E", "#fff"];
+        // Tier-biased color palettes — the burst tells the player WHICH
+        // tier they popped without reading any text. The dominant matched
+        // tier picks the palette; if no tier (rare edge case) we fall back
+        // to the neutral mixed palette.
+        const PALETTES: Record<string, string[]> = {
+            // Cosmic match → purple/pink/magenta with white sparkle
+            cosmic: ["#B366FF", "#FF6B9D", "#D8B4FE", "#FF6BD8", "#FFFFFF", "#E879F9", "#FFE048"],
+            // Gold match → warm yellows/oranges + white
+            gold:   ["#FFE048", "#FFB800", "#FFF4B0", "#FF8C00", "#FFFFFF", "#FF5F1F", "#FFD700"],
+            // Silver match → cool blues/cyans + white
+            silver: ["#4A9EFF", "#7DD3FC", "#22D3EE", "#A5F3FC", "#FFFFFF", "#0EA5E9", "#FFE048"],
+            // Blue (common) tier → green/cyan tints. Still vibrant so a
+            // basic 3-match doesn't feel drab.
+            blue:   ["#2EFF2E", "#4ADE80", "#22D3EE", "#A7F3D0", "#FFFFFF", "#FFE048", "#86EFAC"],
+            // Special collection-only badges — same neutral mix as fallback.
+            special: ["#FFE048", "#FF5F1F", "#B366FF", "#4A9EFF", "#FF6B9D", "#2EFF2E", "#FFFFFF"],
+        };
+        const colors = PALETTES[effect.matchedBadgeTier ?? "blue"] ?? PALETTES.blue;
+
+        // Particle counts bumped on every tier — baseline 3-matches were
+        // feeling flat. Mobile cap (16) still applies, so the bigger
+        // numbers only fully express on tablet/desktop.
         const rawCount =
-            effect.intensity === "ultra" ? 140
-                : effect.intensity === "mega" ? 95
-                    : effect.intensity === "big" ? 65
-                        : 40;
+            effect.intensity === "ultra" ? 160
+                : effect.intensity === "mega" ? 110
+                    : effect.intensity === "big" ? 80
+                        : 55;
         const count = Math.min(rawCount, particleCap);
 
         const newParticles = Array.from({ length: count }, (_, i) => {
             const origin = effect.positions[Math.floor(Math.random() * effect.positions.length)];
             const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.8;
             const distance =
-                effect.intensity === "ultra" ? 160 + Math.random() * 290
-                    : effect.intensity === "mega" ? 130 + Math.random() * 240
-                        : effect.intensity === "big" ? 110 + Math.random() * 210
-                            : 90 + Math.random() * 170;
+                effect.intensity === "ultra" ? 180 + Math.random() * 320
+                    : effect.intensity === "mega" ? 145 + Math.random() * 260
+                        : effect.intensity === "big" ? 120 + Math.random() * 220
+                            : 100 + Math.random() * 180;
 
             const tx = Math.cos(angle) * distance;
             const ty = Math.sin(angle) * distance + 50 + Math.random() * 40;
@@ -164,12 +185,17 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
                 tx,
                 ty,
                 color: colors[Math.floor(Math.random() * colors.length)],
-                size: effect.intensity === "ultra" ? 6 + Math.random() * 14 : 4 + Math.random() * 11,
+                // Slightly larger particles across every tier for more
+                // legibility, especially on the baseline tier.
+                size: effect.intensity === "ultra" ? 8 + Math.random() * 16
+                    : effect.intensity === "mega" ? 6 + Math.random() * 13
+                        : effect.intensity === "big" ? 5 + Math.random() * 12
+                            : 5 + Math.random() * 10,
                 delay: Math.random() * 0.1,
                 rotate: Math.random() * 720 - 360,
                 isSquare: Math.random() > 0.55,
-                duration: 0.7 + Math.random() * 0.5,
-                initialScale: 1.8 + Math.random() * 2.2,
+                duration: 0.75 + Math.random() * 0.55,
+                initialScale: 2 + Math.random() * 2.4,
             };
         });
 
@@ -201,16 +227,26 @@ function MatchParticles({ effect }: { effect: MatchEffect }) {
     );
 }
 
-/* ===== TILE RING BURST — CSS-only expanding ring from each matched tile (big+) ===== */
+/* ===== TILE RING BURST — CSS-only expanding ring from each matched tile =====
+ *
+ * Now fires on every tier (was big+ only). Baseline 3-matches felt flat
+ * without it; a small ring here is a cheap, legible "yes, that landed"
+ * cue. Color is tier-keyed: gold base, escalates to orange/cosmic on
+ * bigger matches.
+ */
 function TileRingBurst({ effect }: { effect: MatchEffect }) {
-    if (effect.intensity === "normal") return null;
-
     const ringColor =
         effect.intensity === "ultra" ? "#B366FF"
             : effect.intensity === "mega" ? "#FF5F1F"
                 : "#FFE048";
 
-    const finalScale = effect.intensity === "ultra" ? 6 : effect.intensity === "mega" ? 5 : 4;
+    // Baseline scale ~3, escalates up to 6 for ultra. Smaller ring on
+    // normal matches feels right — pop, not boom.
+    const finalScale =
+        effect.intensity === "ultra" ? 6
+            : effect.intensity === "mega" ? 5
+                : effect.intensity === "big" ? 4
+                    : 3;
 
     return (
         <>
@@ -225,7 +261,7 @@ function TileRingBurst({ effect }: { effect: MatchEffect }) {
                         height: 28,
                         marginLeft: -14,
                         marginTop: -14,
-                        border: `3px solid ${ringColor}`,
+                        border: `${effect.intensity === "normal" ? 2 : 3}px solid ${ringColor}`,
                         '--ring-final-scale': finalScale,
                         animationDelay: `${i * 0.035}s`,
                     } as React.CSSProperties}
@@ -266,15 +302,19 @@ function TileMatchFlash({ effect, cellSize }: { effect: MatchEffect; cellSize: n
     );
 }
 
-/* ===== SHOCKWAVE RING — Big+ matches ===== */
+/* ===== SHOCKWAVE RING — every match tier =====
+ *
+ * Was big+ only; now fires on basic 3-matches too with a smaller scale
+ * (handled in CSS via the .shockwave-ring base class). Single radial
+ * wave at the match center sells the impact cheaply.
+ */
 function ShockwaveRing({ effect }: { effect: MatchEffect }) {
-    if (effect.intensity === "normal") return null;
-
     const centerPos = effect.positions[Math.floor(effect.positions.length / 2)];
     const extraClass =
         effect.intensity === "ultra" ? "shockwave-ring-ultra"
             : effect.intensity === "mega" ? "shockwave-ring-mega"
-                : "";
+                : effect.intensity === "big" ? ""
+                    : "shockwave-ring-baseline";
 
     return (
         <div
@@ -297,13 +337,19 @@ function ScreenEdgeGlow({ intensity }: { intensity: string }) {
     return <div className={`screen-edge-glow ${cls}`} />;
 }
 
-/* ===== SCREEN FLASH — CSS-only ===== */
+/* ===== SCREEN FLASH — CSS-only =====
+ *
+ * Baseline matches now flash gold-tinted (was a faint neutral white)
+ * and at a noticeably stronger opacity so even a basic 3-match has a
+ * visible "crack" of brightness across the board. Bigger tiers were
+ * already fine; just bumped baseline.
+ */
 function ScreenFlash({ intensity }: { intensity: string }) {
     const color =
-        intensity === "ultra" ? "rgba(179, 102, 255, 0.25)"
-            : intensity === "mega" ? "rgba(255, 95, 31, 0.2)"
-                : intensity === "big" ? "rgba(255, 224, 72, 0.15)"
-                    : "rgba(255, 255, 255, 0.08)";
+        intensity === "ultra" ? "rgba(179, 102, 255, 0.30)"
+            : intensity === "mega" ? "rgba(255, 95, 31, 0.24)"
+                : intensity === "big" ? "rgba(255, 224, 72, 0.18)"
+                    : "rgba(255, 224, 72, 0.14)";
 
     const durClass =
         intensity === "ultra" ? "screen-flash--ultra"

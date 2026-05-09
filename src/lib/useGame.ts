@@ -53,6 +53,10 @@ export interface MatchEffect {
     cascadeCount: number;
     shapeBonusType?: 'L' | 'T' | 'cross' | null;
     matchedBadgeName?: string;
+    /** Tier of the dominant matched badge — drives particle color in
+     *  MatchParticles so the burst tells the player WHICH tier they
+     *  popped without reading any text. */
+    matchedBadgeTier?: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special';
     bonusCapsuleTriggered?: boolean;
 }
 
@@ -252,23 +256,28 @@ export function useGame(): UseGameReturn {
         // Calculate match intensity for visual effects
         const intensity = getIntensity(result.scoreGained, result.combo, maxMatchSize);
 
-        // Find the most common badge name across all matches for the flash effect
-        const badgeCounts = new Map<string, { count: number; name: string }>();
+        // Find the most common badge across all matches for flash + tinted
+        // particles. Track tier alongside name so MatchParticles can color
+        // the burst by the dominant matched tier (gold burst on a gold-tier
+        // match, cosmic burst on cosmic, etc).
+        const badgeCounts = new Map<string, { count: number; name: string; tier: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special' }>();
         for (const match of result.matchesFound) {
             const key = match.badge.id;
             const existing = badgeCounts.get(key);
             if (existing) {
                 existing.count += match.positions.length;
             } else {
-                badgeCounts.set(key, { count: match.positions.length, name: match.badge.name });
+                badgeCounts.set(key, { count: match.positions.length, name: match.badge.name, tier: match.badge.tier });
             }
         }
         let matchedBadgeName: string | undefined;
+        let matchedBadgeTier: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special' | undefined;
         let highestCount = 0;
         for (const [, entry] of badgeCounts) {
             if (entry.count > highestCount) {
                 highestCount = entry.count;
                 matchedBadgeName = entry.name;
+                matchedBadgeTier = entry.tier;
             }
         }
 
@@ -287,6 +296,7 @@ export function useGame(): UseGameReturn {
             cascadeCount: result.cascadeCount,
             shapeBonusType: result.shapeBonus?.type ?? null,
             matchedBadgeName,
+            matchedBadgeTier,
             bonusCapsuleTriggered,
         });
 
