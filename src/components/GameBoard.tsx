@@ -904,13 +904,36 @@ export default function GameBoard({
                 </div>
             ))}
 
-            {/* Score popups layer — CSS only */}
+            {/* Score popups layer — size, color, and glow scale with the
+                magnitude of the score gained. Old version rendered every
+                popup at the same size, so a +200 looked identical to a
+                +12,000 — magnitude wasn't legible at a glance. */}
             {scorePopups.map((popup) => {
                 const driftX = ((popup.x % 3) - 1) * 14;
+                // Tier the popup by score magnitude. Five buckets so the
+                // visual scales smoothly from a basic 3-match through the
+                // big chain-reaction-with-cascades moments.
+                const v = popup.value;
+                const popupTier = v >= 10000 ? "epic"
+                    : v >= 5000 ? "huge"
+                        : v >= 2000 ? "big"
+                            : v >= 750 ? "medium"
+                                : "small";
+                const tierStyles: Record<string, {
+                    text: string; px: string; py: string; border: string;
+                    color: string; glow: string; bg: string; gradient?: string;
+                }> = {
+                    small:  { text: "text-xl sm:text-2xl",       px: "px-2.5", py: "py-0.5", border: "1.5px solid rgba(255,224,72,0.4)",  color: "#FFE048", glow: "0 0 10px rgba(255,224,72,0.6)",                          bg: "rgba(0,0,0,0.7)" },
+                    medium: { text: "text-2xl sm:text-3xl",      px: "px-3",   py: "py-1",   border: "2px solid rgba(255,224,72,0.6)",    color: "#FFE048", glow: "0 0 16px rgba(255,224,72,0.85), 0 0 32px rgba(255,224,72,0.4)", bg: "rgba(0,0,0,0.78)" },
+                    big:    { text: "text-3xl sm:text-4xl",      px: "px-3.5", py: "py-1",   border: "2.5px solid rgba(255,184,0,0.85)",  color: "#FFE048", glow: "0 0 22px rgba(255,184,0,1), 0 0 44px rgba(255,95,31,0.55)",     bg: "rgba(0,0,0,0.82)" },
+                    huge:   { text: "text-4xl sm:text-5xl",      px: "px-4",   py: "py-1.5", border: "3px solid rgba(255,224,72,1)",      color: "#FFF4B0", glow: "0 0 28px rgba(255,224,72,1), 0 0 56px rgba(255,95,31,0.85)",     bg: "rgba(20,8,40,0.92)", gradient: "linear-gradient(135deg, #FFF4B0 0%, #FFE048 50%, #FF8C00 100%)" },
+                    epic:   { text: "text-5xl sm:text-6xl",      px: "px-5",   py: "py-2",   border: "3px solid rgba(255,255,255,1)",     color: "#FFFFFF", glow: "0 0 36px rgba(179,102,255,1), 0 0 72px rgba(255,224,72,0.85), 0 0 100px rgba(255,107,157,0.6)", bg: "rgba(10,4,28,0.95)", gradient: "linear-gradient(135deg, #FFE048 0%, #FF6B9D 33%, #B366FF 66%, #FFE048 100%)" },
+                };
+                const t = tierStyles[popupTier];
                 return (
                     <div
                         key={popup.id}
-                        className="absolute pointer-events-none z-50 flex items-center justify-center score-popup-float"
+                        className={`absolute pointer-events-none z-50 flex items-center justify-center ${popupTier === "epic" || popupTier === "huge" ? "score-popup-float-big" : "score-popup-float"}`}
                         style={{
                             left: `${(popup.x / 8) * 100 + 6.25}%`,
                             top: `${(popup.y / 8) * 100 + 6.25}%`,
@@ -918,15 +941,37 @@ export default function GameBoard({
                         } as React.CSSProperties}
                     >
                         <span
-                            className="font-display font-black text-xl sm:text-2xl px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                            className={`font-display font-black ${t.text} ${t.px} ${t.py} rounded-full whitespace-nowrap`}
                             style={{
-                                color: "#FFE048",
-                                background: "rgba(0,0,0,0.7)",
-                                border: "1.5px solid rgba(255,224,72,0.4)",
-                                textShadow: "0 0 10px rgba(255,224,72,0.6)",
+                                color: t.color,
+                                background: t.bg,
+                                border: t.border,
+                                textShadow: t.gradient ? "none" : t.glow,
+                                // Outer pill keeps the dark bg + colored border +
+                                // glow. The text-shadow only applies when there's
+                                // no gradient — gradient-clipped text can't show
+                                // its own text-shadow, so the glow lives on the
+                                // pill's box-shadow on huge/epic instead.
+                                boxShadow: t.gradient ? t.glow : undefined,
                             }}
                         >
-                            +{popup.value.toLocaleString()}
+                            {/* Gradient-clipped fill on huge/epic so big scores
+                                read as a rainbow "this was massive" moment. */}
+                            {t.gradient ? (
+                                <span
+                                    style={{
+                                        backgroundImage: t.gradient,
+                                        WebkitBackgroundClip: "text",
+                                        backgroundClip: "text",
+                                        WebkitTextFillColor: "transparent",
+                                        filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.85))",
+                                    }}
+                                >
+                                    +{popup.value.toLocaleString()}
+                                </span>
+                            ) : (
+                                <>+{popup.value.toLocaleString()}</>
+                            )}
                         </span>
                     </div>
                 );

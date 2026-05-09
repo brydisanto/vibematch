@@ -1375,6 +1375,20 @@ body {
     animation: score-float 2.2s ease-out forwards;
 }
 
+/* Huge / epic score popups slam in with overshoot, hold longer, and
+   drift further up so they have the room to breathe at their bigger
+   size. Same float curve, just amplified. */
+@keyframes score-float-big {
+    0%   { transform: translateY(0)    translateX(0)                                                 scale(0.3);  opacity: 0; }
+    8%   { transform: translateY(-12px) translateX(calc(var(--popup-drift-x, 0px) * 0.3))            scale(1.35); opacity: 1; }
+    18%  { transform: translateY(-20px) translateX(calc(var(--popup-drift-x, 0px) * 0.55))           scale(1);    opacity: 1; }
+    78%  { transform: translateY(-78px) translateX(var(--popup-drift-x, 0px))                        scale(1);    opacity: 1; }
+    100% { transform: translateY(-100px) translateX(var(--popup-drift-x, 0px))                       scale(0.85); opacity: 0; }
+}
+.score-popup-float-big {
+    animation: score-float-big 2.6s ease-out forwards;
+}
+
 /* ===== FLAME BACKGROUND PARTICLES — CSS only ===== */
 @keyframes flame-rise {
     0% { transform: translateY(0) translateX(var(--flame-drift, 0px)) scale(1); opacity: var(--flame-opacity, 0.6); }
