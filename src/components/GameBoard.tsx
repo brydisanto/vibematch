@@ -4,6 +4,7 @@ import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect } from "@/lib/useGame";
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const EMPTY_HINT_SET = new Set<string>();
 
@@ -366,20 +367,27 @@ function ScreenFlash({ intensity }: { intensity: string }) {
 
 
 
-/* ===== POWER TILE DETONATION FLASH =====
+/* ===== POWER TILE DETONATION FLASH — full viewport via portal =====
  *
- * Full-screen tinted wash when a power tile detonates. Color-coded so
- * the player feels which TYPE of explosion happened, not just "boom":
- *  - Bomb        → red wash (3x3 area destruction)
- *  - Vibestreak  → cyan/blue wash (laser row + column)
- *  - Cosmic Blast → purple/pink wash (clears every tile of a type)
+ * Type-coded full-screen detonation effect when a power tile triggers.
+ * Renders to document.body via portal so it covers the entire viewport
+ * including everything outside the board (HUD, padding, edges) — the
+ * board has transformed ancestors (Framer Motion) which would
+ * otherwise constrain `position: fixed` to the board's bounding box.
+ *
+ *  - Bomb        → red shockwave + dark vignette ring expanding outward
+ *  - Vibestreak  → cyan flash + horizontal scan-line streaks
+ *  - Cosmic Blast → purple/pink radial vortex with conic ray sweep
  *
  * If multiple power tiles trigger in one turn (chain reaction), the
  * highest-impact type wins (cosmic > vibestreak > bomb).
  */
 function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const triggered = effect.specialTilesTriggered;
-    if (!triggered || triggered.length === 0) return null;
+    if (!mounted || !triggered || triggered.length === 0) return null;
 
     // Pick dominant type — cosmic always wins, then vibestreak, then bomb.
     const types = new Set(triggered.map(t => t.type));
@@ -387,17 +395,53 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
         : types.has("vibestreak") ? "vibestreak"
             : "bomb";
 
-    const palette = {
-        bomb:         { color: "rgba(255, 50, 50, 0.45)",  className: "power-tile-flash-bomb" },
-        vibestreak:   { color: "rgba(74, 224, 255, 0.45)", className: "power-tile-flash-laser" },
-        cosmic_blast: { color: "rgba(179, 102, 255, 0.5)", className: "power-tile-flash-cosmic" },
-    }[dominant];
+    const overlay = (() => {
+        if (dominant === "bomb") {
+            return (
+                <>
+                    {/* Red wash, brightest at center, fading to dark edges */}
+                    <div className="absolute inset-0 power-screen-bomb-wash" />
+                    {/* Dark vignette ring expanding outward — explosion shockwave */}
+                    <div className="absolute inset-0 power-screen-bomb-vignette" />
+                </>
+            );
+        }
+        if (dominant === "vibestreak") {
+            return (
+                <>
+                    {/* Cyan tint flash */}
+                    <div className="absolute inset-0 power-screen-laser-wash" />
+                    {/* Horizontal scan-line streaks across the viewport */}
+                    <div className="absolute inset-0 power-screen-laser-streaks" />
+                </>
+            );
+        }
+        // cosmic_blast
+        return (
+            <>
+                {/* Radial purple/pink wash */}
+                <div className="absolute inset-0 power-screen-cosmic-wash" />
+                {/* Slow-spinning conic ray sweep — galactic vortex */}
+                <div className="absolute inset-0 power-screen-cosmic-vortex" />
+            </>
+        );
+    })();
 
-    return (
+    return createPortal(
         <div
-            className={`absolute inset-0 pointer-events-none z-30 rounded-2xl ${palette.className}`}
-            style={{ backgroundColor: palette.color }}
-        />
+            // The wrapper is `position: fixed` so it covers the whole
+            // viewport. z-index sits above the game UI but below any
+            // top-of-screen modals (toasts, primer, capsule sequence).
+            className="fixed inset-0 pointer-events-none overflow-hidden"
+            style={{ zIndex: 80 }}
+            // Key on timestamp so two consecutive detonations re-mount
+            // and re-run their entry keyframes instead of the second one
+            // being a no-op because the elements are already there.
+            key={effect.timestamp}
+        >
+            {overlay}
+        </div>,
+        document.body
     );
 }
 
@@ -509,18 +553,27 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         <div
             className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
         >
-            {/* Big radial wash — pulses while the banner is up so the
-                whole board feels charged, not just the text. */}
+            {/* Mobile: simple static radial flash matching the original
+                pre-juice version. The pulsing wash + conic rays felt
+                like a chaotic color burst on smaller screens (the
+                gradients fill a much higher % of the visible area on
+                mobile than desktop). Tailwind sm:hidden hides this on
+                desktop where the bigger version takes over. */}
             <div
-                className="absolute inset-0 combo-banner-flash"
+                className="absolute inset-0 opacity-30 sm:hidden"
+                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
+            />
+
+            {/* Desktop only: pulsing radial wash. */}
+            <div
+                className="absolute inset-0 hidden sm:block combo-banner-flash"
                 style={{ background: `radial-gradient(ellipse at center, ${tier.flashColor} 0%, transparent 70%)` }}
             />
 
-            {/* Star-burst ring behind the text on higher tiers — adds
-                radial motion lines without blowing the particle budget. */}
+            {/* Desktop only: conic-gradient ray sweep on combo 3+. */}
             {effect.combo >= 3 && (
                 <div
-                    className="absolute combo-banner-rays"
+                    className="absolute hidden sm:block combo-banner-rays"
                     style={{
                         background: `repeating-conic-gradient(from 0deg, transparent 0deg, ${tier.shadow} 8deg, transparent 16deg)`,
                     }}

@@ -457,22 +457,125 @@ body {
   opacity: 0.85;
 }
 
-/* ===== POWER TILE DETONATION FLASH ===== */
-@keyframes power-tile-flash-fade {
+/* ===== POWER TILE DETONATION — FULL-VIEWPORT FLASH =====
+ *
+ * Each power tile gets a multi-layer effect that covers the entire
+ * viewport (rendered via portal at document.body so transformed
+ * ancestors don't constrain the fixed positioning).
+ *
+ * Composition per type:
+ *  - Bomb:    red wash + dark vignette ring shockwave (~0.7s)
+ *  - Laser:   cyan flash + horizontal scan-line streaks (~0.8s)
+ *  - Cosmic:  radial purple wash + slow-spinning conic vortex (~1.1s)
+ */
+
+/* --- BOMB --- */
+@keyframes power-screen-bomb-wash-anim {
   0%   { opacity: 0; }
-  10%  { opacity: 1; }
+  8%   { opacity: 1; }
   100% { opacity: 0; }
 }
-.power-tile-flash-bomb,
-.power-tile-flash-laser,
-.power-tile-flash-cosmic {
-  animation: power-tile-flash-fade 0.55s ease-out forwards;
+.power-screen-bomb-wash {
+  background: radial-gradient(circle at center,
+    rgba(255, 80, 60, 0.55) 0%,
+    rgba(255, 50, 30, 0.40) 40%,
+    rgba(180, 20, 10, 0.30) 80%,
+    rgba(60, 5, 0, 0.45) 100%);
+  animation: power-screen-bomb-wash-anim 0.7s ease-out forwards;
   will-change: opacity;
 }
-/* Cosmic gets a longer hold + slight scale pulse since it's the
-   highest-impact detonation. */
-.power-tile-flash-cosmic {
-  animation: power-tile-flash-fade 0.85s ease-out forwards;
+@keyframes power-screen-bomb-vignette-anim {
+  0%   { transform: scale(0.4); opacity: 0; }
+  18%  { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.power-screen-bomb-vignette {
+  background: radial-gradient(circle at center,
+    transparent 35%,
+    rgba(255, 80, 50, 0.55) 50%,
+    rgba(120, 10, 0, 0.85) 75%,
+    rgba(0, 0, 0, 0.95) 100%);
+  animation: power-screen-bomb-vignette-anim 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* --- LASER PARTY --- */
+@keyframes power-screen-laser-wash-anim {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  35%  { opacity: 0.55; }   /* secondary strobe beat */
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.power-screen-laser-wash {
+  background: radial-gradient(ellipse at center,
+    rgba(180, 240, 255, 0.55) 0%,
+    rgba(74, 224, 255, 0.40) 50%,
+    rgba(20, 60, 180, 0.35) 100%);
+  animation: power-screen-laser-wash-anim 0.8s ease-out forwards;
+  will-change: opacity;
+}
+@keyframes power-screen-laser-streaks-anim {
+  0%   { opacity: 0; transform: translateX(-100%); }
+  15%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+.power-screen-laser-streaks {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 18px,
+    rgba(74, 224, 255, 0.5) 18px,
+    rgba(180, 240, 255, 0.85) 22px,
+    rgba(74, 224, 255, 0.5) 26px,
+    transparent 26px,
+    transparent 70px
+  );
+  mix-blend-mode: screen;
+  animation: power-screen-laser-streaks-anim 0.8s linear forwards;
+  will-change: transform, opacity;
+}
+
+/* --- COSMIC BLAST --- */
+@keyframes power-screen-cosmic-wash-anim {
+  0%   { opacity: 0; transform: scale(0.7); }
+  12%  { opacity: 1; transform: scale(1); }
+  60%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+.power-screen-cosmic-wash {
+  background: radial-gradient(ellipse at center,
+    rgba(255, 200, 230, 0.5) 0%,
+    rgba(255, 107, 157, 0.45) 25%,
+    rgba(179, 102, 255, 0.45) 55%,
+    rgba(40, 5, 80, 0.55) 100%);
+  animation: power-screen-cosmic-wash-anim 1.1s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes power-screen-cosmic-vortex-anim {
+  0%   { opacity: 0; transform: rotate(0deg) scale(0.4); }
+  18%  { opacity: 0.7; }
+  100% { opacity: 0; transform: rotate(120deg) scale(1.6); }
+}
+.power-screen-cosmic-vortex {
+  /* Tight conic gradient with many alternating bands → reads as
+     spinning rays radiating from the center of the screen. */
+  background: conic-gradient(from 0deg at 50% 50%,
+    rgba(179, 102, 255, 0)  0deg,
+    rgba(179, 102, 255, 0.55) 12deg,
+    rgba(255, 107, 157, 0)  24deg,
+    rgba(74, 158, 255, 0.4) 36deg,
+    rgba(179, 102, 255, 0)  48deg,
+    rgba(255, 224, 72, 0.35) 60deg,
+    rgba(179, 102, 255, 0)  72deg,
+    rgba(255, 107, 157, 0.5) 84deg,
+    rgba(179, 102, 255, 0)  96deg);
+  background-size: 100% 100%;
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+  animation: power-screen-cosmic-vortex-anim 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* ===== POWER TILE CREATION RING ===== */
@@ -1007,11 +1110,18 @@ body {
     to   { transform: translate(var(--swap-dx), var(--swap-dy)); }
 }
 .game-tile--swapping {
-    animation: tile-swap 0.22s cubic-bezier(0.18, 1.4, 0.4, 1) forwards;
+    /* Mild spring on desktop — 1.15 control point = ~15% overshoot then
+       settle. The previous 1.4 control was 40% overshoot which sailed
+       way past the destination on every swap. */
+    animation: tile-swap 0.22s cubic-bezier(0.18, 1.15, 0.4, 1) forwards;
 }
 @media (max-width: 767px) {
+    /* Mobile: no overshoot at all. The smaller cell size meant even a
+       small overshoot percentage looked like the tile was visibly
+       flying past its destination (~15-20px overshoot on 40-50px cells
+       reads as a glitch, not a spring). */
     .game-tile--swapping {
-        animation-duration: 0.26s;
+        animation: tile-swap 0.24s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
 }
 
