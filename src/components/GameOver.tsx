@@ -883,12 +883,27 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-[#6C5CE7]/0 via-[#6C5CE7]/10 to-[#6C5CE7]/0 group-hover:via-[#6C5CE7]/20 transition-all" />
                                 <div className="relative flex items-center justify-center gap-3">
+                                    {/* Pin Capsule glyph — matches the spherical
+                                        capsule used on /game-guide and the Daily
+                                        Challenge +10 pill so the reward icon reads
+                                        as "you won a capsule", not a soap bubble. */}
                                     <motion.span
-                                        className="text-2xl"
+                                        className="inline-block relative align-middle"
+                                        style={{ width: 24, height: 24 }}
                                         animate={{ rotate: [0, -10, 10, -5, 0], scale: [1, 1.1, 1] }}
                                         transition={{ duration: 1.5, delay: 2.2, repeat: 2 }}
                                     >
-                                        🫧
+                                        <span
+                                            className="absolute inset-0 rounded-full"
+                                            style={{
+                                                background: "radial-gradient(circle at 35% 28%, #FFF3A0, #FFE048 60%, #B8860B)",
+                                                boxShadow: "inset 0 -2px 4px rgba(0,0,0,0.55), 0 0 8px #FFE048",
+                                            }}
+                                        />
+                                        <span
+                                            className="absolute left-0 right-0"
+                                            style={{ top: "50%", height: 2, transform: "translateY(-50%)", background: "#FFF3A0", opacity: 0.9 }}
+                                        />
                                     </motion.span>
                                     <div className="text-left">
                                         <div className="text-white font-display font-black text-sm tracking-wide">
