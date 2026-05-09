@@ -96,7 +96,9 @@ export async function POST(req: Request) {
         const tracker: DailyTracker = existing && existing.date === today
             ? { ...existing, bonusPrizeGames: (existing.bonusPrizeGames || 0) + amount }
             : { classicPlays: 0, date: today, bonusPrizeGames: amount };
-        await kv.set(trackerKey, tracker);
+        // 2-day TTL matches incrementClassicPlays — daily trackers
+        // shouldn't accumulate forever in KV across months of play.
+        await kv.set(trackerKey, tracker, { ex: 86400 * 2 });
         balance.plays = tracker.bonusPrizeGames || 0;
     } else {
         const pinbookKey = `pinbook:${username}`;

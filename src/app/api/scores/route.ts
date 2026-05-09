@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession, isUserBanned } from '@/lib/auth';
+import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos.
@@ -65,6 +66,16 @@ export async function POST(req: Request) {
         // Banned users can't post scores even with a valid session.
         if (await isUserBanned(sessionUsername)) {
             return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
+        }
+
+        // Rate limit: 12 score submissions / minute / user. A normal
+        // 30-move classic round takes 30+ seconds even for fast players,
+        // so 12/min is already 5x typical throughput. Caps a buggy
+        // client or hostile actor from flooding the leaderboard zsets.
+        const rl = await rateLimit({ scope: 'score', key: sessionUsername.toLowerCase(), max: 12, windowSec: 60 });
+        if (!rl.ok) {
+            const r = rateLimited429(rl, 'score');
+            return NextResponse.json(r.body, r.init);
         }
 
         // Ensure canonical casing from profile

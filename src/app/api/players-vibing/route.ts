@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
+import { isKilled } from "@/lib/kill-switch";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,17 @@ interface PlayerInfo {
 }
 
 export async function GET() {
+    // Kill-switch check: this endpoint scans gamelog:* keys, so under
+    // a runaway scenario it's the first thing we'd want to silence
+    // without a redeploy. Set `kill:players-vibing` in KV to disable —
+    // the marquee will gracefully degrade to count-only via the empty
+    // avatars array.
+    if (await isKilled("players-vibing")) {
+        return NextResponse.json(
+            { count: 0, avatars: [] },
+            { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
+        );
+    }
     try {
         // 1. Count: use the classic leaderboard zcard as the authoritative
         //    "total players who have ever played" — same signal the old

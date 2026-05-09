@@ -1,8 +1,8 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
-import { createPublicClient, http, fallback, parseAbi } from "viem";
-import { mainnet } from "viem/chains";
+import { parseAbi } from "viem";
 import { getSession } from "@/lib/auth";
+import { getMainnetClient } from "@/lib/eth-rpc";
 
 export const dynamic = "force-dynamic";
 
@@ -27,14 +27,7 @@ const VIBESTR_ADDRESS = "0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196" as `0x${str
 const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
 const erc20BalanceAbi = parseAbi(["function balanceOf(address) view returns (uint256)"]);
 
-const client = createPublicClient({
-    chain: mainnet,
-    transport: fallback([
-        http("https://rpc.flashbots.net"),
-        http("https://eth.llamarpc.com"),
-        http("https://1rpc.io/eth"),
-    ], { rank: true }),
-});
+const client = getMainnetClient();
 
 export async function POST(req: Request) {
     const session = await getSession();

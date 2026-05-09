@@ -12,12 +12,12 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, fallback, parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
-import { mainnet } from 'viem/chains';
+import { parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { BADGES, type BadgeTier } from '@/lib/badges';
 import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
+import { getMainnetClient } from '@/lib/eth-rpc';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,14 +41,7 @@ const BURN_COST: Record<string, number> = {
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
 const erc20DecimalsAbi = parseAbi(['function decimals() view returns (uint8)']);
 
-const client = createPublicClient({
-    chain: mainnet,
-    transport: fallback([
-        http('https://rpc.flashbots.net'),
-        http('https://eth.llamarpc.com'),
-        http('https://1rpc.io/eth'),
-    ], { rank: true }),
-});
+const client = getMainnetClient();
 
 const TX_HASH_REGEX = /^0x[0-9a-fA-F]{64}$/;
 const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;

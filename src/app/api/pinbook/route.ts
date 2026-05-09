@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession, isUserBanned } from '@/lib/auth';
+import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 
@@ -178,6 +179,30 @@ export async function POST(req: Request) {
         // hits this POST handler — gate them all here.
         if (await isUserBanned(username)) {
             return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
+        }
+
+        // Per-action rate limits. The hard daily cap (10 base + 10 bonus
+        // = 20 plays/day) is enforced lower-down via incrementClassicPlays;
+        // these limits are the per-minute rate guard against burst floods.
+        // Numbers chosen to be ~3-5x typical player throughput so a real
+        // human can't hit them, but a buggy client / hostile loop is
+        // capped before it can hammer KV.
+        const action = body.action as string | undefined;
+        const RATE_LIMITS: Record<string, { max: number; windowSec: number }> = {
+            trackGame: { max: 12, windowSec: 60 },  // ~1 game start every 5s sustained
+            logGame:   { max: 12, windowSec: 60 },  // pairs with trackGame at game end
+            earn:      { max: 6,  windowSec: 60 },  // capsule-earn happens once per game
+            bonus:     { max: 3,  windowSec: 60 },  // bonus capsule cap is 1 per game
+            open:      { max: 30, windowSec: 60 },  // can open many capsules in a row from inventory
+            collect:   { max: 30, windowSec: 60 },
+        };
+        const limit = action ? RATE_LIMITS[action] : undefined;
+        if (limit) {
+            const rl = await rateLimit({ scope: `pinbook:${action}`, key: username, max: limit.max, windowSec: limit.windowSec });
+            if (!rl.ok) {
+                const r = rateLimited429(rl, `pinbook:${action}`);
+                return NextResponse.json(r.body, r.init);
+            }
         }
 
         // Serialize all pinbook mutations per user to prevent read-modify-write races

@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import {
     ACHIEVEMENTS_BY_ID,
     checkAchievements,
@@ -92,6 +93,15 @@ export async function POST(req: Request) {
 
         if (body.action !== 'unlock' || !Array.isArray(body.achievementIds)) {
             return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        }
+
+        // Rate limit: 20 unlock requests / minute. Achievements fire on
+        // game end + mid-game milestones, so a single game can produce
+        // 3-5 unlock calls. 20/min is ~5x typical throughput.
+        const rl = await rateLimit({ scope: 'achievements:unlock', key: username, max: 20, windowSec: 60 });
+        if (!rl.ok) {
+            const r = rateLimited429(rl, 'achievements:unlock');
+            return NextResponse.json(r.body, r.init);
         }
 
         const achKey = `achievements:${username}`;

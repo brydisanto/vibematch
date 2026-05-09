@@ -15,8 +15,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, fallback, parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
-import { mainnet } from 'viem/chains';
+import { parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
+import { getMainnetClient } from '@/lib/eth-rpc';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '../route';
@@ -68,14 +68,7 @@ const erc20DecimalsAbi = parseAbi(['function decimals() view returns (uint8)']);
 // Minimum confirmations before accepting a tx (protects against chain reorgs)
 const REQUIRED_CONFIRMATIONS = BigInt(1);
 
-const client = createPublicClient({
-    chain: mainnet,
-    transport: fallback([
-        http('https://rpc.flashbots.net'),
-        http('https://eth.llamarpc.com'),
-        http('https://1rpc.io/eth'),
-    ], { rank: true }),
-});
+const client = getMainnetClient();
 
 // Cache the token's decimals value on first call. If the token doesn't respond
 // or returns something wild, refuse to process payments.
