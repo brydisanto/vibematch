@@ -320,41 +320,62 @@ function ScreenFlash({ intensity }: { intensity: string }) {
 
 
 
-/* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only ===== */
+/* ===== COMBO STREAK BANNER — Street Fighter style, CSS-only =====
+ *
+ * Juice pass v1: every tier got bigger text, larger radial flash,
+ * thicker stroke, and a continuous glow-pulse so the banner stays
+ * energetic for its whole 1.6s lifetime instead of just popping
+ * once and sitting still. The combo-6+ tier is now "TRANSCENDENT"
+ * (was placeholder gibberish).
+ */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     if (effect.combo < 2) return null;
 
     const COMBO_TIERS = [
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#B366FF", stroke: "#0d0020", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 5, label: "MAX STOKED!", fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.85)", rotate: 3, size: "text-6xl sm:text-8xl" },
-        { minCombo: 4, label: "ELECTRIC!!", fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,0.95)", rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "VIBES!", fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.85)", rotate: 2, size: "text-6xl sm:text-8xl" },
-        { minCombo: 2, label: "NICE!", fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl" },
+        { minCombo: 6, label: "TRANSCENDENT!!!", fill: "#FFE048", stroke: "#1a0533", shadow: "rgba(179,102,255,1)",   rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(179,102,255,0.9)", strokeWidth: 8 },
+        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFE048", stroke: "#2a0845", shadow: "rgba(179,102,255,0.95)", rotate: 3,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,224,72,0.85)", strokeWidth: 7 },
+        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFE048", stroke: "#1a1000", shadow: "rgba(255,224,72,1)",     rotate: -2, size: "text-7xl sm:text-9xl", italic: true,  flashColor: "rgba(255,224,72,0.9)",  strokeWidth: 7 },
+        { minCombo: 3, label: "VIBES!",          fill: "#FF5F1F", stroke: "#1a0800", shadow: "rgba(255,95,31,0.95)",  rotate: 2,  size: "text-7xl sm:text-9xl", italic: false, flashColor: "rgba(255,95,31,0.85)",  strokeWidth: 7 },
+        { minCombo: 2, label: "NICE!",           fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,1)",     rotate: -3, size: "text-8xl sm:text-9xl", italic: false, flashColor: "rgba(255,255,255,0.7)", strokeWidth: 6 },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
 
     return (
         <div
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter combo-banner-shake"
         >
-            {/* Radial background flash */}
+            {/* Big radial wash — pulses while the banner is up so the
+                whole board feels charged, not just the text. */}
             <div
-                className="absolute inset-0 opacity-30"
-                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
+                className="absolute inset-0 combo-banner-flash"
+                style={{ background: `radial-gradient(ellipse at center, ${tier.flashColor} 0%, transparent 70%)` }}
             />
 
-            {/* Main combo text */}
+            {/* Star-burst ring behind the text on higher tiers — adds
+                radial motion lines without blowing the particle budget. */}
+            {effect.combo >= 3 && (
+                <div
+                    className="absolute combo-banner-rays"
+                    style={{
+                        background: `repeating-conic-gradient(from 0deg, transparent 0deg, ${tier.shadow} 8deg, transparent 16deg)`,
+                    }}
+                />
+            )}
+
+            {/* Main combo text — popped in via spring, then pulsing glow
+                while it sits, plus the slight tilt and italic where set. */}
             <div
-                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop`}
+                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop combo-text-glow-pulse`}
                 style={{
                     color: tier.fill,
-                    WebkitTextStroke: `4px ${tier.stroke}`,
+                    WebkitTextStroke: `${tier.strokeWidth}px ${tier.stroke}`,
                     paintOrder: "stroke fill",
-                    textShadow: `0 0 40px ${tier.shadow}, 0 0 80px ${tier.shadow}, 0 6px 0 ${tier.stroke}, 0 8px 20px rgba(0,0,0,0.8)`,
+                    textShadow: `0 0 60px ${tier.shadow}, 0 0 120px ${tier.shadow}, 0 8px 0 ${tier.stroke}, 0 12px 30px rgba(0,0,0,0.9)`,
                     letterSpacing: "-0.02em",
                     '--combo-rotate': `${tier.rotate}deg`,
                     '--combo-rotate-start': `${tier.rotate * 2}deg`,
+                    '--combo-glow-color': tier.shadow,
                 } as React.CSSProperties}
             >
                 {tier.label}
@@ -362,11 +383,11 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
 
             {/* xN COMBO sub-label */}
             <div
-                className="font-display font-black tracking-[0.2em] text-white text-2xl sm:text-3xl uppercase mt-2 select-none combo-sublabel-enter"
+                className="font-display font-black tracking-[0.2em] text-white text-3xl sm:text-4xl uppercase mt-3 select-none combo-sublabel-enter"
                 style={{
-                    WebkitTextStroke: "1.5px rgba(0,0,0,0.6)",
+                    WebkitTextStroke: "2px rgba(0,0,0,0.7)",
                     paintOrder: "stroke fill",
-                    textShadow: `0 0 20px ${tier.shadow}, 0 2px 8px rgba(0,0,0,0.9)`,
+                    textShadow: `0 0 28px ${tier.shadow}, 0 2px 10px rgba(0,0,0,0.95)`,
                 }}
             >
                 x{effect.combo} COMBO
