@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 /**
  * Security headers applied to every route. Tuned to the VibeMatch runtime:
@@ -60,4 +61,32 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry wrapper. Adds the build-time plugin that uploads source maps
+ * to Sentry so production stack traces show real file:line references
+ * instead of minified gibberish. Without `SENTRY_AUTH_TOKEN` in the
+ * build env this is a near-no-op (errors still arrive in the dashboard
+ * but stacks point at obfuscated chunks).
+ *
+ *   silent: true                  → don't spam build logs with upload chatter
+ *   widenClientFileUpload: true   → pick up Next.js's chunked client bundles
+ *   reactComponentAnnotation      → tag React components in stacks for
+ *                                   readable component-tree breadcrumbs
+ *   tunnelRoute: "/monitoring"    → bypass ad-blockers that block direct
+ *                                   sentry.io requests; events route through
+ *                                   our own /monitoring path instead
+ */
+export default withSentryConfig(nextConfig, {
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+
+    silent: !process.env.CI,
+    widenClientFileUpload: true,
+    reactComponentAnnotation: { enabled: true },
+    tunnelRoute: "/monitoring",
+    disableLogger: true,
+
+    // Run automatically without prompts during CI / Vercel builds.
+    automaticVercelMonitors: false,
+});
