@@ -244,7 +244,7 @@ export default function PrizeShopDrawer({
                                 />
 
                                 {done ? (
-                                    <SuccessState size={selectedPack.size} onClose={handleClose} />
+                                    <SuccessState onClose={handleClose} />
                                 ) : !isConnected ? (
                                     <ConnectState currentBonus={currentBonus} />
                                 ) : (
@@ -511,7 +511,7 @@ function PurchaseState({
     );
 }
 
-function SuccessState({ size, onClose }: { size: PackSize; onClose: () => void }) {
+function SuccessState({ onClose }: { onClose: () => void }) {
     return (
         <div className="text-center py-6">
             <motion.div
@@ -531,16 +531,16 @@ function SuccessState({ size, onClose }: { size: PackSize; onClose: () => void }
                 className="font-display text-2xl font-black uppercase"
                 style={{ color: GOLD }}
             >
-                {size} Prize {size === 1 ? "Game" : "Games"} Loaded
+                Bonus Games Loaded
             </h3>
             <p className="text-white/60 text-xs mt-1 mb-5 font-mundial tracking-wide">
-                Ready player one. Go crush it.
+                You&apos;re stacked and ready to rock. Go crush it.
             </p>
             <ChunkyButton
                 onClick={onClose}
                 style={{ padding: "14px 28px", fontWeight: 900, letterSpacing: "0.1em", fontSize: 14 }}
             >
-                Let&apos;s Vibe
+                Go Play
             </ChunkyButton>
         </div>
     );
