@@ -279,13 +279,28 @@ export function usePinBook() {
      *  open"). This path hits the server sequentially and updates state in
      *  a single functional setState. Never sets `pendingReveal`, so it
      *  doesn't interfere with the single-capsule tap-to-collect flow. */
+    // 429-aware POST helper used by the bulk-open loop. The server bumps
+    // open/collect to 600/min, but we keep this resilience so a deep bulk
+    // (or a future cap change) auto-recovers instead of bailing partway.
+    // Honors the server's Retry-After header; falls back to a short fixed
+    // wait if missing. One retry, then bail to keep failure modes simple.
+    const postWith429Retry = async (body: object): Promise<Response> => {
+        const fire = () => fetch("/api/pinbook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        const first = await fire();
+        if (first.status !== 429) return first;
+        const retryAfterSec = parseInt(first.headers.get("Retry-After") || "2", 10);
+        const waitMs = Math.min(Math.max(retryAfterSec, 1), 60) * 1000;
+        await new Promise(r => setTimeout(r, waitMs));
+        return fire();
+    };
+
     const rollAndCollectCapsule = useCallback(async (): Promise<CapsuleReveal | null> => {
         try {
-            const openRes = await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "open" }),
-            });
+            const openRes = await postWith429Retry({ action: "open" });
             if (!openRes.ok) {
                 console.error("rollAndCollectCapsule open failed:", openRes.status);
                 return null;
@@ -300,11 +315,7 @@ export function usePinBook() {
                 return null;
             }
 
-            const collectRes = await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "collect", badgeId: openData.badgeId }),
-            });
+            const collectRes = await postWith429Retry({ action: "collect", badgeId: openData.badgeId });
             if (!collectRes.ok) {
                 console.error("rollAndCollectCapsule collect failed:", collectRes.status);
                 return null;

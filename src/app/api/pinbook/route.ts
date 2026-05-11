@@ -196,8 +196,15 @@ export async function POST(req: Request) {
             logGame:   { max: 12, windowSec: 60 },  // pairs with trackGame at game end
             earn:      { max: 6,  windowSec: 60 },  // capsule-earn happens once per game
             bonus:     { max: 3,  windowSec: 60 },  // bonus capsule cap is 1 per game
-            open:      { max: 30, windowSec: 60 },  // can open many capsules in a row from inventory
-            collect:   { max: 30, windowSec: 60 },
+            // open / collect — bulk "Open All" can fire hundreds of paired
+            // calls back-to-back for users with deep inventory (post-raffle,
+            // post-streak, after rerolls). Was 30/min, which capped Open All
+            // at 30 capsules per window and surfaced as "Something went wrong"
+            // on the second attempt. 600/min = 10/sec, comfortably above the
+            // bulk loop's sustained rate while still rejecting bot-style
+            // hammering.
+            open:      { max: 600, windowSec: 60 },
+            collect:   { max: 600, windowSec: 60 },
         };
         const limit = action ? RATE_LIMITS[action] : undefined;
         if (limit) {
