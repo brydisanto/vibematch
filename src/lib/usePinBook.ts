@@ -24,7 +24,7 @@ export interface CapsuleReveal {
     duplicateCount: number;
 }
 
-const CAPSULE_SCORE_THRESHOLD = 15000;
+const CAPSULE_SCORE_THRESHOLD = 20000;
 
 export function usePinBook() {
     const [state, setState] = useState<PinBookState>({

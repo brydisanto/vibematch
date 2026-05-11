@@ -4,8 +4,10 @@ import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
-// Well above any realistic game total given 30 moves + max combos.
-const MAX_PLAUSIBLE_SCORE = 500_000;
+// Well above any realistic game total given 30 moves + max combos. Bumped
+// from 500K alongside the scoring system change (base scores +50%, combo
+// multiplier 0.75x → 1.0x).
+const MAX_PLAUSIBLE_SCORE = 800_000;
 
 function getMonday() {
     const d = new Date();

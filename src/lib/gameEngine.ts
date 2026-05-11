@@ -481,15 +481,17 @@ export function calculateMatchScore(
         const len = match.positions.length;
         let baseScore: number;
 
-        if (len === 3) baseScore = 100;
-        else if (len === 4) baseScore = 300;
-        else baseScore = 600;
+        if (len === 3) baseScore = 150;
+        else if (len === 4) baseScore = 450;
+        else baseScore = 900;
 
         // Apply tier multiplier (use the highest tier in the match)
         const tierMultiplier = match.badge.pointMultiplier;
 
-        // Apply combo multiplier (0.75x per combo level — deep cascades are very rewarding)
-        const comboMultiplier = 1 + (combo * 0.75);
+        // Apply combo multiplier (1.0x per combo level — deep cascades pay big).
+        // Bumped from 0.75x alongside the base-score increase to make skilled
+        // chain play feel meaningfully more rewarding than baseline matching.
+        const comboMultiplier = 1 + (combo * 1.0);
 
         total += Math.floor(baseScore * tierMultiplier * comboMultiplier);
     }

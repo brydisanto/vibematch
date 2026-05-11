@@ -5,8 +5,11 @@ import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 
-// Maximum plausible score for a classic game — reject forged submissions above this.
-const MAX_PLAUSIBLE_SCORE = 500_000;
+// Maximum plausible score for a classic game — reject forged submissions
+// above this. Bumped from 500K alongside the scoring system change (base
+// scores +50%, combo multiplier 0.75x → 1.0x) so legitimate high-skill
+// runs aren't rejected at the API boundary.
+const MAX_PLAUSIBLE_SCORE = 800_000;
 
 // Rarity weights for capsule drops
 // 101 total: 19 blue, 50 silver, 9 special, 20 gold, 3 cosmic
@@ -18,7 +21,7 @@ const TIER_WEIGHTS = {
     cosmic: 3,     // ~3% Cosmic (3 badges)
 } as const;
 
-const CAPSULE_SCORE_THRESHOLD = 15000;
+const CAPSULE_SCORE_THRESHOLD = 20000;
 const CLASSIC_DAILY_CAP = 10;
 export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 10;
 
@@ -417,7 +420,7 @@ export async function POST(req: Request) {
             }
 
             // Tiered capsule rewards
-            const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
+            const capsuleCount = score >= 60000 ? 3 : score >= 40000 ? 2 : 1;
 
             if (gameMode === 'classic') {
                 // Classic: require a valid single-use match token from trackGame

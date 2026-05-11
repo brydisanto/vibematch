@@ -80,7 +80,7 @@ export default function FtuePostGame({ variant, score, onPrimary, onSecondary }:
                             You scored {score.toLocaleString()}!
                         </h2>
                         <p className="text-white/60 text-[13px] font-mundial leading-relaxed mb-6">
-                            Hit 15K+ next time, that&rsquo;s when Pin Capsules start dropping!
+                            Hit 20K+ next time, that&rsquo;s when Pin Capsules start dropping!
                             Special tiles (4-match, 5-match) boost your score fast.
                         </p>
                         <button

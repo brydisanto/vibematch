@@ -341,11 +341,17 @@ function XIcon({ size = 16 }: { size?: number }) {
     );
 }
 
+// Rank thresholds bumped alongside the scoring-system change so the
+// rank a player earns lines up with their capsule reward tier:
+//   SILVER (20K)  = 1 capsule
+//   GOLD   (40K)  = 2 capsules
+//   COSMIC (60K)  = 3 capsules
+// BRONZE/WOOD bumped proportionally to preserve the difficulty ramp.
 const RANK_CONFIG = [
-    { threshold: 30000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", glow: "rgba(179,102,255,0.6)", stars: 5, icon: "🌌" },
-    { threshold: 20000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", glow: "rgba(255,224,72,0.5)", stars: 4, icon: "🥇" },
-    { threshold: 15000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", glow: "rgba(226,232,240,0.4)", stars: 3, icon: "🥈" },
-    { threshold: 7500, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", glow: "rgba(205,127,50,0.5)", stars: 2, icon: "🥉" },
+    { threshold: 60000, label: "COSMIC", color: "#B366FF", accent: "#1a0533", glow: "rgba(179,102,255,0.6)", stars: 5, icon: "🌌" },
+    { threshold: 40000, label: "GOLD", color: "#FFE048", accent: "#2a1a00", glow: "rgba(255,224,72,0.5)", stars: 4, icon: "🥇" },
+    { threshold: 20000, label: "SILVER", color: "#E2E8F0", accent: "#1a202c", glow: "rgba(226,232,240,0.4)", stars: 3, icon: "🥈" },
+    { threshold: 12000, label: "BRONZE", color: "#CD7F32", accent: "#2d1606", glow: "rgba(205,127,50,0.5)", stars: 2, icon: "🥉" },
     { threshold: 0, label: "WOOD", color: "#A0522D", accent: "#2a1205", glow: "rgba(160,82,45,0.5)", stars: 1, icon: "🪵" },
 ];
 
@@ -597,8 +603,8 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     }, [score, gameMode, userProfile?.username]);
 
     // Capsule count derived from score thresholds (mirrors server logic in /api/pinbook/earn).
-    const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0;
-    const canShare = score >= 15000 && !!userProfile?.username;
+    const capsuleCount = score >= 60000 ? 3 : score >= 40000 ? 2 : score >= 20000 ? 1 : 0;
+    const canShare = score >= 20000 && !!userProfile?.username;
 
     const handleShareX = () => {
         if (!canShare) return;
@@ -1002,7 +1008,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                 HOME
                             </button>
 
-                            {/* Share on X button — only when score >= 15K and user is logged in */}
+                            {/* Share on X button — only when score >= 20K and user is logged in */}
                             {canShare && (
                                 <button
                                     onClick={handleShareX}

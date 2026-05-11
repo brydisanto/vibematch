@@ -634,9 +634,9 @@ function MatchDemo({ onCycleComplete }: { onCycleComplete?: () => void }) {
         setGrid(next);
         setTimeout(() => {
             setPhase("matched");
-            setScore(100);
-            setScorePop(100);
-            playMatchSound(100, 1, 3);
+            setScore(150);
+            setScorePop(150);
+            playMatchSound(150, 1, 3);
             setTimeout(() => setScorePop(null), 1400);
         }, 320);
     };
@@ -801,7 +801,7 @@ function ScorePopup({ pop }: { pop: { amount: number; mult?: string } | null }) 
 }
 
 /* Cascade demo: same 4x4 grid layout, but the swap clears a row, tiles fall,
-   and the falling tiles form a second match (cascade) for a +1.75x bonus. */
+   and the falling tiles form a second match (cascade) for a 2x bonus. */
 const CASCADE_INITIAL = [
     [{ id: 101, badge: B_DOGE    }, { id: 102, badge: B_ASTRO   }, { id: 103, badge: B_CAPTAIN }, { id: 104, badge: B_ASTRO   }],
     [{ id: 105, badge: B_DOGE    }, { id: 106, badge: B_CAPTAIN }, { id: 107, badge: B_CITIZEN }, { id: 108, badge: B_ASTRO   }],
@@ -854,9 +854,9 @@ function CascadeDemo() {
         // Phase 2 (t=320ms): matched. Highlight the row 2 match + score popup.
         setTimeout(() => {
             setPhase("matched");
-            setScore(100);
-            setScorePop({ amount: 100 });
-            playMatchSound(100, 1, 3);
+            setScore(150);
+            setScorePop({ amount: 150 });
+            playMatchSound(150, 1, 3);
             setTimeout(() => setScorePop(null), 950);
         }, 320);
 
@@ -867,12 +867,13 @@ function CascadeDemo() {
             setGrid(CASCADE_AFTER_FALL);
         }, 1200);
 
-        // Phase 4 (t=2100ms): cascade match in col 0. +175 with the 1.75x label.
+        // Phase 4 (t=2100ms): cascade match in col 0. +300 with the 2x label
+        // (150 base × 2.0 cascade multiplier on combo 1).
         setTimeout(() => {
             setPhase("cascade-matched");
-            setScore(s => s + 175);
-            setScorePop({ amount: 175, mult: "1.75x" });
-            playMatchSound(175, 2, 3);
+            setScore(s => s + 300);
+            setScorePop({ amount: 300, mult: "2x" });
+            playMatchSound(300, 2, 3);
             setTimeout(() => setScorePop(null), 1100);
         }, 2100);
 
@@ -1058,9 +1059,9 @@ function Scoring() {
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
-                    sub="3-match: 100 base. 4-match: 300 + Bomb. 5-match: 600 + Laser Party. 6+: Cosmic Blast." />
-                <ScoreStat value="+75%" label="Cascade" color={COSMIC}
-                    sub="Every cascade adds +75% to your multiplier. 1st: 1.75x. 2nd: 2.5x. 3rd: 3.25x. And climbing." />
+                    sub="3-match: 150 base. 4-match: 450 + Bomb. 5-match: 900 + Laser Party. 6+: Cosmic Blast." />
+                <ScoreStat value="+100%" label="Cascade" color={COSMIC}
+                    sub="Every cascade adds +100% to your multiplier. 1st: 2x. 2nd: 3x. 3rd: 4x. And climbing." />
                 <ScoreStat value="+3" label="Momentum" color={ORANGE}
                     sub="End a turn with 3 cascades and your next move starts at combo +1. 4 cascades → +2. 5+ → +3. Momentum carries between turns." />
             </div>
@@ -1375,9 +1376,9 @@ function Capsules() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStep amount="15,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
-                <ScoreStep amount="30,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
-                <ScoreStep amount="50,000+" caps="+3 Capsules" color={COSMIC} intensity={0.6} />
+                <ScoreStep amount="20,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="40,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
+                <ScoreStep amount="60,000+" caps="+3 Capsules" color={COSMIC} intensity={0.6} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-start">
@@ -1394,9 +1395,9 @@ function Capsules() {
                         Same score thresholds, but you'll earn double the capsules! Players only get one shot per day, so the extra payout rewards taking it seriously.
                     </p>
                     <ul className="font-mundial text-[15px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
-                        <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
-                        <li className="mb-1">30K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
-                        <li>50K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
+                        <li className="mb-1">20K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
+                        <li className="mb-1">40K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
+                        <li>60K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
                     <p className="font-mundial text-[14px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
                         Stack the Daily Champion prize on top and Daily becomes your biggest capsule day of the week. By far.

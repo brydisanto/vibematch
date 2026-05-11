@@ -32,25 +32,30 @@ export interface AnomalyFlag {
 // Thresholds tuned around what team testers (mauxfaux et al) actually
 // produce on a great run. Original numbers were too aggressive — players
 // in the 90th-percentile of skill on a hot streak can:
-//   - score 200K+ on a lucky board (hard cap is 30 moves but cascades +
-//     power tile chains can push a single move to 5K-15K)
+//   - score 320K+ on a lucky board (hard cap is 30 moves but cascades +
+//     power tile chains can push a single move to 8K-25K under the
+//     post-bump scoring curve)
 //   - chain 15+ cascades on a single move when power tiles compound
 //   - rack up 25+ bombs across a deep cascade run
 // Floor anything that requires rule-bending math (e.g. score/match ratios
 // far above what power-tile detonations can mathematically produce) at
 // the "impossible" tier — those almost certainly indicate a forged log.
 const THRESHOLDS = {
-    score: 300_000,
+    // Score thresholds bumped ~60% alongside the scoring system change
+    // (base scores +50%, combo multiplier 0.75x → 1.0x). Without this
+    // bump, legitimate high-skill runs under the new scoring curve would
+    // start flagging as "very high score".
+    score: 480_000,
     combo: 25,
     cascades: 100,
     bombs: 35,
     matches: 800,
     vibestreaks: 25,
     cosmicBlasts: 20,
-    scorePerMatch: 800,
+    scorePerMatch: 1300,
     // Impossibility checks (if triggered, almost certainly forged)
-    scoreImpossible: 500_000,
-    scorePerMatchImpossible: 3000,
+    scoreImpossible: 800_000,
+    scorePerMatchImpossible: 4800,
 } as const;
 
 export function detectAnomalies(game: GameLogEntry): AnomalyFlag[] {
