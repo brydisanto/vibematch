@@ -503,9 +503,15 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
                 the same color, so the text reads as four stacked layers
                 (white body → colored outline → colored shadow band →
                 blurry black shadow). */}
+            {/* Anchored near the TOP of the board (not screen-center)
+                so it doesn't collide with the centered combo banner
+                when a single move both spawns a power tile AND lands
+                a 2+ combo (common — 4-match always does both). The
+                power tile label gets the top zone; combo stays
+                centered; both readable simultaneously. */}
             <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none z-39 power-tile-create-label"
-                style={{ top: "-15%" }}
+                className="absolute left-0 right-0 flex justify-center pointer-events-none z-39 power-tile-create-label"
+                style={{ top: "6%" }}
             >
                 <div
                     className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
@@ -558,7 +564,14 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // Combo 2 rotates between RAD!/DOPE!/SICK! per banner — `labelPool`
         // overrides `label` when present. Pick is locked per-banner via
         // useMemo below so it doesn't flicker mid-animation.
-        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFEE2E", shadow: "rgba(255,238,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        //
+        // Yellow against white text + a bright yellow halo wash was hard
+        // to read — the eye couldn't lock onto letter edges. Stroke +
+        // drop-band moved to deep-gold (#8B6914, the GOLD_DEEP token
+        // used elsewhere in the app), while the glow halo stays bright
+        // yellow so the tier-color identity reads. White body now has
+        // a high-contrast dark outline; yellow is carried by the halo.
+        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#8B6914", shadow: "rgba(255,238,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
