@@ -431,7 +431,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🌟",
         title: "Hall of Vibes",
-        description: "Score 85,000+ in a single game",
+        description: "Score 100,000+ in a single game",
         capsules: 3,
         order: 20,
     },
@@ -778,7 +778,7 @@ export function checkAchievements(
     check("cascades_45", stats.totalCascades >= 45);
     check("score_50k", stats.score >= 50000);
     check("score_75k", stats.score >= 69000);
-    check("score_100k", stats.score >= 85000);
+    check("score_100k", stats.score >= 100000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
