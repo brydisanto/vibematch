@@ -239,6 +239,108 @@ function playBombD(ctx: AudioContext) {
 }
 
 /* ============================================================
+ *  VARIANT E — "Mortar Strike"
+ *
+ *  Pre-impact whistle that drops INTO the explosion. The
+ *  descending tone before the boom signals "incoming" and
+ *  makes the impact feel earned. High-drama, intentional.
+ * ============================================================ */
+function playBombE(ctx: AudioContext) {
+    // Incoming whistle — descending pitch over 220ms. Feels like the
+    // projectile is falling toward the screen.
+    note(ctx, { from: 1600, to: 220 }, 0.22, "sawtooth", 0.18, 0, 30);
+    // Faint air-rush noise behind the whistle
+    noise(ctx, 0.22, 0.08, 0, "bandpass", 900, 1.2);
+    // SLAM — at the bottom of the whistle, the impact lands hard
+    noise(ctx, 0.04, 0.65, 0.22, "highpass", 4500);
+    noise(ctx, 0.2, 0.55, 0.22, "bandpass", 200, 0.8);
+    // Sub-bass boom on impact
+    note(ctx, { from: 110, to: 30 }, 0.85, "sine", 0.7, 0.22, 4);
+    // Mid-body growl
+    note(ctx, { from: 200, to: 55 }, 0.4, "square", 0.14, 0.22, 4);
+    // Long debris rumble
+    noise(ctx, 0.7, 0.3, 0.28, "lowpass", 380);
+    // Late high-freq sizzle — burning/embers
+    noise(ctx, 0.4, 0.08, 0.35, "bandpass", 5500, 4);
+}
+
+/* ============================================================
+ *  VARIANT F — "Plasma Charge"
+ *
+ *  Sci-fi futuristic detonation. Bright electric crackle on
+ *  top of a sub-bass drop, with zappy harmonic content. Less
+ *  "chemical explosion" more "energy weapon discharge".
+ * ============================================================ */
+function playBombF(ctx: AudioContext) {
+    // Electric pre-zap — bright noise crackle
+    noise(ctx, 0.05, 0.45, 0, "highpass", 6000);
+    // Plasma whine — rising-then-falling pitch with vibrato feel
+    note(ctx, { from: 800, to: 1400 }, 0.08, "sawtooth", 0.2, 0.005, 2);
+    note(ctx, { from: 1400, to: 180 }, 0.18, "sawtooth", 0.25, 0.085, 4);
+    // Massive sub drop — the discharge
+    note(ctx, { from: 130, to: 26 }, 0.75, "sine", 0.7, 0.05, 8);
+    // Mid harmonic stack — gives it the "plasma" character
+    note(ctx, { from: 440, to: 80 }, 0.3, "triangle", 0.18, 0.05, 4);
+    note(ctx, { from: 660, to: 110 }, 0.25, "triangle", 0.12, 0.07, 4);
+    // Crackling tail — sustained high-freq sparks
+    noise(ctx, 0.45, 0.18, 0.08, "bandpass", 4000, 3);
+    // Sub-octave residue
+    note(ctx, 26, 0.6, "sine", 0.18, 0.3, 12);
+}
+
+/* ============================================================
+ *  VARIANT G — "Hollywood Hit"
+ *
+ *  Cinematic action-movie explosion. Bright impact crack, deep
+ *  sub-boom, delayed secondary mid-crack 90ms after, and a
+ *  bright sizzle tail. Feels like a Michael Bay set piece.
+ * ============================================================ */
+function playBombG(ctx: AudioContext) {
+    // Initial sharp crack — the "click" before the boom
+    noise(ctx, 0.03, 0.6, 0, "highpass", 5500);
+    // Heavy impact body
+    noise(ctx, 0.18, 0.6, 0, "bandpass", 220, 1);
+    // Deep sub — slow downsweep for cinematic weight
+    note(ctx, { from: 90, to: 28 }, 0.95, "sine", 0.72, 0, 5);
+    // Secondary mid-crack 90ms later — the "boom after the bang"
+    noise(ctx, 0.08, 0.4, 0.09, "bandpass", 400, 1.5);
+    note(ctx, { from: 220, to: 70 }, 0.35, "square", 0.16, 0.09, 6);
+    // Mid-bass growl that ties primary and secondary
+    note(ctx, { from: 160, to: 45 }, 0.55, "sawtooth", 0.12, 0.02, 6);
+    // Lowpass rumble tail
+    noise(ctx, 0.6, 0.32, 0.12, "lowpass", 380);
+    // Bright sparkle tail — fireball glow / debris
+    noise(ctx, 0.5, 0.1, 0.18, "bandpass", 5200, 4);
+    // Late sub aftershock — adds a sense of scale
+    note(ctx, { from: 50, to: 24 }, 0.6, "sine", 0.22, 0.45, 10);
+}
+
+/* ============================================================
+ *  VARIANT H — "Bass Cannon"
+ *
+ *  Modern hard-hitting trap/hip-hop style. Massive 808-flavored
+ *  sub kick + slide, bright snappy top, quick decay. Hits HARD
+ *  immediately, no buildup. Feels modern and confident.
+ * ============================================================ */
+function playBombH(ctx: AudioContext) {
+    // 808-style click — short, bright, on the front
+    noise(ctx, 0.018, 0.55, 0, "highpass", 6000);
+    // The HIT — massive sub kick that slides down. 808 DNA.
+    note(ctx, 150, 0.04, "sine", 0.7, 0, 2);
+    note(ctx, { from: 140, to: 38 }, 0.7, "sine", 0.85, 0.005, 4);
+    // Distorted mid for body grit — saturated saw
+    noteThroughShaper(ctx, { from: 220, to: 55 }, 0.28, "sawtooth", 0.25, 25, 0);
+    // Sharp snare-like crack on top — gives it the "snap"
+    noise(ctx, 0.05, 0.3, 0.005, "bandpass", 1800, 2);
+    // Bandpass body fill
+    noise(ctx, 0.18, 0.3, 0, "bandpass", 320, 1.5);
+    // Short lowpass tail — clean, not muddy
+    noise(ctx, 0.2, 0.15, 0.04, "lowpass", 500);
+    // Sub-octave layer for the second half of the slide
+    note(ctx, { from: 40, to: 22 }, 0.55, "sine", 0.3, 0.08, 8);
+}
+
+/* ============================================================
  *  UI
  * ============================================================ */
 
@@ -274,6 +376,38 @@ const VARIANTS = [
         description: "Saturated square layers + scattered debris hits. Less BOOM, more SMASH. Destructive energy.",
         play: playBombD,
         accent: "#FF3333",
+    },
+    {
+        id: "E",
+        name: "Mortar Strike",
+        tag: "Tactical / Pre-Buildup",
+        description: "Incoming whistle drops INTO the impact. Descending pre-tone signals \"incoming\", makes the boom feel earned. High drama.",
+        play: playBombE,
+        accent: "#4A9EFF",
+    },
+    {
+        id: "F",
+        name: "Plasma Charge",
+        tag: "Sci-Fi / Electric",
+        description: "Bright electric crackle on top of a sub-bass discharge. Zappy harmonics + sustained sparks. Energy weapon, not chemical explosion.",
+        play: playBombF,
+        accent: "#4AE0FF",
+    },
+    {
+        id: "G",
+        name: "Hollywood Hit",
+        tag: "Cinematic / Layered",
+        description: "Bright crack + deep sub + DELAYED secondary boom 90ms later + bright sparkle tail + late aftershock. Michael Bay set piece.",
+        play: playBombG,
+        accent: "#FF6B9D",
+    },
+    {
+        id: "H",
+        name: "Bass Cannon",
+        tag: "Modern / Hard-Hitting",
+        description: "808-flavored sub kick + slide, bright snappy top, fast decay. Hits HARD with no buildup. Trap-style confidence.",
+        play: playBombH,
+        accent: "#2EFF2E",
     },
 ] as const;
 
