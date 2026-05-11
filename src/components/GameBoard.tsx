@@ -551,13 +551,28 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // (still chunky enough to read as a combo banner) while keeping
         // text-7xl on sm+ where there's room.
         { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
-        { minCombo: 5, label: "MAX STOKED!",     fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 2, label: "RAD!",            fill: "#FFFFFF", stroke: "#FFEE2E", shadow: "rgba(255,238,46,0.9)",   rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        { minCombo: 5, label: "MAX STOKED!!!!",   fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 4, label: "ELECTRIC!!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 3, label: "EPIC!!",           fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        // Combo 2 rotates between RAD!/DOPE!/SICK! per banner — `labelPool`
+        // overrides `label` when present. Pick is locked per-banner via
+        // useMemo below so it doesn't flicker mid-animation.
+        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFEE2E", shadow: "rgba(255,238,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
+
+    // Lock the random label pick for the banner's full lifetime so it
+    // doesn't reshuffle mid-animation across re-renders. Keyed on
+    // effect.timestamp — each new banner gets a fresh roll.
+    const displayLabel = useMemo(() => {
+        const pool = (tier as { labelPool?: readonly string[] }).labelPool;
+        if (pool && pool.length > 0) {
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        return tier.label;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [effect.timestamp]);
 
     return (
         <div
@@ -583,7 +598,7 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
                     '--combo-rotate-start': `${tier.rotate * 2}deg`,
                 } as React.CSSProperties}
             >
-                {tier.label}
+                {displayLabel}
             </div>
 
             {/* xN COMBO sub-label */}
