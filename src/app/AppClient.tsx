@@ -853,6 +853,14 @@ export default function AppClient() {
                       across two waves (32 fast inner + 24 slower outer)
                       with rectangular streamer shapes mixed in to read
                       as proper celebration confetti, not just sparkles. */}
+                  {/* Particles converted from per-particle Framer Motion
+                      animations to CSS-only — the previous 56 motion.div
+                      instances each ran their own JS animation loop,
+                      which was the source of the laggy pop-up. Each
+                      particle is now a plain <div> with CSS vars
+                      (--bp-tx, --bp-ty, etc.) driving the .bonus-particle
+                      keyframe, which the browser can GPU-accelerate
+                      across the whole set in one composited layer. */}
                   {Array.from({ length: 32 }, (_, i) => {
                     const angle = (i / 32) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
                     const dist = 180 + Math.random() * 140;
@@ -860,54 +868,46 @@ export default function AppClient() {
                     const color = colors[i % colors.length];
                     const isStreamer = i % 4 === 0;
                     return (
-                      <motion.div
+                      <div
                         key={`bonus-particle-${i}`}
-                        className={`absolute ${isStreamer ? "rounded-sm" : "rounded-full"}`}
+                        className={`absolute bonus-particle ${isStreamer ? "rounded-sm" : "rounded-full"}`}
                         style={{
                           width: isStreamer ? 4 + Math.random() * 3 : 5 + Math.random() * 5,
                           height: isStreamer ? 14 + Math.random() * 8 : 5 + Math.random() * 5,
                           background: color,
                           boxShadow: `0 0 10px ${color}`,
-                        }}
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 }}
-                        animate={{
-                          x: Math.cos(angle) * dist,
-                          y: Math.sin(angle) * dist,
-                          opacity: 0,
-                          scale: 0,
-                          rotate: (i % 2 === 0 ? 1 : -1) * (180 + Math.random() * 360),
-                        }}
-                        transition={{ duration: 0.75 + Math.random() * 0.35, ease: [0.22, 1, 0.36, 1], delay: Math.random() * 0.08 }}
+                          ['--bp-tx' as string]: `${Math.cos(angle) * dist}px`,
+                          ['--bp-ty' as string]: `${Math.sin(angle) * dist}px`,
+                          ['--bp-rotate' as string]: `${(i % 2 === 0 ? 1 : -1) * (180 + Math.random() * 360)}deg`,
+                          ['--bp-duration' as string]: `${0.75 + Math.random() * 0.35}s`,
+                          ['--bp-delay' as string]: `${Math.random() * 0.08}s`,
+                        } as React.CSSProperties}
                       />
                     );
                   })}
 
-                  {/* Outer wave: bigger, slower, longer travel — gives
-                      the burst a sense of depth instead of one flat ring. */}
+                  {/* Outer wave: bigger, slower, longer travel with
+                      gravity drift. Same CSS-only treatment. */}
                   {Array.from({ length: 24 }, (_, i) => {
                     const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
                     const dist = 320 + Math.random() * 180;
                     const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FF6B9D", "#FFFFFF"];
                     const color = colors[i % colors.length];
                     return (
-                      <motion.div
+                      <div
                         key={`bonus-outer-${i}`}
-                        className="absolute rounded-full"
+                        className="absolute rounded-full bonus-particle-outer"
                         style={{
                           width: 8 + Math.random() * 6,
                           height: 8 + Math.random() * 6,
                           background: color,
                           boxShadow: `0 0 14px ${color}, 0 0 28px ${color}80`,
-                        }}
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 0.6 }}
-                        animate={{
-                          x: Math.cos(angle) * dist,
-                          y: Math.sin(angle) * dist + 80,    // slight gravity drift
-                          opacity: 0,
-                          scale: 0.4,
-                          rotate: (i % 2 === 0 ? 1 : -1) * 180,
-                        }}
-                        transition={{ duration: 1.4 + Math.random() * 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.05 + Math.random() * 0.15 }}
+                          ['--bp-tx' as string]: `${Math.cos(angle) * dist}px`,
+                          ['--bp-ty' as string]: `${Math.sin(angle) * dist + 80}px`,
+                          ['--bp-rotate' as string]: `${(i % 2 === 0 ? 1 : -1) * 180}deg`,
+                          ['--bp-duration' as string]: `${1.4 + Math.random() * 0.5}s`,
+                          ['--bp-delay' as string]: `${0.05 + Math.random() * 0.15}s`,
+                        } as React.CSSProperties}
                       />
                     );
                   })}
@@ -928,22 +928,49 @@ export default function AppClient() {
                       animate={{ scale: [0, 1.35, 1], y: -10 }}
                       transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
                     >
-                      {/* Layered text — white fill + gold stroke + matching
-                          gold drop-shadow band underneath, same family as
-                          the combo banners and power tile labels. Bigger
-                          than the previous gradient version (5xl/7xl vs
-                          4xl/5xl) to match the moment. */}
-                      <div
-                        className="text-5xl sm:text-7xl font-black tracking-wide font-display uppercase"
-                        style={{
-                          color: "#FFFFFF",
-                          WebkitTextStroke: "5px #FFE048",
-                          paintOrder: "stroke fill",
-                          textShadow: "0 0 36px rgba(255,224,72,1), 0 0 72px rgba(255,224,72,0.6), 0 0 100px rgba(179,102,255,0.5), 0 6px 0 #FFE048, 0 9px 18px rgba(0,0,0,0.85)",
-                          letterSpacing: "-0.01em",
-                        }}
-                      >
-                        BONUS CAPSULE!
+                      {/* Hybrid treatment — rainbow gradient fill (the
+                          old "ath-gradient-shift" look) layered ON TOP
+                          of a solid white duplicate that carries the
+                          layered drop-band + gold stroke + glow halo.
+                          Two stacked spans: bottom = white-fill layered
+                          text, top = gradient-clipped shimmer overlay.
+                          Reads as "letters shimmer rainbow inside their
+                          own gold-outlined dimensional bodies". */}
+                      <div className="relative text-5xl sm:text-7xl font-black tracking-wide font-display uppercase">
+                        {/* Bottom layer: layered white text (stroke +
+                            drop-band + glow halos). */}
+                        <span
+                          className="block"
+                          style={{
+                            color: "#FFFFFF",
+                            WebkitTextStroke: "5px #FFE048",
+                            paintOrder: "stroke fill",
+                            textShadow: "0 0 36px rgba(255,224,72,1), 0 0 72px rgba(255,224,72,0.6), 0 0 100px rgba(179,102,255,0.5), 0 6px 0 #FFE048, 0 9px 18px rgba(0,0,0,0.85)",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          BONUS CAPSULE!
+                        </span>
+                        {/* Top layer: rainbow gradient-clipped fill that
+                            shimmers. Absolutely positioned on top of
+                            the white layer; transparent fill +
+                            gradient background means only the LETTER
+                            INTERIORS show the rainbow, while the stroke
+                            and drop-band from below remain visible. */}
+                        <span
+                          aria-hidden
+                          className="block absolute inset-0 bonus-capsule-shimmer"
+                          style={{
+                            backgroundImage: "linear-gradient(135deg, #FFE048 0%, #FF6B9D 25%, #B366FF 50%, #4A9EFF 75%, #FFE048 100%)",
+                            backgroundSize: "300% 100%",
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          BONUS CAPSULE!
+                        </span>
                       </div>
                       <motion.div
                         className="text-base sm:text-lg mt-3 font-display font-black tracking-[0.22em] uppercase"

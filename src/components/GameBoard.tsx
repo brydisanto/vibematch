@@ -598,7 +598,7 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
 
             {/* Main combo text */}
             <div
-                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop ${tier.minCombo >= 6 ? "combo-text-keysmash-rainbow" : ""}`}
+                className={`relative font-display ${tier.size} font-black leading-none text-center select-none ${tier.italic ? "italic" : ""} combo-text-pop`}
                 style={{
                     color: tier.fill,
                     WebkitTextStroke: `4px ${tier.stroke}`,
