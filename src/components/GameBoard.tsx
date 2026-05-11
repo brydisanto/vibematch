@@ -553,8 +553,8 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!",     fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
         { minCombo: 4, label: "ELECTRIC!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.85)",   rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 2, label: "RAD!",            fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)",    rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        { minCombo: 3, label: "VIBEY!",          fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 2, label: "RAD!",            fill: "#FFFFFF", stroke: "#FFEE2E", shadow: "rgba(255,238,46,0.9)",   rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
