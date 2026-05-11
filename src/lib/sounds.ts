@@ -322,8 +322,10 @@ function playNote(
     }
 }
 
-// Utility: white noise burst — routed through sfxGain bus
-function playNoise(duration: number, volume: number = 0.05, delay: number = 0, filterType: BiquadFilterType = "highpass", filterFreq: number = 2000) {
+// Utility: white noise burst — routed through sfxGain bus.
+// Q controls filter resonance (default 1 = neutral, higher = more focused
+// band). Used by the bomb sound to shape a tight high-freq sizzle.
+function playNoise(duration: number, volume: number = 0.05, delay: number = 0, filterType: BiquadFilterType = "highpass", filterFreq: number = 2000, Q: number = 1) {
     try {
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -349,6 +351,7 @@ function playNoise(duration: number, volume: number = 0.05, delay: number = 0, f
         const filter = ctx.createBiquadFilter();
         filter.type = filterType;
         filter.frequency.value = filterFreq;
+        filter.Q.value = Q;
 
         source.connect(filter);
         filter.connect(gain);
@@ -560,74 +563,106 @@ export function playComboSound(comboLevel: number) {
     }
 }
 
-// Bomb explosion — sharp transient → meaty mid impact → sub-bass downsweep
-// → low rumble tail. The previous version was thin/tinny because the noise
-// layer was highpassed (default 2kHz) — sounded like a hit on a keyboard,
-// not a detonation. New version puts the noise energy in the 200-400Hz
-// body band plus a sub-bass freq downsweep, which is the classic explosion
-// DNA — weighty, punchy, unambiguously "boom".
+// Bomb explosion — "Mortar Strike" treatment.
+// Pre-impact whistle that drops INTO the explosion. The descending
+// sawtooth before the boom signals "incoming" and makes the impact feel
+// earned, not arbitrary. Selected from /preview/bombs after A/B/ing.
+//
+// Timeline:
+//   0ms      → whistle starts at 1600Hz, air-rush noise
+//   220ms    → whistle hits 220Hz, SLAM transient + body + sub kick
+//   500ms+   → debris rumble + late high-freq sizzle (embers)
+//   total    → ~1.0s
+//
+// The 220ms pre-buildup is short enough that chain detonations still
+// fire in sequence without feeling delayed, but long enough to register
+// as intentional drama instead of a glitch.
 export function playBombSound() {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    // 1. Initial bright transient — short, sharp click for the "crack" of
-    //    impact. Highpassed so it doesn't muddy the body band below.
-    playNoise(0.04, 0.32, 0, "highpass", 3500);
+    // 1. Incoming whistle — descending sawtooth 1600Hz → 220Hz over
+    //    220ms. The "FFFFwoooo" before the boom.
+    try {
+        if (activeVoiceCount < MAX_VOICES) {
+            const osc = ctx.createOscillator();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(1600, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.22);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+            osc.connect(g);
+            g.connect(getSFXOutput(ctx));
+            osc.start(ctx.currentTime);
+            activeVoiceCount++;
+            osc.stop(ctx.currentTime + 0.25);
+            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 400);
+        }
+    } catch { /* audio unavailable */ }
 
-    // 2. Meaty body — bandpassed noise sitting right in the chest-thump
-    //    frequency range. This is what makes it feel like a real
-    //    explosion vs a UI click.
-    playNoise(0.14, 0.45, 0, "bandpass", 280);
+    // 2. Air-rush noise behind the whistle — adds the "ssshhhh" of a
+    //    projectile cutting through air.
+    playNoise(0.22, 0.08, 0, "bandpass", 900, 1.2);
 
-    // 3. Sub-bass downsweep — 95Hz → 42Hz over 550ms. The descending
-    //    pitch is the signature of every game explosion you've ever
-    //    heard ("WAAAUUUUMP"). Without this it sounds like a snap, not
-    //    a boom.
+    // 3. SLAM — at the bottom of the whistle (220ms in), the impact
+    //    lands hard. Sharp highpassed transient first…
+    playNoise(0.04, 0.65, 0.22, "highpass", 4500);
+
+    // 4. …then the meaty mid-impact body, bandpassed in the chest-thump
+    //    range.
+    playNoise(0.2, 0.55, 0.22, "bandpass", 200, 0.8);
+
+    // 5. Sub-bass boom — 110Hz → 30Hz downsweep starting on impact. The
+    //    "WAAAUUUMP" carrying the weight of the explosion.
     try {
         if (activeVoiceCount < MAX_VOICES) {
             const osc = ctx.createOscillator();
             osc.type = "sine";
-            osc.frequency.setValueAtTime(95, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(42, ctx.currentTime + 0.55);
+            osc.frequency.setValueAtTime(110, ctx.currentTime + 0.22);
+            osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.05);
             const g = ctx.createGain();
-            g.gain.setValueAtTime(0, ctx.currentTime);
-            g.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.008);
-            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            g.gain.setValueAtTime(0, ctx.currentTime + 0.22);
+            g.gain.linearRampToValueAtTime(0.7, ctx.currentTime + 0.228);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.1);
             osc.connect(g);
             g.connect(getSFXOutput(ctx));
-            osc.start(ctx.currentTime);
+            osc.start(ctx.currentTime + 0.22);
             activeVoiceCount++;
-            osc.stop(ctx.currentTime + 0.6);
-            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 800);
+            osc.stop(ctx.currentTime + 1.1);
+            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 1300);
         }
     } catch { /* audio unavailable */ }
 
-    // 4. Mid-body downsweep — square wave 160Hz → 55Hz adds a slight
-    //    "growl" / harmonic edge on top of the pure-sine sub-bass. Mixed
-    //    quietly so it colors the tone without buzzing.
+    // 6. Mid-body growl — square wave 200Hz → 55Hz layered onto the
+    //    sub for harmonic edge.
     try {
         if (activeVoiceCount < MAX_VOICES) {
             const osc = ctx.createOscillator();
             osc.type = "square";
-            osc.frequency.setValueAtTime(160, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.22);
+            osc.frequency.setValueAtTime(200, ctx.currentTime + 0.22);
+            osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.6);
             const g = ctx.createGain();
-            g.gain.setValueAtTime(0, ctx.currentTime);
-            g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.006);
-            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+            g.gain.setValueAtTime(0, ctx.currentTime + 0.22);
+            g.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 0.226);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.62);
             osc.connect(g);
             g.connect(getSFXOutput(ctx));
-            osc.start(ctx.currentTime);
+            osc.start(ctx.currentTime + 0.22);
             activeVoiceCount++;
-            osc.stop(ctx.currentTime + 0.28);
-            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 480);
+            osc.stop(ctx.currentTime + 0.62);
+            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 850);
         }
     } catch { /* audio unavailable */ }
 
-    // 5. Low rumble tail — lowpassed noise that lingers after the initial
-    //    impact, evoking falling debris / dust cloud. Starts 60ms in so
-    //    the attack has cleared.
-    playNoise(0.4, 0.22, 0.06, "lowpass", 450);
+    // 7. Long debris rumble — lowpassed noise tail evoking falling
+    //    rubble after the explosion.
+    playNoise(0.7, 0.3, 0.28, "lowpass", 380);
+
+    // 8. Late high-freq sizzle — narrow-band hiss at 5.5kHz, like
+    //    burning embers / smoldering aftermath.
+    playNoise(0.4, 0.08, 0.35, "bandpass", 5500, 4);
 }
 
 // Cosmic blast — ethereal sweep
