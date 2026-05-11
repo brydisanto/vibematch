@@ -565,13 +565,11 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // overrides `label` when present. Pick is locked per-banner via
         // useMemo below so it doesn't flicker mid-animation.
         //
-        // Yellow against white text + a bright yellow halo wash was hard
-        // to read — the eye couldn't lock onto letter edges. Stroke +
-        // drop-band moved to deep-gold (#8B6914, the GOLD_DEEP token
-        // used elsewhere in the app), while the glow halo stays bright
-        // yellow so the tier-color identity reads. White body now has
-        // a high-contrast dark outline; yellow is carried by the halo.
-        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#8B6914", shadow: "rgba(255,238,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        // Green palette: bright green halo + deep-emerald stroke for
+        // contrast against the white text body. Yellow was hard to read
+        // even with a dark stroke — green has more inherent contrast
+        // against both white text AND the dark game background.
+        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#14532D", shadow: "rgba(46,255,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
