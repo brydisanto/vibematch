@@ -565,11 +565,10 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // overrides `label` when present. Pick is locked per-banner via
         // useMemo below so it doesn't flicker mid-animation.
         //
-        // Green palette: bright green halo + deep-emerald stroke for
-        // contrast against the white text body. Yellow was hard to read
-        // even with a dark stroke — green has more inherent contrast
-        // against both white text AND the dark game background.
-        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#14532D", shadow: "rgba(46,255,46,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        // Orange/red palette — the GVC brand orange (#FF5F1F). Has enough
+        // saturation to contrast cleanly against the white text body
+        // without the legibility issues yellow had.
+        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];
