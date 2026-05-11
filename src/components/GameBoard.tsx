@@ -552,7 +552,8 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // text-7xl on sm+ where there's room.
         { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!!!!",   fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 4, label: "ELECTRIC!!!",      fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        // Combo 4 also rotates — ELECTRIC!!! / YUUUUSSSS!!! per banner.
+        { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
         { minCombo: 3, label: "EPIC!!",           fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
         // Combo 2 rotates between RAD!/DOPE!/SICK! per banner — `labelPool`
         // overrides `label` when present. Pick is locked per-banner via
