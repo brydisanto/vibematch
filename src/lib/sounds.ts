@@ -560,12 +560,74 @@ export function playComboSound(comboLevel: number) {
     }
 }
 
-// Bomb explosion
+// Bomb explosion — sharp transient → meaty mid impact → sub-bass downsweep
+// → low rumble tail. The previous version was thin/tinny because the noise
+// layer was highpassed (default 2kHz) — sounded like a hit on a keyboard,
+// not a detonation. New version puts the noise energy in the 200-400Hz
+// body band plus a sub-bass freq downsweep, which is the classic explosion
+// DNA — weighty, punchy, unambiguously "boom".
 export function playBombSound() {
-    playNote(60, 0.4, "sine", 0.2);
-    playNote(80, 0.35, "square", 0.08);
-    playNoise(0.3, 0.12);
-    playNote(120, 0.2, "sawtooth", 0.08, 0.05);
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    // 1. Initial bright transient — short, sharp click for the "crack" of
+    //    impact. Highpassed so it doesn't muddy the body band below.
+    playNoise(0.04, 0.32, 0, "highpass", 3500);
+
+    // 2. Meaty body — bandpassed noise sitting right in the chest-thump
+    //    frequency range. This is what makes it feel like a real
+    //    explosion vs a UI click.
+    playNoise(0.14, 0.45, 0, "bandpass", 280);
+
+    // 3. Sub-bass downsweep — 95Hz → 42Hz over 550ms. The descending
+    //    pitch is the signature of every game explosion you've ever
+    //    heard ("WAAAUUUUMP"). Without this it sounds like a snap, not
+    //    a boom.
+    try {
+        if (activeVoiceCount < MAX_VOICES) {
+            const osc = ctx.createOscillator();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(95, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(42, ctx.currentTime + 0.55);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            osc.connect(g);
+            g.connect(getSFXOutput(ctx));
+            osc.start(ctx.currentTime);
+            activeVoiceCount++;
+            osc.stop(ctx.currentTime + 0.6);
+            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 800);
+        }
+    } catch { /* audio unavailable */ }
+
+    // 4. Mid-body downsweep — square wave 160Hz → 55Hz adds a slight
+    //    "growl" / harmonic edge on top of the pure-sine sub-bass. Mixed
+    //    quietly so it colors the tone without buzzing.
+    try {
+        if (activeVoiceCount < MAX_VOICES) {
+            const osc = ctx.createOscillator();
+            osc.type = "square";
+            osc.frequency.setValueAtTime(160, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.22);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.006);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+            osc.connect(g);
+            g.connect(getSFXOutput(ctx));
+            osc.start(ctx.currentTime);
+            activeVoiceCount++;
+            osc.stop(ctx.currentTime + 0.28);
+            setTimeout(() => { osc.disconnect(); g.disconnect(); activeVoiceCount--; }, 480);
+        }
+    } catch { /* audio unavailable */ }
+
+    // 5. Low rumble tail — lowpassed noise that lingers after the initial
+    //    impact, evoking falling debris / dust cloud. Starts 60ms in so
+    //    the attack has cleared.
+    playNoise(0.4, 0.22, 0.06, "lowpass", 450);
 }
 
 // Cosmic blast — ethereal sweep
