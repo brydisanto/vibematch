@@ -48,14 +48,13 @@ export const PROMO_BADGES: PromoBadge[] = [
 
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
- * this hits, we skip the tier roll entirely and award the promo. 1.5%
- * gives roughly the same per-capsule appearance rate as a single Common
- * pin (one of ~15 Commons in a 60% common bucket = ~4% individually,
- * but we want promos to feel rarer than that and not flood the haul).
- * Tunable from 0.005 (rare) → 0.025 (frequent) without touching anything
- * else.
+ * this hits, we skip the tier roll entirely and award the promo. 3%
+ * puts the promo just below a typical Common pin (~4% individually) so
+ * it feels like a real partnership presence in the haul without
+ * dominating it. Tunable from 0.005 (rare) → 0.05 (very frequent)
+ * without touching anything else.
  */
-export const PROMO_DROP_RATE = 0.015;
+export const PROMO_DROP_RATE = 0.03;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
