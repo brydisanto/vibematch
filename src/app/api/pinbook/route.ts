@@ -4,6 +4,13 @@ import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
+import {
+    PROMO_DROP_RATE,
+    isPromoActive,
+    pickActivePromoBadge,
+    findPromoBadge,
+    promoLeaderboardKey,
+} from '@/lib/promo-badges';
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base
@@ -543,60 +550,88 @@ export async function POST(req: Request) {
             // keeps users from getting stuck behind a stale pending and
             // protects the pin they already rolled.
             const pendingKey = `pinbook:${username}:pending`;
-            const existingPending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number } | null;
+            const existingPending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number; isPromo?: boolean } | null;
             if (existingPending) {
-                const staleBadge = BADGES.find(b => b.id === existingPending.badgeId);
-                if (staleBadge && staleBadge.tier === existingPending.tier) {
-                    const nowIso = new Date().toISOString();
-                    const existingPin = data.pins[staleBadge.id];
-                    if (existingPin) {
-                        existingPin.count += 1;
-                        existingPin.lastPulled = nowIso;
-                    } else {
-                        data.pins[staleBadge.id] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+                if (existingPending.isPromo) {
+                    // Stale promo pending — credit to promo zset, not pin map.
+                    const stalePromo = findPromoBadge(existingPending.badgeId);
+                    if (stalePromo && stalePromo.tier === existingPending.tier) {
+                        await kv.zincrby(promoLeaderboardKey(stalePromo.id), 1, username);
                     }
-                    const tierFound = ensureTotalFoundByTier(data);
-                    tierFound[staleBadge.tier] = (tierFound[staleBadge.tier] || 0) + 1;
+                } else {
+                    const staleBadge = BADGES.find(b => b.id === existingPending.badgeId);
+                    if (staleBadge && staleBadge.tier === existingPending.tier) {
+                        const nowIso = new Date().toISOString();
+                        const existingPin = data.pins[staleBadge.id];
+                        if (existingPin) {
+                            existingPin.count += 1;
+                            existingPin.lastPulled = nowIso;
+                        } else {
+                            data.pins[staleBadge.id] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+                        }
+                        const tierFound = ensureTotalFoundByTier(data);
+                        tierFound[staleBadge.tier] = (tierFound[staleBadge.tier] || 0) + 1;
+                    }
                 }
                 await kv.del(pendingKey);
             }
 
-            // Pick a random tier based on weights (server-side)
-            const roll = Math.random() * 100;
-            let cumulative = 0;
-            let tier: BadgeTier = 'blue';
-            for (const [t, w] of Object.entries(TIER_WEIGHTS) as [BadgeTier, number][]) {
-                cumulative += w;
-                if (roll < cumulative) { tier = t; break; }
-            }
-
-            // Pick a specific badge from that tier.
-            // For the "special" tier, use per-badge dropWeight for weighted selection
-            // (Diamond/Cosmic VIBESTR badges are much rarer within this tier).
-            const tierBadges = BADGES.filter(b => b.tier === tier);
-            if (tierBadges.length === 0) {
-                return NextResponse.json({ error: 'No badges available for tier' }, { status: 500 });
-            }
+            // Promo pre-roll — independent of the normal tier roll. When
+            // this hits we award an active promo pin instead of running
+            // the tier roll, so Common-pool economics are untouched. Gated
+            // on the global active flag; if the partnership ends, this
+            // branch becomes a no-op and capsules behave exactly as they
+            // did before promos existed.
+            let tier: BadgeTier;
             let badge: Badge;
-            const hasWeights = tierBadges.some(b => b.dropWeight !== undefined);
-            if (hasWeights) {
-                // Weighted random selection within the tier
-                const totalWeight = tierBadges.reduce((s, b) => s + (b.dropWeight ?? 10), 0);
-                let weightRoll = Math.random() * totalWeight;
-                badge = tierBadges[tierBadges.length - 1]; // fallback
-                for (const b of tierBadges) {
-                    weightRoll -= (b.dropWeight ?? 10);
-                    if (weightRoll <= 0) { badge = b; break; }
-                }
+            let isPromoPull = false;
+            const activePromo = isPromoActive() && Math.random() < PROMO_DROP_RATE
+                ? pickActivePromoBadge()
+                : null;
+            if (activePromo) {
+                tier = activePromo.tier; // blue — treated as Common visually
+                badge = activePromo;
+                isPromoPull = true;
             } else {
-                badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+                // Normal tier roll (unchanged)
+                const roll = Math.random() * 100;
+                let cumulative = 0;
+                tier = 'blue';
+                for (const [t, w] of Object.entries(TIER_WEIGHTS) as [BadgeTier, number][]) {
+                    cumulative += w;
+                    if (roll < cumulative) { tier = t; break; }
+                }
+
+                // Pick a specific badge from that tier.
+                // For the "special" tier, use per-badge dropWeight for weighted selection
+                // (Diamond/Cosmic VIBESTR badges are much rarer within this tier).
+                const tierBadges = BADGES.filter(b => b.tier === tier);
+                if (tierBadges.length === 0) {
+                    return NextResponse.json({ error: 'No badges available for tier' }, { status: 500 });
+                }
+                const hasWeights = tierBadges.some(b => b.dropWeight !== undefined);
+                if (hasWeights) {
+                    // Weighted random selection within the tier
+                    const totalWeight = tierBadges.reduce((s, b) => s + (b.dropWeight ?? 10), 0);
+                    let weightRoll = Math.random() * totalWeight;
+                    badge = tierBadges[tierBadges.length - 1]; // fallback
+                    for (const b of tierBadges) {
+                        weightRoll -= (b.dropWeight ?? 10);
+                        if (weightRoll <= 0) { badge = b; break; }
+                    }
+                } else {
+                    badge = tierBadges[Math.floor(Math.random() * tierBadges.length)];
+                }
             }
 
-            // Store pending reveal so collect can validate it
+            // Store pending reveal so collect can validate it. `isPromo`
+            // flags the collect handler to route this to the promo zset
+            // instead of the user's pin map.
             await kv.set(pendingKey, {
                 tier,
                 badgeId: badge.id,
                 openedAt: Date.now(),
+                isPromo: isPromoPull,
             }, { ex: 60 * 5 }); // 5 minute window to collect
 
             // Decrement capsule count
@@ -608,6 +643,7 @@ export async function POST(req: Request) {
                 opened: true,
                 tier,
                 badgeId: badge.id,
+                isPromo: isPromoPull,
                 capsules: data.capsules,
                 totalOpened: data.totalOpened,
             });
@@ -620,12 +656,32 @@ export async function POST(req: Request) {
             }
 
             const pendingKey = `pinbook:${username}:pending`;
-            const pending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number } | null;
+            const pending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number; isPromo?: boolean } | null;
             if (!pending) {
                 return NextResponse.json({ error: 'No pending capsule to collect' }, { status: 400 });
             }
             if (pending.badgeId !== badgeId) {
                 return NextResponse.json({ error: 'Badge does not match pending capsule' }, { status: 400 });
+            }
+
+            // Promo branch — separate counter zset, does NOT write to the
+            // user's pinbook pin map. Means the official 101-pin Pinbook
+            // never picks up promo pins and unique/total counts stay
+            // anchored to the canonical catalog.
+            if (pending.isPromo) {
+                const promoDef = findPromoBadge(badgeId);
+                if (!promoDef || promoDef.tier !== pending.tier) {
+                    return NextResponse.json({ error: 'Invalid promo badge' }, { status: 400 });
+                }
+                await kv.del(pendingKey);
+                // ZINCRBY by 1 — counter doubles as leaderboard score.
+                const newCount = await kv.zincrby(promoLeaderboardKey(promoDef.id), 1, username);
+                return NextResponse.json({
+                    collected: true,
+                    isPromo: true,
+                    isDuplicate: (typeof newCount === 'number' && newCount > 1),
+                    count: typeof newCount === 'number' ? newCount : 1,
+                });
             }
 
             // Double-check: badge actually exists in catalog with matching tier

@@ -775,19 +775,29 @@ export const BADGES: Badge[] = [
     },
 ];
 
-// Game-board-eligible badges (excludes collection-only badges)
-const GAME_BADGES = BADGES.filter(b => !b.collectOnly);
+// Game-board-eligible badges (excludes collection-only badges). Resolved
+// at call time so it can include any active promo pins — promos slot
+// into the blue/Common tier pool when their active flag is on, and
+// disappear automatically when the flag flips off.
+function getGameBadgePool(): Badge[] {
+    // Lazy import to avoid pulling promo-badges into modules that only
+    // need the canonical 101.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getActivePromoBadges } = require("./promo-badges") as { getActivePromoBadges: () => Badge[] };
+    return [...BADGES.filter(b => !b.collectOnly), ...getActivePromoBadges()];
+}
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
+    const pool = getGameBadgePool();
 
     const byTier: Record<BadgeTier, Badge[]> = {
-        blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
-        silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
-        special: shuffle(GAME_BADGES.filter((b) => b.tier === "special"), rng),
-        gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
-        cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
+        blue: shuffle(pool.filter((b) => b.tier === "blue"), rng),
+        silver: shuffle(pool.filter((b) => b.tier === "silver"), rng),
+        special: shuffle(pool.filter((b) => b.tier === "special"), rng),
+        gold: shuffle(pool.filter((b) => b.tier === "gold"), rng),
+        cosmic: shuffle(pool.filter((b) => b.tier === "cosmic"), rng),
     };
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
@@ -806,13 +816,14 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
 // Select 10 random badges for Vibe Draft pool (5 blue, 2 silver, 2 gold, 1 cosmic)
 export function selectDraftPool(seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
+    const draftPool = getGameBadgePool();
 
     const byTier: Record<BadgeTier, Badge[]> = {
-        blue: shuffle(GAME_BADGES.filter((b) => b.tier === "blue"), rng),
-        silver: shuffle(GAME_BADGES.filter((b) => b.tier === "silver"), rng),
-        special: shuffle(GAME_BADGES.filter((b) => b.tier === "special"), rng),
-        gold: shuffle(GAME_BADGES.filter((b) => b.tier === "gold"), rng),
-        cosmic: shuffle(GAME_BADGES.filter((b) => b.tier === "cosmic"), rng),
+        blue: shuffle(draftPool.filter((b) => b.tier === "blue"), rng),
+        silver: shuffle(draftPool.filter((b) => b.tier === "silver"), rng),
+        special: shuffle(draftPool.filter((b) => b.tier === "special"), rng),
+        gold: shuffle(draftPool.filter((b) => b.tier === "gold"), rng),
+        cosmic: shuffle(draftPool.filter((b) => b.tier === "cosmic"), rng),
     };
 
     const usedGroups = new Set<number>();

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trophy, Crown } from "lucide-react";
 import { BADGES } from "@/lib/badges";
+import { isPromoActive, getActivePromoBadges } from "@/lib/promo-badges";
 
 interface LeaderboardEntry {
     username: string;
@@ -38,14 +39,15 @@ interface LeaderboardModalProps {
     /** Initial tab when the modal opens. Defaults to "classic". Pass
      *  "daily" when opening from the DAILY CHALLENGE rail so the user
      *  lands on the relevant board. */
-    initialTab?: "classic" | "weekly" | "daily" | "pins";
+    initialTab?: "classic" | "weekly" | "daily" | "pins" | "promo";
 }
 
-type TabMode = "classic" | "weekly" | "daily" | "pins";
+type TabMode = "classic" | "weekly" | "daily" | "pins" | "promo";
 
 const formatScore = (value: number, mode: TabMode = "classic") => {
     if (value <= 0) return "\u2014";
     if (mode === "pins") return `${value}%`;
+    if (mode === "promo") return value.toLocaleString();
     return value.toLocaleString();
 };
 
@@ -88,13 +90,13 @@ function useCountdown(mode: TabMode): string | null {
     const [, setTick] = useState(0);
 
     useEffect(() => {
-        if (mode === "classic" || mode === "pins") return;
+        if (mode === "classic" || mode === "pins" || mode === "promo") return;
         const interval = setInterval(() => setTick(t => t + 1), 60_000);
         return () => clearInterval(interval);
     }, [mode]);
 
-    // Pins is a cumulative collection rank — there's no reset cadence.
-    if (mode === "classic" || mode === "pins") return null;
+    // Pins + promo are cumulative collection ranks — no reset cadence.
+    if (mode === "classic" || mode === "pins" || mode === "promo") return null;
     if (mode === "weekly") return formatCountdown(getNextMonday());
     return formatCountdown(getMidnightTonight());
 }
@@ -259,6 +261,52 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
+        // Promo tab reads from the dedicated /api/promo/leaderboard
+        // endpoint. Score = pull count, no podium nuances beyond what
+        // the standard list gives us.
+        if (targetMode === "promo") {
+            const res = await fetch(`/api/promo/leaderboard`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const rawList: Array<{ username: string; count: number; rank: number }> = data.leaderboard || [];
+            const phase1List: LeaderboardEntry[] = rawList.map(entry => {
+                const isCurrentUser = currentUsername && currentAvatarUrl && entry.username.toLowerCase() === currentUsername.toLowerCase();
+                return {
+                    username: entry.username,
+                    score: entry.count,
+                    avatarUrl: isCurrentUser ? currentAvatarUrl : "",
+                };
+            });
+
+            let ue: UserEntry | null = null;
+            if (data.userEntry) {
+                const e = data.userEntry;
+                const inTop = rawList.some(r => r.username.toLowerCase() === String(e.username).toLowerCase());
+                if (!inTop) {
+                    ue = {
+                        username: e.username,
+                        score: e.count,
+                        avatarUrl: currentAvatarUrl || "",
+                        rank: e.rank,
+                    };
+                }
+            }
+
+            fetchedModes.current.add(targetMode);
+            setCache(prev => ({
+                ...prev,
+                [targetMode]: {
+                    leaderboard: phase1List,
+                    userEntry: ue,
+                    nextPlayer: null,
+                    totalPlayers: data.totalPlayers || rawList.length,
+                    totalMatchesPlayed: 0,
+                },
+            }));
+            setIsLoading(false);
+            return;
+        }
+
         // Pins tab reads from a different endpoint and a different row shape.
         if (targetMode === "pins") {
             const res = await fetch(`/api/pinbook/leaderboard`);
@@ -408,10 +456,11 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         }
     }, [isLoading, leaderboard, currentUsername]);
 
-    // Beat nudge text (not applicable for pins — that tab ranks by collection
-    // progress, and "X pins to beat Y" isn't a compelling CTA).
+    // Beat nudge text (not applicable for pins or promo — those tabs rank
+    // by cumulative pull counts, and "X pins to beat Y" isn't a compelling
+    // CTA when the action is "open more capsules and hope").
     const beatNudge = useMemo(() => {
-        if (mode === "pins") return null;
+        if (mode === "pins" || mode === "promo") return null;
         if (!nextPlayer || !currentUsername) return null;
         const userScore = userEntry?.score ?? leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase())?.score;
         if (!userScore) return null;
@@ -424,11 +473,20 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const top3 = hasPodium ? leaderboard.slice(0, 3) : [];
     const restOfList = hasPodium ? leaderboard.slice(3) : leaderboard;
 
+    // Promo tab appears only while the partnership is active. Label is
+    // the partner's display name (e.g. "OpenSea"); falls back to a
+    // generic "Promo" if for some reason the active list is empty
+    // (shouldn't happen — isPromoActive() and getActivePromoBadges()
+    // share the same gate — but defensive default).
+    const activePromos = isPromoActive() ? getActivePromoBadges() : [];
+    const promoTabLabel = activePromos[0]?.tabLabel || "Promo";
+
     const tabs: { key: TabMode; label: string }[] = [
         { key: "classic", label: "All Time" },
         { key: "weekly", label: "Weekly" },
         { key: "daily", label: "Daily" },
         { key: "pins", label: "Pins" },
+        ...(activePromos.length > 0 ? [{ key: "promo" as TabMode, label: promoTabLabel }] : []),
     ];
 
     return (
