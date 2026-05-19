@@ -21,7 +21,7 @@ There are two playable modes.
 
 **Classic**
 - Standard mode. Available with 10 free plays per day.
-- Players can purchase additional Bonus Games with $VIBESTR (up to 20 more per day, for a hard cap of 30 plays per day).
+- Players can purchase additional Bonus Games with $VIBESTR (up to 15 more per day, for a hard cap of 25 plays per day).
 - 30 moves per game.
 - Pays out Pin Capsules based on score thresholds.
 
@@ -284,7 +284,7 @@ Players can convert duplicate pins back into fresh capsules. Rarer dupes are wor
 | Legendary (Gold) | 2 | 1 fresh capsule |
 | Cosmic | 1 | 1 fresh capsule |
 
-Reroll costs $VIBESTR per operation.
+Reroll costs 200 $VIBESTR per operation.
 
 **Safety rule:** Reroll never takes the player's last copy of any pin. Collection % can only go up. Completed tier sets stay sealed.
 
@@ -340,11 +340,12 @@ $VIBESTR is the GVC ecosystem token. It plugs into Pin Drop in two specific ways
 
 **Bonus Games**
 - After hitting the 10-game daily Classic cap, players can purchase additional Bonus Games with $VIBESTR.
-- Maximum total plays per day: 30 (10 free + 20 bonus).
+- Maximum total plays per day: 25 (10 free + 15 bonus).
+- Pricing: 1 play = 150 $VIBESTR, 5-pack = 600 $VIBESTR (120/play, 20% off), 10-pack = 1000 $VIBESTR (100/play, 33% off, best value).
 - Outcomes never change based on what is spent. Every pin is earnable for free.
 
 **Rerolls**
-- Each Reroll operation costs $VIBESTR.
+- Each Reroll operation costs 200 $VIBESTR (fixed fee regardless of tier burned).
 - Used to convert duplicates into fresh capsules.
 
 **Free-path parity disclaimer (required everywhere $VIBESTR appears):**
@@ -375,7 +376,7 @@ These are the strategies surfaced to players in the game guide. Useful for an ag
 1. **Hunt shapes before clearing.** A T or Cross setup on the next cascade is worth 2 to 4x a clean 3-match. Scan the board for intersections before taking the obvious move.
 2. **Chain power tiles.** A Bomb next to a Laser detonates both at once. A Cosmic Blast next to anything is usually game-defining. Two power tiles on the board, put them together.
 3. **4-matches are never wasted.** A 4-match always leaves a Bomb. A 5-match leaves a Laser. They sit on the board until used. Late game, the stockpile becomes the final-cascade multiplier stack.
-4. **Daily ≠ Classic.** Classic allows up to 30 games per day (10 free + 20 Bonus). Daily allows just one. Scan the whole board before the first move. Plan the last 10 moves. Slower play wins.
+4. **Daily ≠ Classic.** Classic allows up to 25 games per day (10 free + 15 Bonus). Daily allows just one. Scan the whole board before the first move. Plan the last 10 moves. Slower play wins.
 5. **Open capsules immediately.** Every pin pulled ticks up a lifetime tier-find counter for quests. Hoarding sealed capsules just slows quest progress.
 6. **Watch the Quests rail.** The desktop landing shows the three quests closest to completion. If one is at 9/10, that is the next obvious move.
 
@@ -475,7 +476,7 @@ For any agent writing copy or generating content for Pin Drop:
 | How many pins total? | 101 |
 | How many tiers? | 5 (Common, Rare, Special, Legendary, Cosmic) |
 | Free games per day? | 10 Classic + 1 Daily Challenge |
-| Max games per day? | 30 Classic (10 free + 20 Bonus) + 1 Daily |
+| Max games per day? | 25 Classic (10 free + 15 Bonus) + 1 Daily |
 | Moves per game? | 30 |
 | Board size? | 8x8 |
 | Pins on board per game? | 6 randomly drafted from the 101 |
@@ -486,7 +487,7 @@ For any agent writing copy or generating content for Pin Drop:
 | Idle hint? | Fires after 8 seconds of inactivity, once per game |
 | Cosmic pin spawn upgrade? | Cosmic 4-match → Laser. Cosmic 5-match → Cosmic Blast. |
 | Daily Champion bonus? | Awarded to the #1 Daily Challenge finisher each day |
-| Reroll cost? | $VIBESTR + tiered dupe count (1 to 5) |
+| Reroll cost? | 200 $VIBESTR + tiered dupe count (1 to 5) |
 | Streak rewards? | 3-day (+2), 7-day (+2), 30-day (+3) |
 | Referral rewards? | +2 each side, 50-capsule lifetime cap |
 | Pin Drop Badge requirement? | 100% Pinbook + wallet tied to GVC profile |

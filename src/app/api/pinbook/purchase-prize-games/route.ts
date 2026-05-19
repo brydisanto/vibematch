@@ -55,11 +55,12 @@ const EXPECTED_CHAIN_ID = BigInt(1);
 const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 
-// Price per package (in VIBESTR). Testing prices — will raise before public launch.
+// Price per package (in VIBESTR). Server-side source of truth — client
+// PACKAGES arrays in BuyPrizeGamesModal and PrizeShopDrawer mirror these.
 const PACKAGE_PRICES: Record<number, string> = {
-    1: '1',   // 1 VIBESTR per game
-    5: '3',   // 0.6 VIBESTR per game (testing)
-    10: '5',  // 0.5 VIBESTR per game (testing)
+    1: '150',   // 150 VIBESTR per game (single)
+    5: '600',   // 120 VIBESTR per game (20% off)
+    10: '1000', // 100 VIBESTR per game (33% off, best value)
 };
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);

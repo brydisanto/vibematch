@@ -19,8 +19,7 @@ const erc20Abi = parseAbi(["function transfer(address to, uint256 amount) return
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
 // Mirror of MAX_BONUS_PRIZE_GAMES_PER_DAY in src/app/api/pinbook/route.ts.
-// Bumped 10 → 20 in line with raising the daily Bonus Games cap.
-const MAX_BONUS_PER_DAY = 20;
+const MAX_BONUS_PER_DAY = 15;
 
 type PackSize = 1 | 5 | 10;
 
@@ -34,9 +33,9 @@ interface Pack {
 }
 
 const PACKS: Pack[] = [
-    { size: 1, label: "Single", price: "1", per: "1" },
-    { size: 5, label: "Stack", price: "3", per: "0.6", discount: "40% OFF" },
-    { size: 10, label: "Mega Pack", price: "5", per: "0.5", discount: "BEST VALUE, 50% OFF", featured: true },
+    { size: 1, label: "Single", price: "150", per: "150" },
+    { size: 5, label: "Stack", price: "600", per: "120", discount: "20% OFF" },
+    { size: 10, label: "Mega Pack", price: "1000", per: "100", discount: "BEST VALUE, 33% OFF", featured: true },
 ];
 
 interface PrizeShopDrawerProps {

@@ -2210,7 +2210,7 @@ function Tips() {
         { n: 3, title: "4-matches are never wasted",
           text: "A 4-match always leaves a Bomb behind, and a 5-match leaves a Laser. They sit on the board until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
         { n: 4, title: "Plan the Daily Challenge",
-          text: "Classic gives you ten free games per day, plus up to twenty more Bonus Games purchasable with $VIBESTR. Daily gives you just one shot. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
+          text: "Classic gives you ten free games per day, plus up to fifteen more Bonus Games purchasable with $VIBESTR. Daily gives you just one shot. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
         { n: 5, title: "Open capsules immediately",
           text: "Every pin you pull ticks up a lifetime tier-find counter for quests like \"Find 200 Commons\" or \"Find 10 Cosmics\". Hoarding sealed capsules just slows your quest progress. There's no upside to waiting." },
         { n: 6, title: "Watch the Quests rail",
