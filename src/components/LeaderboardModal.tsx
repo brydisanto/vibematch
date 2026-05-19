@@ -618,7 +618,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                 unoptimized
                                             />
                                         </div>
-                                        <p className="mt-5 max-w-[280px] text-center font-display font-bold text-xl sm:text-2xl leading-tight text-white">
+                                        <p className="mt-5 max-w-[260px] text-center font-display font-bold text-base sm:text-lg leading-tight text-white">
                                             Find the most OpenSea Pins to win a special prize.
                                         </p>
                                         <div className="mt-6 text-center">
