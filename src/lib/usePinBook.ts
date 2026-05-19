@@ -2,6 +2,19 @@
 
 import { useState, useCallback, useRef } from "react";
 import { Badge, BADGES, BadgeTier } from "./badges";
+import { findPromoBadge } from "./promo-badges";
+
+/**
+ * Unified badge lookup for capsule reveals. The server can return
+ * either a canonical pin id (one of the 101) or a promo pin id
+ * (e.g. promo_opensea when the 3% partnership pre-roll hits).
+ * Without this fallback to PROMO_BADGES, promo pulls would surface
+ * as "something went wrong" because BADGES alone doesn't carry the
+ * partnership pin.
+ */
+function resolveBadge(badgeId: string): Badge | undefined {
+    return BADGES.find(b => b.id === badgeId) ?? findPromoBadge(badgeId);
+}
 
 export interface PinBookState {
     pins: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
@@ -202,9 +215,12 @@ export function usePinBook() {
             const data = await res.json();
             if (!data.opened) return null;
 
-            // Server picks both tier AND specific badge (authoritative)
+            // Server picks both tier AND specific badge (authoritative).
+            // Look up via resolveBadge so promo pins (server-flagged
+            // isPromo) resolve from PROMO_BADGES rather than dead-ending
+            // when the canonical BADGES catalog doesn't contain them.
             const tier = data.tier as BadgeTier;
-            const badge = BADGES.find(b => b.id === data.badgeId);
+            const badge = resolveBadge(data.badgeId);
             if (!badge) {
                 console.error("Server returned unknown badgeId:", data.badgeId);
                 return null;
@@ -245,6 +261,12 @@ export function usePinBook() {
             if (data.collected) {
                 setState(prev => {
                     const nowIso = new Date().toISOString();
+                    // Promo pulls track in a separate KV zset server-side
+                    // and must not enter the Pinbook pins map. Keeps the
+                    // canonical 101 collection % anchored.
+                    if (data.isPromo) {
+                        return prev;
+                    }
                     return {
                         ...prev,
                         pins: {
@@ -309,7 +331,7 @@ export function usePinBook() {
             if (!openData.opened) return null;
 
             const tier = openData.tier as BadgeTier;
-            const badge = BADGES.find(b => b.id === openData.badgeId);
+            const badge = resolveBadge(openData.badgeId);
             if (!badge) {
                 console.error("Server returned unknown badgeId:", openData.badgeId);
                 return null;
@@ -324,21 +346,31 @@ export function usePinBook() {
             if (!collectData.collected) return null;
 
             const nowIso = new Date().toISOString();
-            setState(prev => ({
-                ...prev,
-                capsules: openData.capsules,
-                totalOpened: openData.totalOpened,
-                pins: {
-                    ...prev.pins,
-                    [badge.id]: {
-                        count: collectData.count,
-                        firstEarned: collectData.firstEarned
-                            || prev.pins[badge.id]?.firstEarned
-                            || nowIso,
-                        lastPulled: nowIso,
-                    },
-                },
-            }));
+            setState(prev => {
+                const next: PinBookState = {
+                    ...prev,
+                    capsules: openData.capsules,
+                    totalOpened: openData.totalOpened,
+                };
+                // Promo pins live in their own zset server-side and must
+                // NOT enter the Pinbook pins map — otherwise the canonical
+                // 101 collection % would inflate every time a partnership
+                // pin drops. Server tags promo opens with isPromo and the
+                // collect response sets isPromo too.
+                if (!collectData.isPromo && !openData.isPromo) {
+                    next.pins = {
+                        ...prev.pins,
+                        [badge.id]: {
+                            count: collectData.count,
+                            firstEarned: collectData.firstEarned
+                                || prev.pins[badge.id]?.firstEarned
+                                || nowIso,
+                            lastPulled: nowIso,
+                        },
+                    };
+                }
+                return next;
+            });
 
             return {
                 badge,
