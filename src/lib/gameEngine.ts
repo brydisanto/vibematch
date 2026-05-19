@@ -440,9 +440,28 @@ export function calculateSpecialTileScore(type: SpecialTileType, tilesCleared: n
 
 export function applyGravity(
     board: Cell[][],
-    gameBadges: Badge[]
+    gameBadges: Badge[],
+    /**
+     * Badge ids to exclude from new-tile generation for this single
+     * gravity cycle. Used after a cosmic_blast detonates: the player
+     * cleared every tile of that pin type, and the documented behavior
+     * is that they're all gone. Without this, gravity would refill
+     * empty cells with random badges including the just-cleared type,
+     * leaving new tiles of "that pin type" on the board and breaking
+     * the cosmic-blast feel. Only applies to the immediate post-blast
+     * refill; subsequent cascades repopulate normally.
+     */
+    excludedBadgeIds?: Set<string>
 ): Cell[][] {
     const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
+    // Filter the refill pool. Falls back to the full pool if filtering
+    // would leave us with nothing to draw from (defensive — shouldn't
+    // happen in practice with 6 game badges and at most 1-2 exclusions
+    // per cycle).
+    const refillPool = excludedBadgeIds && excludedBadgeIds.size > 0
+        ? gameBadges.filter(b => !excludedBadgeIds.has(b.id))
+        : gameBadges;
+    const effectivePool = refillPool.length > 0 ? refillPool : gameBadges;
 
     for (let col = 0; col < BOARD_SIZE; col++) {
         // Collect non-matched tiles from bottom to top, tracking original rows
@@ -464,7 +483,7 @@ export function applyGravity(
                 newBoard[row][col] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             } else {
                 // Generate new tile — drops from above the board
-                const badge = gameBadges[Math.floor(Math.random() * gameBadges.length)];
+                const badge = effectivePool[Math.floor(Math.random() * effectivePool.length)];
                 // New tiles enter from above: distance = their target row + 1
                 // (relative to the top of the visible board)
                 newBoard[row][col] = {
@@ -478,6 +497,30 @@ export function applyGravity(
     }
 
     return newBoard;
+}
+
+/**
+ * Scan a freshly matched-marked board for cosmic_blast cells that are about
+ * to be cleared. Their cosmicTargetBadgeId gets passed to applyGravity so
+ * the immediate refill excludes those badge types — keeping the cosmic
+ * blast's "clears every tile of that pin type" promise visually intact.
+ *
+ * Detection key: a matched cell that still carries cosmicTargetBadgeId.
+ * Only cosmic_blast specials ever set that field, so this catches every
+ * cosmic blast that detonated in the current iteration without needing
+ * to thread state through the cascade loop.
+ */
+function collectCosmicTargetsFromMatched(board: Cell[][]): Set<string> {
+    const targets = new Set<string>();
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const cell = board[r][c];
+            if (cell.isMatched && cell.cosmicTargetBadgeId) {
+                targets.add(cell.cosmicTargetBadgeId);
+            }
+        }
+    }
+    return targets;
 }
 
 // ===== SCORING =====
@@ -703,8 +746,11 @@ export function processTurn(
             })
         );
 
-        // Apply gravity and fill
-        currentBoard = applyGravity(currentBoard, gameBadges);
+        // Apply gravity and fill. Exclude any badge types whose cosmic
+        // blast just detonated, so the refill doesn't sneak the just-
+        // cleared type back onto the board.
+        const cosmicTargetsThisIter = collectCosmicTargetsFromMatched(currentBoard);
+        currentBoard = applyGravity(currentBoard, gameBadges, cosmicTargetsThisIter);
 
         // Place specials on the cells that now occupy the original positions.
         // After gravity, these positions have new tiles — assign the special to them.
@@ -838,8 +884,10 @@ export function triggerSpecialTile(
         }))
     );
 
-    // Apply gravity
-    currentBoard = applyGravity(currentBoard, gameBadges);
+    // Apply gravity. Exclude any cosmic blast targets that were part of
+    // the initial detonation — see collectCosmicTargetsFromMatched.
+    const initialCosmicTargets = collectCosmicTargetsFromMatched(currentBoard);
+    currentBoard = applyGravity(currentBoard, gameBadges, initialCosmicTargets);
 
     // Process any resulting cascades
     const MAX_CASCADES = 50;
@@ -878,7 +926,9 @@ export function triggerSpecialTile(
             }))
         );
 
-        currentBoard = applyGravity(currentBoard, gameBadges);
+        // Same exclusion pattern for cascade gravity calls.
+        const cascadeCosmicTargets = collectCosmicTargetsFromMatched(currentBoard);
+        currentBoard = applyGravity(currentBoard, gameBadges, cascadeCosmicTargets);
         matches = findAllMatches(currentBoard);
     }
 
