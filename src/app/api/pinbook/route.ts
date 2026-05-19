@@ -30,7 +30,7 @@ const TIER_WEIGHTS = {
 
 const CAPSULE_SCORE_THRESHOLD = 20000;
 const CLASSIC_DAILY_CAP = 10;
-export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 10;
+export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 20;
 
 export interface PinBookData {
     pins: Record<string, { count: number; firstEarned: string; lastPulled?: string }>;
@@ -191,8 +191,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
         }
 
-        // Per-action rate limits. The hard daily cap (10 base + 10 bonus
-        // = 20 plays/day) is enforced lower-down via incrementClassicPlays;
+        // Per-action rate limits. The hard daily cap (10 base + 20 bonus
+        // = 30 plays/day) is enforced lower-down via incrementClassicPlays;
         // these limits are the per-minute rate guard against burst floods.
         // Numbers chosen to be ~3-5x typical player throughput so a real
         // human can't hit them, but a buggy client / hostile loop is

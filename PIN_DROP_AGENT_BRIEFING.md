@@ -21,7 +21,7 @@ There are two playable modes.
 
 **Classic**
 - Standard mode. Available with 10 free plays per day.
-- Players can purchase additional Bonus Games with $VIBESTR (up to 10 more per day, for a hard cap of 20 plays per day).
+- Players can purchase additional Bonus Games with $VIBESTR (up to 20 more per day, for a hard cap of 30 plays per day).
 - 30 moves per game.
 - Pays out Pin Capsules based on score thresholds.
 
@@ -340,7 +340,7 @@ $VIBESTR is the GVC ecosystem token. It plugs into Pin Drop in two specific ways
 
 **Bonus Games**
 - After hitting the 10-game daily Classic cap, players can purchase additional Bonus Games with $VIBESTR.
-- Maximum total plays per day: 20 (10 free + 10 bonus).
+- Maximum total plays per day: 30 (10 free + 20 bonus).
 - Outcomes never change based on what is spent. Every pin is earnable for free.
 
 **Rerolls**
@@ -375,7 +375,7 @@ These are the strategies surfaced to players in the game guide. Useful for an ag
 1. **Hunt shapes before clearing.** A T or Cross setup on the next cascade is worth 2 to 4x a clean 3-match. Scan the board for intersections before taking the obvious move.
 2. **Chain power tiles.** A Bomb next to a Laser detonates both at once. A Cosmic Blast next to anything is usually game-defining. Two power tiles on the board, put them together.
 3. **4-matches are never wasted.** A 4-match always leaves a Bomb. A 5-match leaves a Laser. They sit on the board until used. Late game, the stockpile becomes the final-cascade multiplier stack.
-4. **Daily ≠ Classic.** Classic allows up to 20 games per day. Daily allows just one. Scan the whole board before the first move. Plan the last 10 moves. Slower play wins.
+4. **Daily ≠ Classic.** Classic allows up to 30 games per day (10 free + 20 Bonus). Daily allows just one. Scan the whole board before the first move. Plan the last 10 moves. Slower play wins.
 5. **Open capsules immediately.** Every pin pulled ticks up a lifetime tier-find counter for quests. Hoarding sealed capsules just slows quest progress.
 6. **Watch the Quests rail.** The desktop landing shows the three quests closest to completion. If one is at 9/10, that is the next obvious move.
 
@@ -475,7 +475,7 @@ For any agent writing copy or generating content for Pin Drop:
 | How many pins total? | 101 |
 | How many tiers? | 5 (Common, Rare, Special, Legendary, Cosmic) |
 | Free games per day? | 10 Classic + 1 Daily Challenge |
-| Max games per day? | 20 Classic (10 free + 10 Bonus) + 1 Daily |
+| Max games per day? | 30 Classic (10 free + 20 Bonus) + 1 Daily |
 | Moves per game? | 30 |
 | Board size? | 8x8 |
 | Pins on board per game? | 6 randomly drafted from the 101 |

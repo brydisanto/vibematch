@@ -18,7 +18,9 @@ const VIBESTR_ADDRESS = "0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196";
 const erc20Abi = parseAbi(["function transfer(address to, uint256 amount) returns (bool)"]);
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
-const MAX_BONUS_PER_DAY = 10;
+// Mirror of MAX_BONUS_PRIZE_GAMES_PER_DAY in src/app/api/pinbook/route.ts.
+// Bumped 10 → 20 in line with raising the daily Bonus Games cap.
+const MAX_BONUS_PER_DAY = 20;
 
 type PackSize = 1 | 5 | 10;
 

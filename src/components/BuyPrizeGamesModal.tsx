@@ -12,7 +12,8 @@ const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
 const erc20Abi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
-const MAX_BONUS_PER_DAY = 10;
+// Mirror of MAX_BONUS_PRIZE_GAMES_PER_DAY in src/app/api/pinbook/route.ts.
+const MAX_BONUS_PER_DAY = 20;
 
 interface Package {
     size: 1 | 5 | 10;
@@ -348,7 +349,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                     )}
 
                                     <p className="text-white/30 text-[10px] font-mundial text-center mt-3">
-                                        You may purchase up to 10 Bonus Games per day. Resets at midnight UTC.
+                                        You may purchase up to 20 Bonus Games per day. Resets at midnight UTC.
                                     </p>
                                     <p className="text-white/35 text-[9px] font-mundial text-center mt-2 leading-snug">
                                         Using $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.
