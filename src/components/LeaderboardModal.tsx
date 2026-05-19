@@ -595,12 +595,45 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                     ))}
                                 </motion.div>
                             ) : leaderboard.length === 0 ? (
-                                <motion.div key={`${mode}-empty`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center py-20 text-white/30 text-center px-6">
-                                    <Trophy size={48} className="mb-4 opacity-20" />
-                                    <p className="font-bold uppercase tracking-widest text-sm">No scores yet</p>
-                                    <p className="text-xs mt-2 text-white/20">Be the first to claim the top spot!</p>
-                                </motion.div>
+                                isPromoTab && activePromoForHeader ? (
+                                    // Promo tab gets a branded empty state. Pin art
+                                    // + tagline still show up so the partnership is
+                                    // visible from minute zero, even before anyone
+                                    // has pulled the pin.
+                                    <motion.div key={`${mode}-empty-promo`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        className="flex flex-col items-center pt-8 pb-12 px-6">
+                                        <div
+                                            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden"
+                                            style={{
+                                                boxShadow: "0 0 26px rgba(74,158,255,0.45), 0 4px 14px rgba(0,0,0,0.6)",
+                                                border: "2px solid rgba(255,255,255,0.18)",
+                                            }}
+                                        >
+                                            <Image
+                                                src={activePromoForHeader.image}
+                                                alt={activePromoForHeader.name}
+                                                fill
+                                                sizes="96px"
+                                                className="object-cover"
+                                                unoptimized
+                                            />
+                                        </div>
+                                        <p className="mt-3 text-center text-sm sm:text-[15px] text-white/80 font-mundial">
+                                            Collect the most OpenSea Pins to win big.
+                                        </p>
+                                        <div className="mt-8 text-center">
+                                            <p className="font-bold uppercase tracking-widest text-sm text-white/40">No collectors yet</p>
+                                            <p className="text-xs mt-2 text-white/20">Be the first to pull an Aye Aye, Captain.</p>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key={`${mode}-empty`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        className="flex flex-col items-center justify-center py-20 text-white/30 text-center px-6">
+                                        <Trophy size={48} className="mb-4 opacity-20" />
+                                        <p className="font-bold uppercase tracking-widest text-sm">No scores yet</p>
+                                        <p className="text-xs mt-2 text-white/20">Be the first to claim the top spot!</p>
+                                    </motion.div>
+                                )
                             ) : (
                                 <motion.div key={`${mode}-list`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                     {/* Promo tab header — pin art + tagline above the list.
