@@ -601,27 +601,27 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                     // visible from minute zero, even before anyone
                                     // has pulled the pin.
                                     <motion.div key={`${mode}-empty-promo`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        className="flex flex-col items-center pt-8 pb-12 px-6">
+                                        className="flex flex-col items-center pt-4 pb-8 px-6">
                                         <div
-                                            className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden"
+                                            className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-full overflow-hidden"
                                             style={{
-                                                boxShadow: "0 0 26px rgba(74,158,255,0.45), 0 4px 14px rgba(0,0,0,0.6)",
-                                                border: "2px solid rgba(255,255,255,0.18)",
+                                                boxShadow: "0 0 36px rgba(74,158,255,0.55), 0 6px 20px rgba(0,0,0,0.6)",
+                                                border: "2px solid rgba(255,255,255,0.2)",
                                             }}
                                         >
                                             <Image
                                                 src={activePromoForHeader.image}
                                                 alt={activePromoForHeader.name}
                                                 fill
-                                                sizes="96px"
+                                                sizes="160px"
                                                 className="object-cover"
                                                 unoptimized
                                             />
                                         </div>
-                                        <p className="mt-3 text-center text-sm sm:text-[15px] text-white/80 font-mundial">
-                                            Collect the most OpenSea Pins to win big.
+                                        <p className="mt-5 max-w-[280px] text-center font-display font-bold text-xl sm:text-2xl leading-tight text-white">
+                                            Find the most OpenSea Pins to win a special prize.
                                         </p>
-                                        <div className="mt-8 text-center">
+                                        <div className="mt-6 text-center">
                                             <p className="font-bold uppercase tracking-widest text-sm text-white/40">No collectors yet</p>
                                             <p className="text-xs mt-2 text-white/20">Be the first to pull an Aye Aye, Captain.</p>
                                         </div>
@@ -641,25 +641,25 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                         Top-3 row tints (gold/silver/bronze) handle ranking
                                         callout in the list itself. */}
                                     {isPromoTab && activePromoForHeader && (
-                                        <div className="flex flex-col items-center pt-3 pb-4 px-6">
+                                        <div className="flex flex-col items-center pt-2 pb-5 px-6">
                                             <div
-                                                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden"
+                                                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden"
                                                 style={{
-                                                    boxShadow: "0 0 26px rgba(74,158,255,0.45), 0 4px 14px rgba(0,0,0,0.6)",
-                                                    border: "2px solid rgba(255,255,255,0.18)",
+                                                    boxShadow: "0 0 32px rgba(74,158,255,0.5), 0 5px 16px rgba(0,0,0,0.6)",
+                                                    border: "2px solid rgba(255,255,255,0.2)",
                                                 }}
                                             >
                                                 <Image
                                                     src={activePromoForHeader.image}
                                                     alt={activePromoForHeader.name}
                                                     fill
-                                                    sizes="96px"
+                                                    sizes="128px"
                                                     className="object-cover"
                                                     unoptimized
                                                 />
                                             </div>
-                                            <p className="mt-3 text-center text-sm sm:text-[15px] text-white/80 font-mundial">
-                                                Collect the most OpenSea Pins to win big.
+                                            <p className="mt-4 max-w-[280px] text-center font-display font-bold text-lg sm:text-xl leading-tight text-white">
+                                                Find the most OpenSea Pins to win a special prize.
                                             </p>
                                         </div>
                                     )}
