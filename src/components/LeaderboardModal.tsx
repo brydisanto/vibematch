@@ -619,7 +619,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                             />
                                         </div>
                                         <p className="mt-5 max-w-[260px] text-center font-display font-bold text-base sm:text-lg leading-tight text-white">
-                                            Find the most OpenSea Pins to win a special prize.
+                                            Find the most OpenSea Pins to win a special prize!
                                         </p>
                                         <div className="mt-6 text-center">
                                             <p className="font-bold uppercase tracking-widest text-sm text-white/40">No collectors yet</p>
@@ -659,7 +659,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                 />
                                             </div>
                                             <p className="mt-4 max-w-[280px] text-center font-display font-bold text-lg sm:text-xl leading-tight text-white">
-                                                Find the most OpenSea Pins to win a special prize.
+                                                Find the most OpenSea Pins to win a special prize!
                                             </p>
                                         </div>
                                     )}
