@@ -472,7 +472,7 @@ function HowToPlay() {
                     <MiniFact
                         icon={<TrendingUp size={18} style={{ color: COSMIC }} />}
                         title="Cascades Compound"
-                        body="When tiles clear, new ones drop in. Any fresh matches from those new tiles trigger a cascade and add +75% to your multiplier. A smart swap can chain 3 to 4 cascades together."
+                        body="When tiles clear, new ones drop in. Any fresh matches from those new tiles trigger a cascade and add +100% to your multiplier. A smart swap can chain 3 to 4 cascades together."
                     />
                     <MiniFact
                         icon={<Target size={18} style={{ color: COSMIC }} />}
@@ -2209,8 +2209,8 @@ function Tips() {
           text: "A Bomb next to a Laser detonates both at once. A Cosmic Blast next to anything is usually a game-defining move. If you have two power tiles on the board, your next move should almost always be to put them together." },
         { n: 3, title: "4-matches are never wasted",
           text: "A 4-match always leaves a Bomb behind, and a 5-match leaves a Laser. They sit on the board until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
-        { n: 4, title: "Daily Challenge ≠ Classic",
-          text: "Classic gives you ten games per day. Daily gives you just one. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
+        { n: 4, title: "Plan the Daily Challenge",
+          text: "Classic gives you ten free games per day, plus up to ten more Bonus Games purchasable with $VIBESTR. Daily gives you just one shot. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
         { n: 5, title: "Open capsules immediately",
           text: "Every pin you pull ticks up a lifetime tier-find counter for quests like \"Find 200 Commons\" or \"Find 10 Cosmics\". Hoarding sealed capsules just slows your quest progress. There's no upside to waiting." },
         { n: 6, title: "Watch the Quests rail",
