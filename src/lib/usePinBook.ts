@@ -226,12 +226,28 @@ export function usePinBook() {
                 return null;
             }
 
-            const existing = state.pins[badge.id];
+            // For canonical pins, duplicate state derives from the local
+            // pinbook map. For promos, that map never carries them, so the
+            // server provides the user's pre-collect promo count and we
+            // derive isDuplicate from that. Without this branch, every
+            // promo pull rendered "new pin collected" even on a player's
+            // 5th OpenSea pull.
+            let isDuplicate: boolean;
+            let duplicateCount: number;
+            if (data.isPromo) {
+                const priorCount = typeof data.promoCountBeforeCollect === 'number' ? data.promoCountBeforeCollect : 0;
+                isDuplicate = priorCount > 0;
+                duplicateCount = priorCount;
+            } else {
+                const existing = state.pins[badge.id];
+                isDuplicate = !!existing;
+                duplicateCount = existing ? existing.count : 0;
+            }
             const reveal: CapsuleReveal = {
                 badge,
                 tier,
-                isDuplicate: !!existing,
-                duplicateCount: existing ? existing.count : 0,
+                isDuplicate,
+                duplicateCount,
             };
 
             setState(prev => ({

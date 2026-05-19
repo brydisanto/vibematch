@@ -639,11 +639,23 @@ export async function POST(req: Request) {
             data.totalOpened += 1;
             await kv.set(key, data);
 
+            // Look up the user's current promo count BEFORE collect fires so
+            // the client can render "duplicate" vs "new pin" correctly on
+            // the reveal animation. Promo pins don't enter the pinbook pin
+            // map, so the client can't derive duplicate state locally for
+            // them like it does for canonical pins.
+            let promoCountBeforeCollect = 0;
+            if (isPromoPull) {
+                const existingScore = await kv.zscore(promoLeaderboardKey(badge.id), username);
+                promoCountBeforeCollect = typeof existingScore === 'number' ? existingScore : 0;
+            }
+
             return NextResponse.json({
                 opened: true,
                 tier,
                 badgeId: badge.id,
                 isPromo: isPromoPull,
+                promoCountBeforeCollect,
                 capsules: data.capsules,
                 totalOpened: data.totalOpened,
             });
