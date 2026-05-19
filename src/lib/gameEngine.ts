@@ -388,6 +388,17 @@ export function applySpecialTile(
             // badge gravity dropped under the cosmic overlay.
             const cell = board[pos.row][pos.col];
             const targetBadge = cell.cosmicTargetBadgeId ?? cell.badge.id;
+            // Diagnostic: if cosmicTargetBadgeId went missing, log it so we
+            // can catch state-preservation bugs without players reporting
+            // weird "wrong tiles cleared" results. Falls back to the
+            // visible badge so detonation always does SOMETHING.
+            if (typeof window !== "undefined" && !cell.cosmicTargetBadgeId) {
+                console.warn("[cosmic_blast] cosmicTargetBadgeId missing on detonation", {
+                    pos,
+                    visibleBadge: cell.badge.id,
+                    fallback: targetBadge,
+                });
+            }
             const seen = new Set<string>();
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {

@@ -231,8 +231,16 @@ export default function AppClient() {
   // - logGame depends on trackGame's match token
   // - earnCapsule depends on trackGame's match token
   // - achievements depends on logGame's stored match stats for gameplay verification
+  //
+  // Note: achievements.state.loaded is NOT a guard at the top level. If a
+  // player finishes a game before their achievements have loaded (slow
+  // network on landing), we still need to logGame + earnCapsule. Skipping
+  // them entirely caused the "Previous game wasn't finished" toast to
+  // wrongly fire on the next play: the unlogged match was treated as
+  // abandoned and burned the new match's prize eligibility. Achievements
+  // checking is conditionally skipped further down instead.
   useEffect(() => {
-    if (game.state?.gamePhase !== "gameover" || !userProfile?.username || !achievements.state.loaded) return;
+    if (game.state?.gamePhase !== "gameover" || !userProfile?.username) return;
     const mode = game.state.gameMode || 'classic';
     const gs = game.state;
     const stats = gameSessionStats.current;
@@ -300,29 +308,35 @@ export default function AppClient() {
         }
       }
 
-      // 4. Check end-of-game achievements with match context for server-side verification
-      const gameEndStats: GameEndStats = {
-        score: gs.score,
-        maxCombo: gs.maxCombo,
-        totalCascades: gs.totalCascades,
-        matchCount: gs.matchCount,
-        bombsCreated: stats.bombsCreated,
-        vibestreaksCreated: stats.vibestreaksCreated,
-        cosmicBlastsCreated: stats.cosmicBlastsCreated,
-        shapesLanded: stats.shapesLanded,
-        crossCount: stats.crossCount,
-        gameMode: gs.gameMode,
-      };
-      const playerCtx = buildPlayerContext(pinBook.state.pins, {
-        totalPinsOpened: pinBook.state.totalOpened,
-        totalFoundByTier: pinBook.state.totalFoundByTier,
-        hasUploadedAvatar: !!userProfile?.avatarUrl,
-        hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
-        hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
-      });
-      const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
-      if (ids.length > 0) {
-        await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
+      // 4. Check end-of-game achievements with match context for server-side
+      //    verification. Skip if achievements haven't loaded yet — without
+      //    the loaded unlock set, checkAchievements would re-fire every
+      //    eligible achievement, causing duplicate-unlock noise on the
+      //    server. Better to no-op than to spam.
+      if (achievements.state.loaded) {
+        const gameEndStats: GameEndStats = {
+          score: gs.score,
+          maxCombo: gs.maxCombo,
+          totalCascades: gs.totalCascades,
+          matchCount: gs.matchCount,
+          bombsCreated: stats.bombsCreated,
+          vibestreaksCreated: stats.vibestreaksCreated,
+          cosmicBlastsCreated: stats.cosmicBlastsCreated,
+          shapesLanded: stats.shapesLanded,
+          crossCount: stats.crossCount,
+          gameMode: gs.gameMode,
+        };
+        const playerCtx = buildPlayerContext(pinBook.state.pins, {
+          totalPinsOpened: pinBook.state.totalOpened,
+          totalFoundByTier: pinBook.state.totalFoundByTier,
+          hasUploadedAvatar: !!userProfile?.avatarUrl,
+          hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
+          hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+        });
+        const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
+        if (ids.length > 0) {
+          await achievements.unlock(ids, { matchId: pinBook.getActiveMatchId(), gameMode: mode });
+        }
       }
 
       // 5. First-time prize-games onboarding: show a one-time modal when the user

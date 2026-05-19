@@ -273,7 +273,7 @@ function TileRingBurst({ effect }: { effect: MatchEffect }) {
 }
 
 /* ===== FEATURE 1: TILE MATCH FLASH — white-hot crunch pop at each matched tile ===== */
-function TileMatchFlash({ effect, cellSize }: { effect: MatchEffect; cellSize: number }) {
+function TileMatchFlash({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
     if (cellSize === 0) return null;
 
     return (
@@ -283,8 +283,8 @@ function TileMatchFlash({ effect, cellSize }: { effect: MatchEffect; cellSize: n
                     key={i}
                     className="absolute pointer-events-none tile-match-flash-effect"
                     style={{
-                        left: cellSize * pos.col + cellSize / 2,
-                        top: cellSize * pos.row + cellSize / 2,
+                        left: gridOffset.x + cellSize * pos.col + cellSize / 2,
+                        top: gridOffset.y + cellSize * pos.row + cellSize / 2,
                         zIndex: 35,
                     }}
                 >
@@ -453,7 +453,7 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * board after the cascade settles. Now they get a beat to register
  * "I just made this."
  */
-function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; cellSize: number }) {
+function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
     const created = effect.specialTilesCreated;
     if (!created || created.length === 0 || cellSize === 0) return null;
 
@@ -481,8 +481,8 @@ function PowerTileCreationMoment({ effect, cellSize }: { effect: MatchEffect; ce
                         key={i}
                         className="absolute pointer-events-none power-tile-create-ring"
                         style={{
-                            left: cellSize * c.pos.col + cellSize / 2,
-                            top: cellSize * c.pos.row + cellSize / 2,
+                            left: gridOffset.x + cellSize * c.pos.col + cellSize / 2,
+                            top: gridOffset.y + cellSize * c.pos.row + cellSize / 2,
                             zIndex: 38,
                             width: cellSize * 1.4,
                             height: cellSize * 1.4,
@@ -877,6 +877,13 @@ export default function GameBoard({
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
     const [cellSize, setCellSize] = useState(0);
+    // Grid offset relative to the outer relative div the effects layer
+    // sits on. Board container has p-[3px] + inner has p-1/sm:p-2, so the
+    // grid is inset by ~7-11px on every side. Pixel-based effects (rings,
+    // flashes) need to add this offset, otherwise they render up-and-left
+    // of the tile they're meant to land on. Read via offsetLeft/Top so it
+    // automatically tracks the actual layout regardless of breakpoint.
+    const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 });
     const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, []);
 
     // Track active effect types for priority throttling
@@ -965,6 +972,15 @@ export default function GameBoard({
                 const rect = gridRef.current.firstElementChild.getBoundingClientRect();
                 const gapPx = window.innerWidth >= 640 ? 4 : 2;
                 setCellSize(rect.width + gapPx);
+                // offsetLeft/Top give the grid's position relative to its
+                // nearest positioned ancestor (the outer relative div the
+                // effects layer also sits on). Tracking this lets pixel-
+                // based effects align to the actual tile, not the
+                // padding-stripped origin of the effects layer.
+                setGridOffset({
+                    x: gridRef.current.offsetLeft,
+                    y: gridRef.current.offsetTop,
+                });
             }
         };
         update();
@@ -1173,7 +1189,7 @@ export default function GameBoard({
                     {shouldShowEffect('TileRingBurst') && <TileRingBurst effect={effect} />}
 
                     {/* Feature 1: Tile Match Flash */}
-                    {shouldShowEffect('TileMatchFlash') && <TileMatchFlash effect={effect} cellSize={cellSize} />}
+                    {shouldShowEffect('TileMatchFlash') && <TileMatchFlash effect={effect} cellSize={cellSize} gridOffset={gridOffset} />}
 
                     {/* Shockwave ring */}
                     <ShockwaveRing effect={effect} />
@@ -1190,7 +1206,7 @@ export default function GameBoard({
 
                     {/* Power tile creation moment — slammed-in label +
                         tier ring at each spawn. */}
-                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} />
+                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} gridOffset={gridOffset} />
 
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}
