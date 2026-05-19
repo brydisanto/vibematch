@@ -622,7 +622,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                         </p>
                                         <div className="mt-6 text-center">
                                             <p className="font-bold uppercase tracking-widest text-sm text-white/40">No collectors yet</p>
-                                            <p className="text-xs mt-2 text-white/20">Be the first to pull an Aye Aye, Captain.</p>
+                                            <p className="text-xs mt-2 text-white/20">Be the first to pull an Aye Aye, Captain!</p>
                                         </div>
                                     </motion.div>
                                 ) : (
