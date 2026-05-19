@@ -528,7 +528,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-md rounded-[24px] bg-gradient-to-b from-[#4A3B52] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                className="relative w-full max-w-md sm:max-w-lg rounded-[24px] bg-gradient-to-b from-[#4A3B52] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
             >
                 <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex flex-col max-h-[85vh]">
 
