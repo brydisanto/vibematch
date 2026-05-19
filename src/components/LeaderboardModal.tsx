@@ -207,15 +207,42 @@ function PodiumSection({ entries, currentUsername, mode }: { entries: Leaderboar
 
 // --- List row ---
 
+// Medal tinting for top-3 rows on the promo board. The promo tab
+// doesn't render a podium, so the gold/silver/bronze accents live
+// on the rows themselves to keep the ranking visually legible.
+const MEDAL_ROW_STYLES: Record<number, { border: string; bg: string; rankColor: string; glow: string }> = {
+    1: { border: "rgba(255,215,0,0.55)",  bg: "rgba(255,215,0,0.10)",  rankColor: "#FFD700", glow: "0 0 18px rgba(255,215,0,0.25)" },
+    2: { border: "rgba(192,192,192,0.55)", bg: "rgba(192,192,192,0.08)", rankColor: "#C0C0C0", glow: "0 0 14px rgba(192,192,192,0.22)" },
+    3: { border: "rgba(205,127,50,0.55)",  bg: "rgba(205,127,50,0.08)",  rankColor: "#CD7F32", glow: "0 0 14px rgba(205,127,50,0.22)" },
+};
+
 function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean; mode: TabMode }) {
+    // Medal tints only fire on the promo tab — the other boards have
+    // their own podium treatment up top, so coloring rows there too
+    // would double-up the gold/silver/bronze signal.
+    const medal = mode === "promo" ? MEDAL_ROW_STYLES[rank] : undefined;
+
     return (
         <div
             className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${isCurrentUser
                 ? "bg-[#B366FF]/10 border border-[#B366FF]/20"
-                : "hover:bg-white/[0.03]"
+                : medal
+                    ? ""
+                    : "hover:bg-white/[0.03]"
                 }`}
+            style={medal && !isCurrentUser ? {
+                background: medal.bg,
+                border: `1px solid ${medal.border}`,
+                boxShadow: medal.glow,
+            } : undefined}
         >
-            <div className="flex-shrink-0 w-7 text-center font-display font-black text-white/40 text-sm">
+            <div
+                className="flex-shrink-0 w-7 text-center font-display font-black text-sm"
+                style={{
+                    color: medal ? medal.rankColor : undefined,
+                    textShadow: medal ? `0 0 10px ${medal.rankColor}55` : undefined,
+                }}
+            >
                 {rank}
             </div>
             <Avatar entry={entry} size={36} />
@@ -469,9 +496,15 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         return { name: nextPlayer.username, points: diff };
     }, [nextPlayer, userEntry, leaderboard, currentUsername, mode]);
 
-    const hasPodium = leaderboard.length >= 3;
+    // Promo tab skips the podium and instead inlines top-3 medal tints
+    // in the row list. Keeps the partnership tab feeling distinct from
+    // the canonical boards and gives the pin art + tagline room to
+    // breathe at the top.
+    const isPromoTab = mode === "promo";
+    const hasPodium = !isPromoTab && leaderboard.length >= 3;
     const top3 = hasPodium ? leaderboard.slice(0, 3) : [];
     const restOfList = hasPodium ? leaderboard.slice(3) : leaderboard;
+    const activePromoForHeader = isPromoTab ? getActivePromoBadges()[0] : undefined;
 
     // Promo tab appears only while the partnership is active. Label is
     // the partner's display name (e.g. "OpenSea"); falls back to a
@@ -570,6 +603,34 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                 </motion.div>
                             ) : (
                                 <motion.div key={`${mode}-list`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    {/* Promo tab header — pin art + tagline above the list.
+                                        Replaces the standard podium for the partnership tab.
+                                        Top-3 row tints (gold/silver/bronze) handle ranking
+                                        callout in the list itself. */}
+                                    {isPromoTab && activePromoForHeader && (
+                                        <div className="flex flex-col items-center pt-3 pb-4 px-6">
+                                            <div
+                                                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden"
+                                                style={{
+                                                    boxShadow: "0 0 26px rgba(74,158,255,0.45), 0 4px 14px rgba(0,0,0,0.6)",
+                                                    border: "2px solid rgba(255,255,255,0.18)",
+                                                }}
+                                            >
+                                                <Image
+                                                    src={activePromoForHeader.image}
+                                                    alt={activePromoForHeader.name}
+                                                    fill
+                                                    sizes="96px"
+                                                    className="object-cover"
+                                                    unoptimized
+                                                />
+                                            </div>
+                                            <p className="mt-3 text-center text-sm sm:text-[15px] text-white/80 font-mundial">
+                                                Collect the most OpenSea Pins to win big.
+                                            </p>
+                                        </div>
+                                    )}
+
                                     {/* Podium */}
                                     {hasPodium && (
                                         <PodiumSection entries={top3} currentUsername={currentUsername} mode={mode} />

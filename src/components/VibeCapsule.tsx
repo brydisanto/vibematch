@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import Image from "next/image";
 import { Badge, BadgeTier, TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
+import { findPromoBadge } from "@/lib/promo-badges";
 
 const CapsuleSphere3D = lazy(() => import("./CapsuleSphere3D"));
 import {
@@ -1470,7 +1471,14 @@ export default function VibeCapsule({
                                             animate={{ y: 0, opacity: 1, scale: 1 }}
                                             transition={{ type: "spring", stiffness: 500, damping: 25, mass: 0.8, delay: 0.35 }}
                                         >
-                                            {TIER_DISPLAY_NAMES[tier]}
+                                            {/* Promo pins (e.g. the OpenSea
+                                                partnership pin) show "Event"
+                                                instead of their underlying
+                                                tier label, so they read as
+                                                their own category to the
+                                                player rather than as a
+                                                Common pull. */}
+                                            {badge && findPromoBadge(badge.id) ? "Event" : TIER_DISPLAY_NAMES[tier]}
                                         </motion.div>
 
                                         {/* New pin / duplicate label */}

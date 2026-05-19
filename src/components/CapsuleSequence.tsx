@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import VibeCapsule from "./VibeCapsule";
+import { findPromoBadge } from "@/lib/promo-badges";
 import { Badge, BadgeTier, TIER_COLORS } from "@/lib/badges";
 import type { CapsuleReveal } from "@/lib/usePinBook";
 
@@ -459,7 +460,7 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
                     boxShadow: `0 0 8px ${tierColor}55`,
                 }}
             >
-                {TIER_SHORT_LABELS[reveal.tier]}
+                {findPromoBadge(reveal.badge.id) ? "Event" : TIER_SHORT_LABELS[reveal.tier]}
             </div>
         </motion.div>
     );

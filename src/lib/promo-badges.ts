@@ -33,16 +33,15 @@ export interface PromoBadge extends Badge {
 export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "promo_opensea",
-        name: "OpenSea Pin",
-        // TODO: drop the actual partnership asset at this path before flipping
-        // NEXT_PUBLIC_PROMO_ACTIVE=true. Until then the path is referenced
-        // but never loaded because the active flag gates injection.
+        name: "Aye Aye, Captain",
+        // Drop the partnership asset at public/badges/promo/opensea.webp
+        // (or update this path) before flipping NEXT_PUBLIC_PROMO_ACTIVE.
         image: "/badges/promo/opensea.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "OpenSea",
-        tabLabel: "OpenSea",
+        tabLabel: "Event",
     },
 ];
 
