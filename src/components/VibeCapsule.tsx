@@ -1459,27 +1459,31 @@ export default function VibeCapsule({
                                         </motion.h2>
 
                                         {/* Tier label */}
-                                        <motion.div
-                                            className="mt-2 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-mundial font-bold uppercase tracking-[0.2em] z-10"
-                                            style={{
-                                                background: `${TIER_COLORS[tier]}20`,
-                                                color: TIER_COLORS[tier],
-                                                border: `1px solid ${TIER_COLORS[tier]}30`,
-                                                boxShadow: `0 0 12px ${TIER_COLORS[tier]}15`,
-                                            }}
-                                            initial={{ y: 20, opacity: 0, scale: 0.8 }}
-                                            animate={{ y: 0, opacity: 1, scale: 1 }}
-                                            transition={{ type: "spring", stiffness: 500, damping: 25, mass: 0.8, delay: 0.35 }}
-                                        >
-                                            {/* Promo pins (e.g. the OpenSea
-                                                partnership pin) show "Event"
-                                                instead of their underlying
-                                                tier label, so they read as
-                                                their own category to the
-                                                player rather than as a
-                                                Common pull. */}
-                                            {badge && findPromoBadge(badge.id) ? "Event" : TIER_DISPLAY_NAMES[tier]}
-                                        </motion.div>
+                                        {(() => {
+                                            // Promo pins get their own pill color
+                                            // (OpenSea brand blue) instead of the
+                                            // underlying tier's color. Decouples
+                                            // the partnership pill from "Common"
+                                            // visually as well as in copy.
+                                            const isPromo = !!(badge && findPromoBadge(badge.id));
+                                            const pillColor = isPromo ? "#2081E2" : TIER_COLORS[tier];
+                                            return (
+                                                <motion.div
+                                                    className="mt-2 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-mundial font-bold uppercase tracking-[0.2em] z-10"
+                                                    style={{
+                                                        background: `${pillColor}20`,
+                                                        color: pillColor,
+                                                        border: `1px solid ${pillColor}30`,
+                                                        boxShadow: `0 0 12px ${pillColor}15`,
+                                                    }}
+                                                    initial={{ y: 20, opacity: 0, scale: 0.8 }}
+                                                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                                                    transition={{ type: "spring", stiffness: 500, damping: 25, mass: 0.8, delay: 0.35 }}
+                                                >
+                                                    {isPromo ? "Event" : TIER_DISPLAY_NAMES[tier]}
+                                                </motion.div>
+                                            );
+                                        })()}
 
                                         {/* New pin / duplicate label */}
                                         {isDuplicate ? (

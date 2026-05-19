@@ -425,8 +425,12 @@ function SummaryOverlay({ pulled, failed, onDismiss }: SummaryOverlayProps) {
 }
 
 function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }) {
-    const tierColor = TIER_COLORS[reveal.tier] ?? "#888";
     const { badge, isDuplicate } = reveal;
+    // Promo pulls override the tier color with their own brand blue so
+    // the "Event" pill reads as its own category in the haul grid.
+    const isPromo = !!findPromoBadge(reveal.badge.id);
+    const tierColor = isPromo ? "#2081E2" : (TIER_COLORS[reveal.tier] ?? "#888");
+    const pillTextColor = isPromo ? "#FFFFFF" : TIER_PILL_TEXT[reveal.tier];
     // New pulls signal via a green border + glow on the tile itself so the
     // tier pill and a stacked NEW pill don't compete for the same row of
     // real estate. Duplicates keep the subtle tier-tinted outline.
@@ -455,12 +459,12 @@ function SummaryCard({ reveal, index }: { reveal: CapsuleReveal; index: number }
             <div
                 className="text-[8px] font-mundial font-black uppercase tracking-widest px-1.5 py-0.5 rounded text-center"
                 style={{
-                    color: TIER_PILL_TEXT[reveal.tier],
+                    color: pillTextColor,
                     background: tierColor,
                     boxShadow: `0 0 8px ${tierColor}55`,
                 }}
             >
-                {findPromoBadge(reveal.badge.id) ? "Event" : TIER_SHORT_LABELS[reveal.tier]}
+                {isPromo ? "Event" : TIER_SHORT_LABELS[reveal.tier]}
             </div>
         </motion.div>
     );
