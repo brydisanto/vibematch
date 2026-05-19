@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Crown } from "lucide-react";
+import { X, Trophy } from "lucide-react";
 import { BADGES } from "@/lib/badges";
 import { isPromoActive, getActivePromoBadges } from "@/lib/promo-badges";
 
@@ -542,8 +542,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
                     {/* Header */}
                     <div className="flex flex-col items-center pt-6 pb-2 px-6">
-                        <h2 className="font-display text-2xl sm:text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center gap-3">
-                            <Crown className="text-[#FFD700] drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]" size={28} />
+                        <h2 className="font-display text-2xl sm:text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                             Leaderboards
                         </h2>
                     </div>
