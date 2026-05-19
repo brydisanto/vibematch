@@ -6,7 +6,43 @@ import {
     getActivePromoBadges,
     PROMO_BADGES,
     promoLeaderboardKey,
+    findPromoBadge,
 } from '@/lib/promo-badges';
+
+/**
+ * Recover stranded promo pendings for the requesting user.
+ *
+ * The intended flow is open → reveal animation → collect. The collect
+ * step calls kv.del(pendingKey) + zincrby. But various client-side
+ * failure modes (cached old bundle pre-resolveBadge fix, network drop
+ * mid-collect, browser tab closed before onComplete fires, etc.) can
+ * leave a pending in KV that never gets credited. The leaderboard
+ * count visibly lags.
+ *
+ * This sweep runs on every leaderboard GET for the signed-in user.
+ * If their pending is isPromo and at least RECOVERY_AGE_MS old (so we
+ * don't race a legitimate in-flight collect), we credit + del it
+ * before reading the score. The user lands on the leaderboard and
+ * sees their correct count without any manual intervention.
+ */
+const RECOVERY_AGE_MS = 30_000;
+
+async function recoverStrandedPromoPending(username: string): Promise<void> {
+    try {
+        const pendingKey = `pinbook:${username}:pending`;
+        const pending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number; isPromo?: boolean } | null;
+        if (!pending || !pending.isPromo) return;
+        if (Date.now() - (pending.openedAt ?? 0) < RECOVERY_AGE_MS) return;
+        const promoDef = findPromoBadge(pending.badgeId);
+        if (!promoDef || promoDef.tier !== pending.tier) return;
+        // ZADD via zincrby on the leaderboard zset, mirror what /collect does.
+        await kv.zincrby(promoLeaderboardKey(promoDef.id), 1, username);
+        await kv.del(pendingKey);
+    } catch (e) {
+        console.error('Promo pending recovery error:', e);
+        // Don't throw — the leaderboard read should still succeed.
+    }
+}
 
 /**
  * Promo leaderboard endpoint.
@@ -52,6 +88,13 @@ export async function GET(req: Request) {
         }
 
         const key = promoLeaderboardKey(promo.id);
+
+        // Sweep up any stranded isPromo pending for this user before
+        // we read the leaderboard. See recoverStrandedPromoPending docs.
+        // Only runs for authenticated requests — guests have no pending.
+        if (currentUsername) {
+            await recoverStrandedPromoPending(currentUsername);
+        }
 
         // Parallelize every KV read. zrange + zcard are user-agnostic,
         // zscore + zrank are only needed when a user is signed in.
