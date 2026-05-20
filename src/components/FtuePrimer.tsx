@@ -41,7 +41,7 @@ const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
     },
     2: {
         title: "Collect Pins",
-        body: "Score 20K+ in a game to win a Pin Capsule. Rip capsules to find rare Pins and build your collection.",
+        body: "Score 15K+ in a game to win a Pin Capsule. Rip capsules to find rare Pins and build your collection.",
     },
 };
 

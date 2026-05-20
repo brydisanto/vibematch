@@ -159,10 +159,10 @@ The capsule is the central reward loop.
 
 | Final Score | Capsules earned (Classic) |
 |---|---|
-| Below 20,000 | 0 |
-| 20,000 to 39,999 | 1 |
-| 40,000 to 59,999 | 2 |
-| 60,000 or more | 3 |
+| Below 15,000 | 0 |
+| 15,000 to 29,999 | 1 |
+| 30,000 to 49,999 | 2 |
+| 50,000 or more | 3 |
 
 ### Earning capsules from Daily Challenge
 
@@ -170,10 +170,10 @@ Daily pays out double at every threshold:
 
 | Final Score | Capsules earned (Daily) |
 |---|---|
-| Below 20,000 | 0 |
-| 20,000 to 39,999 | 2 |
-| 40,000 to 59,999 | 4 |
-| 60,000 or more | 6 |
+| Below 15,000 | 0 |
+| 15,000 to 29,999 | 2 |
+| 30,000 to 49,999 | 4 |
+| 50,000 or more | 6 |
 
 Plus the day's #1 finisher receives the Daily Champion Bonus on top.
 
@@ -480,8 +480,8 @@ For any agent writing copy or generating content for Pin Drop:
 | Moves per game? | 30 |
 | Board size? | 8x8 |
 | Pins on board per game? | 6 randomly drafted from the 101 |
-| First capsule threshold? | 20,000 points |
-| Top capsule threshold? | 60,000 points (3 capsules in Classic, 6 in Daily) |
+| First capsule threshold? | 15,000 points |
+| Top capsule threshold? | 50,000 points (3 capsules in Classic, 6 in Daily) |
 | Hall of Vibes? | 100,000+ in a single game |
 | Anti-cheat ceiling? | 800,000 |
 | Idle hint? | Fires after 8 seconds of inactivity, once per game |

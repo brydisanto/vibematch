@@ -28,7 +28,7 @@ const TIER_WEIGHTS = {
     cosmic: 3,     // ~3% Cosmic (3 badges)
 } as const;
 
-const CAPSULE_SCORE_THRESHOLD = 20000;
+const CAPSULE_SCORE_THRESHOLD = 15000;
 const CLASSIC_DAILY_CAP = 10;
 export const MAX_BONUS_PRIZE_GAMES_PER_DAY = 15;
 
@@ -434,7 +434,7 @@ export async function POST(req: Request) {
             }
 
             // Tiered capsule rewards
-            const capsuleCount = score >= 60000 ? 3 : score >= 40000 ? 2 : 1;
+            const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
 
             if (gameMode === 'classic') {
                 // Classic: require a valid single-use match token from trackGame

@@ -101,7 +101,7 @@ export default function AppClient() {
   // handlePlayAgain can wait for it before issuing a new trackGame. Without
   // this, trackGame can race logGame at the server and the pinbook route's
   // "abandoned previous match" guard wrongly burns the new match's prize
-  // eligibility, causing 20K+ runs to yield zero capsules.
+  // eligibility, causing 15K+ runs to yield zero capsules.
   const gameEndPromiseRef = useRef<Promise<void> | null>(null);
 
   // Per-game session stats for achievements (not in GameState)
@@ -266,13 +266,13 @@ export default function AppClient() {
       // 3. Award capsule if score threshold met. Also gates which first-time
       // FTUE modal (if any) fires on this game-over.
       let actuallyEarnedCapsule = false;
-      if (gs.score >= 20000) {
+      if (gs.score >= 15000) {
         const result = await pinBook.earnCapsule(gs.score, mode);
         if (result.earned) {
           setCapsuleEarned(true);
           actuallyEarnedCapsule = true;
         } else {
-          // Silent failures were the root cause of "scored 20K+ got nothing"
+          // Silent failures were the root cause of "scored 15K+ got nothing"
           // confusion. Surface the specific reason instead. The server
           // returns `abandonedPrevious: true` when the anti-refresh-shop
           // rule burned this match — that's distinct from a legitimate
@@ -293,16 +293,16 @@ export default function AppClient() {
       // First-time FTUE modal — only in classic mode.
       //   - If this is the user's first-ever actual capsule earn, push them
       //     to the Pin Book with the "First Capsule" reveal modal.
-      //   - Else if this is their first game ending UNDER the 20K capsule
+      //   - Else if this is their first game ending UNDER the 15K capsule
       //     threshold, show the "So close" encouragement modal. Guard on
-      //     score<20K so the modal doesn't fire (with its "hit 20K+ next
+      //     score<15K so the modal doesn't fire (with its "hit 15K+ next
       //     time" copy) on high-score runs that legitimately missed a
       //     capsule for other reasons (e.g. abandonedPrevious anti-abuse).
       if (mode === "classic") {
         if (actuallyEarnedCapsule && !ftue.has("firstCapsuleShown")) {
           ftue.mark("firstCapsuleShown");
           setTimeout(() => setFtuePostGame("capsule"), 800);
-        } else if (!actuallyEarnedCapsule && gs.score < 20000 && !ftue.has("firstFailShown")) {
+        } else if (!actuallyEarnedCapsule && gs.score < 15000 && !ftue.has("firstFailShown")) {
           ftue.mark("firstFailShown");
           setTimeout(() => setFtuePostGame("tryAgain"), 800);
         }
@@ -586,7 +586,7 @@ export default function AppClient() {
       // achievements) to finish before issuing a new trackGame. Otherwise the
       // server sees the previous match as "unlogged + <5min old" and burns
       // the new match's prizeEligible flag — which silently kills capsule
-      // rewards even on 20K+ runs.
+      // rewards even on 15K+ runs.
       if (gameEndPromiseRef.current) {
         await gameEndPromiseRef.current.catch(() => {});
       }

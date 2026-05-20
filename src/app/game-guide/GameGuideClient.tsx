@@ -1376,9 +1376,9 @@ function Capsules() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ScoreStep amount="20,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
-                <ScoreStep amount="40,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
-                <ScoreStep amount="60,000+" caps="+3 Capsules" color={COSMIC} intensity={0.6} />
+                <ScoreStep amount="15,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="30,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
+                <ScoreStep amount="50,000+" caps="+3 Capsules" color={COSMIC} intensity={0.6} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-start">
@@ -1395,9 +1395,9 @@ function Capsules() {
                         Same score thresholds, but you'll earn double the capsules! Players only get one shot per day, so the extra payout rewards taking it seriously.
                     </p>
                     <ul className="font-mundial text-[15px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
-                        <li className="mb-1">20K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
-                        <li className="mb-1">40K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
-                        <li>60K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
+                        <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
+                        <li className="mb-1">30K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
+                        <li>50K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
                     <p className="font-mundial text-[14px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
                         Stack the Daily Champion prize on top and Daily becomes your biggest capsule day of the week. By far.

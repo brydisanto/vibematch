@@ -359,9 +359,9 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                 }}
             >
                 {[
-                    { score: "20K+", reward: "1 capsule" },
-                    { score: "40K+", reward: "2 capsules" },
-                    { score: "60K+", reward: "3 capsules" },
+                    { score: "15K+", reward: "1 capsule" },
+                    { score: "30K+", reward: "2 capsules" },
+                    { score: "50K+", reward: "3 capsules" },
                 ].map((c, i) => (
                     <div key={c.score} className="flex items-center gap-4">
                         <div className="text-center">
@@ -380,7 +380,7 @@ function PinBookOnboarding({ onAction, actionLabel }: { onAction?: () => void; a
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                     {[
-                        { title: "Score Big", desc: <>Hit <strong className="text-white/70">20K+</strong> in Classic or Daily to earn capsules. Win extras at <strong className="text-white/70">40K</strong> &amp; <strong className="text-white/70">60K</strong>.</> },
+                        { title: "Score Big", desc: <>Hit <strong className="text-white/70">15K+</strong> in Classic or Daily to earn capsules. Win extras at <strong className="text-white/70">30K</strong> &amp; <strong className="text-white/70">50K</strong>.</> },
                         { title: "Form Shapes", desc: <>Land a <strong className="text-white/70">T</strong> or <strong className="text-white/70">Cross</strong> to win 1 bonus capsule.</> },
                         { title: "Complete Quests", desc: <>Unlock achievements for <strong className="text-white/70">bonus capsules</strong></> },
                         { title: "Reroll Extras", desc: <>Burn duplicate pins for new capsules. Requires <strong className="text-white/70">$VIBESTR</strong>.</> },

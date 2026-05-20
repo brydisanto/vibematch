@@ -322,15 +322,15 @@ function SlideScoring() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-lg bg-white/5 p-2">
-                        <p className="text-white/80 font-display font-black text-sm">100</p>
+                        <p className="text-white/80 font-display font-black text-sm">150</p>
                         <p className="text-white/35 text-[9px] font-mundial">Match-3</p>
                     </div>
                     <div className="rounded-lg bg-white/5 p-2">
-                        <p className="text-white/80 font-display font-black text-sm">300</p>
+                        <p className="text-white/80 font-display font-black text-sm">450</p>
                         <p className="text-white/35 text-[9px] font-mundial">Match-4</p>
                     </div>
                     <div className="rounded-lg bg-white/5 p-2">
-                        <p className="text-white/80 font-display font-black text-sm">600</p>
+                        <p className="text-white/80 font-display font-black text-sm">900</p>
                         <p className="text-white/35 text-[9px] font-mundial">Match-5+</p>
                     </div>
                 </div>
@@ -377,7 +377,7 @@ function SlideScoring() {
 
             {/* Combo + Special tile scores */}
             <ContentCard icon={TrendingUp} color="#FF5F1F" title="Combos &amp; Cascades" delay={0.15}>
-                <p>A single swap can chain into multiple matches as tiles fall. Each extra match is a <span className="text-[#FF5F1F] font-semibold">cascade</span>, and every cascade multiplies your score by an extra <span className="text-[#FFE048] font-semibold">+75%</span>.</p>
+                <p>A single swap can chain into multiple matches as tiles fall. Each extra match is a <span className="text-[#FF5F1F] font-semibold">cascade</span>, and every cascade multiplies your score by an extra <span className="text-[#FFE048] font-semibold">+100%</span>.</p>
                 <p className="mt-1.5">Finish a turn with lots of cascades and the <span className="text-white/80 font-semibold">momentum carries over</span> into the next turn:</p>
                 <div className="mt-1.5 space-y-0.5 text-white/60">
                     <p>3 cascades: next turn starts at <span className="text-[#FFE048]">+1</span> combo</p>
@@ -412,7 +412,7 @@ function SlideScoring() {
                     </div>
                     <div>
                         <h4 className="font-display font-black text-[13px] text-[#FFE048]">Pin Capsule</h4>
-                        <p className="text-white/50 text-[11px] font-mundial">Score <span className="text-[#FFE048] font-semibold">20K+</span> to win 1 Capsule, <span className="text-[#FFE048] font-semibold">40K+</span> to win 2, <span className="text-[#FFE048] font-semibold">60K+</span> to win 3!</p>
+                        <p className="text-white/50 text-[11px] font-mundial">Score <span className="text-[#FFE048] font-semibold">15K+</span> to win 1 Capsule, <span className="text-[#FFE048] font-semibold">30K+</span> to win 2, <span className="text-[#FFE048] font-semibold">50K+</span> to win 3!</p>
                         <p className="text-white/50 text-[11px] font-mundial mt-1"><span className="text-white/80 font-semibold">T</span> and <span className="text-white/80 font-semibold">Cross</span> shapes also grant <span className="text-[#FFE048] font-semibold">+1 bonus capsule</span>.</p>
                         <p className="text-white/40 text-[10px] font-mundial mt-1">Capsules are earnable during your first <span className="text-[#FFE048] font-semibold">10 games</span> each day, plus the Daily Challenge.</p>
                     </div>
@@ -434,7 +434,7 @@ function SlideScoring() {
                     <Lightbulb size={14} className="text-[#B366FF] mt-0.5 flex-shrink-0" />
                     <p className="text-[11px] text-white/55 font-mundial leading-relaxed">
                         <span className="text-[#B366FF] font-bold">Pro Tip:</span>{" "}
-                        Hunt for Legendary and Cosmic pins first: they multiply everything. Set up cascades with high-tier pins and you'll blast past 20K.
+                        Hunt for Legendary and Cosmic pins first: they multiply everything. Set up cascades with high-tier pins and you'll blast past 15K.
                     </p>
                 </div>
             </motion.div>
