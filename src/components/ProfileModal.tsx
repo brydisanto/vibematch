@@ -130,7 +130,16 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         >
                             <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] overflow-hidden relative">
                                 {avatarUrl ? (
-                                    <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                                    avatarUrl.startsWith("data:") ? (
+                                        // Data-URI avatars (from canvas.toDataURL on
+                                        // upload) bypass Next.js Image — its srcset
+                                        // multiplies a 120KB base64 URI and breaks
+                                        // mobile Safari's attribute limits.
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
+                                    ) : (
+                                        <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                                    )
                                 ) : (
                                     <Upload size={20} className="text-white/20 group-hover:text-white/40 transition-colors" />
                                 )}

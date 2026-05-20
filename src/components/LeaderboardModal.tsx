@@ -124,11 +124,25 @@ function Avatar({ entry, size = 40, className = "" }: { entry: LeaderboardEntry;
             .catch(() => {});
     }, [entry.username, src]);
 
+    // Avatars are stored either as remote https: URLs (Vercel Blob,
+    // OpenSea, etc.) or as inline data:image/jpeg;base64 URIs from the
+    // upload flow's canvas.toDataURL(). Next.js <Image> generates a
+    // srcset that repeats the entire src for different DPRs, which
+    // multiplies a 120KB base64 URI by 3-4x and trips mobile Safari's
+    // attribute length limits — avatars render fine on desktop but
+    // come back blank on phones. Plain <img> sidesteps the srcset
+    // generation; the browser renders the data URI directly.
+    const isDataUri = src.startsWith("data:");
     return (
         <div className={`rounded-full bg-[#2A2333] border border-[#3A3344] overflow-hidden flex items-center justify-center flex-shrink-0 ${className}`}
             style={{ width: size, height: size }}>
             {src ? (
-                <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                isDataUri ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                ) : (
+                    <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                )
             ) : (
                 <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
                     {entry.username.substring(0, 2)}

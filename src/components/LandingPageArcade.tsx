@@ -802,13 +802,22 @@ export default function LandingPageArcade({
                                                     title={p.username}
                                                 >
                                                     {p.avatarUrl ? (
-                                                        <Image
-                                                            src={p.avatarUrl}
-                                                            alt=""
-                                                            fill
-                                                            sizes="22px"
-                                                            className="object-cover"
-                                                        />
+                                                        p.avatarUrl.startsWith("data:") ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img
+                                                                src={p.avatarUrl}
+                                                                alt=""
+                                                                className="absolute inset-0 w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <Image
+                                                                src={p.avatarUrl}
+                                                                alt=""
+                                                                fill
+                                                                sizes="22px"
+                                                                className="object-cover"
+                                                            />
+                                                        )
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-[10px]">🏄</div>
                                                     )}
@@ -1143,13 +1152,22 @@ export default function LandingPageArcade({
                                             }}
                                         >
                                             {avatarUrl ? (
-                                                <Image
-                                                    src={avatarUrl}
-                                                    alt=""
-                                                    fill
-                                                    sizes="84px"
-                                                    className="object-cover"
-                                                />
+                                                avatarUrl.startsWith("data:") ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={avatarUrl}
+                                                        alt=""
+                                                        className="absolute inset-0 w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <Image
+                                                        src={avatarUrl}
+                                                        alt=""
+                                                        fill
+                                                        sizes="84px"
+                                                        className="object-cover"
+                                                    />
+                                                )
                                             ) : (
                                                 <div className="text-[42px] leading-none">🏄</div>
                                             )}

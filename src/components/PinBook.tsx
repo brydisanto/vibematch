@@ -74,11 +74,20 @@ function PinLeaderboardAvatar({ entry, size = 36 }: { entry: PinLeaderboardEntry
             .catch(() => {});
     }, [entry.username, src]);
 
+    // See note in LeaderboardModal Avatar component — data:image base64
+    // avatars trip Next.js Image's srcset on mobile. Plain <img> for
+    // data URIs, optimized <Image> for remote URLs.
+    const isDataUri = src.startsWith("data:");
     return (
         <div className="rounded-full bg-[#2A1845] border border-[#3A2855] overflow-hidden flex items-center justify-center flex-shrink-0"
             style={{ width: size, height: size }}>
             {src ? (
-                <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                isDataUri ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                ) : (
+                    <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
+                )
             ) : (
                 <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
                     {entry.username.substring(0, 2)}
