@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { BADGES } from "@/lib/badges";
+import { getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
 import { User, BookOpen, Trophy, Crown, HelpCircle, LogOut, LogIn } from "lucide-react";
 import ProfileModal from "./ProfileModal";
@@ -44,9 +45,8 @@ interface LandingPageQuestProps {
 /* ========= DAILY COUNTDOWN ========= */
 function formatCountdown() {
     const now = new Date();
-    const midnight = new Date(now);
-    midnight.setUTCHours(24, 0, 0, 0);
-    const diff = midnight.getTime() - now.getTime();
+    const target = getNextNoonEastern(now);
+    const diff = Math.max(0, target.getTime() - now.getTime());
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);

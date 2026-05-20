@@ -23,7 +23,7 @@ import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
 import { buildPlayerContext } from "@/lib/playerContext";
-import { getEasternDailyKey } from "@/lib/daily-window";
+import { getEasternDailyKey, getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
@@ -67,9 +67,8 @@ interface LandingPageArcadeProps {
 /* ========= COUNTDOWN ========= */
 function formatCountdown() {
     const now = new Date();
-    const midnight = new Date(now);
-    midnight.setUTCHours(24, 0, 0, 0);
-    const diff = midnight.getTime() - now.getTime();
+    const target = getNextNoonEastern(now);
+    const diff = Math.max(0, target.getTime() - now.getTime());
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
