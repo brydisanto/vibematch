@@ -40,6 +40,34 @@ const cspValue = Object.entries(CSP_DIRECTIVES)
   .join("; ");
 
 const nextConfig: NextConfig = {
+  /**
+   * Hosts the Next.js Image optimizer is allowed to fetch from. Must
+   * stay in sync with AVATAR_HOST_ALLOWLIST in src/app/api/profiles/route.ts
+   * — that allowlist gates what *gets stored* in user profiles; this
+   * config gates what the optimizer is *allowed to render*. Mismatch
+   * either way → broken avatars.
+   *
+   * Blob storage is the primary path now (uploads go to
+   * <storeId>.public.blob.vercel-storage.com); the rest cover NFT
+   * avatars (OpenSea / seadn), Google auth avatars, Imgur, IPFS, etc.
+   */
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: '**.vercel-storage.com' },
+      { protocol: 'https', hostname: 'pindropgame.com' },
+      { protocol: 'https', hostname: '**.pindropgame.com' },
+      { protocol: 'https', hostname: 'vibematch.app' },
+      { protocol: 'https', hostname: '**.vibematch.app' },
+      { protocol: 'https', hostname: 'opensea.io' },
+      { protocol: 'https', hostname: 'i.seadn.io' },
+      { protocol: 'https', hostname: 'raw.githubusercontent.com' },
+      { protocol: 'https', hostname: '**.googleusercontent.com' },
+      { protocol: 'https', hostname: '**.imgur.com' },
+      { protocol: 'https', hostname: 'imgur.com' },
+      { protocol: 'https', hostname: 'ipfs.io' },
+    ],
+  },
   async headers() {
     return [
       {

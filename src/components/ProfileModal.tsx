@@ -34,6 +34,8 @@ interface ProfileModalProps {
 export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave, onClose, pinsCollected = 0, streak = 0, capsuleCount = 0 }: ProfileModalProps) {
     const [username, setUsername] = useState(currentUsername);
     const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const [avatarError, setAvatarError] = useState<string | null>(null);
     const [soundEnabled, setSoundEnabled] = useState(!isMuted);
     const [trackIndex, setTrackIndex] = useState(getCurrentTrackIndex());
     const [referralStats, setReferralStats] = useState<{ totalReferrals: number; capsulesCredited: number; maxCapsules: number } | null>(null);
@@ -49,25 +51,55 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            // Resize to 128x128 thumbnail to keep data URL small (~5-10KB vs 200KB+)
-            const img = document.createElement("img");
-            img.onload = () => {
+        if (!file) return;
+        setAvatarError(null);
+        setAvatarUploading(true);
+        // Resize / center-crop to a 256x256 JPEG in the browser before
+        // upload so we cap network usage even on huge phone-camera files.
+        // The crop guarantees a square aspect and keeps blob sizes around
+        // 15-30 KB. Then POST the Blob to /api/profiles/upload-avatar which
+        // pushes it to Vercel Blob storage and returns the public https
+        // URL — that's what gets stored in the user profile.
+        const img = document.createElement("img");
+        img.onload = async () => {
+            try {
                 const canvas = document.createElement("canvas");
-                const size = 128;
+                const size = 256;
                 canvas.width = size;
                 canvas.height = size;
-                const ctx = canvas.getContext("2d")!;
-                // Center-crop to square
+                const ctx = canvas.getContext("2d");
+                if (!ctx) throw new Error("Canvas not supported");
                 const min = Math.min(img.width, img.height);
                 const sx = (img.width - min) / 2;
                 const sy = (img.height - min) / 2;
                 ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-                setAvatarUrl(canvas.toDataURL("image/jpeg", 0.8));
                 URL.revokeObjectURL(img.src);
-            };
-            img.src = URL.createObjectURL(file);
-        }
+                const blob: Blob = await new Promise((resolve, reject) =>
+                    canvas.toBlob(b => b ? resolve(b) : reject(new Error("Canvas export failed")), "image/jpeg", 0.85)
+                );
+                const formData = new FormData();
+                formData.append("file", blob, "avatar.jpg");
+                const res = await fetch("/api/profiles/upload-avatar", { method: "POST", body: formData });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || `Upload failed (${res.status})`);
+                }
+                const data = await res.json();
+                if (!data.url) throw new Error("Upload returned no URL");
+                setAvatarUrl(data.url);
+            } catch (err) {
+                console.error("Avatar upload error:", err);
+                setAvatarError(err instanceof Error ? err.message : "Upload failed");
+            } finally {
+                setAvatarUploading(false);
+            }
+        };
+        img.onerror = () => {
+            setAvatarUploading(false);
+            setAvatarError("Could not read image file");
+            URL.revokeObjectURL(img.src);
+        };
+        img.src = URL.createObjectURL(file);
     };
 
     const handleSoundToggle = () => {
@@ -131,10 +163,11 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             <div className="w-full h-full rounded-full bg-[#110D17] flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] overflow-hidden relative">
                                 {avatarUrl ? (
                                     avatarUrl.startsWith("data:") ? (
-                                        // Data-URI avatars (from canvas.toDataURL on
-                                        // upload) bypass Next.js Image — its srcset
-                                        // multiplies a 120KB base64 URI and breaks
-                                        // mobile Safari's attribute limits.
+                                        // Legacy base64 avatars (from the pre-Blob
+                                        // upload flow) still need to bypass Next.js
+                                        // Image to survive mobile Safari's srcset
+                                        // attribute limits. New uploads go to Vercel
+                                        // Blob and use optimized <Image>.
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
                                     ) : (
@@ -143,11 +176,21 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 ) : (
                                     <Upload size={20} className="text-white/20 group-hover:text-white/40 transition-colors" />
                                 )}
+                                {avatarUploading && (
+                                    <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Upload size={14} className="text-white mb-0.5" />
                                     <span className="text-[7px] font-bold text-white uppercase tracking-wider">Change</span>
                                 </div>
                             </div>
+                            {avatarError && (
+                                <div className="absolute -bottom-1 left-0 right-0 text-[9px] font-mundial text-red-400 text-center">
+                                    {avatarError}
+                                </div>
+                            )}
                             <input
                                 type="file"
                                 accept="image/*"
@@ -283,13 +326,16 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                             </p>
                         </div>
 
-                        {/* Save Button */}
+                        {/* Save Button. Disabled while an avatar is mid-upload
+                            so we don't save the previous URL underneath. */}
                         <button
+                            disabled={avatarUploading}
                             onClick={() => {
+                                if (avatarUploading) return;
                                 onSave(username, avatarUrl);
                                 onClose();
                             }}
-                            className="group relative w-full mt-auto overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-xl bg-gradient-to-b from-[#25B869] to-[#168E4D] p-[3px] shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.2)]"
+                            className={`group relative w-full mt-auto overflow-hidden transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0.5 rounded-xl bg-gradient-to-b from-[#25B869] to-[#168E4D] p-[3px] shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.2)] ${avatarUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                             <div className="relative bg-[#2EEA88] rounded-lg py-3 flex items-center justify-center gap-2 overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(255,255,255,0.3)]">
                                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent mix-blend-overlay pointer-events-none" />
