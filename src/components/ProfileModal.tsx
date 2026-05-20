@@ -209,6 +209,7 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 { value: pinsCollected, label: "Pins", color: "text-white" },
                                 { value: streak, label: "Streak", color: "text-[#FFE048]" },
                                 { value: capsuleCount, label: "Capsules", color: "text-[#B366FF]" },
+                                { value: referralStats?.totalReferrals ?? 0, label: "Referrals", color: "text-[#FF6B9D]" },
                             ].map(s => (
                                 <div key={s.label} className="flex justify-between items-center py-1.5 border-b border-white/[0.05] last:border-0">
                                     <span className="text-[10px] text-white/40 font-mundial">{s.label}</span>
