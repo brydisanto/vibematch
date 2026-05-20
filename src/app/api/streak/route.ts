@@ -1,20 +1,21 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { getEasternDailyKey, getEasternYesterdayKey } from '@/lib/daily-window';
 
 interface StreakData {
     streak: number;
     lastPlayed: string;
 }
 
+// Functions preserved for call-site stability; both now resolve against
+// the Eastern noon-reset daily window instead of UTC midnight.
 function getTodayUTC(): string {
-    return new Date().toISOString().split('T')[0];
+    return getEasternDailyKey();
 }
 
 function getYesterdayUTC(): string {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - 1);
-    return d.toISOString().split('T')[0];
+    return getEasternYesterdayKey();
 }
 
 export async function GET(req: Request) {

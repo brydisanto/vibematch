@@ -2,6 +2,7 @@ import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
+import { getEasternDailyKey } from '@/lib/daily-window';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos. Bumped
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
                 if (key.startsWith('leaderboard:')) cache.delete(key);
             }
         } else if (mode === 'daily') {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getEasternDailyKey();
 
             // IMPORTANT: `daily_played:*` is owned by /api/pinbook.trackGame —
             // it marks that the user STARTED today's daily (set atomically at
@@ -222,7 +223,7 @@ export async function GET(req: Request) {
 
         let leaderboard: any = [];
         let leaderboardKey = '';
-        const today = new Date().toISOString().split('T')[0];
+        const today = getEasternDailyKey();
 
         if (mode === 'classic') {
             leaderboardKey = 'classic_leaderboard';

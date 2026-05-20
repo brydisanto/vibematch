@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getEasternDailyKey } from "@/lib/daily-window";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,7 @@ async function appendAudit(username: string, entry: AuditEntry) {
 }
 
 async function removeFromLeaderboards(canonicalUsername: string, lowerUsername: string) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getEasternDailyKey();
     // Remove both the canonical-cased entry and any lowercase variant —
     // older accounts may have been seeded with the lowercase form.
     await Promise.all([

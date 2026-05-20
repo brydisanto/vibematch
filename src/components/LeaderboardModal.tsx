@@ -63,11 +63,24 @@ function getNextMonday(): Date {
     return next;
 }
 
-function getMidnightTonight(): Date {
+/**
+ * Returns the next noon-ET reset moment. Daily Challenge windows roll over
+ * at noon America/New_York (not midnight UTC). Used by the Daily tab's
+ * "Resets in 4h 12m" countdown.
+ *
+ * Handles DST automatically — on the spring-forward day this returns
+ * 11 hours past midnight ET, on fall-back it returns 13.
+ */
+function getNextNoonEastern(): Date {
     const now = new Date();
-    const midnight = new Date(now);
-    midnight.setUTCHours(24, 0, 0, 0);
-    return midnight;
+    const nyWall = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const offsetToEt = now.getTime() - nyWall.getTime();
+    const target = new Date(nyWall);
+    target.setHours(12, 0, 0, 0);
+    if (nyWall.getTime() >= target.getTime()) {
+        target.setDate(target.getDate() + 1);
+    }
+    return new Date(target.getTime() + offsetToEt);
 }
 
 function formatCountdown(targetDate: Date): string {
@@ -98,7 +111,7 @@ function useCountdown(mode: TabMode): string | null {
     // Pins + promo are cumulative collection ranks — no reset cadence.
     if (mode === "classic" || mode === "pins" || mode === "promo") return null;
     if (mode === "weekly") return formatCountdown(getNextMonday());
-    return formatCountdown(getMidnightTonight());
+    return formatCountdown(getNextNoonEastern());
 }
 
 // --- Avatar cache (shared across all Avatar instances in the session) ---

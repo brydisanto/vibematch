@@ -10,6 +10,7 @@ import {
 } from '@/lib/achievements';
 import { BADGES } from '@/lib/badges';
 import { buildPlayerContext } from '@/lib/playerContext';
+import { getEasternDailyKey, getEasternYesterdayKey } from '@/lib/daily-window';
 
 // Mid-game achievements that fire from checkMidGameAchievements in the
 // client. These are observable one-off claims ("did you land a T shape?
@@ -59,9 +60,7 @@ export async function GET() {
         let dailyChampEligible = false;
         if (!achievements.unlocked['daily_champ']) {
             try {
-                const yesterday = new Date();
-                yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-                const yesterdayKey = `daily_leaderboard:${yesterday.toISOString().split('T')[0]}`;
+                const yesterdayKey = `daily_leaderboard:${getEasternYesterdayKey()}`;
                 // Get #1 entry from yesterday's sorted set (highest score)
                 const top = await kv.zrange(yesterdayKey, 0, 0, { rev: true }) as string[];
                 if (top.length > 0 && top[0].toLowerCase() === username) {
@@ -160,10 +159,8 @@ export async function POST(req: Request) {
         ctx.referralCount = referralRaw?.totalReferrals || 0;
         const streakData = streakRaw;
         if (streakData) {
-            const today = new Date().toISOString().split('T')[0];
-            const yesterday = new Date();
-            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const today = getEasternDailyKey();
+            const yesterdayStr = getEasternYesterdayKey();
             if (streakData.lastPlayed === today || streakData.lastPlayed === yesterdayStr) {
                 ctx.streak = streakData.streak || 0;
             }
@@ -173,9 +170,7 @@ export async function POST(req: Request) {
         let dailyChampEligible = false;
         if (!achievements.unlocked['daily_champ']) {
             try {
-                const yesterday = new Date();
-                yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-                const yesterdayKey = `daily_leaderboard:${yesterday.toISOString().split('T')[0]}`;
+                const yesterdayKey = `daily_leaderboard:${getEasternYesterdayKey()}`;
                 const top = await kv.zrange(yesterdayKey, 0, 0, { rev: true }) as string[];
                 if (top.length > 0 && top[0].toLowerCase() === username) {
                     dailyChampEligible = true;
@@ -208,7 +203,7 @@ export async function POST(req: Request) {
             if (matchId && gameMode === 'classic') {
                 matchStats = await kv.get(`matchstats:${username}:${matchId}`);
             } else if (gameMode === 'daily') {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getEasternDailyKey();
                 matchStats = await kv.get(`matchstats:${username}:daily:${today}`);
             }
 

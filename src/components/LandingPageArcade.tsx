@@ -23,6 +23,7 @@ import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
 import { buildPlayerContext } from "@/lib/playerContext";
+import { getEasternDailyKey } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
@@ -372,10 +373,10 @@ export default function LandingPageArcade({
     // a NEW BEST tag when it matches the personalBest. Daily "today" runs
     // get a TODAY tag.
     const taggedRuns = useMemo(() => {
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = getEasternDailyKey();
         let newBestTagged = false;
         return recentRuns.map(run => {
-            const dateStr = new Date(run.timestamp).toISOString().slice(0, 10);
+            const dateStr = getEasternDailyKey(new Date(run.timestamp));
             let tag: "NEW BEST" | "TODAY" | null = null;
             if (run.mode === "classic" && !newBestTagged && personalBest > 0 && run.score === personalBest) {
                 tag = "NEW BEST";

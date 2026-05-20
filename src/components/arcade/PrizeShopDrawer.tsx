@@ -503,7 +503,7 @@ function PurchaseState({
             `}</style>
 
             <p className="text-white/25 text-[9px] font-mundial text-center mt-3 tracking-wider">
-                You may purchase up to {MAX_BONUS_PER_DAY} Bonus Games per day. Resets at midnight UTC.
+                You may purchase up to {MAX_BONUS_PER_DAY} Bonus Games per day. Resets at noon ET.
             </p>
             <p className="text-white/30 text-[9px] font-mundial text-center mt-1.5 leading-snug">
                 Using $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.

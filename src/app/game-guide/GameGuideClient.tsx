@@ -1942,7 +1942,7 @@ function DailyChallenge() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>One Shot</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Players get just one attempt per day. The server locks you in the moment you start the game. The next Daily unlocks at midnight UTC.
+                        Players get just one attempt per day. The server locks you in the moment you start the game. The next Daily unlocks at noon ET.
                     </p>
                 </Card>
             </div>
@@ -2110,7 +2110,7 @@ function Leaderboards() {
     const boards = [
         { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your highest Classic score of all time. Never resets. The number you're trying to beat forever." },
         { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Your best Classic score this week. A fresh race kicks off every Monday at midnight UTC." },
-        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. The #1 finisher wins the champion bonus." },
+        { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. Resets at noon ET. The #1 finisher wins the champion bonus." },
         { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by collection %. A separate race from score. Updates the moment you pull a new pin." },
     ];
     return (

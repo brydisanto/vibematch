@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
 import { detectAnomalies, highestSeverity, type GameLogEntry } from "@/lib/game-anomalies";
+import { getEasternDailyKey } from "@/lib/daily-window";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         }
         // Daily high score
         let dailyHighScore: number | null = null;
-        const today = new Date().toISOString().split('T')[0];
+        const today = getEasternDailyKey();
         if (canonicalUsername) {
             dailyHighScore = await kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as number | null;
         }

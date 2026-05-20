@@ -859,9 +859,35 @@ function shuffle<T>(arr: T[], rng: () => number = Math.random): T[] {
     return result;
 }
 
-// Generate daily seed from date string
+// Generate daily seed from date string. When no date is supplied, derives
+// the date from the current Eastern noon-reset window so the same board
+// surfaces for every player worldwide between noon ET on day N and noon
+// ET on day N+1. Pass a YYYY-MM-DD string explicitly to reproduce a
+// specific day's board (e.g. for the demo page).
 export function getDailySeed(date?: string): number {
-    const d = date || new Date().toISOString().split("T")[0];
+    // Inline the eastern-day computation to avoid pulling daily-window.ts
+    // into the engine's import graph (badges.ts is shared with the iOS
+    // bridge layer; keeping it dependency-free is the path of least
+    // resistance). Same algorithm as src/lib/daily-window.ts → getEasternDailyKey.
+    const fallback = () => {
+        const parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "America/New_York",
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", hour12: false,
+        }).formatToParts(new Date());
+        const get = (t: string) => parts.find(p => p.type === t)?.value ?? "";
+        const dateStr = `${get("year")}-${get("month")}-${get("day")}`;
+        const hourRaw = get("hour");
+        const hour = hourRaw === "24" ? 0 : parseInt(hourRaw, 10);
+        if (hour < 12) {
+            const [y, m, dd] = dateStr.split("-").map(Number);
+            const dt = new Date(Date.UTC(y, m - 1, dd));
+            dt.setUTCDate(dt.getUTCDate() - 1);
+            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+        }
+        return dateStr;
+    };
+    const d = date || fallback();
     let hash = 0;
     for (let i = 0; i < d.length; i++) {
         const char = d.charCodeAt(i);

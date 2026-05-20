@@ -31,7 +31,7 @@ There are two playable modes.
 - Pure skill comparison. Identical conditions for everyone.
 - Pays out double the capsules of Classic mode at the same score thresholds.
 - The day's #1 finisher wins a Champion Bonus on top of the standard rewards.
-- Resets at midnight UTC.
+- Resets at noon ET (America/New_York, follows DST).
 
 ---
 
@@ -298,7 +298,7 @@ Four leaderboards.
 |---|---|---|
 | All-Time | Highest single-game Classic score, ever | Never |
 | Weekly | Best Classic score this week | Every Monday at 00:00 UTC |
-| Daily | Today's Daily Challenge score | Daily at midnight UTC |
+| Daily | Today's Daily Challenge score | Daily at noon ET |
 | Pins | Unique-pin collection % | Updates live |
 
 Each board surfaces the player ahead of the signed-in user ("X points to beat player Y") so the next move always feels actionable. The Pins board ranks by completion percentage and uses unique pin count as a tiebreaker.

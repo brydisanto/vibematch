@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getEasternYesterdayKey } from "@/lib/daily-window";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +40,7 @@ export async function GET() {
     const username = (session.username as string).toLowerCase();
 
     try {
-        const yesterday = new Date();
-        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-        const dateStr = yesterday.toISOString().split("T")[0];
+        const dateStr = getEasternYesterdayKey();
         const leaderboardKey = `daily_leaderboard:${dateStr}`;
 
         // Who was #1 on yesterday's daily?

@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { getEasternDailyKey } from '@/lib/daily-window';
 
 export async function GET(req: Request) {
     // Gate on session to prevent user enumeration. The session's username is
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
     const username = (session.username as string).toLowerCase();
 
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getEasternDailyKey();
         const playedKey = `daily_played:${username}:${today}`;
         const hasPlayed = await kv.get(playedKey);
 

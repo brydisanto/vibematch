@@ -349,7 +349,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                     )}
 
                                     <p className="text-white/30 text-[10px] font-mundial text-center mt-3">
-                                        You may purchase up to 15 Bonus Games per day. Resets at midnight UTC.
+                                        You may purchase up to 15 Bonus Games per day. Resets at noon ET.
                                     </p>
                                     <p className="text-white/35 text-[9px] font-mundial text-center mt-2 leading-snug">
                                         Using $VIBESTR does not increase the probability of any specific outcome. Every pin is earnable for free.

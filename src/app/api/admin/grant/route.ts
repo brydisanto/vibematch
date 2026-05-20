@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getEasternDailyKey } from "@/lib/daily-window";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
     const balance: { plays?: number; capsules?: number } = {};
 
     if (type === "plays") {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getEasternDailyKey();
         const trackerKey = `pinbook:${username}:daily:${today}`;
         const existing = (await kv.get(trackerKey)) as DailyTracker | null;
         const tracker: DailyTracker = existing && existing.date === today

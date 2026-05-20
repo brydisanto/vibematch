@@ -97,7 +97,7 @@ export default function PrizeGamesOnboarding({ isOpen, onClose, onBuy, variant, 
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
-                                        <span>Free games refresh at midnight UTC</span>
+                                        <span>Free games refresh at noon ET</span>
                                     </div>
                                 </div>
 

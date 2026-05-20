@@ -4,6 +4,7 @@ import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
+import { getEasternDailyKey } from '@/lib/daily-window';
 import {
     PROMO_DROP_RATE,
     isPromoActive,
@@ -53,14 +54,13 @@ interface DailyTracker {
 }
 
 export function getTodayKey(username: string): string {
-    const today = new Date().toISOString().slice(0, 10);
-    return `pinbook:${username}:daily:${today}`;
+    return `pinbook:${username}:daily:${getEasternDailyKey()}`;
 }
 
 export async function getDailyTracker(username: string): Promise<DailyTracker> {
     const key = getTodayKey(username);
     const data = await kv.get(key) as DailyTracker | null;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getEasternDailyKey();
     if (data && data.date === today) return { bonusPrizeGames: 0, ...data };
     return { classicPlays: 0, date: today, bonusPrizeGames: 0 };
 }
@@ -232,7 +232,7 @@ export async function POST(req: Request) {
             // that earn/bonus must present to get capsules. Each token represents
             // exactly one physical game the client has started.
             const gameMode = (body.gameMode as string) || 'classic';
-            const today = new Date().toISOString().slice(0, 10);
+            const today = getEasternDailyKey();
 
             // Daily: atomically set the daily_played marker at game START, not game END.
             // This prevents the "refresh mid-daily to get a fresh board" exploit.
@@ -413,7 +413,7 @@ export async function POST(req: Request) {
             if (validatedMatch && matchId) {
                 await kv.set(`matchstats:${username}:${matchId}`, logEntry, { ex: 60 * 60 * 2 });
             } else if (gameMode === 'daily') {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getEasternDailyKey();
                 await kv.set(`matchstats:${username}:daily:${today}`, logEntry, { ex: 86400 * 2 });
             }
 
@@ -468,7 +468,7 @@ export async function POST(req: Request) {
                 data.totalEarned += capsuleCount;
             } else if (gameMode === 'daily') {
                 // Daily: require that the daily_played marker exists for today
-                const today = new Date().toISOString().split('T')[0];
+                const today = getEasternDailyKey();
                 const playedKey = `daily_played:${username}:${today}`;
                 const hasPlayed = await kv.get(playedKey);
                 if (!hasPlayed) {
@@ -517,7 +517,7 @@ export async function POST(req: Request) {
                 data.capsules += 1;
                 data.totalEarned += 1;
             } else if (gameMode === 'daily') {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getEasternDailyKey();
                 const playedKey = `daily_played:${username}:${today}`;
                 const hasPlayed = await kv.get(playedKey);
                 if (!hasPlayed) {
