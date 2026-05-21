@@ -408,12 +408,14 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
                         <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
                         <div
-                            className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
-                            style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
+                            className={`font-display text-3xl font-black leading-none text-center ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
+                            style={isFrenzy
+                                ? { color: "#FFE048", textShadow: "0 2px 0 #8b6b15, 0 3px 4px rgba(0,0,0,0.5)" }
+                                : { color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
                         >
                             <span
                                 data-hud-score-target
-                                className={scoreBumping ? "hud-score-flash" : ""}
+                                className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >
                                 {displayedScore.toLocaleString()}
@@ -479,16 +481,18 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             SCORE
                         </div>
                         <div
-                            className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
-                            style={{
-                                color: "#FFE048",
-                                WebkitTextStroke: "1px #c9a84c",
-                                textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
-                            }}
+                            className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
+                            style={isFrenzy
+                                ? { color: "#FFE048", textShadow: "0 3px 0 #8b6b15, 0 5px 8px rgba(0,0,0,0.6)" }
+                                : {
+                                    color: "#FFE048",
+                                    WebkitTextStroke: "1px #c9a84c",
+                                    textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
+                                }}
                         >
                             <span
                                 data-hud-score-target
-                                className={scoreBumping ? "hud-score-flash" : ""}
+                                className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
                                 style={{ display: "inline-block" }}
                             >
                                 {formatScoreWithCommas(displayedScore)}
