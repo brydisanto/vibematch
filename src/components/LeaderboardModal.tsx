@@ -39,10 +39,10 @@ interface LeaderboardModalProps {
     /** Initial tab when the modal opens. Defaults to "classic". Pass
      *  "daily" when opening from the DAILY CHALLENGE rail so the user
      *  lands on the relevant board. */
-    initialTab?: "classic" | "weekly" | "daily" | "pins" | "promo";
+    initialTab?: "classic" | "weekly" | "daily" | "frenzy" | "pins" | "promo";
 }
 
-type TabMode = "classic" | "weekly" | "daily" | "pins" | "promo";
+type TabMode = "classic" | "weekly" | "daily" | "frenzy" | "pins" | "promo";
 
 const formatScore = (value: number, mode: TabMode = "classic") => {
     if (value <= 0) return "\u2014";
@@ -427,7 +427,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
             return;
         }
 
-        // classic / weekly / daily
+        // classic / weekly / daily / frenzy — all served by /api/scores
         const params = new URLSearchParams({ mode: targetMode });
         if (currentUsername) params.set("username", currentUsername);
         const res = await fetch(`/api/scores?${params}`);
@@ -543,6 +543,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
 
     const tabs: { key: TabMode; label: string }[] = [
         { key: "classic", label: "All Time" },
+        { key: "frenzy", label: "Frenzy" },
         { key: "weekly", label: "Weekly" },
         { key: "daily", label: "Daily" },
         { key: "pins", label: "Pins" },

@@ -35,6 +35,11 @@ import {
     playFinalMoveWarning,
     playGameStartSound,
     playTileLandSound,
+    startFrenzyBGM,
+    stopFrenzyBGM,
+    setFrenzyTempo,
+    playFrenzyTick,
+    playFrenzyFinalTick,
 } from "./sounds";
 
 export interface ScorePopup {
@@ -181,12 +186,15 @@ export function useGame(): UseGameReturn {
         const initialState = createInitialState(mode);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
+        // Frenzy gets the urgency BGM treatment — forced Werq, sped up.
+        if (mode === "frenzy") startFrenzyBGM();
     }, [preloadBadgeImages, applyStartState]);
 
     const startGameWithBadges = useCallback(async (mode: GameMode, badges: Badge[]) => {
         const initialState = createInitialState(mode, badges);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
+        if (mode === "frenzy") startFrenzyBGM();
     }, [preloadBadgeImages, applyStartState]);
 
     const resetGame = useCallback(async () => {
@@ -703,19 +711,30 @@ export function useGame(): UseGameReturn {
     // Deps are the "should this interval be alive" signals only. The
     // interval body uses setState's callback form to always read the
     // latest frenzyMsRemaining, so we don't tear down + recreate every
-    // 100ms.
+    // 100ms. The body also ramps the BGM tempo by remaining time and
+    // fires urgency ticks at each whole-second mark in the last 10s
+    // (final 3s get a louder, higher-pitched variant).
     useEffect(() => {
         if (!state) return;
         if (state.gameMode !== "frenzy") return;
         if (state.frenzyStartedAt === null) return;
         if (state.gamePhase !== "playing") return;
 
+        let lastTickSecond: number | null = null;
         const tick = setInterval(() => {
             setState(prev => {
                 if (!prev) return prev;
                 if (prev.gameMode !== "frenzy") return prev;
                 if (prev.gamePhase !== "playing") return prev;
                 const next = Math.max(0, prev.frenzyMsRemaining - 100);
+                // Tempo ramp + urgency SFX layered on the live clock.
+                setFrenzyTempo(next);
+                const nextSecond = Math.ceil(next / 1000);
+                if (next > 0 && nextSecond <= 10 && nextSecond !== lastTickSecond) {
+                    lastTickSecond = nextSecond;
+                    if (nextSecond <= 3) playFrenzyFinalTick();
+                    else playFrenzyTick();
+                }
                 if (next <= 0) {
                     setTimeout(() => playGameOverSound(), 0);
                     return {
@@ -732,6 +751,15 @@ export function useGame(): UseGameReturn {
         return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state?.gameMode, state?.frenzyStartedAt, state?.gamePhase]);
+
+    // Stop the Frenzy BGM treatment (rate + track restore) when the
+    // round ends, no matter what triggered the end (time out, visibility
+    // hide, manual abort). Mirrored on mode change away from frenzy.
+    useEffect(() => {
+        if (state?.gameMode === "frenzy" && state.gamePhase === "gameover") {
+            stopFrenzyBGM();
+        }
+    }, [state?.gameMode, state?.gamePhase]);
 
     // Replay queued input when the animating window clears. Only one
     // queued action exists at a time (selectTile / swipeTiles each

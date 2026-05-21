@@ -221,6 +221,75 @@ export function stopBGM() {
     stopMP3();
 }
 
+// ===== FRENZY AUDIO =====
+// Frenzy gets its own BGM treatment: forced to the "Werq" track (the
+// chosen high-energy default), played back ~18% faster than normal, with
+// pitch preservation on so it sounds urgent without going chipmunk.
+// Saves the previous track index so we can restore the player's
+// selection when Frenzy ends.
+const FRENZY_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Werq");
+const FRENZY_BASE_RATE = 1.18;
+let savedTrackBeforeFrenzy: number | null = null;
+
+function applyPlaybackRate(rate: number) {
+    if (!bgmAudio) return;
+    try {
+        // preservesPitch keeps the track musical instead of pitched up.
+        // Some Safari builds spell it differently — set both.
+        (bgmAudio as HTMLAudioElement & { preservesPitch?: boolean; mozPreservesPitch?: boolean; webkitPreservesPitch?: boolean }).preservesPitch = true;
+        bgmAudio.playbackRate = rate;
+    } catch {
+        // Older engines may not support playbackRate setter — silent no-op.
+    }
+}
+
+export function startFrenzyBGM() {
+    savedTrackBeforeFrenzy = currentBGMTrack;
+    currentBGMTrack = FRENZY_TRACK_INDEX >= 0 ? FRENZY_TRACK_INDEX : 0;
+    bgmShouldPlay = true;
+    if (bgmAudio) stopMP3();
+    startMP3();
+    // The audio element needs a beat to load before we can set
+    // playbackRate reliably. 120ms covers Safari + Chrome reliably.
+    setTimeout(() => applyPlaybackRate(FRENZY_BASE_RATE), 120);
+}
+
+/** Ramp the Frenzy playback rate based on remaining ms. Used by the
+ *  hook to lean harder into urgency as the clock winds down. */
+export function setFrenzyTempo(remainingMs: number) {
+    if (!bgmAudio) return;
+    let rate = FRENZY_BASE_RATE;
+    if (remainingMs <= 10_000) rate = 1.35;
+    else if (remainingMs <= 20_000) rate = 1.28;
+    else if (remainingMs <= 30_000) rate = 1.22;
+    applyPlaybackRate(rate);
+}
+
+export function stopFrenzyBGM() {
+    applyPlaybackRate(1.0);
+    if (savedTrackBeforeFrenzy !== null) {
+        currentBGMTrack = savedTrackBeforeFrenzy;
+        savedTrackBeforeFrenzy = null;
+        if (bgmAudio) stopMP3();
+        if (bgmShouldPlay) startMP3();
+    }
+}
+
+/** Urgency tick for the last-10s countdown. Short high beep on top of
+ *  a low pulse — reads as "clock running out" without overwhelming the
+ *  match SFX layer. */
+export function playFrenzyTick() {
+    playNote(880, 0.06, "triangle", 0.18);
+    playNote(120, 0.08, "sine", 0.22, 0.02);
+}
+
+/** Final-second urgency burst — louder pitched-up version of tick for
+ *  the last 3 seconds. */
+export function playFrenzyFinalTick() {
+    playNote(1320, 0.08, "triangle", 0.24);
+    playNote(660, 0.10, "sine", 0.18, 0.03);
+}
+
 // Ensure AudioContext is only created immediately when needed, or unlocked on touch
 export function unlockAudio() {
     getAudioContext();
