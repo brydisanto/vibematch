@@ -1,6 +1,6 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession, invalidateUserProfileCache } from '@/lib/auth';
 import { invalidateLeaderboardCache } from '@/app/api/scores/route';
 import type { LeaderboardEntry } from '@/app/api/pinbook/leaderboard/route';
 
@@ -69,6 +69,7 @@ export async function POST(req: Request) {
             const key = `user:${sessionUsername}`;
             const existing = (await kv.get(key)) as any || {};
             await kv.set(key, { ...existing, walletAddress: walletAddress.toLowerCase() });
+            invalidateUserProfileCache(sessionUsername);
             return NextResponse.json({ success: true, walletLinked: true });
         }
 
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
         const key = `user:${username.toLowerCase()}`;
         const existing = (await kv.get(key)) as any || {};
         await kv.set(key, { ...existing, username, avatarUrl });
+        invalidateUserProfileCache(username);
 
         // Bust score leaderboard cache so updated avatar shows immediately
         invalidateLeaderboardCache();

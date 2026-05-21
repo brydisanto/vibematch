@@ -22,6 +22,61 @@ function getKey(): Uint8Array {
 export const SESSION_COOKIE_NAME = "vibematch_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
+// ===== In-memory cache for session jti validity =====
+// Every authenticated API call calls getSession() -> decrypt() which does
+// a kv.get(`session:${jti}`). That's 1 KV op per authed request, across
+// every endpoint. Caching positive lookups for 30s in process memory cuts
+// that load by ~95% for repeat requests within the window.
+//
+// Trade-off: a revoked session may continue to validate for up to 30s
+// inside a warm function instance. Acceptable given session revocation
+// is rare (manual ops or logout), and logout already calls revokeSession
+// which invalidates the cache entry directly.
+const sessionValidCache = new Map<string, number>();
+const SESSION_CACHE_TTL_MS = 30_000;
+
+function cachedSessionValid(jti: string): boolean | null {
+    const expires = sessionValidCache.get(jti);
+    if (expires === undefined) return null;
+    if (Date.now() > expires) {
+        sessionValidCache.delete(jti);
+        return null;
+    }
+    return true;
+}
+function markSessionValid(jti: string) {
+    sessionValidCache.set(jti, Date.now() + SESSION_CACHE_TTL_MS);
+}
+function invalidateSessionCache(jti: string) {
+    sessionValidCache.delete(jti);
+}
+
+// ===== In-memory cache for user profile reads =====
+// `kv.get("user:<username>")` is fetched by /api/auth/session, /api/scores,
+// /api/achievements, several admin routes, and others — typically returning
+// the canonical username casing and avatarUrl. Profile data changes rarely
+// (the user has to explicitly update it), so a short cross-request cache
+// pays for itself quickly.
+//
+// Profile writes (via /api/profiles POST + ProfileModal save flow) invalidate
+// the cache for the affected username.
+interface CachedProfile { username?: string; avatarUrl?: string }
+const profileCache = new Map<string, { value: CachedProfile | null; expires: number }>();
+const PROFILE_CACHE_TTL_MS = 30_000;
+
+export async function getCachedUserProfile(username: string): Promise<CachedProfile | null> {
+    const key = username.toLowerCase();
+    const hit = profileCache.get(key);
+    if (hit && Date.now() < hit.expires) return hit.value;
+    const value = (await kv.get(`user:${key}`)) as CachedProfile | null;
+    profileCache.set(key, { value, expires: Date.now() + PROFILE_CACHE_TTL_MS });
+    return value;
+}
+
+export function invalidateUserProfileCache(username: string): void {
+    profileCache.delete(username.toLowerCase());
+}
+
 /**
  * Create a JWT session bound to a unique jti stored in KV.
  * Revoking a session is as simple as deleting its KV entry.
@@ -43,12 +98,17 @@ export async function decrypt(input: string): Promise<any> {
     const { payload } = await jwtVerify(input, getKey(), {
         algorithms: ["HS256"],
     });
-    // Check KV for an active session; if missing, the session has been revoked
+    // Check KV for an active session; if missing, the session has been revoked.
+    // Cached for SESSION_CACHE_TTL_MS to avoid hitting KV on every authed request.
     const jti = payload.jti as string | undefined;
     if (jti) {
-        const active = await kv.get(`session:${jti}`);
-        if (!active) {
-            throw new Error("Session revoked");
+        if (cachedSessionValid(jti) !== true) {
+            const active = await kv.get(`session:${jti}`);
+            if (!active) {
+                invalidateSessionCache(jti);
+                throw new Error("Session revoked");
+            }
+            markSessionValid(jti);
         }
     }
     return payload;
@@ -58,6 +118,7 @@ export async function decrypt(input: string): Promise<any> {
 export async function revokeSession(jti: string): Promise<void> {
     if (!jti) return;
     await kv.del(`session:${jti}`);
+    invalidateSessionCache(jti);
 }
 
 // Fix #2: PBKDF2 password hashing via SubtleCrypto (Edge Runtime compatible).

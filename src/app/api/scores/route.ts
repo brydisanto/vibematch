@@ -17,9 +17,14 @@ function getMonday() {
     return new Date(d.setDate(diff)).toISOString().split('T')[0];
 }
 
-// --- In-memory cache (15s TTL) ---
+// --- In-memory cache ---
+// Per-user GET responses cache for 15s (each user gets their own variant,
+// so cache hit rate per-entry is lower). Anonymous (no-username) GETs
+// cache for 60s — they're identical across all unauthenticated callers
+// and we add a CDN s-maxage header so Vercel's edge serves them directly.
 const cache = new Map<string, { data: any; expires: number }>();
 const CACHE_TTL = 15_000;
+const CACHE_TTL_PUBLIC = 60_000;
 
 export function invalidateLeaderboardCache() {
     for (const [key] of cache) {
@@ -37,8 +42,8 @@ function getCached(key: string): any | null {
     return entry.data;
 }
 
-function setCached(key: string, data: any) {
-    cache.set(key, { data, expires: Date.now() + CACHE_TTL });
+function setCached(key: string, data: any, ttlMs: number = CACHE_TTL) {
+    cache.set(key, { data, expires: Date.now() + ttlMs });
 }
 
 export async function POST(req: Request) {
@@ -212,13 +217,18 @@ export async function GET(req: Request) {
     // skip_avatars param removed — avatars are always lazy-loaded client-side now
 
     try {
-        // Check in-memory cache first
+        // Check in-memory cache first. Anonymous (no-username) requests
+        // get a longer TTL since they're identical across callers; the
+        // CDN s-maxage on the response lets Vercel's edge serve them
+        // directly without invoking this function at all.
         const cacheKey = `leaderboard:${mode}:${username || ''}`;
+        const isPublic = !username;
+        const cdnHeader = isPublic
+            ? 'public, s-maxage=60, stale-while-revalidate=180'
+            : 'public, s-maxage=15, stale-while-revalidate=60';
         const cached = getCached(cacheKey);
         if (cached) {
-            return NextResponse.json(cached, {
-                headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' }
-            });
+            return NextResponse.json(cached, { headers: { 'Cache-Control': cdnHeader } });
         }
 
         let leaderboard: any = [];
@@ -350,10 +360,10 @@ export async function GET(req: Request) {
         }
 
         const responseData = { leaderboard: mapped, personalBest: personalBest ? Number(personalBest) : 0, userRank, userInTop, userEntry, nextPlayer, totalPlayers, totalMatchesPlayed };
-        setCached(cacheKey, responseData);
+        setCached(cacheKey, responseData, isPublic ? CACHE_TTL_PUBLIC : CACHE_TTL);
         return NextResponse.json(
             responseData,
-            { headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' } }
+            { headers: { 'Cache-Control': cdnHeader } }
         );
     } catch (error) {
         console.error('KV error fetching leaderboard:', error);
