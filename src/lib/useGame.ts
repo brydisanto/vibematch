@@ -774,7 +774,7 @@ export function useGame(): UseGameReturn {
                     else playFrenzyTick();
                 }
             }
-        }, 250);
+        }, 500);
         return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state?.gameMode, state?.gamePhase, state?.frenzyEndsAt]);

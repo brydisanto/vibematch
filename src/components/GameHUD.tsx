@@ -120,15 +120,14 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     const isFrenzy = gameMode === "frenzy";
 
     // ===== FRENZY TIMER (local-state ticker) =====
-    // The clock value lives in this component's local state, not on the
-    // shared GameState. A 250ms interval re-renders ONLY this HUD — the
-    // parent's React tree (and GameBoard with its 64 tiles) doesn't
-    // refresh just because the timer ticks. That keeps Framer Motion's
-    // mid-cascade gravity animations uninterrupted.
+    // 1000ms cadence — mm:ss only changes once per second anyway, and
+    // every re-render of the HUD also repaints the conic-gradient timer
+    // ring (mask composite is expensive on mobile). Re-rendering 1x/sec
+    // is plenty; 4x/sec was burning paint cycles for no visible gain.
     const [frenzyTickNow, setFrenzyTickNow] = useState(() => Date.now());
     useEffect(() => {
         if (!isFrenzy || frenzyEndsAt === null) return;
-        const id = setInterval(() => setFrenzyTickNow(Date.now()), 250);
+        const id = setInterval(() => setFrenzyTickNow(Date.now()), 1000);
         return () => clearInterval(id);
     }, [isFrenzy, frenzyEndsAt]);
 
@@ -420,7 +419,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                         <HudCard
                             borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
                             glowColor={isFrenzy ? frenzyGlow : movesGlow}
-                            borderProgress={isFrenzy ? frenzyProgress : movesLeft / TOTAL_MOVES}
+                            borderProgress={isFrenzy ? undefined : movesLeft / TOTAL_MOVES}
                             className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full"
                         >
                             <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">{isFrenzy ? "TIME" : "MOVES"}</div>
@@ -496,7 +495,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                         <HudCard
                             borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
                             glowColor={isFrenzy ? frenzyGlow : movesGlow}
-                            borderProgress={isFrenzy ? frenzyProgress : movesLeft / TOTAL_MOVES}
+                            borderProgress={isFrenzy ? undefined : movesLeft / TOTAL_MOVES}
                             className="flex-1 min-h-0 py-2 w-full h-full"
                         >
                             <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
