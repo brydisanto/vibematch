@@ -265,6 +265,19 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
 
         if (score === displayedScore) return;
 
+        // Frenzy: skip the rAF tween entirely. Matches fire every ~400ms
+        // and the 750ms tween keeps the HUD re-rendering at 60fps for
+        // its full duration, which on mobile causes subpixel-blur of the
+        // gold WebkitTextStroke text (reads as a "hazy" score). Snap
+        // directly to the new value; the score popups still provide the
+        // climbing-feedback animation.
+        if (isFrenzy) {
+            if (tweenRafRef.current) cancelAnimationFrame(tweenRafRef.current);
+            tweenStartRef.current = null;
+            setDisplayedScore(score);
+            return;
+        }
+
         // Hold a beat before starting the tween so the popup can pop +
         // hold at its match position before the counter starts moving.
         // After this delay, tween from current displayed value to the

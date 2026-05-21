@@ -482,6 +482,15 @@ export function useGame(): UseGameReturn {
                 setIsAnimating(false);
             }, 1800);
         } else {
+            // Cleanup delay = how long until the next queued tap is
+            // allowed to fire. On mobile Classic 120ms was a snappiness
+            // optimization, but Frenzy players match every 400-500ms;
+            // releasing input at 120ms lets the queued tap fire mid-
+            // animation and Framer Motion restarts gravity from the
+            // tile's in-flight position, reading as a teleport. Use
+            // the desktop value (300ms) for Frenzy to give gravity
+            // time to finish visually before the next cascade begins.
+            const cleanupMs = isFrenzy ? 300 : (isMobile ? 120 : 300);
             setTimeout(() => {
                 setIsAnimating(false);
                 setState(prev2 => {
@@ -491,7 +500,7 @@ export function useGame(): UseGameReturn {
                     );
                     return { ...prev2, board: cleaned };
                 });
-            }, isMobile ? 120 : 300);
+            }, cleanupMs);
         }
 
         return {
