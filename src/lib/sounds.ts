@@ -227,12 +227,15 @@ export function stopBGM() {
 
 // ===== FRENZY AUDIO =====
 // Frenzy gets its own BGM treatment: forced to the "Werq" track (the
-// chosen high-energy default), played back ~18% faster than normal, with
-// pitch preservation on so it sounds urgent without going chipmunk.
-// Saves the previous track index so we can restore the player's
-// selection when Frenzy ends.
+// chosen high-energy default). Plays at the original 1.0x speed for
+// the first 30 seconds, then linearly ramps up to 1.40x as the clock
+// counts down — so the urgency builds with the timer instead of
+// hitting full sweat from the jump. Pitch preservation stays on so
+// the track stays musical instead of chipmunk.
 const FRENZY_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Werq");
-const FRENZY_BASE_RATE = 1.18;
+const FRENZY_BASE_RATE = 1.0;
+const FRENZY_PEAK_RATE = 1.40;
+const FRENZY_RAMP_START_MS = 30_000;
 let savedTrackBeforeFrenzy: number | null = null;
 
 function applyPlaybackRate(rate: number) {
@@ -258,14 +261,19 @@ export function startFrenzyBGM() {
     setTimeout(() => applyPlaybackRate(FRENZY_BASE_RATE), 120);
 }
 
-/** Ramp the Frenzy playback rate based on remaining ms. Used by the
- *  hook to lean harder into urgency as the clock winds down. */
+/** Ramp the Frenzy playback rate based on remaining ms. Sits at the
+ *  original 1.0x until 30s remain, then linearly accelerates to
+ *  FRENZY_PEAK_RATE (1.40x) at zero. If the player earns back time
+ *  past the 30s threshold, the rate drops back to 1.0 — tension eases
+ *  when you've bought yourself room. */
 export function setFrenzyTempo(remainingMs: number) {
     if (!bgmAudio) return;
-    let rate = FRENZY_BASE_RATE;
-    if (remainingMs <= 10_000) rate = 1.35;
-    else if (remainingMs <= 20_000) rate = 1.28;
-    else if (remainingMs <= 30_000) rate = 1.22;
+    if (remainingMs >= FRENZY_RAMP_START_MS) {
+        applyPlaybackRate(FRENZY_BASE_RATE);
+        return;
+    }
+    const progress = Math.min(1, Math.max(0, (FRENZY_RAMP_START_MS - remainingMs) / FRENZY_RAMP_START_MS));
+    const rate = FRENZY_BASE_RATE + (FRENZY_PEAK_RATE - FRENZY_BASE_RATE) * progress;
     applyPlaybackRate(rate);
 }
 
