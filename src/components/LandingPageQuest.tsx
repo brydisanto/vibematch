@@ -344,7 +344,7 @@ export default function LandingPageQuest({
                                     className="font-display font-black uppercase leading-[0.9]"
                                     style={{ color: ORANGE, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                 >
-                                    <span style={{ fontSize: 16 }}>Pin</span>
+                                    <span style={{ fontSize: 14 }}>Pin Drop</span>
                                     <br />
                                     <span style={{ fontSize: 22 }}>Frenzy</span>
                                 </h2>

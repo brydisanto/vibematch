@@ -997,7 +997,7 @@ export default function LandingPageArcade({
                                             className="font-display font-black uppercase leading-none text-[22px]"
                                             style={{ color: ORANGE_LIGHT, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                         >
-                                            Pin
+                                            Pin Drop
                                         </h2>
                                         <h3
                                             className="font-display font-black uppercase leading-none text-[32px] mt-1"
