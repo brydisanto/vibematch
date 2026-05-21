@@ -283,6 +283,15 @@ export function usePinBook() {
                     if (data.isPromo) {
                         return prev;
                     }
+                    // Mirror the server's increment of the lifetime per-
+                    // tier counter so the retroactive achievement check
+                    // sees the latest count in-session (previously the
+                    // counter only refreshed on next /api/pinbook GET,
+                    // which left tier-find achievements like
+                    // "Cosmic Frequency" un-firing until reload).
+                    const tier = pendingReveal.badge.tier;
+                    const tfb = { ...(prev.totalFoundByTier || {}) };
+                    tfb[tier] = (tfb[tier] || 0) + 1;
                     return {
                         ...prev,
                         pins: {
@@ -296,6 +305,7 @@ export function usePinBook() {
                                 lastPulled: nowIso,
                             },
                         },
+                        totalFoundByTier: tfb,
                     };
                 });
                 setPendingReveal(null);
@@ -384,6 +394,11 @@ export function usePinBook() {
                             lastPulled: nowIso,
                         },
                     };
+                    // Mirror server's lifetime-per-tier increment locally so
+                    // tier-find achievements fire in-session without reload.
+                    const tfb = { ...(prev.totalFoundByTier || {}) };
+                    tfb[tier] = (tfb[tier] || 0) + 1;
+                    next.totalFoundByTier = tfb;
                 }
                 return next;
             });

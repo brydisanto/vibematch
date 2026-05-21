@@ -69,6 +69,11 @@ interface UserDetail {
         date?: string;
         classicPlays?: number;
         bonusPrizeGames?: number;
+        capsulesEarned?: number;
+        capsulesOpened?: number;
+        pinsFound?: number;
+        newPinsFound?: number;
+        vibestrSpent?: number;
     }>;
     transactions: TxRecord[];
     gameLog: GameLogEntry[];
@@ -397,6 +402,11 @@ function UserDetailView({
                                 <th className="text-left py-2">Date</th>
                                 <th className="text-right py-2">Classic Plays</th>
                                 <th className="text-right py-2">Bonus Games</th>
+                                <th className="text-right py-2">Capsules Earned</th>
+                                <th className="text-right py-2">Capsules Opened</th>
+                                <th className="text-right py-2">Pins Found</th>
+                                <th className="text-right py-2">New Pins</th>
+                                <th className="text-right py-2">$VIBESTR Spent</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -405,11 +415,21 @@ function UserDetailView({
                                     <td className="py-2 font-mono">{d.date || "—"}</td>
                                     <td className="py-2 text-right">{d.classicPlays || 0}</td>
                                     <td className="py-2 text-right text-[#FFE048]">{d.bonusPrizeGames || 0}</td>
+                                    <td className="py-2 text-right">{d.capsulesEarned || 0}</td>
+                                    <td className="py-2 text-right">{d.capsulesOpened || 0}</td>
+                                    <td className="py-2 text-right">{d.pinsFound || 0}</td>
+                                    <td className="py-2 text-right text-[#2EEA88]">{d.newPinsFound || 0}</td>
+                                    <td className="py-2 text-right text-[#B366FF]">
+                                        {d.vibestrSpent ? d.vibestrSpent.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 )}
+                <p className="text-[10px] text-white/30 mt-3">
+                    Capsule and pin counters started tracking 2026-05-21. Days before that show 0 across the new columns regardless of actual activity.
+                </p>
             </Section>
 
             {/* Pins */}

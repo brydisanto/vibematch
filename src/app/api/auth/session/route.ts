@@ -1,5 +1,4 @@
-import { getSession } from "@/lib/auth";
-import { kv } from "@vercel/kv";
+import { getSession, getCachedUserProfile } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,8 +8,7 @@ export async function GET() {
             return NextResponse.json({ authenticated: false }, { status: 401 });
         }
 
-        const profileKey = `user:${session.username.toLowerCase()}`;
-        const profile = await kv.get(profileKey) as any;
+        const profile = await getCachedUserProfile(session.username);
 
         return NextResponse.json({
             authenticated: true,

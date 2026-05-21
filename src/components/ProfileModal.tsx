@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
-import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight, Copy, Check, Link, Wallet } from "lucide-react";
+import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight, Copy, Check, Link, Wallet, Mail } from "lucide-react";
 import { isMuted, toggleMute, BGM_TRACK_NAMES, getCurrentTrackIndex, selectBGMTrack, startBGM } from "@/lib/sounds";
 
 const WalletProvider = dynamic(
@@ -40,6 +40,10 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     const [trackIndex, setTrackIndex] = useState(getCurrentTrackIndex());
     const [referralStats, setReferralStats] = useState<{ totalReferrals: number; capsulesCredited: number; maxCapsules: number } | null>(null);
     const [copied, setCopied] = useState(false);
+    const [email, setEmail] = useState("");
+    const [emailLoaded, setEmailLoaded] = useState(false);
+    const [emailSavingState, setEmailSavingState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+    const [emailError, setEmailError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -47,7 +51,39 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
         setTrackIndex(getCurrentTrackIndex());
         // Fetch referral stats
         fetch('/api/referral').then(r => r.json()).then(setReferralStats).catch(() => {});
+        // Fetch recovery email (optional — for password reset)
+        fetch('/api/auth/email')
+            .then(r => r.ok ? r.json() : { email: null })
+            .then(d => { setEmail(d?.email || ""); setEmailLoaded(true); })
+            .catch(() => setEmailLoaded(true));
     }, []);
+
+    const handleEmailSave = async () => {
+        const trimmed = email.trim();
+        // Persist either the trimmed value or null (clearing) — server
+        // does the real validation.
+        setEmailSavingState("saving");
+        setEmailError(null);
+        try {
+            const res = await fetch('/api/auth/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: trimmed || null }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setEmailSavingState("error");
+                setEmailError(data?.error || "Couldn't save email");
+                return;
+            }
+            setEmailSavingState("saved");
+            setEmail(data?.email || "");
+            setTimeout(() => setEmailSavingState("idle"), 1500);
+        } catch {
+            setEmailSavingState("error");
+            setEmailError("Network error");
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -136,14 +172,14 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4 bg-black/80">
             <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-[540px] rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                className="relative w-full max-w-[540px] max-h-[90vh] rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
             >
-                <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex min-h-[420px]">
+                <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex flex-col sm:flex-row sm:min-h-[420px] max-h-[calc(90vh-6px)]">
 
                     {/* Close Button */}
                     <button
@@ -153,8 +189,8 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         <X size={16} className="text-white/60 hover:text-white transition-colors" />
                     </button>
 
-                    {/* ── Left Panel: Avatar + Stats ── */}
-                    <div className="w-[180px] flex-shrink-0 p-6 pt-7 text-center border-r border-white/[0.06] bg-white/[0.02] flex flex-col items-center">
+                    {/* ── Avatar + Stats panel. Sidebar on >=sm, top stack on mobile. ── */}
+                    <div className="w-full sm:w-[180px] flex-shrink-0 p-5 sm:p-6 sm:pt-7 text-center border-b sm:border-b-0 sm:border-r border-white/[0.06] bg-white/[0.02] flex flex-col items-center">
                         {/* Avatar */}
                         <div
                             className="relative w-[80px] h-[80px] rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-[3px] mb-3 shadow-[0_6px_12px_rgba(0,0,0,0.6)] cursor-pointer group"
@@ -266,6 +302,48 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                     <ChevronRight size={12} className="text-white/50" />
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Recovery Email Section — optional. Required to use
+                            "Forgot password" on the sign-in modal. */}
+                        <div className="rounded-xl p-3.5 mb-3" style={{
+                            background: "linear-gradient(135deg, rgba(255,224,72,0.06), rgba(255,224,72,0.02))",
+                            border: "1px solid rgba(255,224,72,0.15)",
+                        }}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Mail size={13} className="text-[#FFE048]" />
+                                <span className="text-[10px] font-bold text-[#FFE048] uppercase tracking-wider">Recovery Email</span>
+                                <span className="text-[9px] text-white/40 font-mundial">(optional)</span>
+                            </div>
+                            <p className="text-white/50 text-[10px] font-mundial leading-relaxed mb-2">
+                                Add an email so you can reset your password if you ever forget it. We never send anything else.
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="email"
+                                    autoComplete="email"
+                                    placeholder={emailLoaded ? "you@example.com" : "Loading..."}
+                                    disabled={!emailLoaded}
+                                    value={email}
+                                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); if (emailSavingState !== "idle") setEmailSavingState("idle"); }}
+                                    className="flex-1 bg-[#1A1525] border border-[#3A3344] rounded-lg px-3 py-2 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-[#FFE048] focus:shadow-[0_0_15px_rgba(255,224,72,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] disabled:opacity-50"
+                                />
+                                <button
+                                    onClick={handleEmailSave}
+                                    disabled={!emailLoaded || emailSavingState === "saving"}
+                                    className="shrink-0 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                                    style={{
+                                        background: emailSavingState === "saved" ? "rgba(46,234,136,0.2)" : "rgba(255,224,72,0.15)",
+                                        color: emailSavingState === "saved" ? "#2EEA88" : "#FFE048",
+                                        border: emailSavingState === "saved" ? "1px solid rgba(46,234,136,0.4)" : "1px solid rgba(255,224,72,0.4)",
+                                    }}
+                                >
+                                    {emailSavingState === "saved" ? "Saved" : emailSavingState === "saving" ? "..." : "Save"}
+                                </button>
+                            </div>
+                            {emailError && (
+                                <div className="mt-2 text-[10px] text-red-400 font-mundial">{emailError}</div>
+                            )}
                         </div>
 
                         {/* Referral Section */}

@@ -218,6 +218,15 @@ export default function AppClient() {
     userProfile?.avatarUrl,
     pinBook.state.bonusPrizeGames,
     musicChangedTick,
+    // Tier-find counts so cross-threshold collects (e.g. picking up your
+    // 10th Cosmic) re-fire the retroactive achievement check without
+    // requiring a page reload. Each one is a primitive so React's shallow
+    // compare works without ref churn.
+    pinBook.state.totalFoundByTier?.blue,
+    pinBook.state.totalFoundByTier?.silver,
+    pinBook.state.totalFoundByTier?.special,
+    pinBook.state.totalFoundByTier?.gold,
+    pinBook.state.totalFoundByTier?.cosmic,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // FTUE post-game modal is triggered from inside the game-end async flow

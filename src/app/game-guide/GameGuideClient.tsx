@@ -12,7 +12,7 @@ import { ChunkyButton } from "@/components/arcade";
 import {
     GOLD, GOLD_DEEP, GOLD_LIGHT,
     COSMIC, COSMIC_DEEP, COSMIC_LIGHT,
-    ORANGE,
+    ORANGE, PINK,
     INK_PANEL, INK_PANEL_LIGHT, INK_DARKEST,
 } from "@/lib/arcade-tokens";
 import { ALL_ACHIEVEMENTS } from "@/lib/achievements";
@@ -27,9 +27,9 @@ import {
    ──────────────────────────────────────────────────────────────── */
 const TIER_META = {
     common:  { label: "Common",    color: "#E5E7EB", glow: "rgba(229,231,235,0.3)",  count: 19, img: "/badges/any_gvc_1759173799963.webp" },
-    rare:    { label: "Rare",      color: "#4A9EFF", glow: "rgba(74,158,255,0.4)",   count: 51, img: "/badges/rainbow_boombox_1759173875165.webp" },
+    rare:    { label: "Rare",      color: "#4A9EFF", glow: "rgba(74,158,255,0.4)",   count: 50, img: "/badges/rainbow_boombox_1759173875165.webp" },
     special: { label: "Special",   color: ORANGE,    glow: "rgba(255,95,31,0.45)",   count: 9,  img: "/badges/vibestr_blue_tier.webp" },
-    gold:    { label: "Legendary", color: GOLD,      glow: "rgba(255,224,72,0.45)",  count: 19, img: "/badges/gold_member_1759173793799.webp" },
+    gold:    { label: "Legendary", color: GOLD,      glow: "rgba(255,224,72,0.45)",  count: 20, img: "/badges/gold_member_1759173793799.webp" },
     cosmic:  { label: "Cosmic",    color: COSMIC,    glow: "rgba(179,102,255,0.5)",  count: 3,  img: "/badges/cosmic_guardian1759173818340.webp" },
 } as const;
 
@@ -1057,13 +1057,15 @@ function Scoring() {
                 title="Scoring Your Moves"
                 sub="Every match you make stacks three multipliers: match length, pin tier, and cascade depth. They all compound together. A 4-match of Legendary pins on the second cascade can score 8 to 10x what the same tiles would score cleared cold. Setups always beat grab-and-go."
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
-                    sub="3-match: 150 base. 4-match: 450 + Bomb. 5-match: 900 + Laser Party. 6+: Cosmic Blast." />
+                    sub="3-match = 150pts. 4-match = 450pts. 5-match = 900pts." />
+                <ScoreStat value="4" label="Pin Tiers" color={PINK}
+                    sub="Common = 1x · Rare = 1.5x · Legendary = 2x · Cosmic = 3x. Tier multiplier stacks on top of match length, cascade, and momentum." />
                 <ScoreStat value="+100%" label="Cascade" color={COSMIC}
-                    sub="Every cascade adds +100% to your multiplier. 1st: 2x. 2nd: 3x. 3rd: 4x. And climbing." />
+                    sub="Every cascading match in the same move adds +100% to your multiplier. 1st = 2x, 2nd = 3x, 3rd = 4x. So on and so forth." />
                 <ScoreStat value="+3" label="Momentum" color={ORANGE}
-                    sub="End a turn with 3 cascades and your next move starts at combo +1. 4 cascades → +2. 5+ → +3. Momentum carries between turns." />
+                    sub="Combos carry over. End a turn with 3 cascades and your next move starts at combo +1. 4 cascades = +2. 5+ cascades = +3. Momentum stacks across turns." />
             </div>
 
             <Callout tone="cosmic" label="Combos in plain English">
@@ -2283,7 +2285,7 @@ function Prizes() {
                         GVC NFT Raffle
                     </h3>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>
-                        During the launch event, multiple GVC NFTs are up for grabs for the top Pin collectors. Anyone who completes the Pinbook (i.e. 100%, all 101 Pins found) before <strong style={{ color: GOLD }}>June 5th</strong>, or otherwise progresses the furthest (by %), will be entered into an exclusive raffle.
+                        During the launch event, <strong style={{ color: GOLD }}>1 GVC NFT + $VIBESTR</strong> are up for grabs for the top Pin collectors. Anyone who completes the Pinbook (i.e. 100%, all 101 Pins found) before <strong style={{ color: GOLD }}>June 8th</strong>, or otherwise progresses the furthest (by %), will be entered into an exclusive raffle.
                     </p>
                 </Card>
 

@@ -294,7 +294,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🗂️",
         title: "Rare Breed",
-        description: "Collect all 51 Rare pins",
+        description: "Collect all 50 Rare pins",
         capsules: 3,
         order: 13,
     },
@@ -303,7 +303,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🏆",
         title: "Living Legend",
-        description: "Collect all 19 Legendary pins",
+        description: "Collect all 20 Legendary pins",
         capsules: 3,
         order: 15,
     },
@@ -617,8 +617,8 @@ export function getQuestProgressList(ctx: PlayerContext): QuestProgress[] {
         { id: "pins_90", current: ctx.uniquePins, target: 90 },
         { id: "pins_all", current: ctx.uniquePins, target: 101 },
         { id: "all_common", current: ctx.commonPinCount, target: 19 },
-        { id: "all_rare", current: ctx.rarePinCount, target: 51 },
-        { id: "all_legendary", current: ctx.legendaryPinCount, target: 19 },
+        { id: "all_rare", current: ctx.rarePinCount, target: 50 },
+        { id: "all_legendary", current: ctx.legendaryPinCount, target: 20 },
         { id: "all_special", current: ctx.specialPinCount, target: 9 },
         { id: "all_cosmic", current: ctx.cosmicPinCount, target: 3 },
         { id: "found_common_200", current: ctx.totalFoundCommon, target: 200 },
@@ -763,9 +763,9 @@ export function checkAchievements(
     check("tier_special", context.hasSpecialPin);
     check("tier_cosmic", context.hasCosmicPin);
     check("all_common", context.commonPinCount >= 19);
-    check("all_rare", context.rarePinCount >= 51);
+    check("all_rare", context.rarePinCount >= 50);
     check("all_special", context.specialPinCount >= 9);
-    check("all_legendary", context.legendaryPinCount >= 19);
+    check("all_legendary", context.legendaryPinCount >= 20);
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("found_common_200", context.totalFoundCommon >= 200);
     check("found_rare_100", context.totalFoundRare >= 100);
@@ -839,9 +839,9 @@ export function checkRetroactiveAchievements(
     check("tier_special", context.hasSpecialPin);
     check("tier_cosmic", context.hasCosmicPin);
     check("all_common", context.commonPinCount >= 19);
-    check("all_rare", context.rarePinCount >= 51);
+    check("all_rare", context.rarePinCount >= 50);
     check("all_special", context.specialPinCount >= 9);
-    check("all_legendary", context.legendaryPinCount >= 19);
+    check("all_legendary", context.legendaryPinCount >= 20);
     check("all_cosmic", context.cosmicPinCount >= 3);
     check("found_common_200", context.totalFoundCommon >= 200);
     check("found_rare_100", context.totalFoundRare >= 100);

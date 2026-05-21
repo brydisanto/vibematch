@@ -13,7 +13,7 @@ interface AuthModalProps {
     referralCode?: string | null;
 }
 
-type Mode = "login" | "register" | "rotate";
+type Mode = "login" | "register" | "rotate" | "forgot" | "forgot-sent";
 
 export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "login", referralCode }: AuthModalProps) {
     const [mode, setMode] = useState<Mode>(initialMode);
@@ -116,12 +116,44 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
         }
     };
 
-    const title = mode === "login" ? "Sign In!" : mode === "register" ? "Sign Up!" : "Update Password";
+    const handleForgotSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!username.trim()) {
+            toast.error("Enter your username");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await fetch("/api/auth/reset-request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username.trim() }),
+            });
+            // Endpoint returns 200 either way to prevent account enumeration —
+            // always show the "check your email" state.
+            setMode("forgot-sent");
+        } catch {
+            setMode("forgot-sent");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const title =
+        mode === "login" ? "Sign In!"
+        : mode === "register" ? "Sign Up!"
+        : mode === "rotate" ? "Update Password"
+        : mode === "forgot" ? "Reset Password"
+        : "Check Your Email";
     const subtitle = mode === "login"
         ? "Login to save your scores and play the daily challenge"
         : mode === "register"
             ? "Sign up to save your scores and play the daily challenge"
-            : "One-time security update for your account";
+            : mode === "rotate"
+                ? "One-time security update for your account"
+                : mode === "forgot"
+                    ? "Enter your username and we'll email you a reset link if your account has a recovery email on file."
+                    : "If your account has a recovery email on file, a reset link is on its way. Check your inbox.";
 
     return (
         <AnimatePresence>
@@ -163,8 +195,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode !== "rotate" && (
+                            <form
+                                onSubmit={mode === "forgot" ? handleForgotSubmit : handleSubmit}
+                                className="space-y-4"
+                                style={{ display: mode === "forgot-sent" ? "none" : undefined }}
+                            >
+                                {(mode === "login" || mode === "register" || mode === "forgot") && (
                                     <>
                                         <div className="space-y-1.5">
                                             <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider ml-1">
@@ -185,24 +221,36 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider ml-1">
-                                                Password
-                                            </label>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                                    <Lock size={16} className="text-white/20" />
+                                        {mode !== "forgot" && (
+                                            <div className="space-y-1.5">
+                                                <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider ml-1">
+                                                    Password
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                        <Lock size={16} className="text-white/20" />
+                                                    </div>
+                                                    <input
+                                                        type="password"
+                                                        value={password}
+                                                        onChange={(e) => setPassword(e.target.value)}
+                                                        placeholder="••••••••"
+                                                        className="w-full bg-[#1A1525] border border-[#3A3344] rounded-xl pl-11 pr-4 py-3 text-white font-bold placeholder:text-white/10 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
+                                                        disabled={isLoading}
+                                                    />
                                                 </div>
-                                                <input
-                                                    type="password"
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    placeholder="••••••••"
-                                                    className="w-full bg-[#1A1525] border border-[#3A3344] rounded-xl pl-11 pr-4 py-3 text-white font-bold placeholder:text-white/10 focus:outline-none focus:border-[#B366FF] focus:shadow-[0_0_15px_rgba(179,102,255,0.2)] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
-                                                    disabled={isLoading}
-                                                />
+                                                {mode === "login" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMode("forgot")}
+                                                        className="text-white/40 text-[10px] font-mundial tracking-wider uppercase hover:text-[#FFE048] transition-colors mt-1 ml-1"
+                                                        disabled={isLoading}
+                                                    >
+                                                        Forgot password?
+                                                    </button>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
                                     </>
                                 )}
 
@@ -260,7 +308,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                         ) : (
                                             <>
                                                 <span className="relative z-10 text-sm font-black tracking-widest text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
-                                                    {mode === "rotate" ? "Update & Sign In" : "Let's Freaking Vibe!"}
+                                                    {mode === "rotate" ? "Update & Sign In"
+                                                        : mode === "forgot" ? "Send Reset Link"
+                                                        : "Let's Freaking Vibe!"}
                                                 </span>
                                                 <ArrowRight size={18} className="text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] group-hover:translate-x-1 transition-transform" />
                                             </>
@@ -269,7 +319,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                 </button>
                             </form>
 
-                            {mode !== "rotate" && (
+                            {(mode === "login" || mode === "register") && (
                                 <div className="mt-8 text-center pt-6 border-t border-[#3A3344]">
                                     <p className="text-white/30 text-[10px] font-mundial uppercase tracking-wider font-bold mb-2">
                                         {mode === "login" ? "Don't have an account?" : "Already a member?"}
@@ -280,6 +330,18 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                                         disabled={isLoading}
                                     >
                                         {mode === "login" ? "Register New User" : "Back to Login"}
+                                    </button>
+                                </div>
+                            )}
+
+                            {(mode === "forgot" || mode === "forgot-sent") && (
+                                <div className="mt-6 text-center pt-4 border-t border-[#3A3344]">
+                                    <button
+                                        onClick={() => { setMode("login"); setPassword(""); }}
+                                        className="text-white/50 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors"
+                                        disabled={isLoading}
+                                    >
+                                        Back to Sign In
                                     </button>
                                 </div>
                             )}
