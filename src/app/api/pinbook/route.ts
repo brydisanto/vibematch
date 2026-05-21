@@ -14,7 +14,7 @@ import {
 } from '@/lib/promo-badges';
 import { frenzyCapsulesForScore } from '@/lib/gameEngine';
 
-const FRENZY_CAPSULE_SCORE_THRESHOLD = 25000;
+const FRENZY_CAPSULE_SCORE_THRESHOLD = 30000;
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base

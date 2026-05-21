@@ -617,7 +617,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     const capsuleCount = gameMode === "frenzy"
         ? frenzyCapsulesForScore(score)
         : (score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0);
-    const shareScoreFloor = gameMode === "frenzy" ? 25000 : 15000;
+    const shareScoreFloor = gameMode === "frenzy" ? 30000 : 15000;
     const canShare = score >= shareScoreFloor && !!userProfile?.username;
 
     const handleShareX = () => {
