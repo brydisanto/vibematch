@@ -86,12 +86,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
         // Get all daily trackers for this user (last 30 days)
         const dailyKeys = await scanKeys(`pinbook:${username}:daily:*`);
-        const dailyTrackers = await Promise.all(dailyKeys.map(async k => {
+        const dailyTrackersRaw = await Promise.all(dailyKeys.map(async k => {
             const data = await kv.get(k) as any;
             const date = k.split(":").pop();
             return { date, ...data };
         }));
-        dailyTrackers.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
         // Get user's tx records
         const txKeys = await scanKeys("tx:*:processed");
@@ -113,6 +112,33 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
         const totalVibestrSpent = userTxs.reduce((sum, tx) => sum + parseFloat(tx.amount || "0"), 0);
         const totalBonusGamesPurchased = userTxs.reduce((sum, tx) => sum + Number(tx.packageSize || 0), 0);
+
+        // Bucket VIBESTR spend by Eastern day so we can render a per-day
+        // column in the admin Daily Activity table. Uses the same daily
+        // key convention the trackers themselves use so dates line up.
+        const vibestrByDay = new Map<string, number>();
+        for (const tx of userTxs) {
+            const ts = Number(tx.timestamp);
+            if (!Number.isFinite(ts) || ts <= 0) continue;
+            const dayKey = getEasternDailyKey(new Date(ts));
+            const amount = parseFloat(tx.amount || "0");
+            if (!Number.isFinite(amount) || amount <= 0) continue;
+            vibestrByDay.set(dayKey, (vibestrByDay.get(dayKey) || 0) + amount);
+        }
+
+        // Merge spend into each tracker row. Also surface days that ONLY
+        // had a tx (no gameplay) — these get synthesized as empty tracker
+        // rows so the admin sees the spend even if the user didn't play.
+        const dailyTrackers = dailyTrackersRaw.map(t => ({
+            ...t,
+            vibestrSpent: t.date ? (vibestrByDay.get(t.date) || 0) : 0,
+        }));
+        for (const [day, amount] of vibestrByDay) {
+            if (!dailyTrackers.some(t => t.date === day)) {
+                dailyTrackers.push({ date: day, classicPlays: 0, bonusPrizeGames: 0, vibestrSpent: amount });
+            }
+        }
+        dailyTrackers.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
         // Fetch game log (last 100 games, newest first)
         const gameLogRaw = await kv.zrange(`gamelog:${username}`, 0, 99, { rev: true });
