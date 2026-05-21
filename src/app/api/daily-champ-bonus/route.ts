@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getEasternYesterdayKey } from "@/lib/daily-window";
+import { getEasternYesterdayKey, getEasternDailyKey } from "@/lib/daily-window";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +70,22 @@ export async function GET() {
         pinbook.capsules += BONUS_CAPSULES;
         pinbook.totalEarned += BONUS_CAPSULES;
         await kv.set(pinKey, pinbook);
+
+        // Daily activity counter (admin view). Best-effort.
+        try {
+            const dailyKey = `pinbook:${username}:daily:${getEasternDailyKey()}`;
+            const existing = (await kv.get(dailyKey)) as Record<string, unknown> | null;
+            const base = existing && existing.date === getEasternDailyKey()
+                ? existing
+                : { classicPlays: 0, date: getEasternDailyKey(), bonusPrizeGames: 0 };
+            const next = {
+                ...base,
+                capsulesEarned: (Number(base.capsulesEarned) || 0) + BONUS_CAPSULES,
+            };
+            await kv.set(dailyKey, next, { ex: 86400 * 2 });
+        } catch (e) {
+            console.error("daily-champ-bonus counter bump failed:", e);
+        }
 
         return NextResponse.json({
             claimed: true,

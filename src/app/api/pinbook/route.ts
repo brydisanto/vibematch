@@ -50,7 +50,16 @@ export interface PinBookData {
 interface DailyTracker {
     classicPlays: number;
     date: string;
-    bonusPrizeGames?: number; // additional prize games purchased today
+    bonusPrizeGames?: number;   // additional prize games purchased today
+    // ===== Daily activity counters =====
+    // Added 2026-05-21 to power the admin user-profile daily activity
+    // table. All optional with 0 defaults so legacy daily records (which
+    // don't have these fields) display as 0 in the admin view without
+    // breaking anything.
+    capsulesEarned?: number;    // capsules awarded today (any source)
+    capsulesOpened?: number;    // capsule open actions today
+    pinsFound?: number;         // pins added to the pinbook today (any source)
+    newPinsFound?: number;      // unique-to-pinbook pins added today
 }
 
 export function getTodayKey(username: string): string {
@@ -70,12 +79,37 @@ async function incrementClassicPlays(username: string): Promise<DailyTracker> {
     const key = getTodayKey(username);
     const existing = await getDailyTracker(username);
     const updated: DailyTracker = {
+        ...existing,
         classicPlays: existing.classicPlays + 1,
         date: existing.date,
         bonusPrizeGames: existing.bonusPrizeGames || 0,
     };
     await kv.set(key, updated, { ex: 86400 * 2 });
     return updated;
+}
+
+/**
+ * Bump one of the daily activity counters by `amount`. Read-modify-write
+ * the today's tracker record. Best-effort — wraps in try/catch so a
+ * counter failure can't break the calling action's success path.
+ */
+async function bumpDailyCounter(
+    username: string,
+    field: "capsulesEarned" | "capsulesOpened" | "pinsFound" | "newPinsFound",
+    amount: number = 1,
+): Promise<void> {
+    if (amount <= 0) return;
+    try {
+        const key = getTodayKey(username);
+        const existing = await getDailyTracker(username);
+        const updated: DailyTracker = {
+            ...existing,
+            [field]: (existing[field] || 0) + amount,
+        };
+        await kv.set(key, updated, { ex: 86400 * 2 });
+    } catch (e) {
+        console.error(`[bumpDailyCounter] failed for ${username} ${field} +${amount}:`, e);
+    }
 }
 
 function emptyPinBook(): PinBookData {
@@ -487,6 +521,10 @@ export async function POST(req: Request) {
             }
 
             await kv.set(key, data);
+            // Bump the admin daily-activity counter. Uses `gameMode === 'daily'`
+            // doubling rule that's already applied above, so capsuleCount here
+            // is the player-visible amount.
+            await bumpDailyCounter(username, "capsulesEarned", gameMode === 'daily' ? capsuleCount * 2 : capsuleCount);
             return NextResponse.json({ earned: true, capsules: data.capsules, gameMode });
 
         } else if (body.action === 'bonus') {
@@ -535,6 +573,7 @@ export async function POST(req: Request) {
             }
 
             await kv.set(key, data);
+            await bumpDailyCounter(username, "capsulesEarned", gameMode === 'daily' ? 2 : 1);
             return NextResponse.json({ earned: true, capsules: data.capsules, gameMode });
 
         } else if (body.action === 'open') {
@@ -638,6 +677,7 @@ export async function POST(req: Request) {
             data.capsules -= 1;
             data.totalOpened += 1;
             await kv.set(key, data);
+            await bumpDailyCounter(username, "capsulesOpened", 1);
 
             // Look up the user's current promo count BEFORE collect fires so
             // the client can render "duplicate" vs "new pin" correctly on
@@ -707,6 +747,7 @@ export async function POST(req: Request) {
 
             const nowIso = new Date().toISOString();
             const existing = data.pins[badgeId];
+            const wasNewPin = !existing;
             if (existing) {
                 existing.count += 1;
                 existing.lastPulled = nowIso;
@@ -721,6 +762,11 @@ export async function POST(req: Request) {
             tierFound[badgeDef.tier] = (tierFound[badgeDef.tier] || 0) + 1;
 
             await kv.set(key, data);
+
+            // Daily-activity counters for the admin view. Every collect is
+            // +1 pin found; new-to-pinbook pulls also bump newPinsFound.
+            await bumpDailyCounter(username, "pinsFound", 1);
+            if (wasNewPin) await bumpDailyCounter(username, "newPinsFound", 1);
 
             // Update pre-computed leaderboard entry
 
