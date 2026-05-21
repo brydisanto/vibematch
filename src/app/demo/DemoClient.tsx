@@ -439,6 +439,12 @@ export default function DemoClient() {
         totalCascades: 0,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        frenzyMsRemaining: 0,
+        frenzyBonusMsEarned: 0,
+        frenzyStartedAt: null,
+        frenzyLastMatchAt: null,
+        frenzyConsecutiveQuickMatches: 0,
+        frenzyHeatActiveUntil: null,
     }), [board, score, combo, badges]);
 
     // Mirror the live game's layout: HUD left on desktop, top+bottom stacked

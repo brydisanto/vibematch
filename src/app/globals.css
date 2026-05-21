@@ -1706,6 +1706,17 @@ body {
     animation: final-move-pulse 0.8s ease-in-out infinite;
 }
 
+/* HEAT 2x chip: rapid scale + glow pulse so it reads as "armed". The
+   one-shot multiplier only sticks around for FRENZY_HEAT_DURATION_MS
+   (5s) or until the next match consumes it, whichever first. */
+@keyframes hud-heat-pulse {
+    0%, 100% { transform: scale(1);    filter: brightness(1)    drop-shadow(0 0 6px rgba(255,140,0,0.5)); }
+    50%      { transform: scale(1.08); filter: brightness(1.25) drop-shadow(0 0 14px rgba(255,140,0,0.9)); }
+}
+.hud-heat-pulse {
+    animation: hud-heat-pulse 0.6s ease-in-out infinite;
+}
+
 /* score-bump used to use transform: scale(1.15) which got clipped by
    the HudCard parent's .truncate (overflow:hidden) — the sides of
    the number visibly cut off mid-pulse. Switched to a glow-only

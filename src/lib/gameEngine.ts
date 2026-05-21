@@ -29,9 +29,9 @@ export interface Match {
     isHorizontal: boolean;
 }
 
-export type GameMode = "classic" | "daily";
+export type GameMode = "classic" | "daily" | "frenzy";
 
-export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
+export type GameOverReason = "moves_exhausted" | "no_valid_moves" | "time_expired" | null;
 
 export interface GameState {
     board: Cell[][];
@@ -49,10 +49,57 @@ export interface GameState {
     dailySeed?: number;
     gameOverReason: GameOverReason;
     bonusCapsuleAwarded: boolean;
+    // Frenzy-only. All numbers are milliseconds. frenzyStartedAt stays
+    // null until the first valid swap (engine warmup) so board load latency
+    // doesn't steal time from the player. heatActiveUntil null = no heat.
+    frenzyMsRemaining: number;
+    frenzyBonusMsEarned: number;
+    frenzyStartedAt: number | null;
+    frenzyLastMatchAt: number | null;
+    frenzyConsecutiveQuickMatches: number;
+    frenzyHeatActiveUntil: number | null;
 }
 
 const BOARD_SIZE = 8;
 const CLASSIC_MOVES = 30;
+
+// ===== FRENZY =====
+// Frenzy is the 60-second speed mode. Time is the only resource. Bigger
+// matches and combo chains award bonus seconds; players never run out of
+// moves. Anti-cheat: server rejects scores submitted faster than
+// FRENZY_MIN_ROUND_MS (allows for the no-input grace before the clock
+// starts and the final cascade resolving).
+export const FRENZY_INITIAL_MS = 60_000;
+export const FRENZY_MAX_MS = 150_000;          // 2:30 cap on snowballing
+export const FRENZY_MIN_ROUND_MS = 8_000;       // server-side anti-cheat floor
+export const FRENZY_HEAT_WINDOW_MS = 5_000;     // window between matches for heat
+export const FRENZY_HEAT_TRIGGER_COUNT = 3;     // quick matches to trigger heat 2x
+export const FRENZY_HEAT_DURATION_MS = 5_000;   // how long the next-match-doubles bonus lasts
+
+/** Returns ms of bonus time for a single match resolution. Inputs come
+ *  from processTurn's TurnResult so the hook can layer this on without
+ *  the engine needing to know about a clock. */
+export function computeFrenzyBonusMs(opts: {
+    largestMatchSize: number;
+    spawnedSpecial: boolean;
+    comboPeak: number;
+}): number {
+    let bonus = 0;
+    if (opts.largestMatchSize >= 5 || opts.spawnedSpecial) bonus += 2_000;
+    else if (opts.largestMatchSize === 4) bonus += 1_000;
+    if (opts.comboPeak >= 6) bonus += 5_000;
+    else if (opts.comboPeak >= 4) bonus += 2_000;
+    return bonus;
+}
+
+/** Score -> capsule mapping. Starter ladder; tune from real distribution
+ *  after launch. Cap at 3 keeps the economy bounded even on a god run. */
+export function frenzyCapsulesForScore(score: number): number {
+    if (score >= 100_000) return 3;
+    if (score >= 50_000) return 2;
+    if (score >= 25_000) return 1;
+    return 0;
+}
 
 let cellIdCounter = 0;
 function nextCellId(): string {
@@ -70,6 +117,9 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
     return {
         board,
         score: 0,
+        // Frenzy ignores movesLeft entirely. Leaving the field at the
+        // classic default keeps existing readers (HUD, anti-cheat) from
+        // having to do null checks.
         movesLeft: CLASSIC_MOVES,
         combo: 0,
         maxCombo: 0,
@@ -83,6 +133,12 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         dailySeed: seed,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        frenzyMsRemaining: mode === "frenzy" ? FRENZY_INITIAL_MS : 0,
+        frenzyBonusMsEarned: 0,
+        frenzyStartedAt: null,
+        frenzyLastMatchAt: null,
+        frenzyConsecutiveQuickMatches: 0,
+        frenzyHeatActiveUntil: null,
     };
 }
 

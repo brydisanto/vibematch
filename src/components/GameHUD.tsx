@@ -1,7 +1,14 @@
 "use client";
 
-import { GameState } from "@/lib/gameEngine";
+import { GameState, FRENZY_INITIAL_MS } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
+
+function formatFrenzyClock(ms: number): string {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 interface GameHUDProps {
     state: GameState;
@@ -75,6 +82,24 @@ function HudCard({
     );
 }
 
+/* ===== HEAT 2x — Frenzy one-shot multiplier indicator ===== */
+function HeatChip() {
+    return (
+        <div
+            className="mt-1 px-2 py-0.5 rounded-full text-[10px] font-display font-black tracking-wider uppercase select-none pointer-events-none hud-heat-pulse"
+            style={{
+                color: "#0a0015",
+                background: "linear-gradient(135deg, #FFE048 0%, #FF8C00 100%)",
+                border: "1px solid rgba(255,224,72,0.9)",
+                boxShadow: "0 0 14px rgba(255,140,0,0.6), 0 0 4px rgba(255,224,72,0.9)",
+                textShadow: "0 1px 0 rgba(255,224,72,0.6)",
+            }}
+        >
+            HEAT 2x
+        </div>
+    );
+}
+
 /* ===== FINAL MOVE! pulsing indicator ===== */
 function FinalMoveBanner() {
     return (
@@ -91,7 +116,41 @@ function FinalMoveBanner() {
 }
 
 export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false, isExtraPlay = false }: GameHUDProps) {
-    const { score, movesLeft, combo, gameMode } = state;
+    const { score, movesLeft, combo, gameMode, frenzyMsRemaining, frenzyHeatActiveUntil } = state;
+    const isFrenzy = gameMode === "frenzy";
+
+    // ===== FRENZY TIMER STYLING =====
+    // Mirror the moves tile's color tiers but key off remaining seconds.
+    // <=10s is the critical band: same red treatment the moves tile uses
+    // at <=3 moves so the visual language stays consistent.
+    const frenzySecondsRemaining = Math.ceil(frenzyMsRemaining / 1000);
+    const frenzyProgress = isFrenzy ? Math.min(1, frenzyMsRemaining / FRENZY_INITIAL_MS) : 0;
+    let frenzyBorderColor = "#FFE048";
+    let frenzyGlow = "rgba(255,224,72,0.35)";
+    let frenzyTextColor = "text-white";
+    if (frenzySecondsRemaining <= 10) {
+        frenzyBorderColor = "#EF4444";
+        frenzyGlow = "rgba(239,68,68,0.4)";
+        frenzyTextColor = "text-red-400";
+    } else if (frenzySecondsRemaining <= 20) {
+        frenzyBorderColor = "#FF5F1F";
+        frenzyGlow = "rgba(255,95,31,0.35)";
+        frenzyTextColor = "text-[#FF8C00]";
+    } else if (frenzySecondsRemaining <= 30) {
+        frenzyBorderColor = "#FF8C00";
+        frenzyGlow = "rgba(255,140,0,0.35)";
+    }
+
+    // [hh]eat 2x is one-shot armed. Live-poll vs Date.now so the chip
+    // disappears the instant the window closes even if no re-render is
+    // triggered by a state update.
+    const [, setHeatTick] = useState(0);
+    useEffect(() => {
+        if (!isFrenzy || frenzyHeatActiveUntil === null) return;
+        const id = setInterval(() => setHeatTick(t => t + 1), 250);
+        return () => clearInterval(id);
+    }, [isFrenzy, frenzyHeatActiveUntil]);
+    const heatActive = isFrenzy && frenzyHeatActiveUntil !== null && frenzyHeatActiveUntil > Date.now();
 
     // Fetch high scores
     const [personalBest, setPersonalBest] = useState<number>(0);
@@ -330,23 +389,43 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 {displayedScore.toLocaleString()}
                             </span>
                         </div>
+                        {heatActive && <HeatChip />}
                     </HudCard>
-                    {/* Moves */}
+                    {/* Moves / Frenzy Timer */}
                     <div className="relative flex-1">
-                        {movesLeft <= 3 && (
+                        {!isFrenzy && movesLeft <= 3 && (
                             <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full">
-                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
-                            <div
-                                className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
-                                style={movesLeft <= 3 ? {
-                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
-                                } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-                            >
-                                {movesLeft}
-                            </div>
-                            {movesLeft === 1 && <FinalMoveBanner />}
+                        {isFrenzy && frenzySecondsRemaining <= 10 && frenzyMsRemaining > 0 && (
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard
+                            borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
+                            glowColor={isFrenzy ? frenzyGlow : movesGlow}
+                            borderProgress={isFrenzy ? frenzyProgress : movesLeft / TOTAL_MOVES}
+                            className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full"
+                        >
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">{isFrenzy ? "TIME" : "MOVES"}</div>
+                            {isFrenzy ? (
+                                <div
+                                    className={`font-display text-3xl font-black leading-none ${frenzyTextColor}`}
+                                    style={frenzySecondsRemaining <= 10 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+                                >
+                                    {formatFrenzyClock(frenzyMsRemaining)}
+                                </div>
+                            ) : (
+                                <div
+                                    className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                    style={movesLeft <= 3 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+                                >
+                                    {movesLeft}
+                                </div>
+                            )}
+                            {!isFrenzy && movesLeft === 1 && <FinalMoveBanner />}
                         </HudCard>
                     </div>
                     {/* Combo */}
@@ -385,26 +464,46 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 {formatScoreWithCommas(displayedScore)}
                             </span>
                         </div>
+                        {heatActive && <HeatChip />}
                     </HudCard>
 
-                    {/* Moves Card — border acts as radial indicator */}
+                    {/* Moves / Frenzy Timer — border acts as radial indicator */}
                     <div className="relative flex-1 min-h-0">
-                        {movesLeft <= 3 && (
+                        {!isFrenzy && movesLeft <= 3 && (
                             <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-2 w-full h-full">
+                        {isFrenzy && frenzySecondsRemaining <= 10 && frenzyMsRemaining > 0 && (
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard
+                            borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
+                            glowColor={isFrenzy ? frenzyGlow : movesGlow}
+                            borderProgress={isFrenzy ? frenzyProgress : movesLeft / TOTAL_MOVES}
+                            className="flex-1 min-h-0 py-2 w-full h-full"
+                        >
                             <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
-                                MOVES
+                                {isFrenzy ? "TIME" : "MOVES"}
                             </div>
-                            <div
-                                className={`font-display text-3xl sm:text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
-                                style={movesLeft <= 3 ? {
-                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
-                                } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
-                            >
-                                {movesLeft}
-                            </div>
-                            {movesLeft === 1 && <FinalMoveBanner />}
+                            {isFrenzy ? (
+                                <div
+                                    className={`font-display text-2xl sm:text-3xl font-black leading-none ${frenzyTextColor}`}
+                                    style={frenzySecondsRemaining <= 10 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                                >
+                                    {formatFrenzyClock(frenzyMsRemaining)}
+                                </div>
+                            ) : (
+                                <div
+                                    className={`font-display text-3xl sm:text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                    style={movesLeft <= 3 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                                >
+                                    {movesLeft}
+                                </div>
+                            )}
+                            {!isFrenzy && movesLeft === 1 && <FinalMoveBanner />}
                         </HudCard>
                     </div>
 
