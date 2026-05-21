@@ -705,7 +705,11 @@ export default function AppClient() {
                 added for PWA / standalone mode where the OS status bar
                 isn't reserved by the browser chrome. */}
             <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-[max(0.25rem,env(safe-area-inset-top))] pb-0 relative">
-              <div className="relative flex items-start justify-between w-full">
+              {/* min-height reserves space for the absolutely-positioned
+                  logo so the game board below sits below it instead of
+                  underneath. Heights mirror logo h-20 / sm:h-32 / lg:h-44
+                  (80 / 128 / 176px) plus the small top margin. */}
+              <div className="relative flex items-start justify-between w-full min-h-[5.5rem] sm:min-h-[9rem] lg:min-h-[12rem]">
                 <div className="flex-1 flex justify-start gap-2 pt-1 sm:pt-4 z-10">
                   <button
                     onClick={handleGoHome}
