@@ -1443,8 +1443,10 @@ body {
     100% { background-position: 300% 50%; }
 }
 .bonus-capsule-shimmer {
-    animation: bonus-capsule-shimmer 2s linear infinite;
-    will-change: background-position;
+    animation: bonus-capsule-shimmer 3s linear infinite;
+}
+@media (max-width: 768px) {
+    .bonus-capsule-shimmer { animation: none; }
 }
 
 /* Combo 6+ keysmash: rainbow halo that cycles through the full GVC

@@ -699,10 +699,14 @@ export default function AppClient() {
               />
             </div>
 
-            {/* Top bar — Back + Logo + Help */}
-            <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-1 pb-0 relative">
-              <div className="flex items-start justify-between w-full">
-                <div className="flex-1 flex justify-start gap-2 pt-1 sm:pt-4">
+            {/* Top bar — Back + Logo + Help. Logo is absolutely centered
+                so the asymmetric button groups (2 left, 3 right) can't
+                drag it off the screen midline. Safe-area-inset-top is
+                added for PWA / standalone mode where the OS status bar
+                isn't reserved by the browser chrome. */}
+            <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-[max(0.25rem,env(safe-area-inset-top))] pb-0 relative">
+              <div className="relative flex items-start justify-between w-full">
+                <div className="flex-1 flex justify-start gap-2 pt-1 sm:pt-4 z-10">
                   <button
                     onClick={handleGoHome}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
@@ -724,7 +728,7 @@ export default function AppClient() {
                   )}
                 </div>
 
-                <div className="pointer-events-none flex items-center justify-center z-50 mt-1 sm:mt-2">
+                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center z-20 mt-1 sm:mt-2">
                   <Image
                     src="/assets/logo-v3.png"
                     alt="PIN DROP"
@@ -736,7 +740,7 @@ export default function AppClient() {
                   />
                 </div>
 
-                <div className="flex-1 flex justify-end items-start gap-2 pt-1 sm:pt-4 relative">
+                <div className="flex-1 flex justify-end items-start gap-2 pt-1 sm:pt-4 relative z-10">
                   <button
                     onClick={handleSwitchTrack}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#b366ff] flex items-center justify-center shadow-lg hover:bg-[#b366ff] transition-all duration-200 group"
@@ -875,8 +879,8 @@ export default function AppClient() {
                       (--bp-tx, --bp-ty, etc.) driving the .bonus-particle
                       keyframe, which the browser can GPU-accelerate
                       across the whole set in one composited layer. */}
-                  {Array.from({ length: 32 }, (_, i) => {
-                    const angle = (i / 32) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                  {Array.from({ length: 22 }, (_, i) => {
+                    const angle = (i / 22) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
                     const dist = 180 + Math.random() * 140;
                     const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FF6B9D", "#4A9EFF", "#FFFFFF"];
                     const color = colors[i % colors.length];
@@ -889,7 +893,6 @@ export default function AppClient() {
                           width: isStreamer ? 4 + Math.random() * 3 : 5 + Math.random() * 5,
                           height: isStreamer ? 14 + Math.random() * 8 : 5 + Math.random() * 5,
                           background: color,
-                          boxShadow: `0 0 10px ${color}`,
                           ['--bp-tx' as string]: `${Math.cos(angle) * dist}px`,
                           ['--bp-ty' as string]: `${Math.sin(angle) * dist}px`,
                           ['--bp-rotate' as string]: `${(i % 2 === 0 ? 1 : -1) * (180 + Math.random() * 360)}deg`,
@@ -901,9 +904,11 @@ export default function AppClient() {
                   })}
 
                   {/* Outer wave: bigger, slower, longer travel with
-                      gravity drift. Same CSS-only treatment. */}
-                  {Array.from({ length: 24 }, (_, i) => {
-                    const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+                      gravity drift. Only outer particles keep a glow so
+                      the burst still reads as celebratory without paying
+                      the box-shadow cost on every inner dot. */}
+                  {Array.from({ length: 14 }, (_, i) => {
+                    const angle = (i / 14) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
                     const dist = 320 + Math.random() * 180;
                     const colors = ["#FFE048", "#FF5F1F", "#B366FF", "#FF6B9D", "#FFFFFF"];
                     const color = colors[i % colors.length];
@@ -915,7 +920,7 @@ export default function AppClient() {
                           width: 8 + Math.random() * 6,
                           height: 8 + Math.random() * 6,
                           background: color,
-                          boxShadow: `0 0 14px ${color}, 0 0 28px ${color}80`,
+                          boxShadow: `0 0 10px ${color}`,
                           ['--bp-tx' as string]: `${Math.cos(angle) * dist}px`,
                           ['--bp-ty' as string]: `${Math.sin(angle) * dist + 80}px`,
                           ['--bp-rotate' as string]: `${(i % 2 === 0 ? 1 : -1) * 180}deg`,
@@ -959,7 +964,7 @@ export default function AppClient() {
                             color: "#FFFFFF",
                             WebkitTextStroke: "5px #FFE048",
                             paintOrder: "stroke fill",
-                            textShadow: "0 0 36px rgba(255,224,72,1), 0 0 72px rgba(255,224,72,0.6), 0 0 100px rgba(179,102,255,0.5), 0 6px 0 #FFE048, 0 9px 18px rgba(0,0,0,0.85)",
+                            textShadow: "0 0 24px rgba(255,224,72,0.9), 0 6px 0 #FFE048, 0 9px 18px rgba(0,0,0,0.85)",
                             letterSpacing: "-0.01em",
                           }}
                         >
