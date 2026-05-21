@@ -25,15 +25,12 @@ import {
 /* ────────────────────────────────────────────────────────────────
    Palette.
    ──────────────────────────────────────────────────────────────── */
-// Per-tier drop rate mirrors TIER_WEIGHTS in /api/pinbook/route.ts.
-// Weights sum to 100 so rate IS the percentage. Keep these in sync if
-// you ever rebalance the pool.
 const TIER_META = {
-    common:  { label: "Common",    color: "#E5E7EB", glow: "rgba(229,231,235,0.3)",  count: 19, rate: 45, img: "/badges/any_gvc_1759173799963.webp" },
-    rare:    { label: "Rare",      color: "#4A9EFF", glow: "rgba(74,158,255,0.4)",   count: 51, rate: 30, img: "/badges/rainbow_boombox_1759173875165.webp" },
-    special: { label: "Special",   color: ORANGE,    glow: "rgba(255,95,31,0.45)",   count: 9,  rate: 13, img: "/badges/vibestr_blue_tier.webp" },
-    gold:    { label: "Legendary", color: GOLD,      glow: "rgba(255,224,72,0.45)",  count: 19, rate: 9,  img: "/badges/gold_member_1759173793799.webp" },
-    cosmic:  { label: "Cosmic",    color: COSMIC,    glow: "rgba(179,102,255,0.5)",  count: 3,  rate: 3,  img: "/badges/cosmic_guardian1759173818340.webp" },
+    common:  { label: "Common",    color: "#E5E7EB", glow: "rgba(229,231,235,0.3)",  count: 19, img: "/badges/any_gvc_1759173799963.webp" },
+    rare:    { label: "Rare",      color: "#4A9EFF", glow: "rgba(74,158,255,0.4)",   count: 50, img: "/badges/rainbow_boombox_1759173875165.webp" },
+    special: { label: "Special",   color: ORANGE,    glow: "rgba(255,95,31,0.45)",   count: 9,  img: "/badges/vibestr_blue_tier.webp" },
+    gold:    { label: "Legendary", color: GOLD,      glow: "rgba(255,224,72,0.45)",  count: 20, img: "/badges/gold_member_1759173793799.webp" },
+    cosmic:  { label: "Cosmic",    color: COSMIC,    glow: "rgba(179,102,255,0.5)",  count: 3,  img: "/badges/cosmic_guardian1759173818340.webp" },
 } as const;
 
 const COLLECTOR_TIERS = [
@@ -1832,9 +1829,6 @@ function PinsSection() {
                             </div>
                             <div className="font-mundial text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
                                 {m.count} pins
-                            </div>
-                            <div className="font-display font-black text-[12px] tracking-wider mt-1" style={{ color: m.color }}>
-                                {m.rate}% drop rate
                             </div>
                         </div>
                     );
