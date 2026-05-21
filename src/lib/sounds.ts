@@ -102,7 +102,9 @@ export const BGM_TRACK_NAMES = [
     "Late Night Radio",
     "Funkorama",
     "Voxel Revolution",
-    "Electrodoodle"
+    "Electrodoodle",
+    "Andromeda",
+    "Sunlight"
 ];
 
 const BGM_FILES = [
@@ -112,7 +114,9 @@ const BGM_FILES = [
     "/music/late-night-radio.mp3",
     "/music/funkorama.mp3",
     "/music/voxel-revolution.mp3",
-    "/music/electrodoodle.mp3"
+    "/music/electrodoodle.mp3",
+    "/music/andromeda.mp3",
+    "/music/sunlight.mp3"
 ];
 
 function stopMP3() {
