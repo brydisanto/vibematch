@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server';
 import { parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { bumpDailyCounter } from '@/lib/daily-counters';
 import { BADGES, type BadgeTier } from '@/lib/badges';
 import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
 import { getMainnetClient } from '@/lib/eth-rpc';
@@ -248,6 +249,7 @@ export async function POST(request: Request) {
         pinbook.totalEarned += totalCapsules;
 
         await kv.set(pinbookKey, pinbook);
+        await bumpDailyCounter(username, "capsulesEarned", totalCapsules);
 
         // Recalculate leaderboard entry (pin counts changed due to burn)
         const profile = await kv.get(`user:${username}`) as { username?: string; avatarUrl?: string } | null;

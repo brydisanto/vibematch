@@ -5,6 +5,7 @@ import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { computeUserEntry, updateLeaderboardEntry } from './leaderboard/route';
 import { BADGES, type Badge, type BadgeTier } from '@/lib/badges';
 import { getEasternDailyKey } from '@/lib/daily-window';
+import { bumpDailyCounter } from '@/lib/daily-counters';
 import {
     PROMO_DROP_RATE,
     isPromoActive,
@@ -88,29 +89,7 @@ async function incrementClassicPlays(username: string): Promise<DailyTracker> {
     return updated;
 }
 
-/**
- * Bump one of the daily activity counters by `amount`. Read-modify-write
- * the today's tracker record. Best-effort — wraps in try/catch so a
- * counter failure can't break the calling action's success path.
- */
-async function bumpDailyCounter(
-    username: string,
-    field: "capsulesEarned" | "capsulesOpened" | "pinsFound" | "newPinsFound",
-    amount: number = 1,
-): Promise<void> {
-    if (amount <= 0) return;
-    try {
-        const key = getTodayKey(username);
-        const existing = await getDailyTracker(username);
-        const updated: DailyTracker = {
-            ...existing,
-            [field]: (existing[field] || 0) + amount,
-        };
-        await kv.set(key, updated, { ex: 86400 * 2 });
-    } catch (e) {
-        console.error(`[bumpDailyCounter] failed for ${username} ${field} +${amount}:`, e);
-    }
-}
+// bumpDailyCounter is shared with referral + reroll via lib/daily-counters.
 
 function emptyPinBook(): PinBookData {
     return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0, totalFoundByTier: {} };

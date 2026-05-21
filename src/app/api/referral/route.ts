@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { bumpDailyCounter } from '@/lib/daily-counters';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,6 +116,10 @@ export async function processReferral(referrerUsername: string, newUsername: str
 
     // Mark the new user as referred (prevents double-credit)
     await kv.set(`referral:credited:${newUser}`, { by: referrer, at: Date.now() });
+
+    // Daily-activity counters (admin view). Both sides get +2.
+    await bumpDailyCounter(referrer, "capsulesEarned", 2);
+    await bumpDailyCounter(newUser, "capsulesEarned", 2);
 
     console.log(`[Referral] ${referrer} referred ${newUser} — capsule credited to both`);
     return true;
