@@ -290,11 +290,12 @@ function TileMatchFlash({ effect, cellSize, gridOffset }: { effect: MatchEffect;
                 >
                     <div
                         style={{
-                            width: cellSize * 0.9,
-                            height: cellSize * 0.9,
+                            width: cellSize * 1.1,
+                            height: cellSize * 1.1,
                             transform: "translateX(-50%) translateY(-50%)",
-                            background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,224,72,0.6) 45%, transparent 70%)",
+                            background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 30%, rgba(255,224,72,0.65) 55%, transparent 75%)",
                             borderRadius: "50%",
+                            boxShadow: "0 0 18px rgba(255,224,72,0.55)",
                         }}
                     />
                 </div>

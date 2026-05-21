@@ -513,6 +513,16 @@ export function applyGravity(
      */
     excludedBadgeIds?: Set<string>
 ): Cell[][] {
+    // Snapshot the badge that WAS at each cell before clearing. Used to
+    // prevent gravity from refilling a just-cleared cell with the same
+    // badge that was sitting there — without this, bombs and lasers
+    // visibly "miss" 1-3 cells per detonation because of random refill
+    // collision (1/6 chance per cell). Captured before the new-board
+    // copy because the matched flag is what tells us which cells need
+    // fresh tiles.
+    const previousBadgeAtCell: (string | undefined)[][] = board.map(row =>
+        row.map(cell => (cell.isMatched ? cell.badge.id : undefined)),
+    );
     const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
     // Filter the refill pool. Falls back to the full pool if filtering
     // would leave us with nothing to draw from (defensive — shouldn't
@@ -542,8 +552,16 @@ export function applyGravity(
                 const drop = row - originalRow; // how many rows this tile fell
                 newBoard[row][col] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             } else {
-                // Generate new tile — drops from above the board
-                const badge = effectivePool[Math.floor(Math.random() * effectivePool.length)];
+                // Per-cell exclusion: skip the badge that was at this
+                // exact cell before clearing, so the player visually
+                // perceives that the cell did in fact change. Falls
+                // back to the full pool if exclusion leaves nothing.
+                const previousBadgeId = previousBadgeAtCell[row][col];
+                const cellPool = previousBadgeId
+                    ? effectivePool.filter(b => b.id !== previousBadgeId)
+                    : effectivePool;
+                const pickFrom = cellPool.length > 0 ? cellPool : effectivePool;
+                const badge = pickFrom[Math.floor(Math.random() * pickFrom.length)];
                 // New tiles enter from above: distance = their target row + 1
                 // (relative to the top of the visible board)
                 newBoard[row][col] = {

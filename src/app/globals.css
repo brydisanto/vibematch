@@ -1357,14 +1357,20 @@ body {
     animation: ring-burst 0.45s ease-out forwards;
 }
 
-/* ===== TILE MATCH FLASH ===== */
+/* ===== TILE MATCH FLASH =====
+   Extended duration + hold-at-peak so the clear reads even when the
+   gravity refill drops a fresh tile in ~120-300ms later. Players were
+   reporting "the bomb didn't clear all 9 cells" — actually all 9 did
+   clear, but the flash was so brief it was easy to miss. Now stays
+   bright through ~50% of the keyframe before fading. */
 @keyframes tile-match-flash {
-    0% { transform: scale(0.6); opacity: 0; }
-    25% { transform: scale(1.4); opacity: 0.95; }
-    100% { transform: scale(0); opacity: 0; }
+    0%   { transform: scale(0.6); opacity: 0; }
+    20%  { transform: scale(1.5); opacity: 1; }
+    55%  { transform: scale(1.4); opacity: 0.85; }
+    100% { transform: scale(0.4); opacity: 0; }
 }
 .tile-match-flash-effect {
-    animation: tile-match-flash 0.32s ease-out forwards;
+    animation: tile-match-flash 0.55s ease-out forwards;
 }
 
 /* ===== SCREEN FLASH ===== */
