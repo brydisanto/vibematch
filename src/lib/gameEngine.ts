@@ -49,10 +49,14 @@ export interface GameState {
     dailySeed?: number;
     gameOverReason: GameOverReason;
     bonusCapsuleAwarded: boolean;
-    // Frenzy-only. All numbers are milliseconds. frenzyStartedAt stays
-    // null until the first valid swap (engine warmup) so board load latency
-    // doesn't steal time from the player. heatActiveUntil null = no heat.
-    frenzyMsRemaining: number;
+    // Frenzy-only. All numbers are milliseconds / Unix timestamps.
+    // frenzyStartedAt and frenzyEndsAt stay null until the first valid
+    // swap so board-load latency doesn't steal time. frenzyEndsAt is an
+    // absolute timestamp — the HUD computes "remaining" live as
+    // (frenzyEndsAt - now) so we don't tick state every 250ms and
+    // interrupt mid-cascade tile animations. heatActiveUntil null = no
+    // heat.
+    frenzyEndsAt: number | null;
     frenzyBonusMsEarned: number;
     frenzyStartedAt: number | null;
     frenzyLastMatchAt: number | null;
@@ -133,7 +137,7 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         dailySeed: seed,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
-        frenzyMsRemaining: mode === "frenzy" ? FRENZY_INITIAL_MS : 0,
+        frenzyEndsAt: null,
         frenzyBonusMsEarned: 0,
         frenzyStartedAt: null,
         frenzyLastMatchAt: null,

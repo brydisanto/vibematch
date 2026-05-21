@@ -14,6 +14,7 @@ import {
     hasValidMoves,
     findBestHint,
     computeFrenzyBonusMs,
+    FRENZY_INITIAL_MS,
     FRENZY_MAX_MS,
     FRENZY_HEAT_WINDOW_MS,
     FRENZY_HEAT_TRIGGER_COUNT,
@@ -414,8 +415,10 @@ export function useGame(): UseGameReturn {
         // ===== FRENZY UPDATES =====
         // Bonus time from big matches/combos, heat-streak tracking, and
         // first-swap timer arming all live here so a single match resolution
-        // updates every Frenzy field atomically.
-        let frenzyMsRemaining = prev.frenzyMsRemaining;
+        // updates every Frenzy field atomically. frenzyEndsAt is the
+        // absolute Unix timestamp when the clock should hit zero — bonus
+        // time pushes that forward, capped at start + FRENZY_MAX_MS.
+        let frenzyEndsAt = prev.frenzyEndsAt;
         let frenzyBonusMsEarned = prev.frenzyBonusMsEarned;
         let frenzyStartedAt = prev.frenzyStartedAt;
         let frenzyLastMatchAt = prev.frenzyLastMatchAt;
@@ -426,7 +429,10 @@ export function useGame(): UseGameReturn {
             const now = Date.now();
             // Arm the timer on first valid swap so board-load latency
             // doesn't steal time from the player.
-            if (frenzyStartedAt === null) frenzyStartedAt = now;
+            if (frenzyStartedAt === null) {
+                frenzyStartedAt = now;
+                frenzyEndsAt = now + FRENZY_INITIAL_MS;
+            }
 
             const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
             const largestMatchSize = realMatches.length > 0
@@ -438,8 +444,10 @@ export function useGame(): UseGameReturn {
                 spawnedSpecial,
                 comboPeak: result.combo,
             });
-            if (bonusMs > 0) {
-                frenzyMsRemaining = Math.min(FRENZY_MAX_MS, frenzyMsRemaining + bonusMs);
+            if (bonusMs > 0 && frenzyEndsAt !== null && frenzyStartedAt !== null) {
+                // Push end-time forward, capped at the round's max length.
+                const cap = frenzyStartedAt + FRENZY_MAX_MS;
+                frenzyEndsAt = Math.min(cap, frenzyEndsAt + bonusMs);
                 frenzyBonusMsEarned = frenzyBonusMsEarned + bonusMs;
             }
 
@@ -448,9 +456,7 @@ export function useGame(): UseGameReturn {
             // a one-shot 2x multiplier on the next match.
             const withinWindow = frenzyLastMatchAt !== null && (now - frenzyLastMatchAt) <= FRENZY_HEAT_WINDOW_MS;
             frenzyConsecutiveQuickMatches = withinWindow ? frenzyConsecutiveQuickMatches + 1 : 1;
-            // If THIS match consumed heat (scoreMultiplier > 1), clear it.
             if (scoreMultiplier > 1) frenzyHeatActiveUntil = null;
-            // Arm heat for the NEXT match if we just hit the trigger.
             if (frenzyConsecutiveQuickMatches >= FRENZY_HEAT_TRIGGER_COUNT) {
                 frenzyHeatActiveUntil = now + FRENZY_HEAT_DURATION_MS;
                 frenzyConsecutiveQuickMatches = 0;
@@ -502,7 +508,7 @@ export function useGame(): UseGameReturn {
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,
             bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
-            frenzyMsRemaining,
+            frenzyEndsAt,
             frenzyBonusMsEarned,
             frenzyStartedAt,
             frenzyLastMatchAt,
@@ -669,20 +675,11 @@ export function useGame(): UseGameReturn {
         [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
     );
 
-    // ===== FRENZY TIMER TICK =====
-    // Decrements frenzyMsRemaining every 100ms once the player has made
-    // their first valid swap. Animations don't pause the clock — pausing
-    // during cascades is exploitable (chain combos to freeze time). When
-    // the clock hits zero we flip to gameover with reason "time_expired";
-    // any in-flight cascade keeps resolving behind the overlay so its
-    // score still lands. No-op for non-frenzy modes.
     // ===== FRENZY VISIBILITY FORFEIT =====
     // Backgrounding the tab mid-Frenzy ends the round immediately. The
     // "no pause" rule from the design is enforced here: hiding the tab
-    // can't be used to stop the clock. We also forfeit the score (set
-    // to 0 if the player hadn't yet made a first match) so leaderboard
-    // scouts can't peek the board, abandon, and retry until they get a
-    // strong opening pattern. Classic and daily aren't affected.
+    // can't be used to stop the clock. Sets frenzyEndsAt to now so the
+    // expiry timeout fires immediately on the next paint.
     useEffect(() => {
         if (!state) return;
         if (state.gameMode !== "frenzy") return;
@@ -697,7 +694,7 @@ export function useGame(): UseGameReturn {
                 if (prev.gamePhase !== "playing") return prev;
                 return {
                     ...prev,
-                    frenzyMsRemaining: 0,
+                    frenzyEndsAt: Date.now(),
                     gamePhase: "gameover",
                     gameOverReason: "time_expired",
                 };
@@ -708,74 +705,79 @@ export function useGame(): UseGameReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt]);
 
-    // Frenzy tick: state-only. Tempo + urgency SFX are split into a
-    // separate effect below so they don't run inside React's setState
-    // updater (which can re-run under strict mode). 250ms interval is
-    // plenty for an mm:ss display and halves the React render churn on
-    // mobile vs the previous 100ms.
+    // ===== FRENZY EXPIRY =====
+    // Schedules a SINGLE setTimeout for when frenzyEndsAt arrives. Reschedules
+    // if the player earns bonus time (frenzyEndsAt moves forward). No
+    // per-frame setState — the parent never re-renders just because the
+    // clock advances. Mid-cascade animations run to completion uninterrupted.
     useEffect(() => {
         if (!state) return;
         if (state.gameMode !== "frenzy") return;
-        if (state.frenzyStartedAt === null) return;
         if (state.gamePhase !== "playing") return;
+        if (state.frenzyEndsAt === null) return;
 
-        const tick = setInterval(() => {
-            setState(prev => {
-                if (!prev) return prev;
-                if (prev.gameMode !== "frenzy") return prev;
-                if (prev.gamePhase !== "playing") return prev;
-                const next = Math.max(0, prev.frenzyMsRemaining - 250);
-                if (next <= 0) {
-                    setTimeout(() => playGameOverSound(), 0);
-                    return {
-                        ...prev,
-                        frenzyMsRemaining: 0,
-                        gamePhase: "gameover",
-                        gameOverReason: "time_expired",
-                    };
-                }
-                return { ...prev, frenzyMsRemaining: next };
-            });
-        }, 250);
+        const msUntilExpiry = state.frenzyEndsAt - Date.now();
+        if (msUntilExpiry <= 0) {
+            playGameOverSound();
+            setState(prev => prev ? {
+                ...prev,
+                gamePhase: "gameover",
+                gameOverReason: "time_expired",
+            } : prev);
+            return;
+        }
 
-        return () => clearInterval(tick);
+        const id = setTimeout(() => {
+            playGameOverSound();
+            setState(prev => prev ? {
+                ...prev,
+                gamePhase: "gameover",
+                gameOverReason: "time_expired",
+            } : prev);
+        }, msUntilExpiry);
+
+        return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state?.gameMode, state?.frenzyStartedAt, state?.gamePhase]);
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyEndsAt]);
 
-    // Frenzy audio side effects: tempo ramp + urgency tick beeps. Refs
-    // throttle audio API calls so we only poke bgmAudio.playbackRate
-    // when the perceptible tempo band actually changes (avoids ~4
-    // redundant audio graph updates per second on mobile), and we only
-    // play one tick beep per real-time second crossing in the last 10s.
-    const lastFrenzyRateBucketRef = useRef<number | null>(null);
+    // ===== FRENZY AUDIO + URGENCY TICKS =====
+    // Runs its own interval but never touches React state, so it can't
+    // force re-renders. Reads frenzyEndsAt + Date.now() to know remaining
+    // ms; only pokes bgmAudio.playbackRate when crossing a tempo band
+    // boundary, and only plays a tick beep when crossing a whole-second
+    // boundary in the last 10s. Audio rate changes are coarse (3 bands)
+    // so mobile Safari doesn't stutter from constant time-stretching.
+    const lastFrenzyRateBandRef = useRef<number | null>(null);
     const lastFrenzyTickSecondRef = useRef<number | null>(null);
     useEffect(() => {
         if (!state) return;
         if (state.gameMode !== "frenzy") return;
         if (state.gamePhase !== "playing") return;
-        if (state.frenzyStartedAt === null) return;
+        if (state.frenzyEndsAt === null) return;
 
-        const ms = state.frenzyMsRemaining;
+        const endsAt = state.frenzyEndsAt;
+        const id = setInterval(() => {
+            const ms = endsAt - Date.now();
 
-        // Quantize to 500ms bands so tempo only updates twice a second
-        // at most, and only when actually crossing a band.
-        const bucket = Math.floor(ms / 500);
-        if (bucket !== lastFrenzyRateBucketRef.current) {
-            lastFrenzyRateBucketRef.current = bucket;
-            setFrenzyTempo(ms);
-        }
-
-        if (ms > 0 && ms <= 10_000) {
-            const sec = Math.ceil(ms / 1000);
-            if (sec !== lastFrenzyTickSecondRef.current) {
-                lastFrenzyTickSecondRef.current = sec;
-                if (sec <= 3) playFrenzyFinalTick();
-                else playFrenzyTick();
+            // 3 discrete bands: > 30s = original, 30-15s = fast, < 15s = hectic.
+            const band = ms > 30_000 ? 0 : ms > 15_000 ? 1 : 2;
+            if (band !== lastFrenzyRateBandRef.current) {
+                lastFrenzyRateBandRef.current = band;
+                setFrenzyTempo(ms);
             }
-        } else if (ms > 10_000) {
-            lastFrenzyTickSecondRef.current = null;
-        }
-    }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt, state?.frenzyMsRemaining]);
+
+            if (ms > 0 && ms <= 10_000) {
+                const sec = Math.ceil(ms / 1000);
+                if (sec !== lastFrenzyTickSecondRef.current) {
+                    lastFrenzyTickSecondRef.current = sec;
+                    if (sec <= 3) playFrenzyFinalTick();
+                    else playFrenzyTick();
+                }
+            }
+        }, 250);
+        return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyEndsAt]);
 
     // Stop the Frenzy BGM treatment (rate + track restore) when the
     // round ends, no matter what triggered the end (time out, visibility

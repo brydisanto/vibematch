@@ -261,19 +261,16 @@ export function startFrenzyBGM() {
     setTimeout(() => applyPlaybackRate(FRENZY_BASE_RATE), 120);
 }
 
-/** Ramp the Frenzy playback rate based on remaining ms. Sits at the
- *  original 1.0x until 30s remain, then linearly accelerates to
- *  FRENZY_PEAK_RATE (1.40x) at zero. If the player earns back time
- *  past the 30s threshold, the rate drops back to 1.0 — tension eases
- *  when you've bought yourself room. */
+/** Set the Frenzy playback rate based on remaining ms. Three discrete
+ *  bands instead of a continuous ramp — every playbackRate change on
+ *  mobile Safari triggers an expensive time-stretch recompute that
+ *  can stutter the BGM. Three changes per round (and only when crossing
+ *  a band) keeps it musical without skipping. */
 export function setFrenzyTempo(remainingMs: number) {
     if (!bgmAudio) return;
-    if (remainingMs >= FRENZY_RAMP_START_MS) {
-        applyPlaybackRate(FRENZY_BASE_RATE);
-        return;
-    }
-    const progress = Math.min(1, Math.max(0, (FRENZY_RAMP_START_MS - remainingMs) / FRENZY_RAMP_START_MS));
-    const rate = FRENZY_BASE_RATE + (FRENZY_PEAK_RATE - FRENZY_BASE_RATE) * progress;
+    let rate = FRENZY_BASE_RATE;       // 1.00 above 30s remaining
+    if (remainingMs <= 15_000) rate = 1.25;    // last 15s: hectic
+    else if (remainingMs <= 30_000) rate = 1.12; // 15-30s: faster
     applyPlaybackRate(rate);
 }
 

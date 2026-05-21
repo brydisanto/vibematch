@@ -439,7 +439,7 @@ export default function DemoClient() {
         totalCascades: 0,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
-        frenzyMsRemaining: 0,
+        frenzyEndsAt: null,
         frenzyBonusMsEarned: 0,
         frenzyStartedAt: null,
         frenzyLastMatchAt: null,

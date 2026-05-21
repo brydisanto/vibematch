@@ -116,13 +116,25 @@ function FinalMoveBanner() {
 }
 
 export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false, isExtraPlay = false }: GameHUDProps) {
-    const { score, movesLeft, combo, gameMode, frenzyMsRemaining, frenzyHeatActiveUntil } = state;
+    const { score, movesLeft, combo, gameMode, frenzyEndsAt, frenzyHeatActiveUntil } = state;
     const isFrenzy = gameMode === "frenzy";
 
-    // ===== FRENZY TIMER STYLING =====
-    // Mirror the moves tile's color tiers but key off remaining seconds.
-    // <=10s is the critical band: same red treatment the moves tile uses
-    // at <=3 moves so the visual language stays consistent.
+    // ===== FRENZY TIMER (local-state ticker) =====
+    // The clock value lives in this component's local state, not on the
+    // shared GameState. A 250ms interval re-renders ONLY this HUD — the
+    // parent's React tree (and GameBoard with its 64 tiles) doesn't
+    // refresh just because the timer ticks. That keeps Framer Motion's
+    // mid-cascade gravity animations uninterrupted.
+    const [frenzyTickNow, setFrenzyTickNow] = useState(() => Date.now());
+    useEffect(() => {
+        if (!isFrenzy || frenzyEndsAt === null) return;
+        const id = setInterval(() => setFrenzyTickNow(Date.now()), 250);
+        return () => clearInterval(id);
+    }, [isFrenzy, frenzyEndsAt]);
+
+    const frenzyMsRemaining = isFrenzy
+        ? (frenzyEndsAt === null ? FRENZY_INITIAL_MS : Math.max(0, frenzyEndsAt - frenzyTickNow))
+        : 0;
     const frenzySecondsRemaining = Math.ceil(frenzyMsRemaining / 1000);
     const frenzyProgress = isFrenzy ? Math.min(1, frenzyMsRemaining / FRENZY_INITIAL_MS) : 0;
     let frenzyBorderColor = "#FFE048";
