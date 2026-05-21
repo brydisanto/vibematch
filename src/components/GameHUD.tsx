@@ -141,14 +141,20 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
         frenzyGlow = "rgba(255,140,0,0.35)";
     }
 
-    // [hh]eat 2x is one-shot armed. Live-poll vs Date.now so the chip
-    // disappears the instant the window closes even if no re-render is
-    // triggered by a state update.
+    // HEAT 2x is one-shot armed. Schedule a single timeout for when the
+    // arming window closes so the chip disappears at the right moment —
+    // beats polling every 250ms which was forcing constant HUD re-renders
+    // (and via the parent, GameBoard re-renders) on mobile.
     const [, setHeatTick] = useState(0);
     useEffect(() => {
         if (!isFrenzy || frenzyHeatActiveUntil === null) return;
-        const id = setInterval(() => setHeatTick(t => t + 1), 250);
-        return () => clearInterval(id);
+        const msUntilExpiry = frenzyHeatActiveUntil - Date.now();
+        if (msUntilExpiry <= 0) {
+            setHeatTick(t => t + 1);
+            return;
+        }
+        const id = setTimeout(() => setHeatTick(t => t + 1), msUntilExpiry + 50);
+        return () => clearTimeout(id);
     }, [isFrenzy, frenzyHeatActiveUntil]);
     const heatActive = isFrenzy && frenzyHeatActiveUntil !== null && frenzyHeatActiveUntil > Date.now();
 

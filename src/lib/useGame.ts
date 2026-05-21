@@ -708,33 +708,23 @@ export function useGame(): UseGameReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt]);
 
-    // Deps are the "should this interval be alive" signals only. The
-    // interval body uses setState's callback form to always read the
-    // latest frenzyMsRemaining, so we don't tear down + recreate every
-    // 100ms. The body also ramps the BGM tempo by remaining time and
-    // fires urgency ticks at each whole-second mark in the last 10s
-    // (final 3s get a louder, higher-pitched variant).
+    // Frenzy tick: state-only. Tempo + urgency SFX are split into a
+    // separate effect below so they don't run inside React's setState
+    // updater (which can re-run under strict mode). 250ms interval is
+    // plenty for an mm:ss display and halves the React render churn on
+    // mobile vs the previous 100ms.
     useEffect(() => {
         if (!state) return;
         if (state.gameMode !== "frenzy") return;
         if (state.frenzyStartedAt === null) return;
         if (state.gamePhase !== "playing") return;
 
-        let lastTickSecond: number | null = null;
         const tick = setInterval(() => {
             setState(prev => {
                 if (!prev) return prev;
                 if (prev.gameMode !== "frenzy") return prev;
                 if (prev.gamePhase !== "playing") return prev;
-                const next = Math.max(0, prev.frenzyMsRemaining - 100);
-                // Tempo ramp + urgency SFX layered on the live clock.
-                setFrenzyTempo(next);
-                const nextSecond = Math.ceil(next / 1000);
-                if (next > 0 && nextSecond <= 10 && nextSecond !== lastTickSecond) {
-                    lastTickSecond = nextSecond;
-                    if (nextSecond <= 3) playFrenzyFinalTick();
-                    else playFrenzyTick();
-                }
+                const next = Math.max(0, prev.frenzyMsRemaining - 250);
                 if (next <= 0) {
                     setTimeout(() => playGameOverSound(), 0);
                     return {
@@ -746,11 +736,46 @@ export function useGame(): UseGameReturn {
                 }
                 return { ...prev, frenzyMsRemaining: next };
             });
-        }, 100);
+        }, 250);
 
         return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state?.gameMode, state?.frenzyStartedAt, state?.gamePhase]);
+
+    // Frenzy audio side effects: tempo ramp + urgency tick beeps. Refs
+    // throttle audio API calls so we only poke bgmAudio.playbackRate
+    // when the perceptible tempo band actually changes (avoids ~4
+    // redundant audio graph updates per second on mobile), and we only
+    // play one tick beep per real-time second crossing in the last 10s.
+    const lastFrenzyRateBucketRef = useRef<number | null>(null);
+    const lastFrenzyTickSecondRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (!state) return;
+        if (state.gameMode !== "frenzy") return;
+        if (state.gamePhase !== "playing") return;
+        if (state.frenzyStartedAt === null) return;
+
+        const ms = state.frenzyMsRemaining;
+
+        // Quantize to 500ms bands so tempo only updates twice a second
+        // at most, and only when actually crossing a band.
+        const bucket = Math.floor(ms / 500);
+        if (bucket !== lastFrenzyRateBucketRef.current) {
+            lastFrenzyRateBucketRef.current = bucket;
+            setFrenzyTempo(ms);
+        }
+
+        if (ms > 0 && ms <= 10_000) {
+            const sec = Math.ceil(ms / 1000);
+            if (sec !== lastFrenzyTickSecondRef.current) {
+                lastFrenzyTickSecondRef.current = sec;
+                if (sec <= 3) playFrenzyFinalTick();
+                else playFrenzyTick();
+            }
+        } else if (ms > 10_000) {
+            lastFrenzyTickSecondRef.current = null;
+        }
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt, state?.frenzyMsRemaining]);
 
     // Stop the Frenzy BGM treatment (rate + track restore) when the
     // round ends, no matter what triggered the end (time out, visibility
