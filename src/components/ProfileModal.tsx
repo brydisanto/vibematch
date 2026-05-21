@@ -172,14 +172,14 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4 bg-black/80">
             <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-[540px] rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                className="relative w-full max-w-[540px] max-h-[90vh] rounded-[24px] bg-gradient-to-b from-[#2A2333] to-[#1A1525] p-[3px] shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)]"
             >
-                <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex min-h-[420px]">
+                <div className="relative bg-[#110D17] rounded-[21px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8),inset_0_-1px_2px_rgba(255,255,255,0.05)] border border-[#3A3344] overflow-hidden flex flex-col sm:flex-row sm:min-h-[420px] max-h-[calc(90vh-6px)]">
 
                     {/* Close Button */}
                     <button
@@ -189,8 +189,8 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         <X size={16} className="text-white/60 hover:text-white transition-colors" />
                     </button>
 
-                    {/* ── Left Panel: Avatar + Stats ── */}
-                    <div className="w-[180px] flex-shrink-0 p-6 pt-7 text-center border-r border-white/[0.06] bg-white/[0.02] flex flex-col items-center">
+                    {/* ── Avatar + Stats panel. Sidebar on >=sm, top stack on mobile. ── */}
+                    <div className="w-full sm:w-[180px] flex-shrink-0 p-5 sm:p-6 sm:pt-7 text-center border-b sm:border-b-0 sm:border-r border-white/[0.06] bg-white/[0.02] flex flex-col items-center">
                         {/* Avatar */}
                         <div
                             className="relative w-[80px] h-[80px] rounded-full bg-gradient-to-b from-[#3A3344] to-[#2A2333] p-[3px] mb-3 shadow-[0_6px_12px_rgba(0,0,0,0.6)] cursor-pointer group"
