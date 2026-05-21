@@ -1060,12 +1060,12 @@ function Scoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <ScoreStat value="3+" label="Match length" color={GOLD}
                     sub="3-match = 150pts. 4-match = 450pts. 5-match = 900pts." />
-                <ScoreStat value="+100%" label="Cascade" color={COSMIC}
-                    sub="Every cascading match in the same move adds +100% to your multiplier. 1st = 2x, 2nd = 3x, 3rd = 4x. So on and so forth. Cascades are triggered by gravity as tiles fall." />
-                <ScoreStat value="+3" label="Momentum" color={ORANGE}
-                    sub="Combos carry over. End a turn with 3 cascades and your next move starts at combo +1. 4 cascades = +2. 5+ cascades = +3. Momentum stacks across turns." />
                 <ScoreStat value="4" label="Pin Tiers" color={PINK}
                     sub="Common = 1x · Rare = 1.5x · Legendary = 2x · Cosmic = 3x. Tier multiplier stacks on top of match length, cascade, and momentum." />
+                <ScoreStat value="+100%" label="Cascade" color={COSMIC}
+                    sub="Every cascading match in the same move adds +100% to your multiplier. 1st = 2x, 2nd = 3x, 3rd = 4x. So on and so forth." />
+                <ScoreStat value="+3" label="Momentum" color={ORANGE}
+                    sub="Combos carry over. End a turn with 3 cascades and your next move starts at combo +1. 4 cascades = +2. 5+ cascades = +3. Momentum stacks across turns." />
             </div>
 
             <Callout tone="cosmic" label="Combos in plain English">
