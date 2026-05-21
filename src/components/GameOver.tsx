@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { GameState } from "@/lib/gameEngine";
+import { GameState, frenzyCapsulesForScore } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 import { RotateCcw, Home, Target, Flame, Zap } from "lucide-react";
 import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
@@ -570,18 +570,27 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     // the prize cap. Drives the "extra play — not saved" banner below.
     const [leaderboardSkipped, setLeaderboardSkipped] = useState(false);
 
-    // Persist score to Vercel KV Cloud Database
+    // Persist score to Vercel KV Cloud Database. Frenzy includes start
+    // and end timestamps so the server can reject any submission that
+    // claims to have completed faster than FRENZY_MIN_ROUND_MS — cheap
+    // anti-cheat guard against replayed payloads.
     useEffect(() => {
         if (score > 0 && userProfile?.username) {
+            const body: Record<string, unknown> = {
+                username: userProfile.username,
+                mode: gameMode,
+                score: score,
+                matchId: matchId,
+            };
+            if (gameMode === "frenzy") {
+                body.roundStartedAt = state.frenzyStartedAt;
+                body.roundEndedAt = Date.now();
+                body.bonusMsEarned = state.frenzyBonusMsEarned;
+            }
             fetch('/api/scores', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: userProfile.username,
-                    mode: gameMode,
-                    score: score,
-                    matchId: matchId,
-                })
+                body: JSON.stringify(body)
             })
                 .then(res => res.json())
                 .then(data => {
@@ -600,11 +609,16 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                 })
                 .catch(e => console.error("Failed to post score", e));
         }
-    }, [score, gameMode, userProfile?.username]);
+    }, [score, gameMode, userProfile?.username, state.frenzyStartedAt, state.frenzyBonusMsEarned, matchId]);
 
-    // Capsule count derived from score thresholds (mirrors server logic in /api/pinbook/earn).
-    const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0;
-    const canShare = score >= 15000 && !!userProfile?.username;
+    // Capsule count derived from score thresholds (mirrors server logic
+    // in /api/pinbook/earn). Frenzy uses its own ladder via
+    // frenzyCapsulesForScore — see gameEngine.ts.
+    const capsuleCount = gameMode === "frenzy"
+        ? frenzyCapsulesForScore(score)
+        : (score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0);
+    const shareScoreFloor = gameMode === "frenzy" ? 25000 : 15000;
+    const canShare = score >= shareScoreFloor && !!userProfile?.username;
 
     const handleShareX = () => {
         if (!canShare) return;
@@ -709,7 +723,21 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             {rank.label}
                         </motion.div>
 
-                        {/* No valid moves explanation */}
+                        {/* Game over reason — frenzy time expired wins out
+                            over no-valid-moves since time can run out mid-
+                            cascade and we want the player to see the right
+                            cause. */}
+                        {gameOverReason === "time_expired" && (
+                            <motion.div
+                                className="text-[#FFE048]/80 text-[10px] sm:text-xs font-mundial font-black tracking-wider uppercase mb-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.7 }}
+                                style={{ textShadow: "0 0 12px rgba(255,224,72,0.4)" }}
+                            >
+                                Time&apos;s up
+                            </motion.div>
+                        )}
                         {gameOverReason === "no_valid_moves" && (
                             <motion.div
                                 className="text-white/40 text-[10px] sm:text-xs font-mundial tracking-wider uppercase mb-1"

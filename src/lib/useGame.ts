@@ -668,6 +668,38 @@ export function useGame(): UseGameReturn {
     // the clock hits zero we flip to gameover with reason "time_expired";
     // any in-flight cascade keeps resolving behind the overlay so its
     // score still lands. No-op for non-frenzy modes.
+    // ===== FRENZY VISIBILITY FORFEIT =====
+    // Backgrounding the tab mid-Frenzy ends the round immediately. The
+    // "no pause" rule from the design is enforced here: hiding the tab
+    // can't be used to stop the clock. We also forfeit the score (set
+    // to 0 if the player hadn't yet made a first match) so leaderboard
+    // scouts can't peek the board, abandon, and retry until they get a
+    // strong opening pattern. Classic and daily aren't affected.
+    useEffect(() => {
+        if (!state) return;
+        if (state.gameMode !== "frenzy") return;
+        if (state.gamePhase !== "playing") return;
+        if (state.frenzyStartedAt === null) return;
+
+        const onHidden = () => {
+            if (document.visibilityState !== "hidden") return;
+            setState(prev => {
+                if (!prev) return prev;
+                if (prev.gameMode !== "frenzy") return prev;
+                if (prev.gamePhase !== "playing") return prev;
+                return {
+                    ...prev,
+                    frenzyMsRemaining: 0,
+                    gamePhase: "gameover",
+                    gameOverReason: "time_expired",
+                };
+            });
+        };
+        document.addEventListener("visibilitychange", onHidden);
+        return () => document.removeEventListener("visibilitychange", onHidden);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt]);
+
     // Deps are the "should this interval be alive" signals only. The
     // interval body uses setState's callback form to always read the
     // latest frenzyMsRemaining, so we don't tear down + recreate every

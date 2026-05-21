@@ -303,6 +303,71 @@ export default function LandingPageQuest({
                     </EnamelCard>
                     </button>
 
+                    {/* Pin Frenzy — speed mode */}
+                    <button
+                        type="button"
+                        onClick={() => onStartGame("frenzy", username || undefined, avatarUrl || undefined)}
+                        className="block w-full text-left outline-none transition-transform duration-200 ease-out hover:-translate-y-1 active:translate-y-0.5"
+                    >
+                    <EnamelCard
+                        color={ORANGE}
+                        deep={ORANGE_DEEP}
+                        inner="linear-gradient(155deg, #3a1408 0%, #1a0a03 60%, #0c0502 100%)"
+                        tilt={0.6}
+                        depth={6}
+                    >
+                        <div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: `radial-gradient(circle at 25% 20%, ${ORANGE}22, transparent 45%), radial-gradient(circle at 80% 80%, ${ORANGE}22, transparent 50%)`,
+                            }}
+                        />
+                        <div className="relative p-4 flex items-center gap-3.5">
+                            {/* 1:00 SPEED circle */}
+                            <div
+                                className="shrink-0 rounded-full relative flex flex-col items-center justify-center overflow-hidden"
+                                style={{
+                                    width: 76, height: 76,
+                                    background: `radial-gradient(circle at 35% 30%, #FFD8A6, ${ORANGE} 50%, ${ORANGE_DEEP})`,
+                                    boxShadow: `inset 0 -6px 10px ${ORANGE_DEEP}88, 0 4px 8px rgba(0,0,0,0.5)`,
+                                    border: "3px solid #2A0A0A",
+                                }}
+                            >
+                                <span
+                                    className="font-display font-black leading-none"
+                                    style={{ color: "#2A0A0A", fontSize: 24, textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
+                                >1:00</span>
+                                <span
+                                    className="mt-[2px] font-mundial font-black tracking-wider"
+                                    style={{ color: "#2A0A0A", fontSize: 7 }}
+                                >SPEED</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h2
+                                    className="font-display font-black uppercase leading-[0.9]"
+                                    style={{ color: ORANGE, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                >
+                                    <span style={{ fontSize: 18 }}>Pin</span>
+                                    <br />
+                                    <span style={{ fontSize: 26 }}>Frenzy</span>
+                                </h2>
+                                <p className="text-white/55 text-[11px] font-mundial mt-1.5">
+                                    Sixty seconds. Big matches buy back time.
+                                </p>
+                            </div>
+                            <div className="shrink-0 self-end">
+                                <ChunkyButton
+                                    color={ORANGE}
+                                    deep={ORANGE_DEEP}
+                                    style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
+                                >
+                                    GO
+                                </ChunkyButton>
+                            </div>
+                        </div>
+                    </EnamelCard>
+                    </button>
+
                     {/* Daily Challenge */}
                     <button
                         type="button"

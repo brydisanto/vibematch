@@ -38,6 +38,7 @@ import {
     COSMIC_DEEP,
     ORANGE,
     ORANGE_DEEP,
+    ORANGE_LIGHT,
     PINK,
 } from "@/lib/arcade-tokens";
 
@@ -938,6 +939,85 @@ export default function LandingPageArcade({
                                                     }}
                                                 >
                                                     PLAY
+                                                </ChunkyButton>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* Pin Frenzy cabinet — compact speed-mode CTA
+                                sitting under Classic. Orange theme signals
+                                heat/speed; mirrors the Classic cabinet
+                                structure but shorter and badged 1:00. */}
+                            <div className="max-w-[380px] mx-auto w-full mt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => onStartGame("frenzy", username, avatarUrl)}
+                                    className="block w-full text-left outline-none cursor-pointer"
+                                >
+                                    <div
+                                        className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
+                                        style={{
+                                            background: `linear-gradient(180deg, ${ORANGE} 0%, #C2410C 60%, ${ORANGE_DEEP} 100%)`,
+                                            boxShadow: `0 6px 0 ${ORANGE_DEEP}, 0 12px 22px rgba(0,0,0,0.55), 0 0 40px ${ORANGE}15`,
+                                        }}
+                                    >
+                                        <div
+                                            className="rounded-[14px] relative p-4 h-full flex flex-row items-center gap-4 overflow-hidden"
+                                            style={{ background: "linear-gradient(180deg, #2A0A0A 0%, #120303 100%)" }}
+                                        >
+                                            <div
+                                                className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+                                                style={{ background: `linear-gradient(180deg, ${ORANGE}16, transparent)` }}
+                                            />
+                                            <div
+                                                className="relative shrink-0 rounded-full flex flex-col items-center justify-center overflow-hidden"
+                                                style={{
+                                                    width: 64,
+                                                    height: 64,
+                                                    background: `radial-gradient(circle at 35% 30%, #FFD8A6, ${ORANGE} 55%, ${ORANGE_DEEP})`,
+                                                    boxShadow: `inset 0 -4px 7px ${ORANGE_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 22px ${ORANGE}55`,
+                                                    border: "2.5px solid #2A0A0A",
+                                                }}
+                                            >
+                                                <span
+                                                    className="font-display font-black leading-none"
+                                                    style={{
+                                                        color: "#2A0A0A",
+                                                        fontSize: 22,
+                                                        textShadow: "0 1px 0 rgba(255,255,255,0.25)",
+                                                    }}
+                                                >
+                                                    1:00
+                                                </span>
+                                                <span className="mt-[1px] text-[7.5px] font-bold tracking-wider" style={{ color: "#2A0A0A" }}>
+                                                    SPEED
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 min-w-0 relative z-10">
+                                                <h2
+                                                    className="font-display font-black uppercase leading-none text-[14px]"
+                                                    style={{ color: ORANGE_LIGHT, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                                >
+                                                    Pin Frenzy
+                                                </h2>
+                                                <p className="text-white/55 text-[11px] mt-1 leading-snug">
+                                                    Sixty seconds. Big matches buy back time.
+                                                </p>
+                                            </div>
+                                            <div className="shrink-0 relative z-10">
+                                                <ChunkyButton
+                                                    color={ORANGE}
+                                                    deep={ORANGE_DEEP}
+                                                    style={{
+                                                        padding: "8px 18px",
+                                                        fontSize: 11,
+                                                        fontWeight: 900,
+                                                        letterSpacing: "0.18em",
+                                                    }}
+                                                >
+                                                    GO
                                                 </ChunkyButton>
                                             </div>
                                         </div>

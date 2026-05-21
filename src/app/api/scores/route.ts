@@ -3,12 +3,20 @@ import { NextResponse } from 'next/server';
 import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { getEasternDailyKey } from '@/lib/daily-window';
+import { FRENZY_MIN_ROUND_MS, FRENZY_MAX_MS } from '@/lib/gameEngine';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos. Bumped
 // from 500K alongside the scoring system change (base scores +50%, combo
 // multiplier 0.75x → 1.0x).
 const MAX_PLAUSIBLE_SCORE = 800_000;
+// Frenzy ceiling: a god-tier 60s round with full bonus-time + heat 2x
+// sustained shouldn't crack ~300K. 500K leaves headroom for tuning the
+// scoring math without us needing to bump this immediately.
+const MAX_PLAUSIBLE_FRENZY_SCORE = 500_000;
+// Generous upper bound on round duration. Clock cap is 2:30 (FRENZY_MAX_MS),
+// plus board-load grace + final cascade resolving = ~30s buffer.
+const MAX_FRENZY_ROUND_MS = FRENZY_MAX_MS + 30_000;
 
 function getMonday() {
     const d = new Date();
@@ -49,19 +57,35 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        const { mode, score, matchId } = await req.json();
+        const { mode, score, matchId, roundStartedAt, roundEndedAt } = await req.json();
 
         if (!mode || score === undefined) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
         }
 
-        // Validate score is a plausible number
-        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > MAX_PLAUSIBLE_SCORE) {
+        if (mode !== 'classic' && mode !== 'daily' && mode !== 'frenzy') {
+            return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
+        }
+
+        // Per-mode score ceiling.
+        const scoreCap = mode === 'frenzy' ? MAX_PLAUSIBLE_FRENZY_SCORE : MAX_PLAUSIBLE_SCORE;
+        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > scoreCap) {
             return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
         }
 
-        if (mode !== 'classic' && mode !== 'daily') {
-            return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
+        // Frenzy anti-cheat: the client sends start + end timestamps. A
+        // submission that claims to have completed faster than
+        // FRENZY_MIN_ROUND_MS, or longer than MAX_FRENZY_ROUND_MS, is
+        // rejected. Replayed payloads or scripted "finished in 0ms"
+        // submissions don't pass.
+        if (mode === 'frenzy') {
+            if (typeof roundStartedAt !== 'number' || typeof roundEndedAt !== 'number') {
+                return NextResponse.json({ error: 'Missing round timestamps' }, { status: 400 });
+            }
+            const elapsed = roundEndedAt - roundStartedAt;
+            if (!Number.isFinite(elapsed) || elapsed < FRENZY_MIN_ROUND_MS || elapsed > MAX_FRENZY_ROUND_MS) {
+                return NextResponse.json({ error: 'Implausible round duration' }, { status: 400 });
+            }
         }
 
         const sessionUsername = session.username as string;
@@ -168,6 +192,41 @@ export async function POST(req: Request) {
             for (const [key] of cache) {
                 if (key.startsWith('leaderboard:')) cache.delete(key);
             }
+        } else if (mode === 'frenzy') {
+            const today = getEasternDailyKey();
+
+            // Pipeline current all-time + daily scores for canonical + variant casing.
+            const readPipe = kv.pipeline();
+            readPipe.zscore('frenzy_leaderboard', canonicalUsername);
+            if (hasCaseVariant) readPipe.zscore('frenzy_leaderboard', username);
+            const readResults = await readPipe.exec();
+            const currentAll1 = readResults[0] as number | null;
+            const currentAll2 = hasCaseVariant ? readResults[1] as number | null : null;
+            const maxCurrentAll = Math.max(Number(currentAll1 || 0), Number(currentAll2 || 0));
+            isNewBest = maxCurrentAll === 0 || score > maxCurrentAll;
+
+            const writePipe = kv.pipeline();
+            writePipe.zadd('frenzy_leaderboard', { gt: true } as any, { score, member: canonicalUsername });
+            writePipe.zadd(`frenzy_daily_leaderboard:${today}`, { gt: true } as any, { score, member: canonicalUsername });
+            writePipe.hincrby('frenzy_matches_played', canonicalUsername.toLowerCase(), 1);
+            if (hasCaseVariant && currentAll2 !== null) {
+                writePipe.zrem('frenzy_leaderboard', username);
+            }
+            await writePipe.exec();
+
+            const top1 = await kv.zrange('frenzy_leaderboard', 0, 0, { rev: true, withScores: true });
+            if (top1 && top1.length > 0) {
+                const topEntry = top1[0] as any;
+                const topScore = Number(topEntry.score ?? topEntry);
+                const topMember = (topEntry.member || topEntry.value || '').toString().toLowerCase();
+                if (topScore === score && topMember === canonicalUsername.toLowerCase()) {
+                    isNewAllTimeHigh = true;
+                }
+            }
+
+            for (const [key] of cache) {
+                if (key.startsWith('leaderboard:')) cache.delete(key);
+            }
         } else if (mode === 'daily') {
             const today = getEasternDailyKey();
 
@@ -231,6 +290,10 @@ export async function GET(req: Request) {
             leaderboardKey = `classic_weekly:${getMonday()}`;
         } else if (mode === 'daily') {
             leaderboardKey = `daily_leaderboard:${today}`;
+        } else if (mode === 'frenzy') {
+            leaderboardKey = 'frenzy_leaderboard';
+        } else if (mode === 'frenzy_daily') {
+            leaderboardKey = `frenzy_daily_leaderboard:${today}`;
         } else {
             return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
         }
@@ -330,10 +393,15 @@ export async function GET(req: Request) {
             }
         }
 
-        // Fetch total matches played across all users for classic mode
+        // Fetch total matches played across all users for classic / frenzy
         let totalMatchesPlayed = 0;
         if (mode === 'classic') {
             const allCounts = await kv.hgetall('classic_matches_played') as Record<string, number> | null;
+            if (allCounts) {
+                totalMatchesPlayed = Object.values(allCounts).reduce((sum, v) => sum + Number(v), 0);
+            }
+        } else if (mode === 'frenzy') {
+            const allCounts = await kv.hgetall('frenzy_matches_played') as Record<string, number> | null;
             if (allCounts) {
                 totalMatchesPlayed = Object.values(allCounts).reduce((sum, v) => sum + Number(v), 0);
             }

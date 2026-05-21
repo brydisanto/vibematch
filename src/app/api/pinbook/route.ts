@@ -12,6 +12,9 @@ import {
     findPromoBadge,
     promoLeaderboardKey,
 } from '@/lib/promo-badges';
+import { frenzyCapsulesForScore } from '@/lib/gameEngine';
+
+const FRENZY_CAPSULE_SCORE_THRESHOLD = 25000;
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base
@@ -266,13 +269,13 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Classic: enforce hard daily cap before incrementing. Every
-            // run is capsule-eligible now (no more "non-prize" runs after
-            // cap). Hitting the cap returns 429 so the client can prompt
+            // Classic + Frenzy share the same daily play counter — both
+            // draw from the same bank. Daily Challenge has its own
+            // separate one-shot-per-day gate above and doesn't count
+            // here. Hitting the cap returns 429 so the client can prompt
             // the player to buy more bonus games or come back tomorrow.
-            // Daily games don't count toward the classic cap.
             let classicPlays = 0;
-            if (gameMode === 'classic') {
+            if (gameMode === 'classic' || gameMode === 'frenzy') {
                 const tracker = await getDailyTracker(username);
                 const effectiveCap = CLASSIC_DAILY_CAP + (tracker.bonusPrizeGames || 0);
                 if (tracker.classicPlays >= effectiveCap) {
@@ -429,15 +432,19 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
             }
 
-            if (score < CAPSULE_SCORE_THRESHOLD) {
+            // Per-mode score threshold and capsule ladder. Frenzy uses
+            // the gameEngine helper so the ladder stays in one place
+            // (mirrored on the client in GameOver).
+            const modeThreshold = gameMode === 'frenzy' ? FRENZY_CAPSULE_SCORE_THRESHOLD : CAPSULE_SCORE_THRESHOLD;
+            if (score < modeThreshold) {
                 return NextResponse.json({ earned: false, reason: 'Score below threshold' });
             }
+            const capsuleCount = gameMode === 'frenzy'
+                ? frenzyCapsulesForScore(score)
+                : (score >= 50000 ? 3 : score >= 30000 ? 2 : 1);
 
-            // Tiered capsule rewards
-            const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : 1;
-
-            if (gameMode === 'classic') {
-                // Classic: require a valid single-use match token from trackGame
+            if (gameMode === 'classic' || gameMode === 'frenzy') {
+                // Classic + Frenzy: require a valid single-use match token from trackGame
                 if (!matchId || typeof matchId !== 'string') {
                     console.error(`[earn] Missing matchId for user=${username} score=${score} mode=${gameMode}`);
                     return NextResponse.json({ error: 'Missing matchId' }, { status: 400 });
