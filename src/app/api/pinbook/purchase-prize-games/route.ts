@@ -245,13 +245,57 @@ export async function POST(request: Request) {
         }
 
         if (!validTransferFound) {
+            // No VIBESTR landed in treasury — safe to release the reservation.
             return await fail(400, 'Payment verification failed');
         }
 
+        // ====== POST-PAYMENT GUARDRAIL ======
+        // From here on, treasury HAS received VIBESTR (actualAmount). Any
+        // failure path MUST persist the tx record + queue a refund instead
+        // of silently deleting the reservation. Silent-delete was the bug
+        // that left 33k+ VIBESTR unaccounted between on-chain inflows and
+        // the admin total.
+        const queueRefund = async (reason: string) => {
+            try {
+                const refundKey = `purchase_refund:${normalizedTxHash}`;
+                await kv.set(refundKey, JSON.stringify({
+                    type: 'purchase',
+                    username,
+                    wallet: normalizedWallet,
+                    txHash: normalizedTxHash,
+                    packageSize,
+                    amount: formatUnits(actualAmount, decimals),
+                    reason,
+                    createdAt: Date.now(),
+                    status: 'pending_admin_credit',
+                }));
+                // Promote the tx record to 'finalized' with refund_pending so
+                // it (a) counts in the admin VIBESTR total and (b) blocks
+                // replay under the same hash.
+                await kv.set(txKey, JSON.stringify({
+                    status: 'finalized',
+                    type: 'purchase',
+                    username,
+                    wallet: normalizedWallet,
+                    packageSize,
+                    amount: formatUnits(actualAmount, decimals),
+                    timestamp: Date.now(),
+                    refund_pending: true,
+                    refund_reason: reason,
+                }));
+                await kv.del(lockKey);
+            } catch (e) {
+                console.error('[Purchase] queueRefund failed:', e);
+            }
+        };
+
         if (actualAmount < requiredAmount) {
-            // Log detail server-side, return generic message to client
-            console.warn(`[Purchase] Insufficient payment for tx ${normalizedTxHash}: expected ${PACKAGE_PRICES[packageSize]}, got ${formatUnits(actualAmount, decimals)}`);
-            return await fail(400, 'Payment verification failed');
+            const reason = `Underpaid: expected ${PACKAGE_PRICES[packageSize]}, got ${formatUnits(actualAmount, decimals)}`;
+            console.error(`[Purchase] POST-PAYMENT FAILURE — underpayment. user=${username} tx=${normalizedTxHash} ${reason}`);
+            await queueRefund(reason);
+            return NextResponse.json({
+                error: 'Payment amount was less than required. Your VIBESTR has been logged for refund — contact support.',
+            }, { status: 400 });
         }
 
         // --- Check daily bonus cap ---
@@ -260,10 +304,14 @@ export async function POST(request: Request) {
         const newBonusTotal = currentBonus + packageSize;
 
         if (newBonusTotal > MAX_BONUS_PRIZE_GAMES_PER_DAY) {
-            return await fail(400, `Daily bonus cap reached. You can purchase ${MAX_BONUS_PRIZE_GAMES_PER_DAY - currentBonus} more prize games today.`, {
+            const reason = `Cap exceeded: ${currentBonus}+${packageSize} > ${MAX_BONUS_PRIZE_GAMES_PER_DAY}`;
+            console.error(`[Purchase] POST-PAYMENT FAILURE — daily cap exceeded. user=${username} tx=${normalizedTxHash} ${reason}`);
+            await queueRefund(reason);
+            return NextResponse.json({
+                error: `Daily bonus cap reached. Your VIBESTR has been logged for refund — contact support. (Cap is ${MAX_BONUS_PRIZE_GAMES_PER_DAY}/day; you already had ${currentBonus}.)`,
                 currentBonus,
                 maxBonus: MAX_BONUS_PRIZE_GAMES_PER_DAY,
-            });
+            }, { status: 400 });
         }
 
         // --- Grant bonus games ---

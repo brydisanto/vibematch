@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminFetch, adminDownload } from "./_lib/adminFetch";
 import DailyStatsChart from "./_components/DailyStatsChart";
+import TreasuryAuditPanel from "./_components/TreasuryAuditPanel";
 
 // Sortable columns. The string union doubles as the column id for the
 // header click handlers and as the discriminator for the sort comparator.
@@ -174,6 +175,9 @@ export default function AdminDashboard() {
 
             {/* Daily activity chart */}
             <DailyStatsChart />
+
+            {/* Treasury audit — diffs on-chain inflows against KV tx records */}
+            <TreasuryAuditPanel />
 
             {/* Users */}
             <div>
