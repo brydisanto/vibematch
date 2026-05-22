@@ -11,6 +11,7 @@ import {
 import { BADGES } from '@/lib/badges';
 import { buildPlayerContext } from '@/lib/playerContext';
 import { getEasternDailyKey, getEasternYesterdayKey } from '@/lib/daily-window';
+import { getDailyTracker } from '../pinbook/route';
 
 // Mid-game achievements that fire from checkMidGameAchievements in the
 // client. These are observable one-off claims ("did you land a T shape?
@@ -125,7 +126,10 @@ export async function POST(req: Request) {
         //   - user_flags:<user> stores music-change + prize-game-purchased flags
         //     written by their respective endpoints, so the server doesn't
         //     have to trust a client claim here.
-        const [profileRaw, flagsRaw] = await Promise.all([
+        //   - dailyTracker.classicPlays drives the daily_cap quest
+        //     (Play 15 games in one day). Previously omitted, so the quest
+        //     could never unlock — server saw gamesPlayedToday=0.
+        const [profileRaw, flagsRaw, dailyTracker] = await Promise.all([
             kv.get(`user:${username}`) as Promise<{ avatarUrl?: string } | null>,
             kv.get(`user_flags:${username}`) as Promise<{
                 musicChanged?: boolean;
@@ -133,6 +137,7 @@ export async function POST(req: Request) {
                 prizeGamePurchased?: boolean;
                 vibestrHolder?: boolean;
             } | null>,
+            getDailyTracker(username),
         ]);
         const hasUploadedAvatar =
             !!(profileRaw?.avatarUrl && profileRaw.avatarUrl.trim()) ||
@@ -149,6 +154,7 @@ export async function POST(req: Request) {
             hasChangedMusic,
             hasPurchasedPrizeGame,
             hasVibestrWallet,
+            gamesPlayedToday: dailyTracker?.classicPlays || 0,
         });
 
         // Fetch streak + referral count

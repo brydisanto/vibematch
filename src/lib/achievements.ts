@@ -853,6 +853,10 @@ export function checkRetroactiveAchievements(
     check("refer_1", context.referralCount >= 1);
     check("refer_5", context.referralCount >= 5);
     check("refer_10", context.referralCount >= 10);
+    // Players who already hit 15+ classic plays today should pick this
+    // up immediately on next pinbook load (no need to play a 16th game
+    // just for the achievement check to fire).
+    check("daily_cap", context.gamesPlayedToday >= 15);
 
     // Profile / engagement — derived from context flags
     check("upload_avatar", context.hasUploadedAvatar);

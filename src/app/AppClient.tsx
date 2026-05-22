@@ -199,6 +199,13 @@ export default function AppClient() {
         hasPurchasedPrizeGame:
           (pinBook.state.bonusPrizeGames || 0) > 0 || !!flags.prizeGamePurchased,
         hasVibestrWallet: !!flags.vibestrHolder,
+        // pinbook.classicPlays is the today's classic+frenzy play count
+        // (resets nightly via the daily-tracker key). Includes bonus games
+        // since the server increments it on every trackGame regardless of
+        // base vs bonus. Without this, the Weekly Warrior quest
+        // (daily_cap, "Play 15 games in one day") could never unlock —
+        // gamesPlayedToday defaulted to 0.
+        gamesPlayedToday: pinBook.state.classicPlays,
       });
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
@@ -343,6 +350,7 @@ export default function AppClient() {
           hasUploadedAvatar: !!userProfile?.avatarUrl,
           hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
           hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+          gamesPlayedToday: pinBook.state.classicPlays,
         });
         const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
         if (ids.length > 0) {
@@ -1170,6 +1178,7 @@ export default function AppClient() {
                 hasUploadedAvatar: !!userProfile?.avatarUrl,
                 hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+                gamesPlayedToday: pinBook.state.classicPlays,
               });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) {
@@ -1208,6 +1217,7 @@ export default function AppClient() {
                 hasUploadedAvatar: !!userProfile?.avatarUrl,
                 hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+                gamesPlayedToday: pinBook.state.classicPlays,
               });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) {
@@ -1279,6 +1289,7 @@ export default function AppClient() {
             hasUploadedAvatar: !!userProfile.avatarUrl,
             hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
             hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+            gamesPlayedToday: pinBook.state.classicPlays,
           });
           ctx.streak = streakSnapshot;
           ctx.referralCount = referralSnapshot;
