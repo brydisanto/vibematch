@@ -153,47 +153,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: message }, { status });
         };
 
-        // Verify the player has enough duplicates to burn BEFORE verifying payment
-        const pinbookKey = `pinbook:${username}`;
-        const pinbook = (await kv.get(pinbookKey)) as PinBookData | null;
-        if (!pinbook || !pinbook.pins) {
-            return await fail(400, 'No pins to burn');
-        }
-
-        // Validate each tier has enough burnable duplicates
-        const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
-        const burnPlan: { id: string; toBurn: number }[] = [];
-
-        for (const burn of parsedBurns) {
-            // Collect candidates for this tier
-            const candidates: { id: string; burnable: number }[] = [];
-            let available = 0;
-            for (const [badgeId, pinData] of Object.entries(pinbook.pins)) {
-                if (badgeTierMap.get(badgeId) !== burn.tier) continue;
-                const burnable = Math.max(0, pinData.count - 1);
-                if (burnable > 0) {
-                    candidates.push({ id: badgeId, burnable });
-                    available += burnable;
-                }
-            }
-
-            if (available < burn.pinsNeeded) {
-                const tierName = burn.tier.charAt(0).toUpperCase() + burn.tier.slice(1);
-                console.error(`[Reroll] Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}. user=${username}`);
-                return await fail(400, `Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}.`);
-            }
-
-            // Plan which specific pins to burn from this tier
-            let remaining = burn.pinsNeeded;
-            for (const c of candidates) {
-                if (remaining <= 0) break;
-                const take = Math.min(remaining, c.burnable);
-                burnPlan.push({ id: c.id, toBurn: take });
-                remaining -= take;
-            }
-        }
-
-        // Verify VIBESTR payment
+        // ====== PHASE 1: verify the on-chain payment FIRST ======
+        // Critical reordering (2026-05-22): previously the burn-plan
+        // validation came before payment verification, which meant a user
+        // who submitted a stale or impossible burn plan would have their
+        // signed VIBESTR tx confirmed on-chain while the server rejected
+        // with 400 — VIBESTR lost, no admin record. Now we verify payment
+        // first; if burn plan then fails, we mark the tx for refund
+        // instead of silently discarding it.
         let receipt;
         try {
             receipt = await client.getTransactionReceipt({ hash: normalizedTxHash as `0x${string}` });
@@ -204,9 +171,6 @@ export async function POST(request: Request) {
         if (receipt.status !== 'success') {
             return await fail(400, 'Transaction failed on-chain');
         }
-
-        // No confirmation depth check — amounts are small, accept immediately
-        // once the tx receipt exists (status: success)
 
         const tx = await client.getTransaction({ hash: normalizedTxHash as `0x${string}` });
         if (tx.from.toLowerCase() !== normalizedWallet) {
@@ -235,6 +199,91 @@ export async function POST(request: Request) {
         if (!validTransfer || actualAmount < requiredAmount) {
             console.error(`[Reroll] Payment verification failed. validTransfer=${validTransfer} actualAmount=${actualAmount} requiredAmount=${requiredAmount} tx=${normalizedTxHash}`);
             return await fail(400, 'Payment verification failed');
+        }
+
+        // ====== PHASE 2: validate burn plan against current pinbook ======
+        // Past this point, the VIBESTR has been confirmed on-chain. Any
+        // failure here MUST be tracked for admin refund — we never silently
+        // discard a paid reroll.
+        const pinbookKey = `pinbook:${username}`;
+        const pinbook = (await kv.get(pinbookKey)) as PinBookData | null;
+
+        const queueRefund = async (reason: string) => {
+            try {
+                const refundKey = `reroll_refund:${normalizedTxHash}`;
+                await kv.set(refundKey, JSON.stringify({
+                    username,
+                    wallet: normalizedWallet,
+                    txHash: normalizedTxHash,
+                    amount: formatUnits(actualAmount, decimals),
+                    burns: parsedBurns,
+                    totalCapsules,
+                    reason,
+                    createdAt: Date.now(),
+                    status: 'pending_admin_credit',
+                }));
+                // Tx record stays as 'processed' with a 'refund_pending' flag so
+                // it can't be retried under the same hash.
+                await kv.set(txKey, JSON.stringify({
+                    status: 'finalized',
+                    type: 'reroll',
+                    username,
+                    wallet: normalizedWallet,
+                    burns: parsedBurns,
+                    totalCapsules,
+                    amount: formatUnits(actualAmount, decimals),
+                    timestamp: Date.now(),
+                    refund_pending: true,
+                    refund_reason: reason,
+                }));
+                await kv.del(lockKey);
+            } catch (e) {
+                console.error('[Reroll] queueRefund failed:', e);
+            }
+        };
+
+        if (!pinbook || !pinbook.pins) {
+            await queueRefund('No pins to burn');
+            console.error(`[Reroll] POST-PAYMENT FAILURE — no pinbook. user=${username} tx=${normalizedTxHash}`);
+            return NextResponse.json({
+                error: 'No pins to burn. Your VIBESTR has been logged for refund — contact support.',
+            }, { status: 400 });
+        }
+
+        // Validate each tier has enough burnable duplicates
+        const badgeTierMap = new Map(BADGES.map(b => [b.id, b.tier]));
+        const burnPlan: { id: string; toBurn: number }[] = [];
+
+        for (const burn of parsedBurns) {
+            // Collect candidates for this tier
+            const candidates: { id: string; burnable: number }[] = [];
+            let available = 0;
+            for (const [badgeId, pinData] of Object.entries(pinbook.pins)) {
+                if (badgeTierMap.get(badgeId) !== burn.tier) continue;
+                const burnable = Math.max(0, pinData.count - 1);
+                if (burnable > 0) {
+                    candidates.push({ id: badgeId, burnable });
+                    available += burnable;
+                }
+            }
+
+            if (available < burn.pinsNeeded) {
+                const tierName = burn.tier.charAt(0).toUpperCase() + burn.tier.slice(1);
+                console.error(`[Reroll] POST-PAYMENT FAILURE — not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}. user=${username} tx=${normalizedTxHash}`);
+                await queueRefund(`Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}.`);
+                return NextResponse.json({
+                    error: `Not enough ${tierName} duplicates. Need ${burn.pinsNeeded}, have ${available}. Your VIBESTR has been logged for refund — contact support.`,
+                }, { status: 400 });
+            }
+
+            // Plan which specific pins to burn from this tier
+            let remaining = burn.pinsNeeded;
+            for (const c of candidates) {
+                if (remaining <= 0) break;
+                const take = Math.min(remaining, c.burnable);
+                burnPlan.push({ id: c.id, toBurn: take });
+                remaining -= take;
+            }
         }
 
         // --- All verified: burn pins + grant capsule ---

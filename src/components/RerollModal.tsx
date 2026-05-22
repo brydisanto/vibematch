@@ -57,18 +57,48 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const addressRef = useRef(address);
     const burnsRef = useRef(burns);
 
+    // Fresh server-side pin counts. Pulled when the modal opens (and again
+    // right before signing) so we never let the user submit a burn plan
+    // built on stale state from a prior reroll. Previously the modal trusted
+    // the `pins` prop, which could lag behind the server by a tick after a
+    // successful reroll — that race burned VIBESTR without awarding capsules
+    // when the server caught the discrepancy AFTER the on-chain tx settled.
+    const [livePins, setLivePins] = useState<Record<string, { count: number; firstEarned: string }>>(pins);
+    const [refreshing, setRefreshing] = useState(false);
+
     useEffect(() => { addressRef.current = address; }, [address]);
     useEffect(() => { burnsRef.current = burns; }, [burns]);
 
+    // Refetch pins whenever the modal opens. Falls back to the prop if the
+    // network call fails — better stale than empty.
+    useEffect(() => {
+        if (!isOpen) return;
+        let cancelled = false;
+        setRefreshing(true);
+        fetch('/api/pinbook')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (cancelled) return;
+                if (data?.pins) setLivePins(data.pins);
+            })
+            .catch(() => { /* keep prop fallback */ })
+            .finally(() => { if (!cancelled) setRefreshing(false); });
+        return () => { cancelled = true; };
+    }, [isOpen]);
+
+    // Keep livePins in sync if the prop changes while the modal is closed —
+    // matters for the initial open after a long-running session.
+    useEffect(() => { if (!isOpen) setLivePins(pins); }, [pins, isOpen]);
+
     const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
 
-    // Computed values across all tiers
+    // Computed values across all tiers — driven by livePins.
     const totalCapsules = Object.values(burns).reduce((s, v) => s + v, 0);
     const totalVibestr = VIBESTR_PER_REROLL * totalCapsules;
     const canBurn = totalCapsules > 0 && TIER_ORDER.every(tier => {
         const qty = burns[tier];
         if (qty <= 0) return true;
-        return getBurnableDuplicates(pins, tier) >= BURN_COST[tier] * qty;
+        return getBurnableDuplicates(livePins, tier) >= BURN_COST[tier] * qty;
     });
 
     const startPolling = (hash: string, capturedBurns: Record<BadgeTier, number>) => {
@@ -138,6 +168,35 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
 
         // Capture burns at click time — don't rely on refs during async polling
         const capturedBurns = { ...burns };
+
+        // Final pre-flight refresh against the server. The window between
+        // the modal opening and the user clicking can span a full reroll
+        // happening in another tab (or a previous reroll's pinbook reload
+        // not yet propagating). Fetching here closes that race so the
+        // user never signs a VIBESTR tx the server will reject for
+        // not-enough-pins reasons.
+        try {
+            const freshRes = await fetch('/api/pinbook');
+            if (freshRes.ok) {
+                const fresh = await freshRes.json();
+                if (fresh?.pins) {
+                    setLivePins(fresh.pins);
+                    const stillValid = TIER_ORDER.every(tier => {
+                        const qty = capturedBurns[tier];
+                        if (qty <= 0) return true;
+                        return getBurnableDuplicates(fresh.pins, tier) >= BURN_COST[tier] * qty;
+                    });
+                    if (!stillValid) {
+                        setError('Your pin counts changed since you opened this. Review your selection and try again.');
+                        return;
+                    }
+                }
+            }
+        } catch {
+            // Network blip — fall through to the tx attempt. The server
+            // will still validate, just without our pre-flight protection.
+        }
+
         console.log('[Reroll] Starting with burns:', capturedBurns, 'totalVibestr:', totalVibestr);
 
         try {
@@ -241,7 +300,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                     {/* Per-tier burn controls — Option C: two-column rows */}
                                     <div className="space-y-2 mb-4">
                                         {TIER_ORDER.map(tier => {
-                                            const dupes = getBurnableDuplicates(pins, tier);
+                                            const dupes = getBurnableDuplicates(livePins, tier);
                                             const cost = BURN_COST[tier];
                                             const maxForTier = Math.min(20, Math.floor(dupes / cost));
                                             const qty = burns[tier];

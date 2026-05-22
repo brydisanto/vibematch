@@ -14,6 +14,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 interface DailyStats {
     date: string;
     dau: number;             // unique users with any activity that day
+    newUsers: number;        // user_auth records with createdAt on this day
     classicPlays: number;    // sum of game starts across all users
     capsulesEarned: number;  // sum of capsules awarded across all sources
     rerolls: number;         // count of reroll transactions
@@ -65,6 +66,7 @@ export async function GET(req: Request) {
         const dailyKeys = await scanKeys("pinbook:*:daily:*");
         const buckets = new Map<string, {
             users: Set<string>;
+            newUsers: number;
             classicPlays: number;
             capsulesEarned: number;
             vibestrSpent: number;
@@ -73,7 +75,7 @@ export async function GET(req: Request) {
         const ensure = (date: string) => {
             let b = buckets.get(date);
             if (!b) {
-                b = { users: new Set(), classicPlays: 0, capsulesEarned: 0, vibestrSpent: 0, rerolls: 0 };
+                b = { users: new Set(), newUsers: 0, classicPlays: 0, capsulesEarned: 0, vibestrSpent: 0, rerolls: 0 };
                 buckets.set(date, b);
             }
             return b;
@@ -91,6 +93,22 @@ export async function GET(req: Request) {
             b.users.add(username);
             b.classicPlays += Number(data.classicPlays) || 0;
             b.capsulesEarned += Number(data.capsulesEarned) || 0;
+        }
+
+        // --- Aggregate registrations (new users per day) ---
+        // user_auth records carry createdAt as an ISO timestamp at registration.
+        // Bucket each by its Eastern day. Records pre-dating createdAt field
+        // (legacy) are skipped — they don't show up on the chart, which is
+        // the right behavior since we can't know their actual signup day.
+        const authKeys = await scanKeys("user_auth:*");
+        for (const key of authKeys) {
+            const auth = await kv.get(key) as { createdAt?: string } | null;
+            if (!auth?.createdAt) continue;
+            const ts = Date.parse(auth.createdAt);
+            if (!Number.isFinite(ts) || ts <= 0) continue;
+            const date = getEasternDailyKey(new Date(ts));
+            const b = ensure(date);
+            b.newUsers += 1;
         }
 
         // --- Aggregate transactions ---
@@ -128,6 +146,7 @@ export async function GET(req: Request) {
             return {
                 date,
                 dau: b ? b.users.size : 0,
+                newUsers: b ? b.newUsers : 0,
                 classicPlays: b ? b.classicPlays : 0,
                 capsulesEarned: b ? b.capsulesEarned : 0,
                 rerolls: b ? b.rerolls : 0,
