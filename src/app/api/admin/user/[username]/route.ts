@@ -92,7 +92,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             return { date, ...data };
         }));
 
-        // Get user's tx records
+        // Get user's tx records. Case-insensitive match on data.username —
+        // some legacy tx records stored the canonical mixed case while
+        // `username` here is the lowercase route param. Without the
+        // normalization the user's detail page underreported VIBESTR
+        // spend vs the global overview.
         const txKeys = await scanKeys("tx:*:processed");
         const userTxs: any[] = [];
         for (const key of txKeys) {
@@ -100,7 +104,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             if (!raw) continue;
             try {
                 const data = typeof raw === "string" ? JSON.parse(raw) : raw;
-                if (data.username === username) {
+                if (data.username && String(data.username).toLowerCase() === username) {
                     const txHash = key.split(":")[1];
                     userTxs.push({ txHash, ...data });
                 }

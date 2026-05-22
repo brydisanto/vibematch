@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminFetch, adminDownload } from "./_lib/adminFetch";
+import DailyStatsChart from "./_components/DailyStatsChart";
 
 // Sortable columns. The string union doubles as the column id for the
 // header click handlers and as the discriminator for the sort comparator.
@@ -170,6 +171,9 @@ export default function AdminDashboard() {
                     <StatCard label="Pin Rerolls" value={overview?.totalRerolls ?? "—"} accent />
                 </div>
             </div>
+
+            {/* Daily activity chart */}
+            <DailyStatsChart />
 
             {/* Users */}
             <div>
