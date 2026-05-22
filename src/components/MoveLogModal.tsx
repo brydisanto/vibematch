@@ -65,7 +65,7 @@ function MoveRow({ entry, expanded, onToggle, isTopMove }: {
                         border: "1px solid rgba(179, 102, 255, 0.2)",
                     }}
                 >
-                    <span className="text-[8px] text-white/40 leading-none font-mundial tracking-wider">M</span>
+                    <span className="text-[10px] text-white/40 leading-none font-mundial">#</span>
                     <span className="text-[13px] text-white leading-none mt-[1px]">{entry.moveNum}</span>
                 </div>
 
