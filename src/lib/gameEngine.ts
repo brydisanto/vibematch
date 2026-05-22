@@ -34,6 +34,20 @@ export type GameMode = "classic" | "daily";
 export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
 
 /**
+ * Minimal, deterministic record of a player action — used by the
+ * server-authoritative replay system (Phase 2: client-side logging
+ * only; Phase 3+ will replay these against a server-issued seed to
+ * compute an authoritative score). Two shapes:
+ *   - swap: the two adjacent tiles the player swapped
+ *   - tap:  a double-tap activation on a special tile
+ * Both are sufficient inputs for processTurn / triggerSpecialTile to
+ * reproduce the game given the same seed + gameBadges.
+ */
+export type MoveAction =
+    | { kind: 'swap'; from: Position; to: Position }
+    | { kind: 'tap'; at: Position };
+
+/**
  * Per-turn record for the move-history view. Captures the metrics we
  * care about so players can later see "what did I do to get that 5x".
  * Only resolved (non-invalid) turns produce an entry — invalid swap
@@ -71,6 +85,13 @@ export interface GameState {
     /** Per-turn breakdown for the in-game and post-game move-history
      *  view. Newest entries appended; one entry per resolved turn. */
     moveLog: MoveLogEntry[];
+    /** Replay-grade record of every player action that consumed a move
+     *  (valid swaps + tap-activated specials). Sent to the server with
+     *  logGame so a future server-authoritative replay pass can
+     *  recompute the score deterministically. Currently the server
+     *  stores this but doesn't replay it yet — Phase 2 of the
+     *  server-authoritative score scope. */
+    moveSequence: MoveAction[];
 }
 
 const BOARD_SIZE = 8;
@@ -106,6 +127,7 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         gameOverReason: null,
         bonusCapsuleAwarded: false,
         moveLog: [],
+        moveSequence: [],
     };
 }
 

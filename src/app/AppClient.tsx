@@ -268,6 +268,9 @@ export default function AppClient() {
       // No need to call trackGame here — just use the existing token.
 
       // 1. Log game stats (persists authoritative stats keyed by matchId for achievements)
+      //    moveSequence is the deterministic record of player actions —
+      //    Phase 2 of the server-authoritative score scope. Stored
+      //    server-side now; Phase 3 will replay it to validate the score.
       await pinBook.logGame({
         score: gs.score || 0,
         matchCount: gs.matchCount || 0,
@@ -279,7 +282,7 @@ export default function AppClient() {
         crossCount: stats.crossCount || 0,
         shapesLanded: stats.shapesLanded || [],
         gameOverReason: gs.gameOverReason || 'unknown',
-      }, mode);
+      }, mode, gs.moveSequence ?? []);
 
       // 3. Award capsule if score threshold met. Also gates which first-time
       // FTUE modal (if any) fires on this game-over.

@@ -56,6 +56,10 @@ interface PendingLogPayload {
     matchId: string | null;
     gameMode: string;
     stats: unknown;
+    /** Replay-grade record of player actions. Currently stored server-
+     *  side without being read — Phase 3 will use this. May be empty
+     *  for older queued entries from before this field existed. */
+    moveSequence?: unknown[];
     queuedAt: number;
 }
 
@@ -192,6 +196,7 @@ async function flushPendingLogs(): Promise<void> {
             matchId: entry.matchId,
             gameMode: entry.gameMode,
             stats: entry.stats,
+            moveSequence: entry.moveSequence ?? [],
         });
         if (ok) {
             localStorage.removeItem(key);
@@ -358,17 +363,22 @@ export function usePinBook() {
         crossCount: number;
         shapesLanded: Array<{ type: string; count: number }>;
         gameOverReason: string;
-    }, gameMode: string = 'classic'): Promise<void> => {
+    }, gameMode: string = 'classic', moveSequence: unknown[] = []): Promise<void> => {
         // Retry + queue: previously a single await fetch with no .ok check.
         // Any 4xx/5xx silently succeeded at the await, dropping the gamelog
         // entry without telling anyone. logGameWithRetry now does 4 total
         // attempts with exponential-ish backoff, and on final failure queues
         // the payload to localStorage for replay on the next pinbook.load().
+        //
+        // moveSequence is Phase 2 of the server-authoritative score scope:
+        // the deterministic record of swaps + special-tile taps. Server
+        // stores it but doesn't replay it yet — that's Phase 3.
         await logGameWithRetry({
             action: "logGame",
             matchId: activeMatchIdRef.current,
             gameMode,
             stats,
+            moveSequence,
         });
     }, []);
 

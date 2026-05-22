@@ -8,6 +8,7 @@ import {
     TurnResult,
     Cell,
     MoveLogEntry,
+    MoveAction,
     CLASSIC_MOVES,
     createInitialState,
     isAdjacentSwap,
@@ -380,6 +381,7 @@ export function useGame(): UseGameReturn {
         prev: GameState,
         result: TurnResult,
         costMove: boolean,
+        moveAction?: MoveAction,
     ): GameState => {
         const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
         const newScore = prev.score + result.scoreGained;
@@ -471,6 +473,14 @@ export function useGame(): UseGameReturn {
             totalCascades: prev.totalCascades + result.cascadeCount,
             bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
             moveLog: moveLogEntry ? [...prev.moveLog, moveLogEntry] : prev.moveLog,
+            // Append to the deterministic action log only when a move was
+            // actually consumed AND the caller supplied an action (swap or
+            // tap). Skipping system-fired / zero-cost effects keeps the
+            // sequence one-to-one with player decisions so a future
+            // replay pass can reproduce the game.
+            moveSequence: (costMove && moveAction)
+                ? [...prev.moveSequence, moveAction]
+                : prev.moveSequence,
         };
     }, [isMobile]);
 
@@ -483,9 +493,10 @@ export function useGame(): UseGameReturn {
         result: TurnResult,
         effectPos: Position,
         costMove: boolean,
+        moveAction?: MoveAction,
     ): GameState => {
         triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded);
-        return applyResultState(prev, result, costMove);
+        return applyResultState(prev, result, costMove, moveAction);
     }, [triggerMatchEffects, applyResultState]);
 
     // Input queueing — when the player taps during the isAnimating
@@ -530,7 +541,8 @@ export function useGame(): UseGameReturn {
                         else if (cell.isSpecial === "cosmic_blast") playCosmicBlastSound();
                         else if (cell.isSpecial === "vibestreak") playVibestreakSound();
                         else playBombSound();
-                        setState(prev => prev ? applyResult(prev, result, pos, true) : prev);
+                        const tapAction: MoveAction = { kind: 'tap', at: pos };
+                        setState(prev => prev ? applyResult(prev, result, pos, true, tapAction) : prev);
                         return;
                     }
                 }
@@ -562,6 +574,7 @@ export function useGame(): UseGameReturn {
             // Valid swap — show slide animation first, then apply turn result
             const swapPos1 = state.selectedTile;
             const swapPos2 = pos;
+            const swapAction: MoveAction = { kind: 'swap', from: swapPos1, to: swapPos2 };
             resetHintTimer(result.board);
             setSwapAnim({ pos1: swapPos1, pos2: swapPos2 });
             setState({ ...state, selectedTile: null });
@@ -574,7 +587,7 @@ export function useGame(): UseGameReturn {
                 // sees the matched tiles flash IN PLACE before the cascade.
                 const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
                 const hitStop = getHitStopMs(intensity);
-                const apply = () => setState(prev => prev ? applyResultState(prev, result, true) : prev);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swapAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },
@@ -606,6 +619,7 @@ export function useGame(): UseGameReturn {
             }
 
             // Valid swap — animate then apply
+            const swipeAction: MoveAction = { kind: 'swap', from, to };
             resetHintTimer(result.board);
             setSwapAnim({ pos1: from, pos2: to });
             setState({ ...state, selectedTile: null });
@@ -614,7 +628,7 @@ export function useGame(): UseGameReturn {
                 setSwapAnim(null);
                 const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
                 const hitStop = getHitStopMs(intensity);
-                const apply = () => setState(prev => prev ? applyResultState(prev, result, true) : prev);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swipeAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },

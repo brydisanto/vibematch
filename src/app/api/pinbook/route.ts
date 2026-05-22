@@ -375,6 +375,43 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Missing stats' }, { status: 400 });
             }
 
+            // moveSequence: Phase 2 of server-authoritative score verification.
+            // Bound + sanitize the array. We accept either swap or tap shapes
+            // with all positions in the 0..7 board range. Anything else gets
+            // dropped silently (no reject — old clients won't send this field
+            // at all). The whole array is hard-capped at 200 entries: classic
+            // is 30 moves, frenzy can be ~150 in a god-run, 200 leaves plenty
+            // of headroom without inviting payload bloat from a hostile client.
+            const MAX_MOVES = 200;
+            const isPos = (p: unknown): p is { row: number; col: number } =>
+                !!p && typeof p === 'object' &&
+                typeof (p as { row: unknown }).row === 'number' &&
+                typeof (p as { col: unknown }).col === 'number' &&
+                (p as { row: number }).row >= 0 && (p as { row: number }).row < 8 &&
+                (p as { col: number }).col >= 0 && (p as { col: number }).col < 8;
+            const safeMoveSequence: Array<
+                { kind: 'swap'; from: { row: number; col: number }; to: { row: number; col: number } } |
+                { kind: 'tap'; at: { row: number; col: number } }
+            > = [];
+            if (Array.isArray(body.moveSequence)) {
+                for (const m of body.moveSequence.slice(0, MAX_MOVES)) {
+                    if (!m || typeof m !== 'object') continue;
+                    const kind = (m as { kind: unknown }).kind;
+                    if (kind === 'swap') {
+                        const from = (m as { from?: unknown }).from;
+                        const to = (m as { to?: unknown }).to;
+                        if (isPos(from) && isPos(to)) {
+                            safeMoveSequence.push({ kind: 'swap', from, to });
+                        }
+                    } else if (kind === 'tap') {
+                        const at = (m as { at?: unknown }).at;
+                        if (isPos(at)) {
+                            safeMoveSequence.push({ kind: 'tap', at });
+                        }
+                    }
+                }
+            }
+
             // Sanity-bound every numeric stat so forged payloads can't bloat storage
             const safeNum = (v: unknown, max: number) => {
                 const n = Number(v);
@@ -441,6 +478,27 @@ export async function POST(req: Request) {
                 await kv.zremrangebyrank(logKey, 0, count - 501);
             }
 
+            // Replay record: store the move sequence in a separate key
+            // alongside matchstats so the (eventually) authoritative replay
+            // pass can recompute the score. Keeping it out of matchstats
+            // proper keeps that record lean for the per-POST /api/scores
+            // lookup. Same 2-hour TTL as matchstats — long enough to cover
+            // any out-of-band score submission, short enough not to grow.
+            if (matchId && safeMoveSequence.length > 0) {
+                await kv.set(
+                    `replay:${username}:${matchId}`,
+                    JSON.stringify({
+                        username,
+                        matchId,
+                        gameMode,
+                        moveCount: safeMoveSequence.length,
+                        moveSequence: safeMoveSequence,
+                        recordedAt: Date.now(),
+                    }),
+                    { ex: 60 * 60 * 2 },
+                );
+            }
+
             // Also store by matchId for achievement verification lookup.
             // Classic: keyed by the validated match token. Daily: keyed by a server-derived
             // daily match key so we can still verify daily gameplay achievements.
@@ -455,7 +513,7 @@ export async function POST(req: Request) {
             // measure logGame throughput, validatedMatch ratio, and (with
             // the client's retry attempts) the retry escape hatch rate.
             // Key fields are kept on one line so jq/grep is straightforward.
-            console.log(`[logGame] user=${username} mode=${gameMode} matchId=${matchId || 'none'} score=${safeStats.score} validated=${validatedMatch} totalLogged=${count}`);
+            console.log(`[logGame] user=${username} mode=${gameMode} matchId=${matchId || 'none'} score=${safeStats.score} validated=${validatedMatch} totalLogged=${count} moves=${safeMoveSequence.length}`);
 
             return NextResponse.json({ logged: true });
 
