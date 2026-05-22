@@ -29,7 +29,10 @@ const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
 // VIBESTR cost per reroll (fixed fee regardless of tier burned). Scales
 // linearly with the number of capsules being rerolled in the same tx.
 const VIBESTR_PER_REROLL = 200;
-const MAX_REROLLS_PER_TX = 20; // safety cap
+// Per-tx safety cap. Was 20 → bumped to 50 after Onward hit "Invalid burn
+// quantities" on a 27-capsule reroll. The cap is a fat-finger guard, not
+// an economic limit, so giving it generous headroom is fine.
+const MAX_REROLLS_PER_TX = 50;
 
 // Pins to burn per capsule by tier
 const BURN_COST: Record<string, number> = {
@@ -90,21 +93,31 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing burns object' }, { status: 400 });
         }
 
-        // Parse and validate burns per tier
+        // Parse burns per tier. We clamp negatives/garbage to 0 here, but
+        // the per-tier UPPER bound is enforced post-payment-verification so
+        // a fat-finger / buggy-client over-cap submission gets its VIBESTR
+        // queued for refund instead of silently dropped.
         let totalCapsules = 0;
         const parsedBurns: { tier: string; capsules: number; pinsNeeded: number }[] = [];
         for (const [tier, qty] of Object.entries(burns)) {
             if (!BURN_COST[tier]) continue;
-            const capsules = Math.min(Math.max(0, Math.floor(Number(qty) || 0)), MAX_REROLLS_PER_TX);
+            const capsules = Math.max(0, Math.floor(Number(qty) || 0));
             if (capsules <= 0) continue;
             parsedBurns.push({ tier, capsules, pinsNeeded: BURN_COST[tier] * capsules });
             totalCapsules += capsules;
         }
 
-        if (totalCapsules <= 0 || totalCapsules > MAX_REROLLS_PER_TX) {
+        // Pre-payment guard: zero/negative is a malformed request — no
+        // payment should ever be in flight for this, so reject hard.
+        if (totalCapsules <= 0) {
             console.error(`[Reroll] Invalid burn quantities. burns=${JSON.stringify(burns)} parsed=${JSON.stringify(parsedBurns)} totalCapsules=${totalCapsules}`);
             return NextResponse.json({ error: 'Invalid burn quantities' }, { status: 400 });
         }
+
+        // NOTE: totalCapsules > MAX_REROLLS_PER_TX is intentionally NOT
+        // checked here. If the user paid for an over-cap reroll, we want
+        // the post-payment refund queue to catch it (see Phase 2 below)
+        // rather than dropping their VIBESTR on the floor.
 
         console.log(`[Reroll] Processing: burns=${JSON.stringify(burns)} totalCapsules=${totalCapsules}`);
 
@@ -241,6 +254,18 @@ export async function POST(request: Request) {
                 console.error('[Reroll] queueRefund failed:', e);
             }
         };
+
+        // Post-payment cap enforcement. If a buggy/manipulated client signed
+        // a tx for more than MAX_REROLLS_PER_TX capsules, reject the grant
+        // but queue the VIBESTR for refund so it lands in admin's view.
+        if (totalCapsules > MAX_REROLLS_PER_TX) {
+            const reason = `Exceeded per-tx cap: ${totalCapsules} > ${MAX_REROLLS_PER_TX}`;
+            console.error(`[Reroll] POST-PAYMENT FAILURE — cap exceeded. user=${username} tx=${normalizedTxHash} ${reason}`);
+            await queueRefund(reason);
+            return NextResponse.json({
+                error: `Reroll exceeded the per-transaction cap of ${MAX_REROLLS_PER_TX} capsules. Your VIBESTR has been logged for refund — contact support.`,
+            }, { status: 400 });
+        }
 
         if (!pinbook || !pinbook.pins) {
             await queueRefund('No pins to burn');
