@@ -381,6 +381,13 @@ export default function AppClient() {
           // localStorage unavailable — silently skip
         }
       }
+
+      // Mark this match as finished on the client so the next trackGame
+      // call can tell the server "the user really did finish this", even
+      // if logGame's POST landed in the retry queue. Without this, a
+      // failed-then-retried logGame leaves the server thinking the match
+      // was abandoned and the next game gets falsely flagged EXTRA PLAY.
+      pinBook.markGameFinished(pinBook.getActiveMatchId());
     })();
     // Swallow unhandled errors on the promise itself so awaiters don't crash
     gameEndPromiseRef.current.catch(() => {});

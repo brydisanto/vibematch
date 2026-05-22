@@ -271,17 +271,31 @@ export async function POST(req: Request) {
             // 5 min wrongly nuked the next legit game's capsule. 30 seconds
             // is tight enough to catch "reload to reroll the board" while
             // letting mid-game crashes / home-button exits through.
+            //
+            // Client can opt out by sending prevFinishedMatchId. We respect
+            // it ONLY when it matches the activePointer (so a forged value
+            // pointing at a stale matchId doesn't unlock the bypass). A
+            // refresh-shopper's reloaded client has no memory of the prior
+            // matchId and can't construct this signal — but a legit player
+            // who finished a game whose logGame's POST landed in the retry
+            // queue can. Prevents EXTRA PLAY false-positives that started
+            // appearing after the logGame retry+queue shipped.
             const ABANDON_WINDOW_MS = 30 * 1000;
             const activePointerKey = `pinbook:${username}:activeMatch`;
             const previousMatchId = await kv.get(activePointerKey) as string | null;
+            const prevFinishedMatchId = typeof body.prevFinishedMatchId === 'string'
+                ? body.prevFinishedMatchId
+                : null;
+            const clientConfirmedFinished = !!previousMatchId && prevFinishedMatchId === previousMatchId;
             let abandonedPrevious = false;
-            if (previousMatchId) {
+            if (previousMatchId && !clientConfirmedFinished) {
                 const prevMatchKey = `pinbook:${username}:match:${previousMatchId}`;
                 const prev = await kv.get(prevMatchKey) as any;
                 if (prev && !prev.logged && Date.now() - (prev.createdAt ?? 0) < ABANDON_WINDOW_MS) {
                     // Burn the previous match — no capsules from it retroactively.
                     await kv.set(prevMatchKey, { ...prev, abandoned: true, prizeEligible: false }, { ex: 60 * 60 * 2 });
                     abandonedPrevious = true;
+                    console.warn(`[trackGame] ABANDONED_PREVIOUS user=${username} prevMatchId=${previousMatchId} ageMs=${Date.now() - (prev.createdAt ?? 0)}`);
                 }
             }
 

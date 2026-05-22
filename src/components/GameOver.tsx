@@ -569,8 +569,12 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     const [isAllTimeHigh, setIsAllTimeHigh] = useState(false);
     const [showMoveLog, setShowMoveLog] = useState(false);
     // Server returns leaderboardSkipped:true when the match was outside
-    // the prize cap. Drives the "extra play — not saved" banner below.
+    // the prize cap or abandoned-previous flagged. Drives the "extra play
+    // — not saved" banner. `skipReason` differentiates so we can show
+    // accurate copy ("previous-match-abandoned" vs "daily-cap-exceeded")
+    // instead of always saying "beyond your daily prize cap".
     const [leaderboardSkipped, setLeaderboardSkipped] = useState(false);
+    const [skipReason, setSkipReason] = useState<string | null>(null);
 
     // Persist score to Vercel KV Cloud Database. Retries on 5xx + network
     // errors (immediate + 500ms + 1500ms + 4000ms) so a transient blip
@@ -608,6 +612,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                     }
                     if (data.leaderboardSkipped) {
                         setLeaderboardSkipped(true);
+                        if (typeof data.skipReason === 'string') setSkipReason(data.skipReason);
                         return;
                     }
                     if (data.isNewAllTimeHigh) {
@@ -869,7 +874,9 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                         Extra Play
                                     </div>
                                     <div className="text-[12px] text-white/70 leading-snug mt-0.5">
-                                        This run was beyond your daily prize cap — score isn&apos;t saved to the leaderboard and no capsules were awarded.
+                                        {skipReason === 'previous-match-abandoned'
+                                            ? "Your previous game wasn't finished before this one started — score isn't saved to the leaderboard and no capsules were awarded."
+                                            : "This run was beyond your daily prize cap — score isn't saved to the leaderboard and no capsules were awarded."}
                                     </div>
                                 </div>
                             </motion.div>

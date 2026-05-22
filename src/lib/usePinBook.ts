@@ -234,6 +234,21 @@ export function usePinBook() {
 
     // Ref mirror of activeMatchId so async flows always read the latest value
     const activeMatchIdRef = useRef<string | null>(null);
+    // Holds the most recently finished matchId (set by markGameFinished
+    // when the game-end flow completes on the client, regardless of
+    // whether logGame's server POST succeeded). Sent in the next
+    // trackGame body so the server can skip its abandoned-previous
+    // heuristic when the client confirms the previous match finished
+    // normally. Without this, a logGame that fell into the retry queue
+    // — common on flaky networks — would leave the server thinking the
+    // prior match was abandoned, and the next game would be flagged
+    // EXTRA PLAY / no capsule. A refresh-shopper's reloaded client has
+    // no memory of the prior matchId, so they can't forge this signal.
+    const lastFinishedMatchIdRef = useRef<string | null>(null);
+
+    const markGameFinished = useCallback((matchId: string | null) => {
+        if (matchId) lastFinishedMatchIdRef.current = matchId;
+    }, []);
 
     const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<{ earned: boolean; reason?: string; capped?: boolean; abandonedPrevious?: boolean }> => {
         if (score < CAPSULE_SCORE_THRESHOLD) return { earned: false, reason: 'Score below threshold' };
@@ -276,7 +291,15 @@ export function usePinBook() {
             const res = await fetch("/api/pinbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "trackGame", gameMode }),
+                body: JSON.stringify({
+                    action: "trackGame",
+                    gameMode,
+                    // Lets the server skip its abandoned-previous-match
+                    // heuristic when this matches the active pointer (the
+                    // user really did finish their previous game, even if
+                    // logGame was queued / hasn't reached the server).
+                    prevFinishedMatchId: lastFinishedMatchIdRef.current,
+                }),
             });
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
@@ -595,6 +618,7 @@ export function usePinBook() {
         load,
         trackGame,
         logGame,
+        markGameFinished,
         earnCapsule,
         earnBonusCapsule,
         openCapsule,
