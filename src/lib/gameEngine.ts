@@ -622,6 +622,13 @@ export interface TurnResult {
     specialTilesTriggered: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
     shapeBonus: ShapeBonus;
+    /** Positions cleared by special-tile detonations (bomb 3x3, vibestreak
+     *  row+col, cosmic_blast same-badge sweep) or by cascade-fall matches
+     *  that don't otherwise appear in matchesFound. Drives the white-hot
+     *  tile-flash overlay so EVERY cleared cell gets a visible pop, not
+     *  just the cells in the player's N-in-a-row. Empty when no specials
+     *  detonated and the turn was a simple match. */
+    blastPositions: Position[];
 }
 
 export function processTurn(
@@ -646,6 +653,9 @@ export function processTurn(
     let totalMatches: Match[] = [];
     const specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean }[] = [];
     const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [];
+    // Positions cleared by special-tile detonations that aren't already
+    // covered by an N-in-a-row Match — see TurnResult.blastPositions docs.
+    const blastPositions: Position[] = [];
     let cascadeCount = 0;
 
     // Detect geometric shapes from initial matches
@@ -711,6 +721,13 @@ export function processTurn(
                 const affected = applySpecialTile(currentBoard, { row: r, col: c }, cell.isSpecial);
                 for (const aPos of affected) {
                     const aKey = `${aPos.row},${aPos.col}`;
+                    // Push to blastPositions BEFORE adding to matchedPositions
+                    // so we only flash cells that weren't already in the
+                    // player's N-in-a-row match (avoids stacked flash on the
+                    // same cell — harmless visually, just wasteful).
+                    if (!matchedPositions.has(aKey)) {
+                        blastPositions.push(aPos);
+                    }
                     matchedPositions.add(aKey);
                     // If the affected cell also has a special, queue it for chain detonation
                     if (!detonated.has(aKey) && currentBoard[aPos.row]?.[aPos.col]?.isSpecial) {
@@ -815,6 +832,7 @@ export function processTurn(
         specialTilesTriggered,
         cascadeCount,
         shapeBonus,
+        blastPositions,
     };
 }
 
@@ -833,6 +851,11 @@ export function triggerSpecialTile(
 
     // Get affected positions
     const affected = applySpecialTile(currentBoard, pos, specialType);
+
+    // Visual flash positions for cascade-fall matches + cascade-triggered
+    // chain detonations that aren't captured by the initial syntheticMatch.
+    // (See TurnResult.blastPositions docs.)
+    const blastPositions: Position[] = [];
 
     // Mark affected tiles as matched
     const matchedPositions = new Set<string>();
@@ -901,6 +924,11 @@ export function triggerSpecialTile(
         for (const match of matches) {
             for (const p of match.positions) {
                 cascadeMatched.add(`${p.row},${p.col}`);
+                // Cascade-fall N-in-a-row matches aren't in matchesFound
+                // (we only return the initial syntheticMatch). Surface
+                // them via blastPositions so the flash overlay covers
+                // every cleared tile.
+                blastPositions.push(p);
             }
         }
 
@@ -913,7 +941,11 @@ export function triggerSpecialTile(
                 specialTilesTriggered.push({ pos: { row: r, col: c }, type: currentBoard[r][c].isSpecial! });
                 const chainAffected = applySpecialTile(currentBoard, { row: r, col: c }, currentBoard[r][c].isSpecial!);
                 for (const chainPos of chainAffected) {
-                    cascadeMatched.add(`${chainPos.row},${chainPos.col}`);
+                    const chainKey = `${chainPos.row},${chainPos.col}`;
+                    if (!cascadeMatched.has(chainKey)) {
+                        blastPositions.push(chainPos);
+                    }
+                    cascadeMatched.add(chainKey);
                 }
                 totalScore += calculateSpecialTileScore(currentBoard[r][c].isSpecial!, chainAffected.length);
             }
@@ -956,5 +988,6 @@ export function triggerSpecialTile(
         specialTilesTriggered,
         cascadeCount,
         shapeBonus: null,
+        blastPositions,
     };
 }

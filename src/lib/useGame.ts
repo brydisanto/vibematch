@@ -235,7 +235,14 @@ export function useGame(): UseGameReturn {
         const newMovesLeft = costMove ? prevMovesLeft - 1 : prevMovesLeft;
         const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
         const maxMatchSize = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.positions.length)) : 3;
-        const allPositions = result.matchesFound.flatMap(m => m.positions);
+        // Visual flash positions: every cleared cell, not just the player's
+        // N-in-a-row. blastPositions covers bomb 3x3 / vibestreak row+col /
+        // cosmic_blast same-badge sweep + any cascade-fall matches so cells
+        // outside the original match also get the tile-flash overlay.
+        const allPositions = [
+            ...result.matchesFound.flatMap(m => m.positions),
+            ...result.blastPositions,
+        ];
 
         // Play match sounds (escalated)
         playMatchSound(result.scoreGained, result.combo, maxMatchSize);
