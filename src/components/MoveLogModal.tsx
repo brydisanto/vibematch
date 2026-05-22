@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ScrollText, Flame, Zap, Star, Bomb, Sparkles, Layers, Trophy, ChevronDown } from "lucide-react";
 import { MoveLogEntry, SpecialTileType } from "@/lib/gameEngine";
+import { TIER_COLORS, TIER_DISPLAY_NAMES } from "@/lib/badges";
 import { useMemo, useState } from "react";
 
 interface MoveLogModalProps {
@@ -14,17 +15,6 @@ interface MoveLogModalProps {
      *  "what's the score now?" framing, just a summary). Pure cosmetic. */
     isPostGame?: boolean;
 }
-
-/** Tier swatch colors keyed by Badge tier — kept inline so the modal
- *  doesn't pull in the full TIER_COLORS map for one lookup. Matches
- *  the values in /lib/badges.ts. */
-const TIER_SWATCH: Record<NonNullable<MoveLogEntry['topTier']>, string> = {
-    blue: "#4A9EFF",
-    silver: "#C0C7D1",
-    special: "#FFE048",
-    gold: "#FFB547",
-    cosmic: "#B366FF",
-};
 
 const SHAPE_LABEL: Record<NonNullable<MoveLogEntry['shapeBonus']>, string> = {
     L: "L SHAPE",
@@ -44,7 +34,8 @@ function MoveRow({ entry, expanded, onToggle, isTopMove }: {
     onToggle: () => void;
     isTopMove: boolean;
 }) {
-    const tierColor = entry.topTier ? TIER_SWATCH[entry.topTier] : "rgba(255,255,255,0.3)";
+    const tierColor = entry.topTier ? TIER_COLORS[entry.topTier] : "rgba(255,255,255,0.3)";
+    const tierLabel = entry.topTier ? TIER_DISPLAY_NAMES[entry.topTier] : null;
     const isBig = entry.pointsGained >= 800;
     const isHuge = entry.pointsGained >= 2000;
 
@@ -161,27 +152,30 @@ function MoveRow({ entry, expanded, onToggle, isTopMove }: {
                         transition={{ duration: 0.18 }}
                         className="overflow-hidden w-full"
                     >
-                        <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-white/5 text-[10px] font-mundial">
-                            <div className="flex justify-between">
-                                <span className="text-white/40">Matches</span>
-                                <span className="text-white/80 font-bold">{entry.matchesFound}</span>
+                        {/* Two-column grid; each row is "label: value" with a
+                            tight gap so the value sits right next to the label
+                            instead of stretching to the far edge of the card. */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2 pt-2 border-t border-white/5 text-[11px] font-mundial justify-center">
+                            <div className="flex items-baseline gap-1.5 justify-center">
+                                <span className="text-white/40">Matches:</span>
+                                <span className="text-white/90 font-bold">{entry.matchesFound}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-white/40">Cascades</span>
-                                <span className="text-white/80 font-bold">{entry.cascadeCount}</span>
+                            <div className="flex items-baseline gap-1.5 justify-center">
+                                <span className="text-white/40">Cascades:</span>
+                                <span className="text-white/90 font-bold">{entry.cascadeCount}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-white/40">Combo peak</span>
-                                <span className="text-white/80 font-bold">×{Math.max(1, entry.maxCombo)}</span>
+                            <div className="flex items-baseline gap-1.5 justify-center">
+                                <span className="text-white/40">Combo peak:</span>
+                                <span className="text-white/90 font-bold">×{Math.max(1, entry.maxCombo)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-white/40">Top badge</span>
+                            <div className="flex items-baseline gap-1.5 justify-center min-w-0">
+                                <span className="text-white/40 flex-shrink-0">Badge tier:</span>
                                 <span
-                                    className="font-bold truncate ml-1"
+                                    className="font-bold truncate"
                                     style={{ color: tierColor }}
                                     title={entry.topTierName ?? undefined}
                                 >
-                                    {entry.topTierName ?? "—"}
+                                    {tierLabel ?? "—"}
                                 </span>
                             </div>
                         </div>

@@ -2,7 +2,7 @@
 
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
-import { ScrollText } from "lucide-react";
+import { Info } from "lucide-react";
 
 interface GameHUDProps {
     state: GameState;
@@ -333,7 +333,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1 inline-flex items-center gap-1">
                                 SCORE
                                 {onScoreClick && (
-                                    <ScrollText size={9} className="text-[#B399D4]/80" aria-hidden />
+                                    <Info size={10} className="text-[#B399D4]/80" aria-hidden />
                                 )}
                             </div>
                             <div
@@ -396,7 +396,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5 inline-flex items-center gap-1">
                                 SCORE
                                 {onScoreClick && (
-                                    <ScrollText size={10} className="text-[#B399D4]/80" aria-hidden />
+                                    <Info size={11} className="text-[#B399D4]/80" aria-hidden />
                                 )}
                             </div>
                             <div
