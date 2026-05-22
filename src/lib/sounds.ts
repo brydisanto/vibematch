@@ -119,10 +119,34 @@ const BGM_FILES = [
     "/music/sunlight.mp3"
 ];
 
+// Tracks the most recent play() promise so stopMP3 can await it before
+// pausing. Without this, iOS Safari leaves the audio element in a stuck
+// state where it keeps cycling ~0.5s of buffered MP3 frames after a
+// rapid play()→pause() (which is exactly what happens on game→home).
+let bgmPlayPromise: Promise<void> | null = null;
+
 function stopMP3() {
-    if (bgmAudio) {
-        bgmAudio.pause();
-        bgmAudio.currentTime = 0;
+    if (!bgmAudio) return;
+    const el = bgmAudio;
+    const finalize = () => {
+        try {
+            el.pause();
+            el.currentTime = 0;
+            // Clear src + reload so iOS can't keep looping any pre-buffered
+            // frames. startMP3 will set src + load() again next time it's
+            // called, so this is cheap defense — the network cache still
+            // serves the file in milliseconds.
+            el.removeAttribute("src");
+            el.load();
+        } catch {
+            // ignore — best-effort cleanup
+        }
+    };
+    if (bgmPlayPromise) {
+        bgmPlayPromise.then(finalize, finalize);
+        bgmPlayPromise = null;
+    } else {
+        finalize();
     }
 }
 
@@ -167,12 +191,19 @@ function startMP3() {
             bgmAudio.volume = isMuted ? 0 : 0.3;
         }
 
-        // Safari/iOS strict play policy requires handling the promise
+        // Safari/iOS strict play policy requires handling the promise.
+        // We also retain the promise so stopMP3 can await it before
+        // pausing (iOS gets stuck in a 0.5s buffer loop otherwise).
         const playPromise = bgmAudio.play();
         if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.warn("Autoplay prevented by browser:", error);
-            });
+            bgmPlayPromise = playPromise
+                .catch(error => {
+                    console.warn("Autoplay prevented by browser:", error);
+                })
+                .finally(() => {
+                    // Clear when settled so stopMP3 doesn't await a stale ref.
+                    bgmPlayPromise = null;
+                });
         }
     } catch {
         // Audio not available
