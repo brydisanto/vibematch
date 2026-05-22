@@ -6,13 +6,14 @@ import { adminFetch } from "../_lib/adminFetch";
 interface DailyStats {
     date: string;
     dau: number;
+    newUsers: number;
     classicPlays: number;
     capsulesEarned: number;
     rerolls: number;
     vibestrSpent: number;
 }
 
-type SeriesKey = "dau" | "classicPlays" | "capsulesEarned" | "rerolls" | "vibestrSpent";
+type SeriesKey = "dau" | "newUsers" | "classicPlays" | "capsulesEarned" | "rerolls" | "vibestrSpent";
 
 interface SeriesDef {
     key: SeriesKey;
@@ -23,6 +24,7 @@ interface SeriesDef {
 
 const SERIES: SeriesDef[] = [
     { key: "dau", label: "DAU", color: "#B366FF" },
+    { key: "newUsers", label: "New Users", color: "#22D3EE" },
     { key: "classicPlays", label: "Games Played", color: "#FFE048" },
     { key: "capsulesEarned", label: "Capsules Earned", color: "#4ADE80" },
     { key: "rerolls", label: "Rerolls", color: "#FF8C42" },
@@ -45,6 +47,7 @@ export default function DailyStatsChart() {
     const [days, setDays] = useState(30);
     const [visible, setVisible] = useState<Record<SeriesKey, boolean>>({
         dau: true,
+        newUsers: true,
         classicPlays: true,
         capsulesEarned: true,
         rerolls: true,
