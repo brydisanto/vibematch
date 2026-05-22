@@ -439,6 +439,7 @@ export default function DemoClient() {
         totalCascades: 0,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        moveLog: [],
     }), [board, score, combo, badges]);
 
     // Mirror the live game's layout: HUD left on desktop, top+bottom stacked

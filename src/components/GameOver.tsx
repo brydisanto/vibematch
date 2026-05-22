@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
-import { RotateCcw, Home, Target, Flame, Zap } from "lucide-react";
+import { RotateCcw, Home, Target, Flame, Zap, ScrollText } from "lucide-react";
 import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
 import { playNewHighScoreSound } from "@/lib/sounds";
 import toast from "react-hot-toast";
+import MoveLogModal from "./MoveLogModal";
 
 interface GameOverProps {
     state: GameState;
@@ -562,10 +563,11 @@ function RankProgressBar({ score, rank }: { score: number; rank: typeof RANK_CON
 }
 
 export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, onRequestLogin, capsuleEarned, onOpenPinBook, matchId }: GameOverProps) {
-    const { score, matchCount, maxCombo, totalCascades, gameMode, gameBadges, gameOverReason } = state;
+    const { score, matchCount, maxCombo, totalCascades, gameMode, gameBadges, gameOverReason, moveLog } = state;
     const rank = getRank(score);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
     const [isAllTimeHigh, setIsAllTimeHigh] = useState(false);
+    const [showMoveLog, setShowMoveLog] = useState(false);
     // Server returns leaderboardSkipped:true when the match was outside
     // the prize cap. Drives the "extra play — not saved" banner below.
     const [leaderboardSkipped, setLeaderboardSkipped] = useState(false);
@@ -874,7 +876,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                         )}
 
                         {/* ===== STATS ROW ===== */}
-                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">
+                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-3">
                             <StatCard
                                 label="MATCHES"
                                 value={matchCount}
@@ -897,6 +899,32 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                 delay={1.1}
                             />
                         </div>
+
+                        {/* ===== MOVE BREAKDOWN BUTTON ===== */}
+                        {moveLog && moveLog.length > 0 && (
+                            <motion.button
+                                type="button"
+                                onClick={() => setShowMoveLog(true)}
+                                className="w-full mb-6 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 group transition-all"
+                                style={{
+                                    background: "linear-gradient(135deg, rgba(179,102,255,0.10), rgba(179,102,255,0.04))",
+                                    border: "1px solid rgba(179,102,255,0.25)",
+                                }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 1.2, duration: 0.3 }}
+                                whileHover={{ scale: 1.01, borderColor: "rgba(179,102,255,0.5)" }}
+                                whileTap={{ scale: 0.99 }}
+                            >
+                                <ScrollText size={14} className="text-[#B366FF]" />
+                                <span className="font-display font-black text-[12px] tracking-[0.15em] text-white/90">
+                                    SEE MOVE BREAKDOWN
+                                </span>
+                                <span className="text-[10px] text-white/40 font-mundial tracking-wider">
+                                    ({moveLog.length})
+                                </span>
+                            </motion.button>
+                        )}
 
                         {/* ===== CAPSULE EARNED NOTIFICATION ===== */}
                         {capsuleEarned && onOpenPinBook && (
@@ -1063,6 +1091,15 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                     </div>
                 </div>
             </motion.div>
+
+            {/* Move Breakdown — opened from the button under the stats grid. */}
+            <MoveLogModal
+                isOpen={showMoveLog}
+                onClose={() => setShowMoveLog(false)}
+                moveLog={moveLog ?? []}
+                totalScore={score}
+                isPostGame
+            />
         </motion.div>
     );
 }

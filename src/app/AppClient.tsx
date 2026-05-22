@@ -12,6 +12,7 @@ import GameOver from "@/components/GameOver";
 import LandingPage from "@/components/LandingPage";
 import VibeDraft from "@/components/VibeDraft";
 import InstructionsModal from "@/components/InstructionsModal";
+import MoveLogModal from "@/components/MoveLogModal";
 import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
 import SettingsModal from "@/components/SettingsModal";
@@ -47,6 +48,7 @@ type AppView = "landing" | "drafting" | "playing";
 export default function AppClient() {
   const [view, setView] = useState<AppView>("landing");
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showMoveLog, setShowMoveLog] = useState(false);
   const [showSystemAuthModal, setShowSystemAuthModal] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
@@ -801,13 +803,24 @@ export default function AppClient() {
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center -mt-4 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
               <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
-                <GameHUD state={game.state} username={userProfile?.username} isExtraPlay={pinBook.currentMatchIsExtra} />
+                <GameHUD
+                  state={game.state}
+                  username={userProfile?.username}
+                  isExtraPlay={pinBook.currentMatchIsExtra}
+                  onScoreClick={() => { playUIClick(); setShowMoveLog(true); }}
+                />
               </div>
 
               {/* Mobile HUD Top — Metrics only */}
               <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-1 order-first">
                 <div className="w-full">
-                  <GameHUD state={game.state} username={userProfile?.username} hideHighScores isExtraPlay={pinBook.currentMatchIsExtra} />
+                  <GameHUD
+                    state={game.state}
+                    username={userProfile?.username}
+                    hideHighScores
+                    isExtraPlay={pinBook.currentMatchIsExtra}
+                    onScoreClick={() => { playUIClick(); setShowMoveLog(true); }}
+                  />
                 </div>
               </div>
 
@@ -1089,6 +1102,15 @@ export default function AppClient() {
       <InstructionsModal
         isOpen={showInstructions}
         onClose={() => setShowInstructions(false)}
+      />
+
+      {/* Move Breakdown Modal — opened by tapping the SCORE box during a
+          Classic/Daily game. Lazy-mounted UI; data lives on game.state.moveLog. */}
+      <MoveLogModal
+        isOpen={showMoveLog}
+        onClose={() => setShowMoveLog(false)}
+        moveLog={game.state?.moveLog ?? []}
+        totalScore={game.state?.score ?? 0}
       />
 
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
