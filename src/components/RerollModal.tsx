@@ -95,7 +95,12 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     // Computed values across all tiers — driven by livePins.
     const totalCapsules = Object.values(burns).reduce((s, v) => s + v, 0);
     const totalVibestr = VIBESTR_PER_REROLL * totalCapsules;
-    const canBurn = totalCapsules > 0 && TIER_ORDER.every(tier => {
+    // Mirror server's MAX_REROLLS_PER_TX. Kept here so the UI can block
+    // signing for over-cap rerolls instead of letting the user sign a tx
+    // that the server will reject (which used to mean lost VIBESTR).
+    const MAX_REROLLS_PER_TX = 50;
+    const overCap = totalCapsules > MAX_REROLLS_PER_TX;
+    const canBurn = totalCapsules > 0 && !overCap && TIER_ORDER.every(tier => {
         const qty = burns[tier];
         if (qty <= 0) return true;
         return getBurnableDuplicates(livePins, tier) >= BURN_COST[tier] * qty;
@@ -403,7 +408,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                     />
                                                     {statusText}
                                                 </span>
-                                            ) : totalCapsules > 1 ? `Reroll ${totalCapsules}x for ${totalVibestr} $VIBESTR` : `Reroll for ${totalVibestr} $VIBESTR`}
+                                            ) : overCap ? `Max ${MAX_REROLLS_PER_TX} per reroll — please reduce` : totalCapsules > 1 ? `Reroll ${totalCapsules}x for ${totalVibestr} $VIBESTR` : `Reroll for ${totalVibestr} $VIBESTR`}
                                         </button>
                                     )}
 

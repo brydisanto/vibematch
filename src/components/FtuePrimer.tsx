@@ -48,6 +48,23 @@ const PANEL_COPY: Record<PanelIndex, { title: string; body: string }> = {
 export default function FtuePrimer({ onContinue }: FtuePrimerProps) {
     const [panelIndex, setPanelIndex] = useState<PanelIndex>(0);
 
+    // Defensive preload: warm the browser's HTTP cache with every badge
+    // image used by any panel as soon as the primer mounts. Without this,
+    // mobile users were sometimes seeing the Bomb panel (panel 1) render
+    // with an empty tile grid on first swipe — next/image's lazy loader
+    // + AnimatePresence transition timing left the IntersectionObserver
+    // in a state where the images for the newly-mounted panel never
+    // started fetching. Belt + suspenders with loading="eager" on each
+    // <Image> below.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const urls = [CITIZEN.src, DOGE.src, ASTRO.src, CAPTAIN.src, COSMIC.src];
+        for (const url of urls) {
+            const img = new window.Image();
+            img.src = url;
+        }
+    }, []);
+
     const goTo = (i: PanelIndex) => {
         if (i === panelIndex) return;
         playUIClick();
@@ -330,6 +347,7 @@ function MatchPanel() {
                                     alt=""
                                     fill
                                     sizes={`${TILE_SIZE}px`}
+                                    loading="eager"
                                     className="object-cover pointer-events-none"
                                 />
                             </motion.button>
@@ -452,6 +470,7 @@ function BombPanel() {
                                         alt=""
                                         fill
                                         sizes={`${TILE_SIZE}px`}
+                                        loading="eager"
                                         className="object-cover pointer-events-none"
                                     />
                                 )}
@@ -758,6 +777,7 @@ function CapsulePanel() {
                                     alt=""
                                     fill
                                     sizes="80px"
+                                    loading="eager"
                                     className="object-cover pointer-events-none"
                                 />
                             </motion.div>
@@ -985,6 +1005,7 @@ function SphericalCapsule({
                     alt=""
                     fill
                     sizes="66px"
+                    loading="eager"
                     className="object-contain"
                 />
             </motion.div>

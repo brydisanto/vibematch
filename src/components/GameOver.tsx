@@ -572,21 +572,40 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     // the prize cap. Drives the "extra play — not saved" banner below.
     const [leaderboardSkipped, setLeaderboardSkipped] = useState(false);
 
-    // Persist score to Vercel KV Cloud Database
+    // Persist score to Vercel KV Cloud Database. Retries on 5xx + network
+    // errors (immediate + 500ms + 1500ms + 4000ms) so a transient blip
+    // doesn't silently drop the leaderboard write. 4xx responses are
+    // terminal — they come from server-side anti-cheat / "skipped" paths
+    // and retrying won't change the outcome.
     useEffect(() => {
-        if (score > 0 && userProfile?.username) {
-            fetch('/api/scores', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: userProfile.username,
-                    mode: gameMode,
-                    score: score,
-                    matchId: matchId,
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
+        if (!(score > 0 && userProfile?.username)) return;
+        let cancelled = false;
+        const RETRY_DELAYS_MS = [500, 1500, 4000];
+        const payload = JSON.stringify({
+            username: userProfile.username,
+            mode: gameMode,
+            score: score,
+            matchId: matchId,
+        });
+        const submit = async () => {
+            for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt++) {
+                if (cancelled) return;
+                if (attempt > 0) {
+                    await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt - 1] ?? 4000));
+                    if (cancelled) return;
+                }
+                try {
+                    const res = await fetch('/api/scores', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload,
+                    });
+                    if (res.status >= 500) continue;
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        console.warn("scores POST rejected", res.status, data);
+                        return;
+                    }
                     if (data.leaderboardSkipped) {
                         setLeaderboardSkipped(true);
                         return;
@@ -599,10 +618,18 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                         setIsNewHighScore(true);
                         playNewHighScoreSound();
                     }
-                })
-                .catch(e => console.error("Failed to post score", e));
-        }
-    }, [score, gameMode, userProfile?.username]);
+                    return;
+                } catch (e) {
+                    if (attempt === RETRY_DELAYS_MS.length) {
+                        console.error("Failed to post score after retries", e);
+                    }
+                    // else: fall through to next retry
+                }
+            }
+        };
+        submit();
+        return () => { cancelled = true; };
+    }, [score, gameMode, userProfile?.username, matchId]);
 
     // Capsule count derived from score thresholds (mirrors server logic in /api/pinbook/earn).
     const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0;

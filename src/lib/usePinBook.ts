@@ -39,6 +39,167 @@ export interface CapsuleReveal {
 
 const CAPSULE_SCORE_THRESHOLD = 15000;
 
+// ===== logGame reliability =====
+// /api/pinbook log was previously fire-and-forget: any 4xx/5xx silently
+// succeeded at the await. Investigation of a user with 19 capsules but
+// only 1 gamelog entry confirmed legit games were being silently dropped
+// on flaky connections. These helpers add retry-with-backoff and a
+// localStorage-backed queue so a failed log gets replayed on next pinbook
+// load (next session / reload / next game).
+const LOG_RETRY_DELAYS_MS = [500, 1500, 4000];
+const PENDING_LOG_KEY_PREFIX = "pending_logGame:";
+const MAX_PENDING_LOGS = 25;          // cap localStorage growth on hostile loops
+const PENDING_LOG_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // drop stale queue entries after a week
+
+interface PendingLogPayload {
+    action: "logGame";
+    matchId: string | null;
+    gameMode: string;
+    stats: unknown;
+    queuedAt: number;
+}
+
+async function postLogGame(payload: Omit<PendingLogPayload, "queuedAt">): Promise<boolean> {
+    try {
+        const res = await fetch("/api/pinbook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        return res.ok;
+    } catch {
+        return false;
+    }
+}
+
+function queuePendingLog(payload: Omit<PendingLogPayload, "queuedAt">) {
+    if (typeof window === "undefined") return;
+    try {
+        // Keyed by matchId when present so duplicate replays of the same
+        // game don't pile up. Without a matchId, fall back to timestamp
+        // so each enqueue is a distinct entry rather than a clobber.
+        const matchId = payload.matchId || `nomatch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const key = `${PENDING_LOG_KEY_PREFIX}${matchId}`;
+        const entry: PendingLogPayload = { ...payload, queuedAt: Date.now() };
+        localStorage.setItem(key, JSON.stringify(entry));
+        // Cap total pending entries — drop oldest if over.
+        const all = listPendingLogKeys();
+        if (all.length > MAX_PENDING_LOGS) {
+            // Sort by queuedAt ascending so oldest goes first.
+            const withTs = all
+                .map(k => {
+                    try {
+                        const v = JSON.parse(localStorage.getItem(k) || "{}") as PendingLogPayload;
+                        return { k, ts: v.queuedAt || 0 };
+                    } catch { return { k, ts: 0 }; }
+                })
+                .sort((a, b) => a.ts - b.ts);
+            for (const drop of withTs.slice(0, all.length - MAX_PENDING_LOGS)) {
+                localStorage.removeItem(drop.k);
+            }
+        }
+    } catch {
+        // localStorage unavailable / quota exceeded — best-effort.
+    }
+}
+
+function listPendingLogKeys(): string[] {
+    if (typeof window === "undefined") return [];
+    const out: string[] = [];
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(PENDING_LOG_KEY_PREFIX)) out.push(k);
+        }
+    } catch { /* ignore */ }
+    return out;
+}
+
+/**
+ * Generic retrying POST to /api/pinbook. Retries on network errors and
+ * 5xx responses, NOT on 4xx (those are logical rejections like "Capsule
+ * already claimed" — retrying just wastes round trips). Returns the
+ * final Response (which may still be a 4xx) or null on a total network
+ * failure across all attempts.
+ *
+ * Used by earnCapsule + earnBonusCapsule. They're already idempotent
+ * server-side via match.earnedCapsule / daily_earned NX markers, so a
+ * retry that lands after a successful prior attempt cleanly returns
+ * 400 "already claimed" rather than double-crediting. No queue — these
+ * actions are tied to a matchKey with a 2-hour TTL, so a next-session
+ * replay would arrive after the server forgot about the match anyway.
+ */
+async function retryablePinbookPost(body: unknown): Promise<Response | null> {
+    for (let attempt = 0; attempt < LOG_RETRY_DELAYS_MS.length + 1; attempt++) {
+        if (attempt > 0) {
+            const delay = LOG_RETRY_DELAYS_MS[attempt - 1] ?? 4000;
+            await new Promise(r => setTimeout(r, delay));
+        }
+        try {
+            const res = await fetch("/api/pinbook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            // 2xx + 4xx are terminal. Only 5xx falls through to retry.
+            if (res.status < 500) return res;
+        } catch {
+            // network error — fall through to retry
+        }
+    }
+    return null;
+}
+
+/** Sends a logGame payload with up to 3 retries (exponential-ish backoff).
+ *  On final failure, queues the payload to localStorage for next-session
+ *  replay so we don't silently drop the entry. Returns true on success. */
+async function logGameWithRetry(payload: Omit<PendingLogPayload, "queuedAt">): Promise<boolean> {
+    // First attempt is immediate; remaining attempts use LOG_RETRY_DELAYS_MS.
+    for (let attempt = 0; attempt < LOG_RETRY_DELAYS_MS.length + 1; attempt++) {
+        if (attempt > 0) {
+            const delay = LOG_RETRY_DELAYS_MS[attempt - 1] ?? 4000;
+            await new Promise(r => setTimeout(r, delay));
+        }
+        const ok = await postLogGame(payload);
+        if (ok) return true;
+    }
+    // All attempts failed — queue for later.
+    console.warn("[pinbook] logGame failed after retries; queued for next session", payload.matchId);
+    queuePendingLog(payload);
+    return false;
+}
+
+/** Replays any logGame payloads previously queued by a failed session.
+ *  Called from pinbook.load(). Stale entries (> PENDING_LOG_MAX_AGE_MS)
+ *  are dropped without replay — the server's matchstats TTL has long
+ *  since expired by then so the entry would land unvalidated anyway. */
+async function flushPendingLogs(): Promise<void> {
+    if (typeof window === "undefined") return;
+    const keys = listPendingLogKeys();
+    if (keys.length === 0) return;
+    const now = Date.now();
+    for (const key of keys) {
+        let entry: PendingLogPayload | null = null;
+        try {
+            entry = JSON.parse(localStorage.getItem(key) || "null");
+        } catch { /* corrupt — fall through */ }
+        if (!entry || (now - (entry.queuedAt || 0)) > PENDING_LOG_MAX_AGE_MS) {
+            localStorage.removeItem(key);
+            continue;
+        }
+        const ok = await postLogGame({
+            action: entry.action,
+            matchId: entry.matchId,
+            gameMode: entry.gameMode,
+            stats: entry.stats,
+        });
+        if (ok) {
+            localStorage.removeItem(key);
+        }
+        // If still failing, leave it — next load() retries.
+    }
+}
+
 export function usePinBook() {
     const [state, setState] = useState<PinBookState>({
         pins: {},
@@ -65,6 +226,10 @@ export function usePinBook() {
         } catch {
             // Not logged in or error — use empty state
         }
+        // Opportunistic flush of any logGame payloads that failed in a
+        // prior session. Fire-and-forget — we don't want to block the
+        // load UI on a backlog of retries.
+        flushPendingLogs().catch(() => { /* swallow */ });
     }, []);
 
     // Ref mirror of activeMatchId so async flows always read the latest value
@@ -72,31 +237,30 @@ export function usePinBook() {
 
     const earnCapsule = useCallback(async (score: number, gameMode: string = 'classic'): Promise<{ earned: boolean; reason?: string; capped?: boolean; abandonedPrevious?: boolean }> => {
         if (score < CAPSULE_SCORE_THRESHOLD) return { earned: false, reason: 'Score below threshold' };
-        try {
-            const res = await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "earn", score, gameMode, matchId: activeMatchIdRef.current }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                console.error("pinbook earn failed:", res.status, data, "matchId:", activeMatchIdRef.current);
-                return { earned: false, reason: data?.error || `HTTP ${res.status}` };
-            }
-            if (data.earned) {
-                const amount = gameMode === 'daily' ? 2 : 1;
-                setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
-                return { earned: true };
-            }
-            console.warn("pinbook earn rejected:", data);
-            // Pass through abandonedPrevious so the client can show the
-            // accurate "previous game wasn't finished" copy instead of the
-            // generic "Capsule not awarded: <reason>" toast.
-            return { earned: false, reason: data?.reason, capped: data?.capped, abandonedPrevious: data?.abandonedPrevious };
-        } catch (e) {
-            console.error("pinbook earn error:", e);
-            return { earned: false, reason: String(e) };
+        // Retry on 5xx + network errors so a transient blip on the
+        // capsule-earn POST doesn't silently strip a legit 15K+ run's
+        // reward. Server is idempotent via match.earnedCapsule — a
+        // duplicate after a successful prior attempt returns 400 cleanly.
+        const res = await retryablePinbookPost({ action: "earn", score, gameMode, matchId: activeMatchIdRef.current });
+        if (!res) {
+            console.error("pinbook earn network failure after retries; matchId:", activeMatchIdRef.current);
+            return { earned: false, reason: 'Network error' };
         }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            console.error("pinbook earn failed:", res.status, data, "matchId:", activeMatchIdRef.current);
+            return { earned: false, reason: data?.error || `HTTP ${res.status}` };
+        }
+        if (data.earned) {
+            const amount = gameMode === 'daily' ? 2 : 1;
+            setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
+            return { earned: true };
+        }
+        console.warn("pinbook earn rejected:", data);
+        // Pass through abandonedPrevious so the client can show the
+        // accurate "previous game wasn't finished" copy instead of the
+        // generic "Capsule not awarded: <reason>" toast.
+        return { earned: false, reason: data?.reason, capped: data?.capped, abandonedPrevious: data?.abandonedPrevious };
     }, []);
 
     const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{
@@ -172,34 +336,38 @@ export function usePinBook() {
         shapesLanded: Array<{ type: string; count: number }>;
         gameOverReason: string;
     }, gameMode: string = 'classic'): Promise<void> => {
-        try {
-            await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "logGame", matchId: activeMatchIdRef.current, gameMode, stats }),
-            });
-        } catch (e) { console.error("pinbook logGame error:", e); }
+        // Retry + queue: previously a single await fetch with no .ok check.
+        // Any 4xx/5xx silently succeeded at the await, dropping the gamelog
+        // entry without telling anyone. logGameWithRetry now does 4 total
+        // attempts with exponential-ish backoff, and on final failure queues
+        // the payload to localStorage for replay on the next pinbook.load().
+        await logGameWithRetry({
+            action: "logGame",
+            matchId: activeMatchIdRef.current,
+            gameMode,
+            stats,
+        });
     }, []);
 
     const earnBonusCapsule = useCallback(async (gameMode: string = 'classic'): Promise<boolean> => {
-        try {
-            const res = await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "bonus", gameMode, matchId: activeMatchIdRef.current }),
-            });
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                console.error("pinbook bonus failed:", res.status, errData, "matchId:", activeMatchIdRef.current);
-                return false;
-            }
-            const data = await res.json();
-            if (data.earned) {
-                const amount = gameMode === 'daily' ? 2 : 1;
-                setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
-                return true;
-            }
-        } catch (e) { console.error("pinbook bonus error:", e); }
+        // Retry on 5xx + network errors. Server enforces 1-per-match
+        // bonus cap so duplicates from a retry are rejected cleanly.
+        const res = await retryablePinbookPost({ action: "bonus", gameMode, matchId: activeMatchIdRef.current });
+        if (!res) {
+            console.error("pinbook bonus network failure after retries; matchId:", activeMatchIdRef.current);
+            return false;
+        }
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            console.error("pinbook bonus failed:", res.status, errData, "matchId:", activeMatchIdRef.current);
+            return false;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (data.earned) {
+            const amount = gameMode === 'daily' ? 2 : 1;
+            setState(prev => ({ ...prev, capsules: data.capsules, totalEarned: prev.totalEarned + amount }));
+            return true;
+        }
         return false;
     }, []);
 
