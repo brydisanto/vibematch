@@ -99,6 +99,46 @@ export async function POST(req: Request) {
         if (mode === 'classic') {
             const weeklyKey = `classic_weekly:${getMonday()}`;
 
+            // ====== ANTI-CHEAT: verify the submitted score against the
+            // authoritative matchstats record written by /api/pinbook log.
+            // Pre-fix: any authenticated user could POST any score ≤ 800K
+            // to this endpoint and it landed on the leaderboard. Gakerman
+            // submitted 182,150 this way despite having a real high of 50K.
+            //
+            // /api/pinbook log writes matchstats:<user>:<matchId> with the
+            // recorded score during the post-game flow. We require it
+            // (with a brief retry to absorb client races where /api/scores
+            // POSTs slightly before /api/pinbook log finishes) and reject
+            // any submission where score > recorded score.
+            //
+            // logGame itself still trusts the client-submitted stats; this
+            // closes the simplest direct-API forgery vector but isn't full
+            // server-side replay. A determined attacker could still call
+            // logGame with a forged score first — that's why we keep
+            // MAX_PLAUSIBLE_SCORE as a backstop and log forgery attempts.
+            if (!matchId || typeof matchId !== 'string') {
+                console.error(`[Scores] Classic submission missing matchId. user=${username} score=${score}`);
+                return NextResponse.json({ error: 'matchId required for classic mode' }, { status: 400 });
+            }
+            const matchStatsKey = `matchstats:${username.toLowerCase()}:${matchId}`;
+            let matchStats: { score?: number; username?: string } | null = null;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                matchStats = await kv.get(matchStatsKey) as { score?: number; username?: string } | null;
+                if (matchStats) break;
+                // 200ms × 5 = 1s max wait — well under Vercel's serverless
+                // function timeout and tolerable for the post-game UX.
+                await new Promise(r => setTimeout(r, 200));
+            }
+            if (!matchStats || typeof matchStats.score !== 'number') {
+                console.error(`[Scores] No matchstats found for submission. user=${username} matchId=${matchId} score=${score}`);
+                return NextResponse.json({ error: 'No verified game state for this matchId' }, { status: 400 });
+            }
+            const verifiedScore = matchStats.score;
+            if (score > verifiedScore) {
+                console.error(`[Scores] FORGED score blocked. user=${username} matchId=${matchId} submitted=${score} verified=${verifiedScore}`);
+                return NextResponse.json({ error: 'Score does not match logged game state' }, { status: 400 });
+            }
+
             // Prize eligibility gate: classic matches played outside the
             // daily prize cap (or invalidated by the abandoned-match rule)
             // are "extra plays". They still get a response for the client
@@ -108,7 +148,7 @@ export async function POST(req: Request) {
             // awarding capsules.
             let leaderboardSkipped = false;
             let skipReason: string | null = null;
-            if (matchId && typeof matchId === 'string') {
+            {
                 const matchKey = `pinbook:${username.toLowerCase()}:match:${matchId}`;
                 const match = await kv.get(matchKey) as { username?: string; prizeEligible?: boolean; abandonedPrevious?: boolean } | null;
                 if (match && match.username === username.toLowerCase() && match.prizeEligible === false) {
