@@ -2,6 +2,7 @@
 
 import { GameState } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
+import { ScrollText } from "lucide-react";
 
 interface GameHUDProps {
     state: GameState;
@@ -12,6 +13,10 @@ interface GameHUDProps {
      *  daily prize cap. Drives a small "EXTRA PLAY" pill so the
      *  player isn't surprised when the score doesn't save. */
     isExtraPlay?: boolean;
+    /** When set, the SCORE card becomes a button that opens the move-
+     *  history modal. The small scroll icon next to the SCORE label is
+     *  the discoverability affordance. */
+    onScoreClick?: () => void;
 }
 const TOTAL_MOVES = 30;
 
@@ -90,7 +95,7 @@ function FinalMoveBanner() {
     );
 }
 
-export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false, isExtraPlay = false }: GameHUDProps) {
+export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false, isExtraPlay = false, onScoreClick }: GameHUDProps) {
     const { score, movesLeft, combo, gameMode } = state;
 
     // Fetch high scores
@@ -316,21 +321,35 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {hideHighScores && (
                 <div className="flex gap-1.5 w-full px-1">
                     {/* Score */}
-                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
-                        <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
-                        <div
-                            className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
-                            style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
-                        >
-                            <span
-                                data-hud-score-target
-                                className={scoreBumping ? "hud-score-flash" : ""}
-                                style={{ display: "inline-block" }}
+                    <div
+                        className="flex-1 relative"
+                        onClick={onScoreClick}
+                        role={onScoreClick ? "button" : undefined}
+                        tabIndex={onScoreClick ? 0 : undefined}
+                        aria-label={onScoreClick ? "View move breakdown" : undefined}
+                        style={{ cursor: onScoreClick ? "pointer" : undefined }}
+                    >
+                        <HudCard className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1 inline-flex items-center gap-1">
+                                SCORE
+                                {onScoreClick && (
+                                    <ScrollText size={9} className="text-[#B399D4]/80" aria-hidden />
+                                )}
+                            </div>
+                            <div
+                                className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
+                                style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
                             >
-                                {displayedScore.toLocaleString()}
-                            </span>
-                        </div>
-                    </HudCard>
+                                <span
+                                    data-hud-score-target
+                                    className={scoreBumping ? "hud-score-flash" : ""}
+                                    style={{ display: "inline-block" }}
+                                >
+                                    {displayedScore.toLocaleString()}
+                                </span>
+                            </div>
+                        </HudCard>
+                    </div>
                     {/* Moves */}
                     <div className="relative flex-1">
                         {movesLeft <= 3 && (
@@ -365,27 +384,39 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {!hideHighScores && (
                 <>
                     {/* Score Card */}
-                    <HudCard className="flex-1 min-h-0 py-2">
-                        <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
-                            SCORE
-                        </div>
-                        <div
-                            className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
-                            style={{
-                                color: "#FFE048",
-                                WebkitTextStroke: "1px #c9a84c",
-                                textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
-                            }}
-                        >
-                            <span
-                                data-hud-score-target
-                                className={scoreBumping ? "hud-score-flash" : ""}
-                                style={{ display: "inline-block" }}
+                    <div
+                        className="flex-1 min-h-0 relative"
+                        onClick={onScoreClick}
+                        role={onScoreClick ? "button" : undefined}
+                        tabIndex={onScoreClick ? 0 : undefined}
+                        aria-label={onScoreClick ? "View move breakdown" : undefined}
+                        style={{ cursor: onScoreClick ? "pointer" : undefined }}
+                    >
+                        <HudCard className="h-full min-h-0 py-2">
+                            <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5 inline-flex items-center gap-1">
+                                SCORE
+                                {onScoreClick && (
+                                    <ScrollText size={10} className="text-[#B399D4]/80" aria-hidden />
+                                )}
+                            </div>
+                            <div
+                                className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
+                                style={{
+                                    color: "#FFE048",
+                                    WebkitTextStroke: "1px #c9a84c",
+                                    textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
+                                }}
                             >
-                                {formatScoreWithCommas(displayedScore)}
-                            </span>
-                        </div>
-                    </HudCard>
+                                <span
+                                    data-hud-score-target
+                                    className={scoreBumping ? "hud-score-flash" : ""}
+                                    style={{ display: "inline-block" }}
+                                >
+                                    {formatScoreWithCommas(displayedScore)}
+                                </span>
+                            </div>
+                        </HudCard>
+                    </div>
 
                     {/* Moves Card — border acts as radial indicator */}
                     <div className="relative flex-1 min-h-0">

@@ -7,6 +7,8 @@ import {
     Position,
     TurnResult,
     Cell,
+    MoveLogEntry,
+    CLASSIC_MOVES,
     createInitialState,
     isAdjacentSwap,
     processTurn,
@@ -384,6 +386,40 @@ export function useGame(): UseGameReturn {
         const newMatchCount = prev.matchCount + result.matchesFound.length;
         const newMaxCombo = Math.max(prev.maxCombo, result.combo);
 
+        // Build the move-log entry. Only resolved turns that consume a
+        // move get logged — system-fired or zero-cost effects are skipped
+        // so the log lines up with the player's actual decisions.
+        let moveLogEntry: MoveLogEntry | null = null;
+        if (costMove) {
+            // Dominant matched tier this turn — picked by count so a 4-
+            // match of cosmic dominates a 3-match of common.
+            const tierCounts = new Map<string, { count: number; tier: MoveLogEntry['topTier']; name: string }>();
+            for (const m of result.matchesFound) {
+                const k = m.badge.id;
+                const e = tierCounts.get(k);
+                if (e) e.count += m.positions.length;
+                else tierCounts.set(k, { count: m.positions.length, tier: m.badge.tier, name: m.badge.name });
+            }
+            let topTier: MoveLogEntry['topTier'] = null;
+            let topTierName: string | null = null;
+            let bestCount = 0;
+            for (const [, e] of tierCounts) {
+                if (e.count > bestCount) { bestCount = e.count; topTier = e.tier; topTierName = e.name; }
+            }
+            moveLogEntry = {
+                moveNum: CLASSIC_MOVES - newMovesLeft,
+                pointsGained: result.scoreGained,
+                matchesFound: result.matchesFound.length,
+                cascadeCount: result.cascadeCount,
+                maxCombo: result.combo,
+                shapeBonus: result.shapeBonus?.type ?? null,
+                specialsCreated: result.specialTilesCreated.map(s => s.type),
+                specialsTriggered: result.specialTilesTriggered.map(s => s.type),
+                topTier,
+                topTierName,
+            };
+        }
+
         // Bonus capsule check — recomputed here since triggerMatchEffects
         // ran on `prev` separately (could be a stale snapshot if hit-stop
         // delayed us). Re-deriving from the current `prev` keeps the
@@ -434,6 +470,7 @@ export function useGame(): UseGameReturn {
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,
             bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
+            moveLog: moveLogEntry ? [...prev.moveLog, moveLogEntry] : prev.moveLog,
         };
     }, [isMobile]);
 

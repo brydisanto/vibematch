@@ -33,6 +33,25 @@ export type GameMode = "classic" | "daily";
 
 export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
 
+/**
+ * Per-turn record for the move-history view. Captures the metrics we
+ * care about so players can later see "what did I do to get that 5x".
+ * Only resolved (non-invalid) turns produce an entry — invalid swap
+ * attempts are excluded since they don't consume a move.
+ */
+export interface MoveLogEntry {
+    moveNum: number;                                              // 1..CLASSIC_MOVES
+    pointsGained: number;
+    matchesFound: number;
+    cascadeCount: number;
+    maxCombo: number;                                             // combo peak during this turn's chain
+    shapeBonus: 'L' | 'T' | 'cross' | null;
+    specialsCreated: SpecialTileType[];
+    specialsTriggered: SpecialTileType[];
+    topTier: 'blue' | 'silver' | 'gold' | 'cosmic' | 'special' | null;
+    topTierName: string | null;
+}
+
 export interface GameState {
     board: Cell[][];
     score: number;
@@ -49,10 +68,13 @@ export interface GameState {
     dailySeed?: number;
     gameOverReason: GameOverReason;
     bonusCapsuleAwarded: boolean;
+    /** Per-turn breakdown for the in-game and post-game move-history
+     *  view. Newest entries appended; one entry per resolved turn. */
+    moveLog: MoveLogEntry[];
 }
 
 const BOARD_SIZE = 8;
-const CLASSIC_MOVES = 30;
+export const CLASSIC_MOVES = 30;
 
 let cellIdCounter = 0;
 function nextCellId(): string {
@@ -83,6 +105,7 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         dailySeed: seed,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        moveLog: [],
     };
 }
 
