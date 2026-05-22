@@ -338,7 +338,12 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             </div>
                             <div
                                 className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
-                                style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
+                                // Mobile-only: no soft yellow halo. The 0 0 15px
+                                // glow was bleeding into the digit edges at this
+                                // size and producing a "fuzzy" look at mobile DPR.
+                                // Just the chunky dark drop, which is what makes
+                                // the score read as an enamel pin to begin with.
+                                style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15" }}
                             >
                                 <span
                                     data-hud-score-target
