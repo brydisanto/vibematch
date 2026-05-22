@@ -29,6 +29,12 @@ interface UserSpend {
 }
 
 async function buildUserSpendMap(): Promise<Map<string, UserSpend>> {
+    // Keys are normalized to lowercase to match how user_auth keys are
+    // shaped. Some legacy tx records stored `username` with the canonical
+    // casing (mixed case) while the per-user lookup keys off the lowercase
+    // user_auth: key — without normalization those legacy txs ended up
+    // bucketed under a mixed-case key and never matched, which made the
+    // per-user "VIBESTR Spent" column sum lower than the overview total.
     const spendMap = new Map<string, UserSpend>();
     const txKeys = await scanKeys("tx:*:processed");
     for (const key of txKeys) {
@@ -37,7 +43,8 @@ async function buildUserSpendMap(): Promise<Map<string, UserSpend>> {
         try {
             const data = typeof raw === "string" ? JSON.parse(raw) : raw;
             if (!data?.username) continue;
-            const entry = spendMap.get(data.username) || { spent: 0, txCount: 0, bonusGames: 0, rerollCount: 0 };
+            const userKey = String(data.username).toLowerCase();
+            const entry = spendMap.get(userKey) || { spent: 0, txCount: 0, bonusGames: 0, rerollCount: 0 };
             entry.spent += parseFloat(data.amount || "0");
             if (data.type === "reroll") {
                 entry.rerollCount += 1;
@@ -45,7 +52,7 @@ async function buildUserSpendMap(): Promise<Map<string, UserSpend>> {
                 entry.txCount += 1;
                 entry.bonusGames += Number(data.packageSize || 0);
             }
-            spendMap.set(data.username, entry);
+            spendMap.set(userKey, entry);
         } catch {
             continue;
         }
