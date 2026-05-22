@@ -230,6 +230,12 @@ export async function POST(req: Request) {
         if (limit) {
             const rl = await rateLimit({ scope: `pinbook:${action}`, key: username, max: limit.max, windowSec: limit.windowSec });
             if (!rl.ok) {
+                // Observability: surface rate-limit hits for logGame so we
+                // can see if real players are tripping the 12/min cap (which
+                // would silently drop their gamelog entries pre-client-retry).
+                if (action === "logGame") {
+                    console.warn(`[logGame] RATE_LIMITED user=${username} max=${limit.max}/${limit.windowSec}s`);
+                }
                 const r = rateLimited429(rl, `pinbook:${action}`);
                 return NextResponse.json(r.body, r.init);
             }
@@ -351,6 +357,7 @@ export async function POST(req: Request) {
             } | undefined;
 
             if (!stats || typeof stats !== 'object') {
+                console.error(`[logGame] REJECTED missing-stats user=${username} matchId=${matchId || 'none'}`);
                 return NextResponse.json({ error: 'Missing stats' }, { status: 400 });
             }
 
@@ -429,6 +436,12 @@ export async function POST(req: Request) {
                 const today = getEasternDailyKey();
                 await kv.set(`matchstats:${username}:daily:${today}`, logEntry, { ex: 86400 * 2 });
             }
+
+            // Observability: structured log so we can grep Vercel logs to
+            // measure logGame throughput, validatedMatch ratio, and (with
+            // the client's retry attempts) the retry escape hatch rate.
+            // Key fields are kept on one line so jq/grep is straightforward.
+            console.log(`[logGame] user=${username} mode=${gameMode} matchId=${matchId || 'none'} score=${safeStats.score} validated=${validatedMatch} totalLogged=${count}`);
 
             return NextResponse.json({ logged: true });
 

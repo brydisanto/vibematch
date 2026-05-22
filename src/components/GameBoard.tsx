@@ -47,17 +47,22 @@ interface GameBoardProps {
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
 function BombOverlay() {
+    // Lighter inner red so the underlying badge is still readable.
+    // Was: inset 0 0 20px rgba(255,0,0,0.8) — nearly blacked out the tile.
+    // Now: inset 0 0 12px rgba(255,0,0,0.5) — bomb still reads instantly
+    // but the badge below stays visible. Paired with the ::after fade in
+    // globals.css (also dialed down).
     return (
-        <div className="absolute inset-0 z-20 pointer-events-none rounded-lg sm:rounded-xl overflow-hidden shadow-[inset_0_0_20px_rgba(255,0,0,0.8)]">
+        <div className="absolute inset-0 z-20 pointer-events-none rounded-lg sm:rounded-xl overflow-hidden shadow-[inset_0_0_12px_rgba(255,0,0,0.5)]">
             <div
                 className="bomb-border absolute inset-0 border-[3px] sm:border-[4px] border-[#FF3333] rounded-lg sm:rounded-xl"
             />
             {/* Warning crosshairs */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-80">
+            <div className="absolute inset-0 flex items-center justify-center opacity-70">
                 <div className="w-[80%] h-[2px] bg-[#FFE048] shadow-[0_0_8px_#FFE048]" />
                 <div className="absolute h-[80%] w-[2px] bg-[#FFE048] shadow-[0_0_8px_#FFE048]" />
                 <div
-                    className="bomb-core absolute w-4 h-4 rounded-full bg-[#FF3333] shadow-[0_0_15px_#FF3333]"
+                    className="bomb-core absolute w-3 h-3 rounded-full bg-[#FF3333] shadow-[0_0_10px_#FF3333]"
                 />
             </div>
         </div>

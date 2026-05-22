@@ -1201,7 +1201,11 @@ body {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    box-shadow: inset 0 0 25px rgba(255,51,51,1), 0 0 25px rgba(255,51,51,1);
+    /* Was: inset 25px rgba(255,51,51,1) + outer 25px rgba(255,51,51,1) — too
+       dark, the underlying badge was barely visible. Dialed to a softer
+       inner red + outer halo so the bomb still pops without obliterating
+       the badge. Matches the lighter overlay in BombOverlay.tsx. */
+    box-shadow: inset 0 0 14px rgba(255,51,51,0.7), 0 0 18px rgba(255,51,51,0.7);
     pointer-events: none;
 }
 /* Leaderboard podium glow */
