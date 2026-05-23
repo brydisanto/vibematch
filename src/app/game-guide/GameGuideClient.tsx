@@ -2015,7 +2015,7 @@ function Frenzy() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>60-Second Clock</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        You start with 60 seconds. The clock doesn&apos;t start until your first valid match.
+                        You get 60 seconds to make as many matches and score as many points as you can. Strategize first, the clock doesn&apos;t start until you make your first match. Big combos add time. Penalties take it away.
                     </p>
                 </Card>
                 <Card accent={GOLD}>
@@ -2024,11 +2024,11 @@ function Frenzy() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Big Matches Add Time</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed mb-2" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Big combos, cascades, and power tiles add time back onto the clock.
+                        Long matches, big combos, and power tiles add time back onto the clock.
                     </p>
                     <ul className="font-mundial text-[13px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.9)" }}>
                         <li className="mb-1"><strong style={{ color: GOLD }}>4-match:</strong> +1 second</li>
-                        <li className="mb-1"><strong style={{ color: GOLD }}>5+ match or special spawn:</strong> +2 seconds</li>
+                        <li className="mb-1"><strong style={{ color: GOLD }}>5+ match or power tile:</strong> +2 seconds</li>
                         <li className="mb-1"><strong style={{ color: GOLD }}>Combo peak 4+:</strong> +2 seconds</li>
                         <li><strong style={{ color: GOLD }}>Combo peak 6+:</strong> +5 seconds</li>
                     </ul>
@@ -2036,10 +2036,10 @@ function Frenzy() {
                 <Card accent={COSMIC}>
                     <div className="flex items-center gap-2 mb-2">
                         <Zap size={18} style={{ color: COSMIC }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>TURBO 3x</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Go Turbo Mode</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Three quick matches within five seconds of each other takes you{" "}
+                        Make three fast matches within five seconds and it&apos;ll take you{" "}
                         <strong
                             style={{
                                 background: `linear-gradient(135deg, ${GOLD} 0%, ${ORANGE} 100%)`,
@@ -2062,7 +2062,7 @@ function Frenzy() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Penalties</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        If you tap two tiles that don&apos;t form a match, you get hit with a beep and lose <strong style={{ color: "#EF4444" }}>1 second</strong> off the clock. Move fast, but precisely.
+                        If you try to swap two tiles that don&apos;t form a match, you&apos;ll get hit with a beep and lose <strong style={{ color: "#EF4444" }}>1 second</strong> off the clock. Move fast, but precisely.
                     </p>
                 </Card>
             </div>
@@ -2110,7 +2110,7 @@ function Frenzy() {
                     ))}
                 </div>
                 <p className="font-mundial text-[13px] mt-5 max-w-[480px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
-                    Just like in Classic mode, you can win capsules based on score threshold hit. Frenzy mode pulls from the same bank of daily plays. Choose your own adventure.
+                    Just like in Classic mode, you can win capsules based on score threshold hit. Frenzy mode pulls from the same bank of daily plays.
                 </p>
             </div>
         </section>
