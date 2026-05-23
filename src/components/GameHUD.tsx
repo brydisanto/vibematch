@@ -115,11 +115,26 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     const [globalBest, setGlobalBest] = useState<number>(0);
     const [globalBestUser, setGlobalBestUser] = useState<string>("");
 
+    // Personal/global best fetch — fires once per (gameMode, username)
+    // combo, not on every score change. Previously the dep array
+    // included `score`, which caused a fetch storm at game start: the
+    // early-return guard only kicks in AFTER personalBest/globalBest
+    // are loaded, so every score bump in the opening window before the
+    // first fetch resolved would queue another /api/scores call. That
+    // went unnoticed until server-side score verification (b96986db)
+    // made the endpoint expensive enough for the redundant calls to
+    // visibly slow the input loop. Ref guard makes the fetch idempotent
+    // per session for a given mode/user; failure clears the ref so the
+    // next prop change can retry.
+    const scoresFetchedKey = useRef<string | null>(null);
     useEffect(() => {
-        // Only fetch at the start of a game or when explicitly requested
-        if (score > 0 && personalBest > 0 && globalBest > 0) return;
+        const effectiveUsername = username
+            || (typeof window !== "undefined" ? localStorage.getItem("vibematch_username") : null)
+            || "";
+        const key = `${gameMode}|${effectiveUsername}`;
+        if (scoresFetchedKey.current === key) return;
+        scoresFetchedKey.current = key;
 
-        const effectiveUsername = username || localStorage.getItem('vibematch_username');
         const url = `/api/scores?mode=${gameMode}${effectiveUsername ? `&username=${effectiveUsername}` : ''}`;
 
         fetch(url)
@@ -139,8 +154,11 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                     if (userScore) setPersonalBest(userScore.score);
                 }
             })
-            .catch(() => { });
-    }, [gameMode, username, score]);
+            .catch(() => {
+                // Allow a retry on next prop change (e.g. mode switch).
+                scoresFetchedKey.current = null;
+            });
+    }, [gameMode, username]);
 
     // Feature 3: Personal Best banner state
     const [showPBBanner, setShowPBBanner] = useState(false);
