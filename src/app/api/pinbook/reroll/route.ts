@@ -19,6 +19,7 @@ import { bumpDailyCounter } from '@/lib/daily-counters';
 import { BADGES, type BadgeTier } from '@/lib/badges';
 import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
 import { getMainnetClient } from '@/lib/eth-rpc';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -350,6 +351,13 @@ export async function POST(request: Request) {
 
         const burnSummary = parsedBurns.map(b => `${b.pinsNeeded}x${b.tier}`).join('+');
         console.log(`[Reroll] SUCCESS user=${username} burned=${burnSummary} capsules=${totalCapsules} amount=${formatUnits(actualAmount, decimals)}`);
+
+        await logAuditEvent({
+            req: request,
+            username,
+            action: 'reroll.post',
+            meta: { burnSummary, totalCapsules, amountWei: actualAmount.toString() },
+        });
 
         return NextResponse.json({
             success: true,

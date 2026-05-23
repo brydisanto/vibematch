@@ -13,6 +13,7 @@ import {
     findPromoBadge,
     promoLeaderboardKey,
 } from '@/lib/promo-badges';
+import { logAuditEvent } from '@/lib/audit-log';
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base
@@ -753,6 +754,13 @@ export async function POST(req: Request) {
                 const existingScore = await kv.zscore(promoLeaderboardKey(badge.id), username);
                 promoCountBeforeCollect = typeof existingScore === 'number' ? existingScore : 0;
             }
+
+            await logAuditEvent({
+                req,
+                username,
+                action: 'capsule.open',
+                meta: { tier, badgeId: badge.id, isPromo: isPromoPull, remainingCapsules: data.capsules },
+            });
 
             return NextResponse.json({
                 opened: true,

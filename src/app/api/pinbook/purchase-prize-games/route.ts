@@ -20,6 +20,7 @@ import { getMainnetClient } from '@/lib/eth-rpc';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '../route';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -342,6 +343,18 @@ export async function POST(request: Request) {
         await kv.del(lockKey);
 
         console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatUnits(actualAmount, decimals)}`);
+
+        await logAuditEvent({
+            req: request,
+            username,
+            action: 'capsule.purchase',
+            meta: {
+                packageSize,
+                txHash: normalizedTxHash,
+                wallet: normalizedWallet,
+                amountWei: actualAmount.toString(),
+            },
+        });
 
         return NextResponse.json({
             success: true,

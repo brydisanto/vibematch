@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { getEasternDailyKey } from '@/lib/daily-window';
+import { logAuditEvent } from '@/lib/audit-log';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos. Bumped
@@ -62,6 +63,18 @@ export async function POST(req: Request) {
 
         // Validate score is a plausible number
         if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > MAX_PLAUSIBLE_SCORE) {
+            // Log the rejection so we can see who's probing the ceiling.
+            // No-op when audit logging isn't configured.
+            await logAuditEvent({
+                req,
+                username: session.username as string,
+                action: 'score.rejected',
+                meta: {
+                    mode: typeof mode === 'string' ? mode : 'invalid',
+                    submitted: typeof score === 'number' ? score : -1,
+                    reason: score > MAX_PLAUSIBLE_SCORE ? 'above_ceiling' : 'invalid_type',
+                },
+            });
             return NextResponse.json({ error: 'Invalid score' }, { status: 400 });
         }
 
@@ -242,6 +255,17 @@ export async function POST(req: Request) {
                 if (key.startsWith('leaderboard:')) cache.delete(key);
             }
         }
+
+        // Audit log — fire-and-forget. No-op when AUDIT_LOG_PEPPER
+        // isn't configured. Awaiting here so the entry lands on KV
+        // before we return; the helper has its own try/catch so
+        // failures can't block the response.
+        await logAuditEvent({
+            req,
+            username: canonicalUsername,
+            action: 'score.post',
+            meta: { mode, score, matchId: matchId ?? '', isNewBest, isNewAllTimeHigh },
+        });
 
         return NextResponse.json({ success: true, isNewBest, isNewAllTimeHigh });
     } catch (error) {
