@@ -924,6 +924,11 @@ export const CONFLICT_GROUPS: Record<string, number | number[]> = {
     science_goggles: 3,
     // #4
     full_send_maverick: 4,
+    // OpenSea promo pin (Aye Aye, Captain) shares the blue circle silhouette
+    // with Maverick — both render as small white icons on a blue disc, so
+    // mixed boards were hard to read at a glance. Conflict-group them so
+    // at most one ships per session.
+    promo_opensea: 4,
     tanks_a_lot: 4,
     patch_powerhouse: 4,
     the_completionist: 4,
