@@ -46,8 +46,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // Inline html background matches the body gradient's start color so
+    // there's no flash-of-white during the brief window before
+    // globals.css loads on desktop. Without this, users sometimes saw
+    // the page paint white (with the transparent logo appearing white
+    // by extension) until CSS hydrated. theme-color meta does the same
+    // for the mobile browser chrome.
+    <html lang="en" style={{ background: "#1a0533" }}>
       <head>
+        <meta name="theme-color" content="#1a0533" />
         <link rel="preload" href="/vibematchbg2.jpg" as="image" />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
         <Script id="gtag-init" strategy="afterInteractive">{`
