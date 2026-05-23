@@ -182,40 +182,36 @@ export function useGame(): UseGameReturn {
     const FRENZY_PENALTY_FLASH_MS = 600;
     const FRENZY_PENALTY_BUBBLE_MS = 1600;
     const firePenaltyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const fireFrenzyPenalty = useCallback((a?: Position, b?: Position) => {
-        let didDeduct = false;
+    const fireFrenzyPenalty = useCallback((a: Position, b: Position) => {
+        // Call sites gate by mode === "frenzy" already; this helper
+        // assumes Frenzy. The setState updater protects the time
+        // deduction against the edge case where the clock hasn't armed
+        // yet (first valid match arms frenzyEndsAt).
         setState(prev => {
             if (!prev || prev.gameMode !== "frenzy") return prev;
             if (prev.frenzyEndsAt === null) return prev;
             const newEndsAt = Math.max(Date.now(), prev.frenzyEndsAt - FRENZY_PENALTY_MS);
-            didDeduct = true;
             return { ...prev, frenzyEndsAt: newEndsAt };
         });
-        // Visual + audio — fire regardless of whether the state actually
-        // changed (e.g. in the unlikely null-state branch the helper is
-        // a no-op upstream). Cheap.
         playFrenzyPenaltySound();
         setFrenzyPenaltyAt(Date.now());
         if (firePenaltyTimer.current) clearTimeout(firePenaltyTimer.current);
         firePenaltyTimer.current = setTimeout(() => setFrenzyPenaltyAt(null), FRENZY_PENALTY_FLASH_MS);
 
-        // Push the flying bubble. Skip if we don't know where the swap
-        // happened (defensive — both call sites pass positions today).
-        // Use the midpoint of the two cells so the bubble pops between
-        // the offending tiles instead of stacking on one of them.
-        if (didDeduct && a && b) {
-            popupCounter.current += 1;
-            const id = `tp_${popupCounter.current}`;
-            const popup: TimePenaltyPopup = {
-                id,
-                x: (a.col + b.col) / 2,
-                y: (a.row + b.row) / 2,
-            };
-            setTimePenaltyPopups(prev => [...prev, popup]);
-            setTimeout(() => {
-                setTimePenaltyPopups(prev => prev.filter(p => p.id !== id));
-            }, FRENZY_PENALTY_BUBBLE_MS);
-        }
+        // Push the flying bubble at the midpoint of the two attempted
+        // swap cells. Emitted unconditionally because the call sites
+        // already gate on mode === "frenzy".
+        popupCounter.current += 1;
+        const id = `tp_${popupCounter.current}`;
+        const popup: TimePenaltyPopup = {
+            id,
+            x: (a.col + b.col) / 2,
+            y: (a.row + b.row) / 2,
+        };
+        setTimePenaltyPopups(prev => [...prev, popup]);
+        setTimeout(() => {
+            setTimePenaltyPopups(prev => prev.filter(p => p.id !== id));
+        }, FRENZY_PENALTY_BUBBLE_MS);
     }, []);
 
     const preloadBadgeImages = useCallback((badges: Badge[]): Promise<void> => {
@@ -690,7 +686,9 @@ export function useGame(): UseGameReturn {
                 // sound on top so random/sloppy tapping has a real cost.
                 // No-op outside Frenzy.
                 playInvalidSwapSound();
-                fireFrenzyPenalty(state.selectedTile, pos);
+                if (state.gameMode === "frenzy") {
+                    fireFrenzyPenalty(state.selectedTile, pos);
+                }
                 resetHintTimer(state.board);
                 setInvalidSwapCells([state.selectedTile, pos]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
@@ -749,7 +747,9 @@ export function useGame(): UseGameReturn {
             if (!result) {
                 // Frenzy time-penalty + sting; no-op outside Frenzy.
                 playInvalidSwapSound();
-                fireFrenzyPenalty(from, to);
+                if (state.gameMode === "frenzy") {
+                    fireFrenzyPenalty(from, to);
+                }
                 resetHintTimer(state.board);
                 setInvalidSwapCells([from, to]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
