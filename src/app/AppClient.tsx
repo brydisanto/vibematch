@@ -834,6 +834,7 @@ export default function AppClient() {
                     swapAnim={game.swapAnim}
                     isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && !pinBook.currentMatchIsExtra}
                     frenzyPenaltyAt={game.frenzyPenaltyAt}
+                    timePenaltyPopups={game.timePenaltyPopups}
                   />
                 </div>
               </div>

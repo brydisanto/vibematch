@@ -445,6 +445,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">{isFrenzy ? "TIME" : "MOVES"}</div>
                             {isFrenzy ? (
                                 <div
+                                    data-hud-timer-target
                                     className={`font-display text-3xl font-black leading-none ${frenzyTextColor}`}
                                     style={frenzySecondsRemaining <= 10 ? {
                                         textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
@@ -525,6 +526,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             </div>
                             {isFrenzy ? (
                                 <div
+                                    data-hud-timer-target
                                     className={`font-display text-2xl sm:text-3xl font-black leading-none ${frenzyTextColor}`}
                                     style={frenzySecondsRemaining <= 10 ? {
                                         textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",

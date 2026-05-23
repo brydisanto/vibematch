@@ -2,11 +2,12 @@
 
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
-import { ScorePopup, MatchEffect } from "@/lib/useGame";
+import { ScorePopup, MatchEffect, TimePenaltyPopup } from "@/lib/useGame";
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 const EMPTY_HINT_SET = new Set<string>();
+const EMPTY_TIME_PENALTY_POPUPS: TimePenaltyPopup[] = [];
 
 /* ===== EFFECT PRIORITY SYSTEM ===== */
 const EFFECT_PRIORITY: Record<string, number> = {
@@ -47,6 +48,9 @@ interface GameBoardProps {
      *  red full-board wash so the -1s clock loss reads visually. Null
      *  when no penalty is active. */
     frenzyPenaltyAt?: number | null;
+    /** Flying "-1 SECOND" bubbles for the Frenzy penalty. Each pops at
+     *  the midpoint of the offending swap and flies to the HUD timer. */
+    timePenaltyPopups?: TimePenaltyPopup[];
 }
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
@@ -886,6 +890,7 @@ export default function GameBoard({
     swapAnim = null,
     isPrizeGame = false,
     frenzyPenaltyAt = null,
+    timePenaltyPopups = EMPTY_TIME_PENALTY_POPUPS,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -1250,6 +1255,13 @@ export default function GameBoard({
             {scorePopups.map((popup) => (
                 <ScoreFlyPopup key={popup.id} popup={popup} />
             ))}
+
+            {/* Frenzy invalid-swap "-1 SECOND" bubbles. Sibling of
+                ScoreFlyPopup but flies to the HUD timer instead of the
+                score box, and pulses the timer red on arrival. */}
+            {timePenaltyPopups.map(popup => (
+                <TimePenaltyFlyPopup key={popup.id} popup={popup} />
+            ))}
         </div>
     );
 }
@@ -1383,6 +1395,84 @@ function ScoreFlyPopup({ popup }: { popup: ScorePopup }) {
                 ) : (
                     <>+{popup.value.toLocaleString()}</>
                 )}
+            </span>
+        </div>
+    );
+}
+
+/* ===== TIME PENALTY FLY POPUP =====
+ *
+ * Mirrors ScoreFlyPopup's mount-time target lookup, but resolves to the
+ * Frenzy timer element ([data-hud-timer-target]) and uses a red, smaller
+ * pill. On animation end, pulses the timer so the player sees the
+ * "thing they lost" register on the meter that lost it.
+ */
+function TimePenaltyFlyPopup({ popup }: { popup: TimePenaltyPopup }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        const popupRect = ref.current.getBoundingClientRect();
+        // Multiple HUDs can mount on mobile (top + bottom). Pick the
+        // visible (non-zero-size) one.
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-timer-target]"));
+        const targetEl = candidates.find(el => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        });
+        if (!targetEl) return;
+        const targetRect = targetEl.getBoundingClientRect();
+        const dx = (targetRect.left + targetRect.width / 2) - (popupRect.left + popupRect.width / 2);
+        const dy = (targetRect.top + targetRect.height / 2) - (popupRect.top + popupRect.height / 2);
+        setTarget({ x: dx, y: dy });
+    }, []);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || !target) return;
+        const onEnd = () => {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-timer-target]"));
+            const targetEl = candidates.find(c => {
+                const r = c.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+            if (!targetEl) return;
+            targetEl.classList.remove("timer-penalty-pulse");
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            targetEl.offsetWidth;
+            targetEl.classList.add("timer-penalty-pulse");
+            setTimeout(() => targetEl.classList.remove("timer-penalty-pulse"), 380);
+        };
+        el.addEventListener("animationend", onEnd, { once: true });
+        return () => el.removeEventListener("animationend", onEnd);
+    }, [target]);
+
+    const animClass = target ? "time-penalty-fly-to-hud" : "time-penalty-float";
+
+    return (
+        <div
+            ref={ref}
+            className={`absolute pointer-events-none z-50 flex items-center justify-center ${animClass}`}
+            style={{
+                left: `${(popup.x / 8) * 100 + 6.25}%`,
+                top: `${(popup.y / 8) * 100 + 6.25}%`,
+                '--target-x': target ? `${target.x}px` : "0px",
+                '--target-y': target ? `${target.y}px` : "-60px",
+            } as React.CSSProperties}
+        >
+            <span
+                className="font-display font-black text-lg sm:text-xl px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                style={{
+                    color: "#FFEAEA",
+                    background: "rgba(80, 8, 8, 0.92)",
+                    border: "2px solid rgba(239, 68, 68, 0.95)",
+                    textShadow: "0 0 8px rgba(239, 68, 68, 0.9)",
+                    boxShadow: "0 0 14px rgba(239, 68, 68, 0.65), 0 2px 6px rgba(0, 0, 0, 0.55)",
+                    letterSpacing: "0.04em",
+                }}
+            >
+                -1 SECOND
             </span>
         </div>
     );

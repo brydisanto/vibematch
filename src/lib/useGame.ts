@@ -52,6 +52,15 @@ export interface ScorePopup {
     combo: number;
 }
 
+/** Flying -1 SECOND bubble used to visualize a Frenzy invalid-swap
+ *  penalty. Pops at the midpoint of the two attempted swap cells,
+ *  then flies to the HUD timer (sibling animation to ScorePopup). */
+export interface TimePenaltyPopup {
+    id: string;
+    x: number; // board col, fractional (0..7)
+    y: number; // board row, fractional (0..7)
+}
+
 // Intensity level for match effects — drives animations + haptics
 export type MatchIntensity = "normal" | "big" | "mega" | "ultra";
 
@@ -94,6 +103,10 @@ export interface UseGameReturn {
      *  to render a red flash overlay when it changes. Null = no recent
      *  penalty. Resets to null ~600ms after firing. */
     frenzyPenaltyAt: number | null;
+    /** Active "-1 SECOND" bubbles flying from the invalid swap to the
+     *  HUD timer. One pushed per invalid swap; auto-cleared after the
+     *  flight animation. */
+    timePenaltyPopups: TimePenaltyPopup[];
     selectTile: (pos: Position) => void;
     swipeTiles: (from: Position, to: Position) => void;
     /** Resolves once the initial board state has been set so callers can
@@ -123,6 +136,9 @@ export function useGame(): UseGameReturn {
     // overlay in GameBoard. Cleared ~600ms after the penalty so a single
     // invalid swap doesn't keep flashing indefinitely.
     const [frenzyPenaltyAt, setFrenzyPenaltyAt] = useState<number | null>(null);
+    // Flying "-1 SECOND" bubbles. One pushed per invalid Frenzy swap;
+    // cleared 1.6s later after the fly-to-timer animation finishes.
+    const [timePenaltyPopups, setTimePenaltyPopups] = useState<TimePenaltyPopup[]>([]);
     const [swapAnim, setSwapAnim] = useState<{ pos1: Position; pos2: Position } | null>(null);
     const [hintMessage, setHintMessage] = useState<string | null>(null);
     const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,19 +171,24 @@ export function useGame(): UseGameReturn {
     }, []);
 
     // Fire a Frenzy time penalty: subtract 1s from the clock, set the
-    // penalty timestamp so GameBoard can render its red flash, and play
-    // the descending sting. No-op outside Frenzy or before the clock
-    // arms (the first swap of the game). Capped so the clock can't go
-    // below "about to expire" — a player about to lose anyway shouldn't
-    // get a "free" penalty (the natural game-over fires immediately).
+    // penalty timestamp so GameBoard can render its red flash, play the
+    // descending sting, and emit a flying "-1 SECOND" bubble at the
+    // midpoint of the two attempted swap cells. No-op outside Frenzy or
+    // before the clock arms (the first swap of the game). Capped so the
+    // clock can't go below "about to expire" — a player about to lose
+    // anyway shouldn't get a "free" penalty (the natural game-over
+    // fires immediately).
     const FRENZY_PENALTY_MS = 1000;
     const FRENZY_PENALTY_FLASH_MS = 600;
+    const FRENZY_PENALTY_BUBBLE_MS = 1600;
     const firePenaltyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const fireFrenzyPenalty = useCallback(() => {
+    const fireFrenzyPenalty = useCallback((a?: Position, b?: Position) => {
+        let didDeduct = false;
         setState(prev => {
             if (!prev || prev.gameMode !== "frenzy") return prev;
             if (prev.frenzyEndsAt === null) return prev;
             const newEndsAt = Math.max(Date.now(), prev.frenzyEndsAt - FRENZY_PENALTY_MS);
+            didDeduct = true;
             return { ...prev, frenzyEndsAt: newEndsAt };
         });
         // Visual + audio — fire regardless of whether the state actually
@@ -177,6 +198,24 @@ export function useGame(): UseGameReturn {
         setFrenzyPenaltyAt(Date.now());
         if (firePenaltyTimer.current) clearTimeout(firePenaltyTimer.current);
         firePenaltyTimer.current = setTimeout(() => setFrenzyPenaltyAt(null), FRENZY_PENALTY_FLASH_MS);
+
+        // Push the flying bubble. Skip if we don't know where the swap
+        // happened (defensive — both call sites pass positions today).
+        // Use the midpoint of the two cells so the bubble pops between
+        // the offending tiles instead of stacking on one of them.
+        if (didDeduct && a && b) {
+            popupCounter.current += 1;
+            const id = `tp_${popupCounter.current}`;
+            const popup: TimePenaltyPopup = {
+                id,
+                x: (a.col + b.col) / 2,
+                y: (a.row + b.row) / 2,
+            };
+            setTimePenaltyPopups(prev => [...prev, popup]);
+            setTimeout(() => {
+                setTimePenaltyPopups(prev => prev.filter(p => p.id !== id));
+            }, FRENZY_PENALTY_BUBBLE_MS);
+        }
     }, []);
 
     const preloadBadgeImages = useCallback((badges: Badge[]): Promise<void> => {
@@ -651,7 +690,7 @@ export function useGame(): UseGameReturn {
                 // sound on top so random/sloppy tapping has a real cost.
                 // No-op outside Frenzy.
                 playInvalidSwapSound();
-                fireFrenzyPenalty();
+                fireFrenzyPenalty(state.selectedTile, pos);
                 resetHintTimer(state.board);
                 setInvalidSwapCells([state.selectedTile, pos]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
@@ -710,7 +749,7 @@ export function useGame(): UseGameReturn {
             if (!result) {
                 // Frenzy time-penalty + sting; no-op outside Frenzy.
                 playInvalidSwapSound();
-                fireFrenzyPenalty();
+                fireFrenzyPenalty(from, to);
                 resetHintTimer(state.board);
                 setInvalidSwapCells([from, to]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
@@ -878,6 +917,7 @@ export function useGame(): UseGameReturn {
         invalidSwapCells,
         swapAnim,
         frenzyPenaltyAt,
+        timePenaltyPopups,
         selectTile,
         swipeTiles,
         startGame,

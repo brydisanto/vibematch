@@ -1006,7 +1006,7 @@ export default function LandingPageArcade({
                                             Frenzy
                                         </h3>
                                         <p className="text-white/55 text-[12px] mt-2">
-                                            Chaotically awesome. Match as fast as you can
+                                            Chaotically awesome. Match pins as fast as you can
                                         </p>
                                         <div className="mt-4">
                                             <ChunkyButton
