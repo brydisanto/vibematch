@@ -82,12 +82,14 @@ function HudCard({
     );
 }
 
-/* ===== HEAT 3x — Frenzy sustained multiplier indicator =====
+/* ===== TURBO 3x — Frenzy sustained multiplier indicator =====
  * Sticks around for FRENZY_HEAT_DURATION_MS once triggered (3 quick
  * matches in a row), multiplying every match score by 3x during that
  * window. Was 2x + one-shot — bumped to 3x + sustained so rapid
  * chain-play actually rewards Frenzy players at a Classic-comparable
- * scale. */
+ * scale. Internal symbols (frenzyHeatActiveUntil, FRENZY_HEAT_*, etc.)
+ * keep the "heat" name because they're persisted in serialized state
+ * and renaming them ripples across server payloads. */
 function HeatChip({ floating = false }: { floating?: boolean }) {
     // floating=true: chip is positioned absolutely by its parent (mobile),
     // so we drop the `mt-1` margin and enforce whitespace-nowrap so it
@@ -106,7 +108,7 @@ function HeatChip({ floating = false }: { floating?: boolean }) {
                 textShadow: "0 1px 0 rgba(255,224,72,0.6)",
             }}
         >
-            HEAT 3x
+            TURBO 3x
         </div>
     );
 }
