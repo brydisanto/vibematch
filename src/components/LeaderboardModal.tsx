@@ -541,13 +541,17 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const activePromos = isPromoActive() ? getActivePromoBadges() : [];
     const promoTabLabel = activePromos[0]?.tabLabel || "Promo";
 
+    // Tab order: Classic, Frenzy, Daily, Pins, Event. Weekly was retired
+    // alongside the Frenzy launch — the cadence overlapped with Daily and
+    // Frenzy without adding a meaningful "what's fresh this week" hook.
+    // Event slot is always rendered; the active promo (if any) supplies
+    // the data, otherwise the tab shows an empty/teaser state.
     const tabs: { key: TabMode; label: string }[] = [
-        { key: "classic", label: "All Time" },
+        { key: "classic", label: "Classic" },
         { key: "frenzy", label: "Frenzy" },
-        { key: "weekly", label: "Weekly" },
         { key: "daily", label: "Daily" },
         { key: "pins", label: "Pins" },
-        ...(activePromos.length > 0 ? [{ key: "promo" as TabMode, label: promoTabLabel }] : []),
+        { key: "promo", label: "Event" },
     ];
 
     return (

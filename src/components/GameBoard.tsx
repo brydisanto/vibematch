@@ -43,6 +43,10 @@ interface GameBoardProps {
     invalidSwapCells?: { row: number; col: number }[] | null;
     swapAnim?: { pos1: Position; pos2: Position } | null;
     isPrizeGame?: boolean;
+    /** Timestamp of the most recent Frenzy time penalty. Drives a brief
+     *  red full-board wash so the -1s clock loss reads visually. Null
+     *  when no penalty is active. */
+    frenzyPenaltyAt?: number | null;
 }
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
@@ -881,6 +885,7 @@ export default function GameBoard({
     invalidSwapCells = null,
     swapAnim = null,
     isPrizeGame = false,
+    frenzyPenaltyAt = null,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -1226,6 +1231,16 @@ export default function GameBoard({
                     {shouldShowEffect('ShapeAnnouncement') && <ShapeAnnouncement effect={effect} />}
                 </div>
             ))}
+
+            {/* Frenzy invalid-swap penalty flash — keyed by frenzyPenaltyAt
+                so each fresh penalty restarts the keyframe. Sits above the
+                board but below score popups. */}
+            {frenzyPenaltyAt !== null && (
+                <div
+                    key={frenzyPenaltyAt}
+                    className="absolute inset-0 pointer-events-none z-40 rounded-2xl overflow-hidden frenzy-penalty-flash"
+                />
+            )}
 
             {/* Score popups layer. Each popup pops at its match position,
                 holds, then accelerates toward the HUD score box (Candy

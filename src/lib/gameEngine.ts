@@ -96,11 +96,11 @@ export function computeFrenzyBonusMs(opts: {
     return bonus;
 }
 
-/** Score -> capsule mapping. Tuned ladder: 30k/50k/80k for 1/2/3 capsules.
+/** Score -> capsule mapping. Tuned ladder: 30k/60k/100k for 1/2/3 capsules.
  *  Cap at 3 keeps the economy bounded even on a god run. */
 export function frenzyCapsulesForScore(score: number): number {
-    if (score >= 80_000) return 3;
-    if (score >= 50_000) return 2;
+    if (score >= 100_000) return 3;
+    if (score >= 60_000) return 2;
     if (score >= 30_000) return 1;
     return 0;
 }

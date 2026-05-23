@@ -316,6 +316,17 @@ export function playFrenzyFinalTick() {
     playNote(660, 0.10, "sine", 0.18, 0.03);
 }
 
+/** Time-penalty sting — fires when an invalid swap costs the player a
+ *  second of Frenzy clock. Descending two-note motif (high → low) +
+ *  a sub-bass thud so it reads as "uh, that cost you" not "you matched". */
+export function playFrenzyPenaltySound() {
+    // Descending sawtooth: short, harsh, clearly negative.
+    playNote(440, 0.10, "sawtooth", 0.18);          // A4
+    playNote(220, 0.14, "sawtooth", 0.20, 0.06);    // A3 — drop an octave
+    // Sub-bass thud underneath for weight.
+    playNote(80, 0.18, "sine", 0.22, 0.02);
+}
+
 // Ensure AudioContext is only created immediately when needed, or unlocked on touch
 export function unlockAudio() {
     getAudioContext();

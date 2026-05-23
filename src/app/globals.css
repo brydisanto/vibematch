@@ -1957,6 +1957,24 @@ body {
   50% { transform: translateY(-4px); }
 }
 
+/* Frenzy invalid-swap penalty flash — red full-board wash that fires when
+   an invalid swap costs the player 1 second of clock. Quick in, quick out,
+   so it reads as "ouch, that cost you" without obstructing the next tap. */
+@keyframes frenzy-penalty-flash-anim {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.frenzy-penalty-flash {
+  background: radial-gradient(circle at center,
+    rgba(255, 50, 50, 0.55) 0%,
+    rgba(220, 30, 30, 0.40) 45%,
+    rgba(120, 10, 10, 0.30) 85%,
+    rgba(40, 0, 0, 0.45) 100%);
+  animation: frenzy-penalty-flash-anim 0.6s ease-out forwards;
+  will-change: opacity;
+}
+
 /* ===== Reduce Motion Accessibility ===== */
 .reduce-motion *,
 .reduce-motion *::before,
