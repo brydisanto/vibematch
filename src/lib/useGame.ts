@@ -655,7 +655,12 @@ export function useGame(): UseGameReturn {
                 resetHintTimer(state.board);
                 setInvalidSwapCells([state.selectedTile, pos]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
-                setState({ ...state, selectedTile: null });
+                // Functional update is critical here: fireFrenzyPenalty
+                // queues a functional setState that decrements frenzyEndsAt.
+                // A non-functional `setState({ ...state, ... })` would spread
+                // the stale captured `state` and silently overwrite the
+                // penalty time deduction.
+                setState(prev => prev ? { ...prev, selectedTile: null } : prev);
                 return;
             }
 
