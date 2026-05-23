@@ -349,7 +349,7 @@ export default function LandingPageQuest({
                                     <span style={{ fontSize: 22 }}>Frenzy</span>
                                 </h2>
                                 <p className="text-white/55 text-[11px] font-mundial mt-1.5">
-                                    Chaotically awesome fun. Match as fast as you can.
+                                    Chaotically awesome. Match as fast as you can
                                 </p>
                             </div>
                             <div className="shrink-0 self-end">
