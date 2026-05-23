@@ -46,11 +46,23 @@ interface OrphanTx {
 
 async function fetchTreasuryTransfers(): Promise<{ txs: EtherscanTokenTx[]; error?: string }> {
     if (!TREASURY_ADDRESS) return { txs: [], error: "Treasury address not configured" };
+    // Etherscan deprecated V1 — every V1 endpoint now returns
+    // `NOTOK (You are using a deprecated V1 endpoint…)` even when an
+    // API key is supplied. V2 uses a single multi-chain URL with an
+    // explicit `chainid` param (mainnet = 1). API key is now required.
+    // Migration ref: https://docs.etherscan.io/v2-migration
+    if (!ETHERSCAN_API_KEY) {
+        return {
+            txs: [],
+            error: "ETHERSCAN_API_KEY not set (required as of Etherscan V2). Free-tier key works.",
+        };
+    }
 
     // Etherscan pages — max 10k per page. The treasury is comfortably
     // under 10k incoming txs (sub-1k as of writing), so one page is enough.
     // Bump page handling later if we ever cross that.
     const params = new URLSearchParams({
+        chainid: "1",
         module: "account",
         action: "tokentx",
         contractaddress: VIBESTR_ADDRESS,
@@ -60,9 +72,9 @@ async function fetchTreasuryTransfers(): Promise<{ txs: EtherscanTokenTx[]; erro
         sort: "asc",
         page: "1",
         offset: "10000",
-        ...(ETHERSCAN_API_KEY ? { apikey: ETHERSCAN_API_KEY } : {}),
+        apikey: ETHERSCAN_API_KEY,
     });
-    const url = `https://api.etherscan.io/api?${params.toString()}`;
+    const url = `https://api.etherscan.io/v2/api?${params.toString()}`;
 
     try {
         const res = await fetch(url, { cache: "no-store" });
