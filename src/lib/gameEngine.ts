@@ -96,17 +96,12 @@ export function computeFrenzyBonusMs(opts: {
     return bonus;
 }
 
-/** Score -> capsule mapping. Mirrors the Classic ladder (15k/30k/50k for
- *  1/2/3 capsules) so equal effort earns equal rewards. Frenzy's
- *  time-pressure structurally suppresses big-cascade plays (which drive
- *  most of Classic's score), so previously requiring 30k/50k/80k
- *  effectively asked Frenzy players to grind a structurally harder ladder
- *  for the same prize. Cap at 3 still keeps the economy bounded on a god
- *  run. */
+/** Score -> capsule mapping. Tuned ladder: 30k/50k/80k for 1/2/3 capsules.
+ *  Cap at 3 keeps the economy bounded even on a god run. */
 export function frenzyCapsulesForScore(score: number): number {
-    if (score >= 50_000) return 3;
-    if (score >= 30_000) return 2;
-    if (score >= 15_000) return 1;
+    if (score >= 80_000) return 3;
+    if (score >= 50_000) return 2;
+    if (score >= 30_000) return 1;
     return 0;
 }
 

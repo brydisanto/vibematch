@@ -586,15 +586,22 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effect.timestamp]);
 
+    // Positioned at the TOP of the board container instead of centered.
+    // The banner sits in the upper ~20% so the middle/lower 80% of the
+    // playing field stays unobstructed — critical for fast Frenzy chains
+    // where the player needs to see next-move options while a combo is
+    // mid-animation. Centered-over-board (the previous treatment) blocked
+    // the prime sight line.
     return (
         <div
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
+            className="absolute left-0 right-0 top-0 flex flex-col items-center pointer-events-none z-40 combo-banner-enter px-2 pt-1"
         >
-            {/* Static radial background flash — original production
-                treatment. Single layer at 30% opacity. */}
+            {/* Static radial background flash — sized to the banner's
+                bounding box rather than the whole board so it tracks the
+                repositioned text instead of lighting up the playing field. */}
             <div
-                className="absolute inset-0 opacity-30"
-                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
+                className="absolute inset-x-0 top-0 bottom-0 opacity-30"
+                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 70%)` }}
             />
 
             {/* Main combo text */}

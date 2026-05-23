@@ -453,10 +453,16 @@ export function useGame(): UseGameReturn {
 
             // Heat streak: matches within FRENZY_HEAT_WINDOW_MS of the
             // previous one stack. Hitting FRENZY_HEAT_TRIGGER_COUNT arms
-            // a one-shot 2x multiplier on the next match.
+            // a sustained 3x multiplier for the next FRENZY_HEAT_DURATION_MS.
+            // Previously the bonus was 2x AND one-shot (consumed on the
+            // next match) — felt rare and small. Now it stays live for the
+            // full window so rapid chain-play actually rewards the player
+            // proportional to their pace.
             const withinWindow = frenzyLastMatchAt !== null && (now - frenzyLastMatchAt) <= FRENZY_HEAT_WINDOW_MS;
             frenzyConsecutiveQuickMatches = withinWindow ? frenzyConsecutiveQuickMatches + 1 : 1;
-            if (scoreMultiplier > 1) frenzyHeatActiveUntil = null;
+            // NOTE: removed the `if (scoreMultiplier > 1) frenzyHeatActiveUntil = null`
+            // line — that was the one-shot consumption. Heat now expires
+            // purely by time, not by use.
             if (frenzyConsecutiveQuickMatches >= FRENZY_HEAT_TRIGGER_COUNT) {
                 frenzyHeatActiveUntil = now + FRENZY_HEAT_DURATION_MS;
                 frenzyConsecutiveQuickMatches = 0;
@@ -538,7 +544,7 @@ export function useGame(): UseGameReturn {
     ): GameState => {
         const heatMul = (prev.gameMode === "frenzy"
             && prev.frenzyHeatActiveUntil !== null
-            && prev.frenzyHeatActiveUntil > Date.now()) ? 2 : 1;
+            && prev.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
         triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded, heatMul);
         return applyResultState(prev, result, costMove, heatMul);
     }, [triggerMatchEffects, applyResultState]);
@@ -631,7 +637,7 @@ export function useGame(): UseGameReturn {
                 // PLACE before the cascade.
                 const heatMul = (state?.gameMode === "frenzy"
                     && state.frenzyHeatActiveUntil !== null
-                    && state.frenzyHeatActiveUntil > Date.now()) ? 2 : 1;
+                    && state.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
                 const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded, heatMul) : "normal";
                 const hitStop = getHitStopMs(intensity);
                 const apply = () => setState(prev => prev ? applyResultState(prev, result, true, heatMul) : prev);
@@ -674,7 +680,7 @@ export function useGame(): UseGameReturn {
                 setSwapAnim(null);
                 const heatMul = (state?.gameMode === "frenzy"
                     && state.frenzyHeatActiveUntil !== null
-                    && state.frenzyHeatActiveUntil > Date.now()) ? 2 : 1;
+                    && state.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
                 const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded, heatMul) : "normal";
                 const hitStop = getHitStopMs(intensity);
                 const apply = () => setState(prev => prev ? applyResultState(prev, result, true, heatMul) : prev);

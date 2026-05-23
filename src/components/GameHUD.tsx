@@ -82,7 +82,12 @@ function HudCard({
     );
 }
 
-/* ===== HEAT 2x — Frenzy one-shot multiplier indicator ===== */
+/* ===== HEAT 3x — Frenzy sustained multiplier indicator =====
+ * Sticks around for FRENZY_HEAT_DURATION_MS once triggered (3 quick
+ * matches in a row), multiplying every match score by 3x during that
+ * window. Was 2x + one-shot — bumped to 3x + sustained so rapid
+ * chain-play actually rewards Frenzy players at a Classic-comparable
+ * scale. */
 function HeatChip() {
     return (
         <div
@@ -95,7 +100,7 @@ function HeatChip() {
                 textShadow: "0 1px 0 rgba(255,224,72,0.6)",
             }}
         >
-            HEAT 2x
+            HEAT 3x
         </div>
     );
 }
@@ -152,7 +157,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
         frenzyGlow = "rgba(255,140,0,0.35)";
     }
 
-    // HEAT 2x is one-shot armed. Schedule a single timeout for when the
+    // HEAT 3x is sustained until expiry. Schedule a single timeout for when the
     // arming window closes so the chip disappears at the right moment —
     // beats polling every 250ms which was forcing constant HUD re-renders
     // (and via the parent, GameBoard re-renders) on mobile.
