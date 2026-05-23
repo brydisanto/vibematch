@@ -20,10 +20,22 @@ interface GameHUDProps {
 }
 const TOTAL_MOVES = 30;
 
+// Cache an Intl.NumberFormat instance at module scope. `value.toLocaleString()`
+// implicitly constructs a fresh formatter every call, which is non-trivial
+// on mobile especially when fired multiple times per render (HUD score,
+// personal best, global best). Reusing a single formatter eliminates the
+// constructor cost across every digit update.
+const numberFormatter = typeof Intl !== "undefined"
+    ? new Intl.NumberFormat()
+    : null;
+function formatNumber(value: number): string {
+    return numberFormatter ? numberFormatter.format(value) : String(value);
+}
+
 // Utility to format scores with a stylized low-hanging comma
 const formatScoreWithCommas = (value: number) => {
     if (value <= 0) return "—";
-    return value.toLocaleString();
+    return formatNumber(value);
 };
 
 /* ===== Card wrapper — enamel pin style ===== */
@@ -284,11 +296,11 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             <div className="flex gap-1.5 px-1 py-1">
                 <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[75px] sm:min-h-[90px] px-1 sm:p-2">
                     <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">YOUR BEST</div>
-                    <div className="font-display text-2xl font-black text-[#FFE048]" style={{ textShadow: "0 0 12px rgba(255,224,72,0.3)" }}>{personalBest > 0 ? personalBest.toLocaleString() : '—'}</div>
+                    <div className="font-display text-2xl font-black text-[#FFE048]" style={{ textShadow: "0 0 12px rgba(255,224,72,0.3)" }}>{personalBest > 0 ? formatNumber(personalBest) : '—'}</div>
                 </HudCard>
                 <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[75px] sm:min-h-[90px] px-1 sm:p-2">
                     <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">GLOBAL BEST</div>
-                    <div className="font-display text-2xl font-black text-[#C48CFF]" style={{ textShadow: "0 0 12px rgba(196,140,255,0.3)" }}>{globalBest > 0 ? globalBest.toLocaleString() : '—'}</div>
+                    <div className="font-display text-2xl font-black text-[#C48CFF]" style={{ textShadow: "0 0 12px rgba(196,140,255,0.3)" }}>{globalBest > 0 ? formatNumber(globalBest) : '—'}</div>
                 </HudCard>
             </div>
         );
@@ -350,7 +362,7 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                     className={scoreBumping ? "hud-score-flash" : ""}
                                     style={{ display: "inline-block" }}
                                 >
-                                    {displayedScore.toLocaleString()}
+                                    {formatNumber(displayedScore)}
                                 </span>
                             </div>
                         </HudCard>

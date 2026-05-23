@@ -3,7 +3,7 @@
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect } from "@/lib/useGame";
-import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 const EMPTY_HINT_SET = new Set<string>();
@@ -863,7 +863,7 @@ function HotStreakParticles({ combo }: { combo: number }) {
 }
 
 /* ===== MAIN BOARD COMPONENT ===== */
-export default function GameBoard({
+function GameBoardImpl({
     board,
     selectedTile,
     onTileClick,
@@ -1235,6 +1235,46 @@ export default function GameBoard({
         </div>
     );
 }
+
+/**
+ * React.memo on GameBoard with a custom comparison.
+ *
+ * GameBoard is the most expensive component in the tree — 64 tiles plus
+ * effect overlays. AppClient re-renders frequently (HUD ticker, score
+ * tween, modal toggles), and each AppClient render previously re-rendered
+ * GameBoard even when none of its visual inputs changed.
+ *
+ * Default shallow compare wouldn't help much because the callback props
+ * (`onTileClick`, `onSwipe`) come from useGame, which re-creates them on
+ * every state change. We deliberately exclude function props from the
+ * compare — their *identity* changes constantly, but their *behavior*
+ * doesn't (they all read fresh state from a closure). If a different
+ * caller someday passes a logically-different callback, they should also
+ * pass a different `board` / `selectedTile` / etc., which we DO compare.
+ *
+ * Visual props are compared by reference (board, scorePopups, matchEffect,
+ * etc. are all replaced wholesale on relevant state changes, so reference
+ * comparison is correct and fast).
+ */
+const GameBoard = memo(GameBoardImpl, (prev, next) => {
+    return (
+        prev.board === next.board &&
+        prev.selectedTile === next.selectedTile &&
+        prev.scorePopups === next.scorePopups &&
+        prev.isAnimating === next.isAnimating &&
+        prev.matchEffect === next.matchEffect &&
+        prev.combo === next.combo &&
+        prev.score === next.score &&
+        prev.isDealing === next.isDealing &&
+        prev.hintCells === next.hintCells &&
+        prev.invalidSwapCells === next.invalidSwapCells &&
+        prev.swapAnim === next.swapAnim &&
+        prev.isPrizeGame === next.isPrizeGame
+        // onTileClick / onSwipe intentionally excluded — see component doc.
+    );
+});
+
+export default GameBoard;
 
 /* ===== SCORE FLY POPUP =====
  *
