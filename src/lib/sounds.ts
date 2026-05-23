@@ -241,8 +241,20 @@ let savedTrackBeforeFrenzy: number | null = null;
 function applyPlaybackRate(rate: number) {
     if (!bgmAudio) return;
     try {
-        // preservesPitch keeps the track musical instead of pitched up.
-        // Some Safari builds spell it differently — set both.
+        if (rate === 1.0) {
+            // Reset to native playback: turn OFF preservesPitch so mobile
+            // Safari doesn't keep the time-stretch filter alive in the
+            // background. Setting preservesPitch=true triggers a continuous
+            // audio-processing filter on mobile that competes with the main
+            // thread even when the rate is technically 1.0 — that was the
+            // observed source of Frenzy-mode sluggishness.
+            (bgmAudio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
+            bgmAudio.playbackRate = 1.0;
+            return;
+        }
+        // Non-1.0 rate: preservesPitch keeps the track musical instead of
+        // pitched up. We pay the time-stretch perf cost only when we
+        // actually need it (frenzy bands 2 + 3).
         (bgmAudio as HTMLAudioElement & { preservesPitch?: boolean; mozPreservesPitch?: boolean; webkitPreservesPitch?: boolean }).preservesPitch = true;
         bgmAudio.playbackRate = rate;
     } catch {
@@ -256,9 +268,14 @@ export function startFrenzyBGM() {
     bgmShouldPlay = true;
     if (bgmAudio) stopMP3();
     startMP3();
-    // The audio element needs a beat to load before we can set
-    // playbackRate reliably. 120ms covers Safari + Chrome reliably.
-    setTimeout(() => applyPlaybackRate(FRENZY_BASE_RATE), 120);
+    // No preemptive applyPlaybackRate(1.0) here. The audio element's
+    // default rate is already 1.0 with preservesPitch=false (cheap), so
+    // explicitly setting it at start just enables the time-stretch
+    // filter for the first 30s of the round at no benefit. Mobile
+    // Safari users perceived this as Frenzy "feeling sluggish" vs
+    // classic. setFrenzyTempo() below will apply a non-1.0 rate (and
+    // enable preservesPitch) once we hit the first band crossing at
+    // 30s remaining.
 }
 
 /** Set the Frenzy playback rate based on remaining ms. Three discrete
