@@ -88,10 +88,16 @@ function HudCard({
  * window. Was 2x + one-shot — bumped to 3x + sustained so rapid
  * chain-play actually rewards Frenzy players at a Classic-comparable
  * scale. */
-function HeatChip() {
+function HeatChip({ floating = false }: { floating?: boolean }) {
+    // floating=true: chip is positioned absolutely by its parent (mobile),
+    // so we drop the `mt-1` margin and enforce whitespace-nowrap so it
+    // renders as a clean horizontal pill instead of wrapping to two lines
+    // when the parent has no width constraint.
+    // floating=false: chip sits in the flow as a sibling of the score
+    // (desktop), keeps its `mt-1` separator.
     return (
         <div
-            className="mt-1 px-2 py-0.5 rounded-full text-[10px] font-display font-black tracking-wider uppercase select-none pointer-events-none hud-heat-pulse"
+            className={`${floating ? "" : "mt-1"} px-2 py-0.5 rounded-full text-[10px] font-display font-black tracking-wider uppercase select-none pointer-events-none whitespace-nowrap hud-heat-pulse`}
             style={{
                 color: "#0a0015",
                 background: "linear-gradient(135deg, #FFE048 0%, #FF8C00 100%)",
@@ -432,8 +438,8 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                             </div>
                         </HudCard>
                         {heatActive && (
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                                <HeatChip />
+                            <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                                <HeatChip floating />
                             </div>
                         )}
                     </div>
