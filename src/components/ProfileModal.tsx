@@ -7,10 +7,6 @@ import dynamic from "next/dynamic";
 import { X, Upload, Save, Volume2, VolumeX, Music, ChevronLeft, ChevronRight, Copy, Check, Link, Wallet, Mail } from "lucide-react";
 import { isMuted, toggleMute, BGM_TRACK_NAMES, getCurrentTrackIndex, selectBGMTrack, startBGM } from "@/lib/sounds";
 
-const WalletProvider = dynamic(
-    () => import("@/components/WalletProvider").then(m => m.WalletProvider),
-    { ssr: false }
-);
 const WalletTracker = dynamic(
     () => import("@/components/WalletTracker"),
     { ssr: false }
@@ -394,12 +390,16 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                                 <Wallet size={13} className="text-[#FFE048]" />
                                 <span className="text-[10px] font-bold text-[#FFE048] uppercase tracking-wider">Wallet</span>
                             </div>
-                            <WalletProvider>
-                                <WalletTracker />
-                                <div className="flex justify-center">
-                                    <RainbowConnectButton />
-                                </div>
-                            </WalletProvider>
+                            {/* WalletProvider lives at the AppClient root so
+                                the wagmi context survives modal open/close
+                                cycles. Previously a new provider mounted per
+                                modal — each one re-hydrated and the user saw
+                                "disconnected" every time they reopened this
+                                modal. */}
+                            <WalletTracker />
+                            <div className="flex justify-center">
+                                <RainbowConnectButton />
+                            </div>
                             <p className="text-white/25 text-[9px] font-mundial mt-2 text-center">
                                 Link your wallet to be eligible for onchain prizes.
                             </p>

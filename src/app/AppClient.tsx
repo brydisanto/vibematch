@@ -656,7 +656,16 @@ export default function AppClient() {
   const combo = game.state?.combo ?? 0;
 
   return (
-    <main className="min-h-screen bg-[#050505] relative">
+    // Hoisted to root so wallet state persists across modal opens.
+    // Each per-modal WalletProvider used to spin up its own WagmiProvider
+    // context that died when the modal closed — players saw "disconnected"
+    // every time they reopened ProfileModal even though their wallet was
+    // still authorized. With a single provider at root, the wagmi state
+    // lives for the whole session and all wallet-aware children
+    // (ProfileModal, RerollModal, PrizeShopDrawer, VibestrHolderProbe)
+    // share it.
+    <WalletProvider>
+      <main className="min-h-screen bg-[#050505] relative">
 
       {view === "playing" && <FlameBackground />}
       <AnimatePresence mode="wait">
@@ -1241,30 +1250,26 @@ export default function AppClient() {
       )}
 
 
-      {/* Reroll Modal */}
+      {/* Reroll Modal — wallet context comes from the root WalletProvider */}
       {showReroll && (
-        <WalletProvider>
-          <RerollModal
-            isOpen={showReroll}
-            onClose={() => setShowReroll(false)}
-            pins={pinBook.state.pins}
-            onSuccess={() => pinBook.load()}
-          />
-        </WalletProvider>
+        <RerollModal
+          isOpen={showReroll}
+          onClose={() => setShowReroll(false)}
+          pins={pinBook.state.pins}
+          onSuccess={() => pinBook.load()}
+        />
       )}
 
-      {/* Buy Prize Games Modal — only mount when open (keeps wallet context scoped) */}
+      {/* Buy Prize Games Modal — wallet context comes from root */}
       {showBuyPrizeGames && (
-        <WalletProvider>
-          <BuyPrizeGamesModal
-            isOpen={showBuyPrizeGames}
-            onClose={() => setShowBuyPrizeGames(false)}
-            currentBonus={pinBook.state.bonusPrizeGames}
-            onSuccess={(newBonusTotal) => {
-              pinBook.setBonusPrizeGames(newBonusTotal);
-            }}
-          />
-        </WalletProvider>
+        <BuyPrizeGamesModal
+          isOpen={showBuyPrizeGames}
+          onClose={() => setShowBuyPrizeGames(false)}
+          currentBonus={pinBook.state.bonusPrizeGames}
+          onSuccess={(newBonusTotal) => {
+            pinBook.setBonusPrizeGames(newBonusTotal);
+          }}
+        />
       )}
 
       {/* First-time prize games onboarding (running-low or capped variants) */}
@@ -1404,6 +1409,7 @@ export default function AppClient() {
           />
         )}
       </AnimatePresence>
-    </main >
+      </main >
+    </WalletProvider>
   );
 }
