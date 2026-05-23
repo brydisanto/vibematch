@@ -15,7 +15,11 @@ import {
 } from '@/lib/promo-badges';
 import { frenzyCapsulesForScore } from '@/lib/gameEngine';
 
-const FRENZY_CAPSULE_SCORE_THRESHOLD = 30000;
+// Matches Classic's 15k threshold (CAPSULE_SCORE_THRESHOLD) so the
+// first-capsule bar is the same in both modes — previously 30k for
+// Frenzy was too aggressive given the time-pressure structurally caps
+// big-cascade plays. See frenzyCapsulesForScore in gameEngine.
+const FRENZY_CAPSULE_SCORE_THRESHOLD = 15000;
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base
