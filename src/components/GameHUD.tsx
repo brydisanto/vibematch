@@ -409,25 +409,34 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {/* Mobile metrics row (top HUD on mobile) */}
             {hideHighScores && (
                 <div className="flex gap-1.5 w-full px-1">
-                    {/* Score */}
-                    <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
-                        <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
-                        <div
-                            className={`font-display text-3xl font-black leading-none text-center ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
-                            style={isFrenzy
-                                ? { color: "#FFE048", textShadow: "0 2px 0 #8b6b15, 0 3px 4px rgba(0,0,0,0.5)" }
-                                : { color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
-                        >
-                            <span
-                                data-hud-score-target
-                                className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
-                                style={{ display: "inline-block" }}
+                    {/* Score — HeatChip is wrapped in a relative div so it
+                        can float outside the overflow-hidden HudCard
+                        without expanding the card height (which would
+                        push the board down on mobile). */}
+                    <div className="relative flex-1 flex">
+                        <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">SCORE</div>
+                            <div
+                                className={`font-display text-3xl font-black leading-none text-center ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
+                                style={isFrenzy
+                                    ? { color: "#FFE048", textShadow: "0 2px 0 #8b6b15, 0 3px 4px rgba(0,0,0,0.5)" }
+                                    : { color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15, 0 0 15px rgba(255, 224, 72, 0.4)" }}
                             >
-                                {displayedScore.toLocaleString()}
-                            </span>
-                        </div>
-                        {heatActive && <HeatChip />}
-                    </HudCard>
+                                <span
+                                    data-hud-score-target
+                                    className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
+                                    style={{ display: "inline-block" }}
+                                >
+                                    {displayedScore.toLocaleString()}
+                                </span>
+                            </div>
+                        </HudCard>
+                        {heatActive && (
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                                <HeatChip />
+                            </div>
+                        )}
+                    </div>
                     {/* Moves / Frenzy Timer */}
                     <div className="relative flex-1">
                         {!isFrenzy && movesLeft <= 3 && (
