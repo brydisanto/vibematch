@@ -390,7 +390,13 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     }
 
     return (
-        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-hidden">
+        // overflow-visible on mobile so the absolutely-positioned HEAT chip
+        // (which floats just below the SCORE card) isn't clipped by the
+        // wrapper's bottom edge. Desktop keeps overflow-hidden because the
+        // chip is rendered in-flow inside its HudCard there, and the wrapper
+        // contains stacked cards that benefit from the clip during bump
+        // animations.
+        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-visible lg:overflow-hidden">
 
             {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
