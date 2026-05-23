@@ -2004,7 +2004,7 @@ function Frenzy() {
                 id="frenzy"
                 tag="60 seconds, max chaos"
                 title="Pin Drop Frenzy"
-                sub="A pure speed mode. The clock starts the moment you make your first match. Match as fast as you can, chain combos to bank time, and ride the TURBO multiplier when you get on a roll. There's no move limit. The only thing that ends the run is the timer hitting zero."
+                sub="Frenzy is all about speed and momentum. The clock starts the moment you make your first match. Match as fast as you can, chain combos to bank time, and ride TURBO multipliers when you get on a roll. There's no move limit. The only thing that ends the run is the timer hitting zero."
             />
 
             {/* Core mechanics — four pillar cards */}
@@ -2015,16 +2015,16 @@ function Frenzy() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>60-Second Clock</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        You start with 60 seconds. The clock doesn't tick until your first valid match — board-load latency doesn't steal time. Final 10 seconds, the audio kicks into a hectic tempo and the timer turns red.
+                        You start with 60 seconds. The clock doesn&apos;t start until your first valid match.
                     </p>
                 </Card>
                 <Card accent={GOLD}>
                     <div className="flex items-center gap-2 mb-2">
                         <TrendingUp size={18} style={{ color: GOLD }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Big Matches Buy Time</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Big Matches Add Time</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed mb-2" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Every match resolution can refund seconds onto the clock. Clock caps at 2:30 so a god run doesn't snowball forever.
+                        Big combos, cascades, and power tiles add time back onto the clock.
                     </p>
                     <ul className="font-mundial text-[13px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.9)" }}>
                         <li className="mb-1"><strong style={{ color: GOLD }}>4-match:</strong> +1 second</li>
@@ -2039,16 +2039,30 @@ function Frenzy() {
                         <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>TURBO 3x</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Three matches within five seconds of each other arms TURBO — every match scores 3x for the next 5 seconds. The chip pulses orange under the SCORE card while it's live. Stay on the gas and the bonus stacks across the window.
+                        Three quick matches within five seconds of each other takes you{" "}
+                        <strong
+                            style={{
+                                background: `linear-gradient(135deg, ${GOLD} 0%, ${ORANGE} 100%)`,
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                fontWeight: 900,
+                                letterSpacing: "0.05em",
+                                textShadow: "none",
+                            }}
+                        >
+                            TURBO!
+                        </strong>{" "}
+                        Every match while TURBO scores 3x (it lasts 5 seconds).
                     </p>
                 </Card>
                 <Card accent={"#EF4444"}>
                     <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle size={18} style={{ color: "#EF4444" }} />
-                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Invalid Swap Penalty</h3>
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Penalties</h3>
                     </div>
                     <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-                        Tap two tiles that don't form a match and you lose <strong style={{ color: "#EF4444" }}>1 second</strong> off the clock — plus a red board flash and a sting sound. Sloppy tapping is real cost in Frenzy. Pause, scan, then swap.
+                        If you tap two tiles that don&apos;t form a match, you get hit with a beep and lose <strong style={{ color: "#EF4444" }}>1 second</strong> off the clock. Move fast, but precisely.
                     </p>
                 </Card>
             </div>
@@ -2064,13 +2078,13 @@ function Frenzy() {
             >
                 <Flame size={56} style={{ color: ORANGE, margin: "0 auto", display: "block", filter: `drop-shadow(0 0 20px ${ORANGE}aa)` }} />
                 <div className="font-display font-black uppercase text-[11px] tracking-[0.35em] mt-4" style={{ color: ORANGE, opacity: 0.95 }}>
-                    Frenzy Capsule Ladder
+                    Frenzy Mode Capsules
                 </div>
                 <div
                     className="font-display font-black leading-none mt-3"
                     style={{ fontSize: 36, color: ORANGE, textShadow: `0 3px 0 rgba(0,0,0,0.55), 0 0 24px ${ORANGE}66` }}
                 >
-                    SCORE TO EARN
+                    SCORE BIG TO WIN
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-6 max-w-[520px] mx-auto">
                     {[
@@ -2096,7 +2110,7 @@ function Frenzy() {
                     ))}
                 </div>
                 <p className="font-mundial text-[13px] mt-5 max-w-[480px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
-                    Capsules pay out on the score you finish with. Hit a higher tier and you get that tier's count — the tiers don't stack.
+                    Just like in Classic mode, you can win capsules based on score threshold hit. Frenzy mode pulls from the same bank of daily plays. Choose your own adventure.
                 </p>
             </div>
         </section>
