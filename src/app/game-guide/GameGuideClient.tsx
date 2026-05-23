@@ -2027,8 +2027,7 @@ function Frenzy() {
                         Long matches, big combos, and power tiles add time back onto the clock.
                     </p>
                     <ul className="font-mundial text-[13px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.9)" }}>
-                        <li className="mb-1"><strong style={{ color: GOLD }}>4-match:</strong> +1 second</li>
-                        <li className="mb-1"><strong style={{ color: GOLD }}>5+ match or power tile:</strong> +2 seconds</li>
+                        <li className="mb-1"><strong style={{ color: GOLD }}>4+ match or power tile:</strong> +2 seconds</li>
                         <li className="mb-1"><strong style={{ color: GOLD }}>Combo peak 4+:</strong> +2 seconds</li>
                         <li><strong style={{ color: GOLD }}>Combo peak 6+:</strong> +5 seconds</li>
                     </ul>
