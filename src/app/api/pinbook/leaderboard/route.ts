@@ -24,6 +24,11 @@ export interface LeaderboardEntry {
     totalPins: number;
     percentComplete: number;
     pinScore: number;
+    /** Unix ms timestamp of the first time this user's pinbook hit
+     *  uniqueCount === TOTAL_BADGES. Once set, never updated, so the
+     *  tie-breaker among 100%-completers is stable. Null for users
+     *  who haven't (yet) completed. */
+    completedAt?: number | null;
 }
 
 // Composite score for sorted set ranking.
@@ -57,14 +62,27 @@ export function computeUserEntry(
 }
 
 // Atomic update: zadd (sorted set) + set (per-user entry). No shared mutable state.
+// Read-then-write is safe here because collect actions are serialized
+// per-user by withUserLock in /api/pinbook — no two concurrent writers
+// for the same member.
 export async function updateLeaderboardEntry(entry: LeaderboardEntry): Promise<void> {
     const score = compositeScore(entry);
     const member = entry.username.toLowerCase();
     const entryKey = `${ENTRY_PREFIX}${member}`;
 
+    // Stamp completedAt the first time we see uniqueCount hit TOTAL_BADGES.
+    // Subsequent updates (e.g. more dupes) preserve the original timestamp
+    // so the tie-breaker among 100%-completers stays stable.
+    let completedAt: number | null = entry.completedAt ?? null;
+    if (entry.uniqueCount >= TOTAL_BADGES) {
+        const existing = await kv.get(entryKey) as LeaderboardEntry | null;
+        completedAt = existing?.completedAt ?? Date.now();
+    }
+    const finalEntry: LeaderboardEntry = { ...entry, completedAt };
+
     await Promise.all([
         kv.zadd(RANK_KEY, { score, member }),
-        kv.set(entryKey, entry),
+        kv.set(entryKey, finalEntry),
     ]);
 }
 
@@ -105,6 +123,24 @@ export async function GET() {
                 lb.push({ ...entry, avatarUrl: '' });
             }
         }
+
+        // Final sort: re-rank in JS so completedAt can break ties among
+        // 100%-completers. The KV sorted set ranks by compositeScore (which
+        // still factors pinScore/dupes), but at 100% the user-facing rule
+        // is "first to complete wins" — dupes shouldn't move you above
+        // someone who finished earlier.
+        // Order: percentComplete desc → completedAt asc (earlier wins,
+        // nulls = never-completed go last) → pinScore desc → uniqueCount
+        // desc → totalPins desc.
+        lb.sort((a, b) => {
+            if (a.percentComplete !== b.percentComplete) return b.percentComplete - a.percentComplete;
+            const aTime = a.completedAt ?? Number.POSITIVE_INFINITY;
+            const bTime = b.completedAt ?? Number.POSITIVE_INFINITY;
+            if (aTime !== bTime) return aTime - bTime;
+            if (a.pinScore !== b.pinScore) return b.pinScore - a.pinScore;
+            if (a.uniqueCount !== b.uniqueCount) return b.uniqueCount - a.uniqueCount;
+            return b.totalPins - a.totalPins;
+        });
 
         return NextResponse.json(
             { leaderboard: lb, totalPlayers: lb.length, currentUsername },
@@ -194,12 +230,30 @@ export async function POST(req: Request) {
             const username = profile?.username || uname;
             const avatarUrl = profile?.avatarUrl || '';
             const entry = computeUserEntry(username, avatarUrl, data.pins);
-            const score = compositeScore(entry);
+
+            // Estimate completedAt for legacy 100%-ers from existing pin
+            // metadata. The pin with the latest firstEarned timestamp is
+            // (by definition) the one that pushed the player to 100%.
+            // For everyone else, leave completedAt null. New collects
+            // going forward stamp Date.now() in updateLeaderboardEntry.
+            let completedAt: number | null = null;
+            if (entry.uniqueCount >= TOTAL_BADGES) {
+                let latestMs = 0;
+                for (const p of Object.values(data.pins) as Array<{ firstEarned?: string }>) {
+                    if (!p?.firstEarned) continue;
+                    const ms = Date.parse(p.firstEarned);
+                    if (Number.isFinite(ms) && ms > latestMs) latestMs = ms;
+                }
+                completedAt = latestMs > 0 ? latestMs : Date.now();
+            }
+            const finalEntry: LeaderboardEntry = { ...entry, completedAt };
+
+            const score = compositeScore(finalEntry);
             const member = username.toLowerCase();
 
             await kv.zadd(RANK_KEY, { score, member });
-            await kv.set(`${ENTRY_PREFIX}${member}`, entry);
-            rebuilt.push(`${username}: ${entry.uniqueCount} pins, score ${entry.pinScore}`);
+            await kv.set(`${ENTRY_PREFIX}${member}`, finalEntry);
+            rebuilt.push(`${username}: ${entry.uniqueCount} pins, score ${entry.pinScore}${completedAt ? `, completed ${new Date(completedAt).toISOString().slice(0, 10)}` : ''}`);
             count++;
         }
 
