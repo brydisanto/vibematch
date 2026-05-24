@@ -12,6 +12,7 @@ import {
     type PlayerContext,
     type QuestProgress,
 } from "@/lib/achievements";
+import CapsuleIcon from "./CapsuleIcon";
 
 const ACHIEVEMENT_BADGE = "/badges/any_gvc_1759173799963.webp";
 
@@ -284,8 +285,8 @@ function AchievementCard({
                         <span className="text-[#FFE048] text-sm">✓</span>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1">
-                        <span className="text-xs">💊</span>
+                    <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-2 py-1">
+                        <CapsuleIcon size={12} />
                         <span className="text-[#FFE048]/70 text-[11px] font-bold">×{achievement.capsules}</span>
                     </div>
                 )}
