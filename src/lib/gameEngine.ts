@@ -693,8 +693,17 @@ export function processTurn(
     const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [];
     let cascadeCount = 0;
 
-    // Detect geometric shapes from initial matches
-    const shapeBonus = detectShapes(initialMatches);
+    // Geometric shape bonus — picks the BEST shape (cross > T > L by
+    // multiplier) across every cascade iteration, not just the initial
+    // post-swap matches. Cascade-formed shapes were previously invisible
+    // here, which made Cross That Off / Shape Trifecta effectively
+    // unachievable: forming a true cross from a direct swap requires
+    // the swap to be the center of an already-near-complete + pattern,
+    // which is vanishingly rare. Most crosses players actually see on
+    // the board form when gravity drops cosmics into a + arrangement
+    // mid-cascade — counting those gives the shape system its
+    // intended hit rate.
+    let shapeBonus: ShapeBonus = null;
 
     // Track which positions have pending specials (prevents overwrites)
     const pendingSpecials = new Map<string, SpecialTileType>();
@@ -704,6 +713,15 @@ export function processTurn(
     let matches = initialMatches;
     while (matches.length > 0 && cascadeCount < MAX_CASCADES) {
         totalMatches = [...totalMatches, ...matches];
+
+        // Detect shapes on THIS iteration's matches. Keep the best across
+        // the whole turn — players get the highest-tier shape they
+        // happen to form, regardless of whether it was the direct swap
+        // or a refill cascade.
+        const iterShape = detectShapes(matches);
+        if (iterShape && (!shapeBonus || iterShape.multiplier > shapeBonus.multiplier)) {
+            shapeBonus = iterShape;
+        }
 
         // Determine which specials to create from this iteration's matches.
         // Store them by a stable cell ID so they survive gravity shifts.
