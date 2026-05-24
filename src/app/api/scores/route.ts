@@ -176,36 +176,12 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Score does not match logged game state' }, { status: 400 });
             }
 
-            // Prize eligibility gate: classic matches played outside the
-            // daily prize cap (or invalidated by the abandoned-match rule)
-            // are "extra plays". They still get a response for the client
-            // to display a score, but they don't write to the all-time or
-            // weekly leaderboards — extras aren't allowed to influence
-            // rankings, matching how they're already blocked from
-            // awarding capsules.
-            let leaderboardSkipped = false;
-            let skipReason: string | null = null;
-            {
-                const matchKey = `pinbook:${username.toLowerCase()}:match:${matchId}`;
-                const match = await kv.get(matchKey) as { username?: string; prizeEligible?: boolean; abandonedPrevious?: boolean } | null;
-                if (match && match.username === username.toLowerCase() && match.prizeEligible === false) {
-                    leaderboardSkipped = true;
-                    skipReason = match.abandonedPrevious ? 'previous-match-abandoned' : 'daily-cap-exceeded';
-                }
-            }
-
-            if (leaderboardSkipped) {
-                // Still bump the matches-played counter for admin visibility,
-                // but never touch the leaderboard zsets.
-                await kv.hincrby('classic_matches_played', canonicalUsername.toLowerCase(), 1);
-                return NextResponse.json({
-                    success: true,
-                    isNewBest: false,
-                    isNewAllTimeHigh: false,
-                    leaderboardSkipped: true,
-                    skipReason,
-                });
-            }
+            // Note: the prizeEligible gate that previously caused this route
+            // to return `leaderboardSkipped: true` was removed when
+            // abandon-detection was retired in 9a4409f7. See the matching
+            // comments in /api/pinbook (earn/bonus actions) for the full
+            // rationale. The daily-cap-exhausted case can't trigger here
+            // because trackGame returns 429 before creating a token at cap.
 
             // Pipeline: fetch current scores in a single round trip
             const readPipe = kv.pipeline();

@@ -586,17 +586,15 @@ export async function POST(req: Request) {
                 if (match.earnedCapsule) {
                     return NextResponse.json({ error: 'Capsule already claimed for this match' }, { status: 400 });
                 }
-                if (!match.prizeEligible) {
-                    // Disambiguate: the match is ineligible either because
-                    // the daily classic cap was exhausted when it was
-                    // created, OR because it followed an unfinished match
-                    // within the 5-minute abandon window. The client
-                    // surfaces different copy for each.
-                    if (match.abandonedPrevious) {
-                        return NextResponse.json({ earned: false, reason: 'Previous match was abandoned', abandonedPrevious: true });
-                    }
-                    return NextResponse.json({ earned: false, reason: 'Daily play cap reached', capped: true });
-                }
+                // Note: the `!match.prizeEligible` reject was removed when
+                // abandon-detection was retired in 9a4409f7. The only
+                // remaining path that wrote prizeEligible=false was the
+                // abandoned-previous penalty (now gone), so this check
+                // would only fire for legacy in-flight tokens from before
+                // the deploy — and penalizing those users is the same
+                // false-positive the retirement was meant to fix. The
+                // daily-cap-exhausted case can't trigger here because
+                // trackGame returns 429 before creating a token at cap.
                 // Atomically mark the match as claimed
                 await kv.set(matchKey, { ...match, earnedCapsule: true }, { ex: 60 * 60 * 2 });
                 data.capsules += capsuleCount;
@@ -646,12 +644,9 @@ export async function POST(req: Request) {
                 if (match.earnedBonus) {
                     return NextResponse.json({ error: 'Bonus already claimed for this match' }, { status: 400 });
                 }
-                if (!match.prizeEligible) {
-                    if (match.abandonedPrevious) {
-                        return NextResponse.json({ earned: false, reason: 'Previous match was abandoned', abandonedPrevious: true });
-                    }
-                    return NextResponse.json({ earned: false, reason: 'Daily play cap reached', capped: true });
-                }
+                // Note: the `!match.prizeEligible` reject was removed when
+                // abandon-detection was retired in 9a4409f7. See the matching
+                // comment in the `earn` action above for the full rationale.
                 await kv.set(matchKey, { ...match, earnedBonus: true }, { ex: 60 * 60 * 2 });
                 data.capsules += 1;
                 data.totalEarned += 1;
