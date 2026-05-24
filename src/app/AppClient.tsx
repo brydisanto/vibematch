@@ -545,6 +545,10 @@ export default function AppClient() {
     // Issue match token at game START. For daily, the server atomically sets
     // the daily_played marker here — if it's already set (e.g. user refreshed
     // mid-daily), the server rejects and we route back to landing.
+    // Server also issues a deterministic seed for Classic + Frenzy (Phase 3
+    // replay verification); we capture it and thread it into startGame so the
+    // client renders the same board the server will replay against.
+    let serverSeed: number | undefined;
     if (username) {
       const result = await pinBook.trackGame(mode);
       if (!result.ok) {
@@ -560,6 +564,7 @@ export default function AppClient() {
         }
         return;
       }
+      serverSeed = result.seed;
     }
 
     // Reset per-game FTUE UI state
@@ -573,7 +578,7 @@ export default function AppClient() {
     // the images finish loading a beat later.
     setCapsuleEarned(false);
     gameSessionStats.current = { bombsCreated: 0, vibestreaksCreated: 0, cosmicBlastsCreated: 0, crossCount: 0, shapesLanded: [] };
-    await game.startGame(mode);
+    await game.startGame(mode, { seed: serverSeed });
     setIsDealing(true);
     setView("playing");
     startBGM();
@@ -616,6 +621,7 @@ export default function AppClient() {
     // Only classic supports "play again" — daily is one per day. If we're here
     // for a classic game, issue a fresh match token at the new game's start.
     const mode = game.state?.gameMode;
+    let playAgainSeed: number | undefined;
     if (mode === 'classic' && userProfile?.username) {
       // CRITICAL: wait for the prior game's end flow (logGame + earnCapsule +
       // achievements) to finish before issuing a new trackGame. Otherwise the
@@ -638,12 +644,13 @@ export default function AppClient() {
         toast.error("Could not start game. Try again.");
         return;
       }
+      playAgainSeed = result.seed;
     }
     // Reset per-game FTUE UI so hints / modals can still fire on future games
     setFtueHint(null);
     setFtuePostGame(null);
     // Await so badge images preload before dealing animation fires.
-    await game.resetGame();
+    await game.resetGame({ seed: playAgainSeed });
     setIsDealing(true);
   };
 

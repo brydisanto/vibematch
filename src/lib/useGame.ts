@@ -85,9 +85,9 @@ export interface UseGameReturn {
     /** Resolves once the initial board state has been set so callers can
      *  defer the view switch and avoid flashing an empty grid while
      *  badge images preload. */
-    startGame: (mode: GameMode) => Promise<void>;
-    startGameWithBadges: (mode: GameMode, badges: Badge[]) => Promise<void>;
-    resetGame: () => Promise<void>;
+    startGame: (mode: GameMode, opts?: { seed?: number }) => Promise<void>;
+    startGameWithBadges: (mode: GameMode, badges: Badge[], opts?: { seed?: number }) => Promise<void>;
+    resetGame: (opts?: { seed?: number }) => Promise<void>;
 }
 
 function getIntensity(score: number, combo: number, maxMatchSize: number): MatchIntensity {
@@ -175,22 +175,34 @@ export function useGame(): UseGameReturn {
         playGameStartSound();
     }, [resetHintTimer]);
 
-    const startGame = useCallback(async (mode: GameMode) => {
-        const initialState = createInitialState(mode);
+    const startGame = useCallback(async (mode: GameMode, opts?: { seed?: number }) => {
+        // Server-issued seed (Phase 3 replay): when present, createInitialState
+        // uses it instead of generating a fresh client-side RNG. This is the
+        // only way the server can deterministically reconstruct the same
+        // board layout + initial badge draw at score-validation time.
+        // Falls back to current behavior when seed is undefined (e.g.,
+        // legacy servers, Daily mode which derives its seed from the date).
+        const initialState = createInitialState(mode, undefined, opts?.seed);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
     }, [preloadBadgeImages, applyStartState]);
 
-    const startGameWithBadges = useCallback(async (mode: GameMode, badges: Badge[]) => {
-        const initialState = createInitialState(mode, badges);
+    const startGameWithBadges = useCallback(async (mode: GameMode, badges: Badge[], opts?: { seed?: number }) => {
+        // Vibe Draft mode — player has already drafted the badges; passing
+        // both `badges` and `seed` lets the server replay deterministically
+        // using the same draft + same RNG stream for refills.
+        const initialState = createInitialState(mode, badges, opts?.seed);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
     }, [preloadBadgeImages, applyStartState]);
 
-    const resetGame = useCallback(async () => {
+    const resetGame = useCallback(async (opts?: { seed?: number }) => {
         hintShownThisGame.current = false;
         const mode = state?.gameMode ?? "classic";
-        const s = createInitialState(mode);
+        // Use the server-issued seed (if provided) so Play Again games can
+        // be replay-verified the same way fresh starts are. Falls back to
+        // legacy behavior when undefined.
+        const s = createInitialState(mode, undefined, opts?.seed);
         await preloadBadgeImages(s.gameBadges);
         setState(s);
         resetHintTimer(s.board);

@@ -291,7 +291,7 @@ export function usePinBook() {
         return { earned: false, reason: data?.reason, capped: data?.capped, abandonedPrevious: data?.abandonedPrevious };
     }, []);
 
-    const trackGame = useCallback(async (gameMode: string = 'classic'): Promise<{
+    const trackGame = useCallback(async (gameMode: string = 'classic', draftedBadgeIds?: string[]): Promise<{
         ok: boolean;
         error?: string;
         outOfPlays?: boolean;
@@ -299,6 +299,14 @@ export function usePinBook() {
         cap?: number;
         baseCap?: number;
         bonusPrizeGames?: number;
+        /** Server-issued seed for Classic / Frenzy matches. Undefined
+         *  for Daily (where the server expects the client to use
+         *  getDailySeed() locally) and on legacy server responses
+         *  prior to Phase 3. Callers should pass this to
+         *  createInitialState so the server can deterministically
+         *  reconstruct the same board at replay time. */
+        seed?: number;
+        matchId?: string;
     }> => {
         try {
             const res = await fetch("/api/pinbook", {
@@ -312,6 +320,11 @@ export function usePinBook() {
                     // user really did finish their previous game, even if
                     // logGame was queued / hasn't reached the server).
                     prevFinishedMatchId: lastFinishedMatchIdRef.current,
+                    // Vibe Draft mode passes the player-selected badge
+                    // ids so the server can reconstruct the same
+                    // gameBadges array at replay time. Standard
+                    // Classic / Daily / Frenzy omit this.
+                    draftedBadgeIds,
                 }),
             });
             if (!res.ok) {
@@ -353,7 +366,11 @@ export function usePinBook() {
             } else {
                 console.warn("[usePinBook] trackGame response missing matchId:", data);
             }
-            return { ok: true };
+            return {
+                ok: true,
+                seed: typeof data.seed === 'number' ? data.seed : undefined,
+                matchId: typeof data.matchId === 'string' ? data.matchId : undefined,
+            };
         } catch (e) {
             console.error("pinbook trackGame error:", e);
             return { ok: false, error: String(e) };
