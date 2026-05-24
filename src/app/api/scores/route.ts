@@ -4,6 +4,7 @@ import { getSession, isUserBanned } from '@/lib/auth';
 import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { getEasternDailyKey } from '@/lib/daily-window';
 import { logAuditEvent } from '@/lib/audit-log';
+import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos. Bumped
@@ -49,6 +50,29 @@ function setCached(key: string, data: any, ttlMs: number = CACHE_TTL) {
 
 export async function POST(req: Request) {
     try {
+        // Anti-automation gate. Rejects requests from known CLI/agent
+        // user-agents (Codex, Claude, curl, etc.) and requests without
+        // a valid browser-issued Origin header. Audited so we can see
+        // who's bouncing off. This is friction, not a security
+        // boundary — anyone willing to spoof a UA + Origin header can
+        // still get through. See src/lib/anti-automation.ts.
+        const ua = checkAutomatedAgent(req);
+        const og = checkOrigin(req);
+        if (ua.blocked || og.blocked) {
+            const session = await getSession().catch(() => null);
+            await logAuditEvent({
+                req,
+                username: (session?.username as string) || 'anon',
+                action: 'score.rejected',
+                meta: {
+                    reason: ua.blocked ? (ua.reason || 'automated_agent') : (og.reason || 'bad_origin'),
+                    uaPattern: ua.matchedPattern || '',
+                    uaSample: ua.ua.slice(0, 120),
+                },
+            });
+            return NextResponse.json({ error: 'Browser required' }, { status: 403 });
+        }
+
         // Auth required — derive username from session, never from body
         const session = await getSession();
         if (!session?.username) {

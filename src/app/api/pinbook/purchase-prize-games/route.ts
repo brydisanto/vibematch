@@ -21,6 +21,7 @@ import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '../route';
 import { logAuditEvent } from '@/lib/audit-log';
+import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -103,6 +104,25 @@ const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 export async function POST(request: Request) {
     try {
+        // Anti-automation gate. See src/lib/anti-automation.ts.
+        const uaCheck = checkAutomatedAgent(request);
+        const ogCheck = checkOrigin(request);
+        if (uaCheck.blocked || ogCheck.blocked) {
+            const s = await getSession().catch(() => null);
+            await logAuditEvent({
+                req: request,
+                username: (s?.username as string) || 'anon',
+                action: 'score.rejected',
+                meta: {
+                    endpoint: 'purchase-prize-games',
+                    reason: uaCheck.blocked ? (uaCheck.reason || 'automated_agent') : (ogCheck.reason || 'bad_origin'),
+                    uaPattern: uaCheck.matchedPattern || '',
+                    uaSample: uaCheck.ua.slice(0, 120),
+                },
+            });
+            return NextResponse.json({ error: 'Browser required' }, { status: 403 });
+        }
+
         const session = await getSession();
         if (!session?.username) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

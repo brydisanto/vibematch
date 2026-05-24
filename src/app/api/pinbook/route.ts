@@ -14,6 +14,7 @@ import {
     promoLeaderboardKey,
 } from '@/lib/promo-badges';
 import { logAuditEvent } from '@/lib/audit-log';
+import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
 
 // Maximum plausible score for a classic game — reject forged submissions
 // above this. Bumped from 500K alongside the scoring system change (base
@@ -213,6 +214,27 @@ export async function GET() {
 // body: { action: "earn", score: number } or { action: "open" }
 export async function POST(req: Request) {
     try {
+        // Anti-automation gate. Reject obvious CLI/agent UAs and
+        // requests missing a valid browser Origin. See
+        // src/lib/anti-automation.ts. Friction, not a hard boundary.
+        const uaCheck = checkAutomatedAgent(req);
+        const ogCheck = checkOrigin(req);
+        if (uaCheck.blocked || ogCheck.blocked) {
+            const s = await getSession().catch(() => null);
+            await logAuditEvent({
+                req,
+                username: (s?.username as string) || 'anon',
+                action: 'score.rejected',
+                meta: {
+                    endpoint: 'pinbook',
+                    reason: uaCheck.blocked ? (uaCheck.reason || 'automated_agent') : (ogCheck.reason || 'bad_origin'),
+                    uaPattern: uaCheck.matchedPattern || '',
+                    uaSample: uaCheck.ua.slice(0, 120),
+                },
+            });
+            return NextResponse.json({ error: 'Browser required' }, { status: 403 });
+        }
+
         const session = await getSession();
         if (!session?.username) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

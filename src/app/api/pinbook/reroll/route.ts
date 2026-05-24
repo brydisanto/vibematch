@@ -20,6 +20,7 @@ import { BADGES, type BadgeTier } from '@/lib/badges';
 import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
 import { getMainnetClient } from '@/lib/eth-rpc';
 import { logAuditEvent } from '@/lib/audit-log';
+import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,25 @@ interface PinBookData {
 
 export async function POST(request: Request) {
     try {
+        // Anti-automation gate. See src/lib/anti-automation.ts.
+        const uaCheck = checkAutomatedAgent(request);
+        const ogCheck = checkOrigin(request);
+        if (uaCheck.blocked || ogCheck.blocked) {
+            const s = await getSession().catch(() => null);
+            await logAuditEvent({
+                req: request,
+                username: (s?.username as string) || 'anon',
+                action: 'score.rejected',
+                meta: {
+                    endpoint: 'reroll',
+                    reason: uaCheck.blocked ? (uaCheck.reason || 'automated_agent') : (ogCheck.reason || 'bad_origin'),
+                    uaPattern: uaCheck.matchedPattern || '',
+                    uaSample: uaCheck.ua.slice(0, 120),
+                },
+            });
+            return NextResponse.json({ error: 'Browser required' }, { status: 403 });
+        }
+
         const session = await getSession();
         if (!session?.username) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
