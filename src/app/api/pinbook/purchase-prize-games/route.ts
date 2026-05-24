@@ -340,6 +340,24 @@ export async function POST(request: Request) {
             console.warn('[Purchase] failed to set prizeGamePurchased flag', flagErr);
         }
 
+        // Bump lifetime bonus-game counter on the pinbook so the new
+        // "Stacked" quest (buy 10+ bonus games) has the data it needs.
+        // Best-effort — not critical path; a KV blip here doesn't roll
+        // back the purchase.
+        try {
+            const pinbookKey = `pinbook:${username}`;
+            const pinbook = (await kv.get(pinbookKey)) as Record<string, unknown> | null;
+            if (pinbook) {
+                const current = typeof pinbook.lifetimeBonusGamesPurchased === 'number'
+                    ? pinbook.lifetimeBonusGamesPurchased
+                    : 0;
+                pinbook.lifetimeBonusGamesPurchased = current + packageSize;
+                await kv.set(pinbookKey, pinbook);
+            }
+        } catch (bumpErr) {
+            console.warn('[Purchase] failed to bump lifetimeBonusGamesPurchased', bumpErr);
+        }
+
         await kv.del(lockKey);
 
         console.log(`[Purchase] SUCCESS tx=${normalizedTxHash} user=${username} wallet=${normalizedWallet} size=${packageSize} amount=${formatUnits(actualAmount, decimals)}`);

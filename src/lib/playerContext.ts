@@ -25,6 +25,13 @@ export function buildPlayerContext(
         hasVibestrWallet?: boolean;
         /** Lifetime per-tier pin-find counters from pinbook.totalFoundByTier. */
         totalFoundByTier?: Partial<Record<BadgeTier, number>>;
+        /** Lifetime reroll count from pinbook.lifetimeRerollsCompleted. */
+        lifetimeRerollsCompleted?: number;
+        /** Lifetime bonus-games-purchased count from
+         *  pinbook.lifetimeBonusGamesPurchased. */
+        lifetimeBonusGamesPurchased?: number;
+        /** Has collected any Event/promo pin. */
+        hasCollectedEventPin?: boolean;
     }
 ): PlayerContext {
     const ctx: PlayerContext = {
@@ -51,6 +58,9 @@ export function buildPlayerContext(
         hasChangedMusic: !!opts?.hasChangedMusic,
         hasPurchasedPrizeGame: !!opts?.hasPurchasedPrizeGame,
         hasVibestrWallet: !!opts?.hasVibestrWallet,
+        lifetimeRerollsCompleted: opts?.lifetimeRerollsCompleted || 0,
+        lifetimeBonusGamesPurchased: opts?.lifetimeBonusGamesPurchased || 0,
+        hasCollectedEventPin: !!opts?.hasCollectedEventPin,
     };
 
     // Per-tier held / flag counts from the pins object (unique pins).

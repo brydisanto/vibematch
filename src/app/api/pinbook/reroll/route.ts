@@ -69,6 +69,11 @@ interface PinBookData {
     capsules: number;
     totalOpened: number;
     totalEarned: number;
+    /** Lifetime reroll counter — mirrors the field on the canonical
+     *  PinBookData in ../route.ts. Bumped on each successful reroll
+     *  (by capsule count, not transaction count) so multi-capsule
+     *  rerolls progress the quest by the right amount. */
+    lifetimeRerollsCompleted?: number;
 }
 
 export async function POST(request: Request) {
@@ -322,6 +327,10 @@ export async function POST(request: Request) {
         // Grant capsules
         pinbook.capsules += totalCapsules;
         pinbook.totalEarned += totalCapsules;
+        // Reroll quest counter — bump by the number of capsules actually
+        // rerolled, not by 1 per transaction, so a 5-capsule reroll
+        // progresses Pin Wizard (50+) by 5.
+        pinbook.lifetimeRerollsCompleted = (pinbook.lifetimeRerollsCompleted || 0) + totalCapsules;
 
         await kv.set(pinbookKey, pinbook);
         await bumpDailyCounter(username, "capsulesEarned", totalCapsules);
