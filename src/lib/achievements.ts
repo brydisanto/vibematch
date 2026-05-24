@@ -549,6 +549,15 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 28.5,
     },
     {
+        id: "daily_100k",
+        category: "mastery",
+        icon: "💯",
+        title: "Daily Centennial",
+        description: "Score 100,000+ in a Daily Challenge",
+        capsules: 5,
+        order: 28.7,
+    },
+    {
         id: "daily_champ",
         category: "mastery",
         icon: "👑",
@@ -908,6 +917,7 @@ export function checkAchievements(
     check("daily_cap", context.gamesPlayedToday >= 15);
     check("daily_30k", stats.gameMode === "daily" && stats.score >= 30000);
     check("daily_50k", stats.gameMode === "daily" && stats.score >= 50000);
+    check("daily_100k", stats.gameMode === "daily" && stats.score >= 100000);
     check("refer_1", context.referralCount >= 1);
     check("refer_5", context.referralCount >= 5);
     check("refer_10", context.referralCount >= 10);
