@@ -309,41 +309,29 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Mid-game refresh penalty: if the previous match was created
-            // very recently (< 30s) and never received a logGame, treat it
-            // as a refresh-shop attempt and make the new match ineligible.
-            // Previously 5 minutes, which was way too aggressive — any
-            // genuinely-abandoned game (network drop, browser close) within
-            // 5 min wrongly nuked the next legit game's capsule. 30 seconds
-            // is tight enough to catch "reload to reroll the board" while
-            // letting mid-game crashes / home-button exits through.
+            // Abandon-detection RETIRED. Original purpose: prevent
+            // "refresh-shop" — reload the page to reroll the board for
+            // free. That was an exploit when trackGame didn't consume a
+            // play; today every trackGame increments classicPlays
+            // against the daily 10+15 pool, so each refresh is a paid
+            // play. Refresh-shopping no longer gives the attacker any
+            // advantage they couldn't have gotten by just playing all
+            // their plays (leaderboard tracks max score, capsule
+            // eligibility is per-game and gated by score threshold).
             //
-            // Client can opt out by sending prevFinishedMatchId. We respect
-            // it ONLY when it matches the activePointer (so a forged value
-            // pointing at a stale matchId doesn't unlock the bypass). A
-            // refresh-shopper's reloaded client has no memory of the prior
-            // matchId and can't construct this signal — but a legit player
-            // who finished a game whose logGame's POST landed in the retry
-            // queue can. Prevents EXTRA PLAY false-positives that started
-            // appearing after the logGame retry+queue shipped.
-            const ABANDON_WINDOW_MS = 30 * 1000;
+            // The check was generating false positives — players who
+            // legitimately backed out of a bad-luck start within 30s
+            // (chrisguyot 2026-05-24) had their next game's
+            // leaderboard rank + capsule reward burned. Net result:
+            // the protection cost more in legit user friction than
+            // the exploit it was preventing now costs the system.
+            //
+            // We keep the activePointer write below — `prevFinishedMatchId`
+            // body field still arrives from the client but is ignored
+            // server-side. Leaving the client untouched keeps the deploy
+            // backward-compatible.
             const activePointerKey = `pinbook:${username}:activeMatch`;
-            const previousMatchId = await kv.get(activePointerKey) as string | null;
-            const prevFinishedMatchId = typeof body.prevFinishedMatchId === 'string'
-                ? body.prevFinishedMatchId
-                : null;
-            const clientConfirmedFinished = !!previousMatchId && prevFinishedMatchId === previousMatchId;
-            let abandonedPrevious = false;
-            if (previousMatchId && !clientConfirmedFinished) {
-                const prevMatchKey = `pinbook:${username}:match:${previousMatchId}`;
-                const prev = await kv.get(prevMatchKey) as any;
-                if (prev && !prev.logged && Date.now() - (prev.createdAt ?? 0) < ABANDON_WINDOW_MS) {
-                    // Burn the previous match — no capsules from it retroactively.
-                    await kv.set(prevMatchKey, { ...prev, abandoned: true, prizeEligible: false }, { ex: 60 * 60 * 2 });
-                    abandonedPrevious = true;
-                    console.warn(`[trackGame] ABANDONED_PREVIOUS user=${username} prevMatchId=${previousMatchId} ageMs=${Date.now() - (prev.createdAt ?? 0)}`);
-                }
-            }
+            const abandonedPrevious = false;
 
             // Classic: enforce hard daily cap before incrementing. Every
             // run is capsule-eligible now (no more "non-prize" runs after
@@ -371,9 +359,12 @@ export async function POST(req: Request) {
             const matchId = crypto.randomUUID();
             const matchKey = `pinbook:${username}:match:${matchId}`;
             // Every run that gets past the cap check is capsule-eligible.
-            // The only thing that can still flip prizeEligible to false is
-            // the abandoned-previous-match guard (refresh-shop exploit).
-            const prizeEligible = !abandonedPrevious;
+            // `abandonedPrevious` is always false now — see the retired
+            // abandon-detection block above. Field kept on the token for
+            // backward compatibility with /api/scores' leaderboardSkipped
+            // branch, which still reads `match.prizeEligible === false`
+            // on legacy in-flight tokens written before this deploy.
+            const prizeEligible = true;
             await kv.set(matchKey, {
                 username,
                 gameMode,
