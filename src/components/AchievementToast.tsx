@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import type { AchievementUnlockEvent } from "@/lib/useAchievements";
+import CapsuleIcon from "./CapsuleIcon";
 
 const ACHIEVEMENT_BADGE = "/badges/any_gvc_1759173799963.webp";
 
@@ -66,8 +67,8 @@ export default function AchievementToast({ event, onDismiss }: AchievementToastP
                         </div>
 
                         {/* Capsule reward */}
-                        <div className="flex items-center gap-1 flex-shrink-0 bg-white/10 rounded-lg px-2 py-1">
-                            <span className="text-sm">💊</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 bg-white/10 rounded-lg px-2 py-1">
+                            <CapsuleIcon size={14} />
                             <span className="text-[#FFE048] text-xs font-black">×{event.capsules}</span>
                         </div>
                     </div>

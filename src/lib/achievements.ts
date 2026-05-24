@@ -554,7 +554,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         icon: "💯",
         title: "Daily Centennial",
         description: "Score 100,000+ in a Daily Challenge",
-        capsules: 5,
+        capsules: 3,
         order: 28.7,
     },
     {
