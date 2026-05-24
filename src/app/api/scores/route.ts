@@ -5,6 +5,31 @@ import { rateLimit, rateLimited429 } from '@/lib/rate-limit';
 import { getEasternDailyKey } from '@/lib/daily-window';
 import { logAuditEvent } from '@/lib/audit-log';
 import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
+import { replayMoveSequence, type MoveAction, type GameMode } from '@/lib/gameEngine';
+import { BADGES } from '@/lib/badges';
+
+// REPLAY_ENFORCEMENT controls Phase 3 server-authoritative replay:
+//   'off'     — skip replay entirely (legacy behavior)
+//   'shadow'  — run replay, log discrepancies + flag stats to audit, but
+//               always accept the submitted score
+//   'reject'  — same as shadow PLUS reject submissions whose replay-
+//               computed score doesn't match (or whose stats trip
+//               behavioral cutoffs)
+// Default is 'shadow' so we surface false-positive data before the
+// switch flips. Once shadow data is clean, promote to 'reject'.
+const REPLAY_ENFORCEMENT = (process.env.REPLAY_ENFORCEMENT || 'shadow').toLowerCase();
+
+// Behavioral guardrails — replay-computed stat cutoffs above which a
+// game is flagged as anomalous. Tuned roughly off the legitimate top
+// ~1% of players. Bots typically blow past these by 2-10x; humans
+// rarely brush them. Cross-mode (Classic + Daily); Frenzy gets its own
+// cutoffs when that branch merges.
+const BEHAVIORAL_CUTOFFS = {
+    bombsCreated: 20,                  // human max ~10-15 even on a god run
+    maxCombo: 11,                       // peak humans land 8-9
+    cascadeRatio: 2.5,                  // total cascades / moves consumed
+    matchesPerMoveRatio: 4,             // total matches / moves consumed
+} as const;
 
 // Maximum plausible score for a classic game — used to reject obviously-forged submissions.
 // Well above any realistic game total given 30 moves + max combos. Bumped
@@ -174,6 +199,153 @@ export async function POST(req: Request) {
             if (score > verifiedScore) {
                 console.error(`[Scores] FORGED score blocked. user=${username} matchId=${matchId} submitted=${score} verified=${verifiedScore}`);
                 return NextResponse.json({ error: 'Score does not match logged game state' }, { status: 400 });
+            }
+
+            // ====== PHASE 3 REPLAY VERIFICATION ======
+            // Beyond "did the matchstats agree with the submission?" (above
+            // — the matchstats itself is client-reported via logGame) we
+            // now also replay the moveSequence against the server-issued
+            // seed to derive the CANONICAL score the engine would produce.
+            // That number is the source of truth — if the client's
+            // submission disagrees with it (within float-tolerance), the
+            // submission was either tampered or the moveSequence was
+            // tampered.
+            //
+            // Backward-compat: legacy in-flight games at deploy time have
+            // no seed in the match token and/or no replay record, so we
+            // skip the check with an audit breadcrumb. After ~2 hours
+            // (the match TTL), every active game will carry full replay
+            // metadata.
+            //
+            // Behavioral guardrails (Tier 2) run against the REPLAY-
+            // COMPUTED stats — see BEHAVIORAL_CUTOFFS. Flagged for now,
+            // not rejected.
+            if (REPLAY_ENFORCEMENT !== 'off') {
+                try {
+                    const matchKey = `pinbook:${username.toLowerCase()}:match:${matchId}`;
+                    const matchToken = await kv.get(matchKey) as {
+                        seed?: number;
+                        draftedBadgeIds?: string[];
+                        gameMode?: string;
+                    } | null;
+                    const replayKey = `replay:${username.toLowerCase()}:${matchId}`;
+                    const replayRecord = await kv.get(replayKey) as
+                        | { moveSequence?: MoveAction[]; gameMode?: string }
+                        | string
+                        | null;
+                    const parsedReplay = typeof replayRecord === 'string'
+                        ? (() => { try { return JSON.parse(replayRecord); } catch { return null; } })()
+                        : replayRecord;
+
+                    const seed = typeof matchToken?.seed === 'number' ? matchToken.seed : undefined;
+                    const moves = Array.isArray(parsedReplay?.moveSequence) ? parsedReplay.moveSequence : null;
+
+                    if (!seed || !moves || moves.length === 0) {
+                        await logAuditEvent({
+                            req,
+                            username,
+                            action: 'score.rejected',
+                            meta: {
+                                phase: 'replay',
+                                outcome: 'skipped_no_data',
+                                reason: !seed ? 'missing_seed' : 'missing_moves',
+                                mode: 'classic',
+                                submitted: score,
+                            },
+                        });
+                    } else {
+                        // Reconstruct gameBadges from drafted ids if present;
+                        // otherwise replay derives them deterministically from
+                        // the seed via selectGameBadges.
+                        const draftedBadges = matchToken?.draftedBadgeIds
+                            ? matchToken.draftedBadgeIds
+                                .map(id => BADGES.find(b => b.id === id))
+                                .filter((b): b is NonNullable<typeof b> => !!b)
+                            : undefined;
+                        const replay = replayMoveSequence({
+                            mode: 'classic' as GameMode,
+                            seed,
+                            draftedBadges,
+                            moves,
+                        });
+
+                        // Score comparison — allow 1-point float tolerance.
+                        const scoreDelta = Math.abs(replay.finalScore - score);
+                        const scoreMismatch = scoreDelta > 1;
+
+                        // Behavioral cutoffs against replay-computed stats.
+                        const ratioCascades = replay.movesConsumed > 0
+                            ? replay.totalCascades / replay.movesConsumed
+                            : 0;
+                        const ratioMatches = replay.movesConsumed > 0
+                            ? replay.matchCount / replay.movesConsumed
+                            : 0;
+                        const anomalies: string[] = [];
+                        if (replay.bombsCreated > BEHAVIORAL_CUTOFFS.bombsCreated) anomalies.push(`bombsCreated=${replay.bombsCreated}`);
+                        if (replay.maxCombo >= BEHAVIORAL_CUTOFFS.maxCombo) anomalies.push(`maxCombo=${replay.maxCombo}`);
+                        if (ratioCascades > BEHAVIORAL_CUTOFFS.cascadeRatio) anomalies.push(`cascadeRatio=${ratioCascades.toFixed(2)}`);
+                        if (ratioMatches > BEHAVIORAL_CUTOFFS.matchesPerMoveRatio) anomalies.push(`matchRatio=${ratioMatches.toFixed(2)}`);
+
+                        if (scoreMismatch) {
+                            await logAuditEvent({
+                                req,
+                                username,
+                                action: 'score.rejected',
+                                meta: {
+                                    phase: 'replay',
+                                    outcome: REPLAY_ENFORCEMENT === 'reject' ? 'rejected_mismatch' : 'shadow_mismatch',
+                                    submitted: score,
+                                    computed: replay.finalScore,
+                                    delta: scoreDelta,
+                                    movesConsumed: replay.movesConsumed,
+                                    mode: 'classic',
+                                },
+                            });
+                            if (REPLAY_ENFORCEMENT === 'reject') {
+                                return NextResponse.json(
+                                    { error: 'Score does not match server replay' },
+                                    { status: 400 },
+                                );
+                            }
+                        }
+
+                        if (anomalies.length > 0) {
+                            await logAuditEvent({
+                                req,
+                                username,
+                                action: 'score.rejected',
+                                meta: {
+                                    phase: 'behavioral',
+                                    outcome: 'flagged_only',  // never rejecting per current policy
+                                    submitted: score,
+                                    computed: replay.finalScore,
+                                    movesConsumed: replay.movesConsumed,
+                                    flags: anomalies.join(','),
+                                    bombsCreated: replay.bombsCreated,
+                                    maxCombo: replay.maxCombo,
+                                    cascadeRatio: Number(ratioCascades.toFixed(2)),
+                                    matchRatio: Number(ratioMatches.toFixed(2)),
+                                    mode: 'classic',
+                                },
+                            });
+                        }
+                    }
+                } catch (replayErr) {
+                    // Never let a replay bug block a legitimate submission.
+                    // Log to console + audit so we see the failure mode.
+                    console.warn('[Scores] replay verification threw', replayErr);
+                    await logAuditEvent({
+                        req,
+                        username,
+                        action: 'score.rejected',
+                        meta: {
+                            phase: 'replay',
+                            outcome: 'error',
+                            reason: replayErr instanceof Error ? replayErr.message.slice(0, 200) : 'unknown',
+                            mode: 'classic',
+                        },
+                    });
+                }
             }
 
             // Prize eligibility gate: classic matches played outside the

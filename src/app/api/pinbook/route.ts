@@ -374,6 +374,39 @@ export async function POST(req: Request) {
             // The only thing that can still flip prizeEligible to false is
             // the abandoned-previous-match guard (refresh-shop exploit).
             const prizeEligible = !abandonedPrevious;
+
+            // Server-issued seed for Phase 3 replay verification. Classic
+            // mode previously generated the seed client-side, which meant
+            // the server couldn't deterministically reconstruct the board
+            // for replay. Daily already derives its seed from the date
+            // (getDailySeed()), so we honor that here — the server replay
+            // path can reproduce the same seed deterministically without
+            // needing to store it. For Classic, we generate a fresh
+            // 32-bit unsigned int (mulberry32-compatible) and persist it
+            // in the match token. Client receives `seed` in the trackGame
+            // response and uses it via createInitialState(mode, _, seed).
+            //
+            // Drafted badges: Vibe Draft mode lets the player pick 6
+            // badges from a draft pool. The client passes
+            // `draftedBadgeIds` so the server can recompute the same
+            // gameBadges array at replay time. Standard Classic / Daily
+            // omit this field.
+            // 32-bit unsigned int seed compatible with mulberry32 (the
+            // RNG used by gameEngine.seededRandom). Web Crypto's
+            // getRandomValues fills a typed array — we take the first
+            // Uint32 directly.
+            const seed = gameMode === 'daily'
+                ? undefined // daily derives its own seed from the date; no need to store
+                : (crypto.getRandomValues(new Uint32Array(1))[0]);
+            const rawDraftedIds = body.draftedBadgeIds;
+            let draftedBadgeIds: string[] | undefined;
+            if (Array.isArray(rawDraftedIds)) {
+                const cleaned = rawDraftedIds
+                    .filter((s: unknown): s is string => typeof s === 'string')
+                    .slice(0, 10);
+                if (cleaned.length > 0) draftedBadgeIds = cleaned;
+            }
+
             await kv.set(matchKey, {
                 username,
                 gameMode,
@@ -383,6 +416,8 @@ export async function POST(req: Request) {
                 logged: false,
                 prizeEligible,
                 abandonedPrevious,
+                seed, // undefined for daily (use getDailySeed at replay time)
+                draftedBadgeIds,
             }, { ex: 60 * 60 * 2 }); // 2 hour window
 
             // Point the active match pointer at the new matchId.
@@ -394,6 +429,7 @@ export async function POST(req: Request) {
                 capped: false,
                 abandonedPrevious,
                 matchId,
+                seed, // omit/undefined on daily; client uses getDailySeed() locally
             });
 
         } else if (body.action === 'logGame') {

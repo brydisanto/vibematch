@@ -104,8 +104,21 @@ function nextCellId(): string {
 
 // ===== BOARD CREATION =====
 
-export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): GameState {
-    const seed = mode === "daily" ? getDailySeed() : undefined;
+/**
+ * Build the starting state for a new game.
+ *
+ * @param mode game mode (classic, daily, frenzy, etc.)
+ * @param draftedBadges optional pre-drafted badge pool (Vibe Draft mode)
+ * @param explicitSeed optional seed override. When provided, both badge
+ *        selection (when no draft) AND the board layout RNG use this seed,
+ *        so the server can deterministically reconstruct the same state
+ *        at replay time. When undefined, falls back to: daily → derive
+ *        from today's date, anything else → fresh Math.random.
+ */
+export function createInitialState(mode: GameMode, draftedBadges?: Badge[], explicitSeed?: number): GameState {
+    const seed = explicitSeed !== undefined
+        ? explicitSeed
+        : (mode === "daily" ? getDailySeed() : undefined);
     const gameBadges = draftedBadges ?? selectGameBadges(6, seed);
 
     const board = createBoard(gameBadges, seed);
@@ -123,6 +136,9 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[]): Gam
         gamePhase: "playing",
         matchCount: 0,
         totalCascades: 0,
+        // `dailySeed` is the legacy field name; we reuse it as the
+        // canonical "what seed built this match" identifier across all
+        // modes now that the server issues seeds for Classic too.
         dailySeed: seed,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
@@ -1019,5 +1035,138 @@ export function triggerSpecialTile(
         specialTilesTriggered,
         cascadeCount,
         shapeBonus: null,
+    };
+}
+
+// ===== PHASE 3 REPLAY =====
+// Pure server-side game reconstruction. Given the same inputs the
+// client built its game from — mode, seed, optional drafted badges —
+// plus the moveSequence the client persisted, replay the engine
+// deterministically and return the canonical score + per-game stats.
+//
+// `/api/scores` POST loads (matchToken.seed, matchstats.moveSequence)
+// from KV and runs this against the engine that the live client also
+// uses, so any score / stat discrepancy is a forgery or a bug, not
+// a replay-vs-live divergence.
+
+export interface ReplayInputs {
+    mode: GameMode;
+    /** Seed used by createInitialState. Required for Classic / Frenzy
+     *  matches; optional for Daily (engine derives from date). */
+    seed?: number;
+    /** Vibe Draft selections, when applicable. Passed through to
+     *  createInitialState so the same gameBadges array gets built. */
+    draftedBadges?: Badge[];
+    /** The deterministic player-action log persisted alongside the
+     *  match (replay:<user>:<matchId>.moveSequence). */
+    moves: MoveAction[];
+}
+
+export interface ReplayResult {
+    /** Final score after replaying every move. The leaderboard value
+     *  that the server compares against the client's submitted score. */
+    finalScore: number;
+    /** Stats that mirror what the client accumulates into
+     *  matchstats:<user>:<matchId>. Used by behavioral guardrails. */
+    maxCombo: number;
+    matchCount: number;
+    totalCascades: number;
+    bombsCreated: number;
+    vibestreaksCreated: number;
+    cosmicBlastsCreated: number;
+    crossCount: number;
+    shapesLanded: { type: string; count: number }[];
+    /** How many moves we actually consumed (invalid swaps are skipped
+     *  with no state change, matching the live client). Useful for
+     *  spotting truncation / mid-game disconnects. */
+    movesConsumed: number;
+}
+
+/**
+ * Replays a moveSequence against a fresh initial state, returning the
+ * canonical score + per-game stats.
+ *
+ * Mirrors the per-turn logic the client runs in useGame.applyResultState
+ * (and applyResult for tap-activated specials), minus all the visual /
+ * audio side effects. The engine functions called here — processTurn,
+ * triggerSpecialTile — are the same ones the live client uses, so
+ * given identical inputs they produce identical outputs.
+ */
+export function replayMoveSequence(opts: ReplayInputs): ReplayResult {
+    const initial = createInitialState(opts.mode, opts.draftedBadges, opts.seed);
+    let board = initial.board;
+    const gameBadges = initial.gameBadges;
+    let movesLeft = initial.movesLeft;
+    let comboCarry = 0;
+
+    let finalScore = 0;
+    let maxCombo = 0;
+    let matchCount = 0;
+    let totalCascades = 0;
+    let bombsCreated = 0;
+    let vibestreaksCreated = 0;
+    let cosmicBlastsCreated = 0;
+    let crossCount = 0;
+    const shapesMap = new Map<'L' | 'T' | 'cross', number>();
+    let movesConsumed = 0;
+
+    for (const move of opts.moves) {
+        let result: TurnResult | null = null;
+
+        if (move.kind === 'swap') {
+            // Adjacency / format are validated by the route before this
+            // function is called, so we trust the move shape here.
+            result = processTurn(board, move.from, move.to, gameBadges, comboCarry);
+        } else if (move.kind === 'tap') {
+            result = triggerSpecialTile(board, move.at, gameBadges);
+        }
+
+        // Invalid swap (no match formed) or tap on a non-special cell —
+        // engine returns null, client's behavior is "no move consumed,
+        // bounce-back animation." Mirror that here.
+        if (!result) continue;
+
+        board = result.board;
+        finalScore += result.scoreGained;
+        comboCarry = result.comboCarry;
+        if (result.combo > maxCombo) maxCombo = result.combo;
+        matchCount += result.matchesFound.length;
+        totalCascades += result.cascadeCount;
+
+        for (const s of result.specialTilesCreated) {
+            if (s.type === 'bomb') bombsCreated++;
+            else if (s.type === 'vibestreak') vibestreaksCreated++;
+            else if (s.type === 'cosmic_blast') cosmicBlastsCreated++;
+        }
+
+        if (result.shapeBonus?.type) {
+            const t = result.shapeBonus.type;
+            shapesMap.set(t, (shapesMap.get(t) || 0) + 1);
+            if (t === 'cross') crossCount++;
+        }
+
+        movesConsumed++;
+        // Classic / Daily are move-capped; Frenzy (when merged) is time-
+        // capped and can produce 150+ moves in a god run. We use a
+        // string-typed mode set so this compiles on both `main` (which
+        // has only classic | daily) and the Frenzy feature branch.
+        const moveCappedModes: string[] = ['classic', 'daily'];
+        if (moveCappedModes.includes(opts.mode as string)) {
+            movesLeft--;
+            if (movesLeft <= 0) break;
+        }
+    }
+
+    return {
+        finalScore,
+        maxCombo,
+        matchCount,
+        totalCascades,
+        bombsCreated,
+        vibestreaksCreated,
+        cosmicBlastsCreated,
+        crossCount,
+        shapesLanded: Array.from(shapesMap.entries()).map(([type, count]) => ({ type, count })),
+        movesConsumed,
     };
 }
