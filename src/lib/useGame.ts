@@ -543,6 +543,13 @@ export function useGame(): UseGameReturn {
                         else playBombSound();
                         const tapAction: MoveAction = { kind: 'tap', at: pos };
                         setState(prev => prev ? applyResult(prev, result, pos, true, tapAction) : prev);
+                        // Re-arm the hint timer against the post-detonation board.
+                        // Without this, a hint scheduled before the tap-activate
+                        // would still hold a closure reference to the pre-blast
+                        // board; firing 8s later it would highlight two tiles that
+                        // no longer exist (or now hold different badges), surfacing
+                        // as "the hint doesn't actually form a match" bug reports.
+                        resetHintTimer(result.board);
                         return;
                     }
                 }

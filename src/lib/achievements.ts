@@ -663,13 +663,18 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         // checkRetroactiveAchievements time by checking the promo
         // zsets — players who already pulled a partnership pin pre-
         // launch get the quest immediately.
+        // Mastery category so the panel doesn't render the Journey-style
+        // sequence-number chip next to the title (the chip is gated on
+        // category === "journey" in AchievementsPanel). Position 32.5
+        // slots it between Vibe Commander (refer_10, 32) and Put In A
+        // Coin (buy_prize_game, 33) alongside the other engagement quests.
         id: "first_event_pin",
-        category: "journey",
+        category: "mastery",
         icon: "🎟️",
         title: "Eventide",
         description: "Collect your first Event pin",
         capsules: 1,
-        order: 18.5,
+        order: 32.5,
     },
     {
         id: "wallet_vibestr",
