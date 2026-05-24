@@ -87,12 +87,15 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         order: 7,
     },
     {
+        // Cross is genuinely rare — at the time of writing, zero players
+        // on prod had ever landed one. Bumped from 2 to 10 to match the
+        // difficulty.
         id: "first_cross_shape",
         category: "journey",
         icon: "✦",
         title: "Cross That Off",
         description: "Land your first cross shape",
-        capsules: 2,
+        capsules: 10,
         order: 8,
     },
     {
@@ -163,7 +166,7 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         category: "journey",
         icon: "🏆",
         title: "High Roller",
-        description: "Score 25,000+ in a single game",
+        description: "Score 25,000+ in a single Classic game",
         capsules: 2,
         order: 16,
     },
@@ -386,7 +389,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "⛓️",
         title: "Cascade Master",
-        description: "15+ total cascades in one game",
+        description: "15+ total cascades in one Classic game",
         capsules: 2,
         order: 17,
     },
@@ -395,7 +398,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🌊",
         title: "Cascade Flood",
-        description: "30+ total cascades in one game",
+        description: "30+ total cascades in one Classic game",
         capsules: 3,
         order: 17.3,
     },
@@ -404,7 +407,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🌀",
         title: "Cascade Tsunami",
-        description: "45+ total cascades in one game",
+        description: "45+ total cascades in one Classic game",
         capsules: 4,
         order: 17.6,
     },
@@ -413,7 +416,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "⭐",
         title: "Score Legend",
-        description: "Score 50,000+ in a single game",
+        description: "Score 50,000+ in a single Classic game",
         capsules: 2,
         order: 18,
     },
@@ -422,7 +425,7 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "💫",
         title: "Diamond Hands",
-        description: "Score 69,000+ in a single game",
+        description: "Score 69,000+ in a single Classic game",
         capsules: 2,
         order: 19,
     },
@@ -431,9 +434,27 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🌟",
         title: "Hall of Vibes",
-        description: "Score 100,000+ in a single game",
+        description: "Score 100,000+ in a single Classic game",
         capsules: 3,
         order: 20,
+    },
+    {
+        id: "score_150k",
+        category: "mastery",
+        icon: "💎",
+        title: "Baller Shot Caller",
+        description: "Score 150,000+ in a single Classic game",
+        capsules: 3,
+        order: 20.5,
+    },
+    {
+        id: "score_200k",
+        category: "mastery",
+        icon: "🐐",
+        title: "The GOAT",
+        description: "Score 200,000+ in a single Classic game",
+        capsules: 5,
+        order: 20.7,
     },
     {
         id: "streak_7",
@@ -490,12 +511,14 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 25.5,
     },
     {
+        // Trifecta requires a cross, which is rare on its own. Bumped
+        // from 3 to 15 in the same pass as Cross That Off.
         id: "shape_trifecta",
         category: "mastery",
         icon: "🔮",
         title: "Shape Trifecta",
         description: "Land an L, T, and cross in the same game",
-        capsules: 3,
+        capsules: 15,
         order: 26,
     },
     {
@@ -566,9 +589,78 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         category: "mastery",
         icon: "🪙",
         title: "Put In A Coin",
-        description: "Buy at least 1 prize game with $VIBESTR",
+        description: "Buy at least 1 bonus game with $VIBESTR",
         capsules: 1,
         order: 33,
+    },
+    {
+        // Stacked progresses through pinbook.lifetimeBonusGamesPurchased,
+        // a forward-only counter incremented on every successful
+        // purchase route call. Players who already have bonus games
+        // before this counter existed must buy 10 more after launch.
+        id: "bonus_games_10",
+        category: "mastery",
+        icon: "💰",
+        title: "Stacked",
+        description: "Buy at least 10 bonus games with $VIBESTR",
+        capsules: 2,
+        order: 33.05,
+    },
+    {
+        // Reroll achievements progress through
+        // pinbook.lifetimeRerollsCompleted — incremented per reroll in
+        // the /api/pinbook/reroll route on success. Forward-only; no
+        // retroactive credit for pre-launch rerolls (no historical
+        // data to seed from).
+        id: "reroll_1",
+        category: "mastery",
+        icon: "🔄",
+        title: "Redemption",
+        description: "Reroll at least 1 Pin Capsule",
+        capsules: 1,
+        order: 33.1,
+    },
+    {
+        id: "reroll_10",
+        category: "mastery",
+        icon: "♻️",
+        title: "S(pin) Cycle",
+        description: "Reroll 10+ Pin Capsules",
+        capsules: 2,
+        order: 33.2,
+    },
+    {
+        id: "reroll_25",
+        category: "mastery",
+        icon: "🪄",
+        title: "Pin Magician",
+        description: "Reroll 25+ Pin Capsules",
+        capsules: 3,
+        order: 33.3,
+    },
+    {
+        id: "reroll_50",
+        category: "mastery",
+        icon: "🧙",
+        title: "Pin Wizard",
+        description: "Reroll 50+ Pin Capsules",
+        capsules: 5,
+        order: 33.4,
+    },
+    {
+        // Eventide flips on pinbook.hasCollectedEventPin, set true in
+        // the /api/pinbook collect action when the user collects any
+        // promo (Event) badge. Retroactive credit is granted at
+        // checkRetroactiveAchievements time by checking the promo
+        // zsets — players who already pulled a partnership pin pre-
+        // launch get the quest immediately.
+        id: "first_event_pin",
+        category: "journey",
+        icon: "🎟️",
+        title: "Eventide",
+        description: "Collect your first Event pin",
+        capsules: 1,
+        order: 18.5,
     },
     {
         id: "wallet_vibestr",
@@ -632,6 +724,11 @@ export function getQuestProgressList(ctx: PlayerContext): QuestProgress[] {
         { id: "refer_1", current: ctx.referralCount, target: 1 },
         { id: "refer_5", current: ctx.referralCount, target: 5 },
         { id: "refer_10", current: ctx.referralCount, target: 10 },
+        { id: "reroll_1", current: ctx.lifetimeRerollsCompleted, target: 1 },
+        { id: "reroll_10", current: ctx.lifetimeRerollsCompleted, target: 10 },
+        { id: "reroll_25", current: ctx.lifetimeRerollsCompleted, target: 25 },
+        { id: "reroll_50", current: ctx.lifetimeRerollsCompleted, target: 50 },
+        { id: "bonus_games_10", current: ctx.lifetimeBonusGamesPurchased, target: 10 },
     ];
     const out: QuestProgress[] = [];
     for (const b of bands) {
@@ -714,6 +811,17 @@ export interface PlayerContext {
     hasPurchasedPrizeGame: boolean;
     /** User has connected a wallet that holds $VIBESTR (verified server-side). */
     hasVibestrWallet: boolean;
+    /** Lifetime count of completed rerolls (pinbook.lifetimeRerollsCompleted).
+     *  Drives the reroll achievement ladder. Forward-only counter. */
+    lifetimeRerollsCompleted: number;
+    /** Lifetime count of bonus games purchased with $VIBESTR
+     *  (pinbook.lifetimeBonusGamesPurchased). Drives the "Stacked" quest.
+     *  Forward-only counter. */
+    lifetimeBonusGamesPurchased: number;
+    /** User has collected at least one Event (promo partnership) pin.
+     *  Set when a collect action processes a promo badge, and retro-
+     *  computed from the promo zsets so existing collectors get credit. */
+    hasCollectedEventPin: boolean;
 }
 
 /**
@@ -746,7 +854,13 @@ export function checkAchievements(
     check("first_daily", stats.gameMode === "daily");
     check("streak_3", context.streak >= 3);
     check("first_cosmic", stats.cosmicBlastsCreated >= 1);
-    check("score_25k", stats.score >= 25000);
+    // Score + cascade quests below are Classic-only. Frenzy has its own
+    // scoring ceiling (~300k) and its own capsule ladder; rolling its
+    // scores into Classic skill quests would double-pay players and
+    // make the ladder trivial. Daily Challenge uses a separate
+    // daily_30k/daily_50k track and is also excluded here.
+    const isClassic = stats.gameMode === "classic";
+    check("score_25k", isClassic && stats.score >= 25000);
 
     // Mastery
     check("cascade_5", stats.totalCascades >= 5);
@@ -773,12 +887,14 @@ export function checkAchievements(
     check("found_legendary_50", context.totalFoundLegendary >= 50);
     check("found_cosmic_10", context.totalFoundCosmic >= 10);
     check("bombs_5", stats.bombsCreated >= 5);
-    check("cascades_15", stats.totalCascades >= 15);
-    check("cascades_30", stats.totalCascades >= 30);
-    check("cascades_45", stats.totalCascades >= 45);
-    check("score_50k", stats.score >= 50000);
-    check("score_75k", stats.score >= 69000);
-    check("score_100k", stats.score >= 100000);
+    check("cascades_15", isClassic && stats.totalCascades >= 15);
+    check("cascades_30", isClassic && stats.totalCascades >= 30);
+    check("cascades_45", isClassic && stats.totalCascades >= 45);
+    check("score_50k", isClassic && stats.score >= 50000);
+    check("score_75k", isClassic && stats.score >= 69000);
+    check("score_100k", isClassic && stats.score >= 100000);
+    check("score_150k", isClassic && stats.score >= 150000);
+    check("score_200k", isClassic && stats.score >= 200000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
@@ -802,6 +918,16 @@ export function checkAchievements(
     check("change_music", context.hasChangedMusic);
     check("buy_prize_game", context.hasPurchasedPrizeGame);
     check("wallet_vibestr", context.hasVibestrWallet);
+
+    // Reroll ladder + bonus-games + Event pin — context-driven, fire
+    // here too so end-of-game checks catch any progress accrued during
+    // the session.
+    check("reroll_1", context.lifetimeRerollsCompleted >= 1);
+    check("reroll_10", context.lifetimeRerollsCompleted >= 10);
+    check("reroll_25", context.lifetimeRerollsCompleted >= 25);
+    check("reroll_50", context.lifetimeRerollsCompleted >= 50);
+    check("bonus_games_10", context.lifetimeBonusGamesPurchased >= 10);
+    check("first_event_pin", context.hasCollectedEventPin);
 
     return newly;
 }
@@ -859,6 +985,17 @@ export function checkRetroactiveAchievements(
     check("change_music", context.hasChangedMusic);
     check("buy_prize_game", context.hasPurchasedPrizeGame);
     check("wallet_vibestr", context.hasVibestrWallet);
+
+    // Reroll ladder + bonus-games + Event pin — same retroactive
+    // surface so players who progressed before quest launch (or in a
+    // session that didn't end on a game-complete) get credit at next
+    // pinbook load.
+    check("reroll_1", context.lifetimeRerollsCompleted >= 1);
+    check("reroll_10", context.lifetimeRerollsCompleted >= 10);
+    check("reroll_25", context.lifetimeRerollsCompleted >= 25);
+    check("reroll_50", context.lifetimeRerollsCompleted >= 50);
+    check("bonus_games_10", context.lifetimeBonusGamesPurchased >= 10);
+    check("first_event_pin", context.hasCollectedEventPin);
 
     return newly;
 }

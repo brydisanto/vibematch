@@ -49,6 +49,20 @@ export interface PinBookData {
      *  current held count when we first encounter a legacy pinbook
      *  that doesn't have this field yet. */
     totalFoundByTier?: Partial<Record<BadgeTier, number>>;
+    /** Lifetime count of completed rerolls. Bumped in
+     *  /api/pinbook/reroll after a successful burn+payment. Drives the
+     *  Redemption / S(pin) Cycle / Pin Magician / Pin Wizard quests.
+     *  Forward-only — no retroactive backfill. */
+    lifetimeRerollsCompleted?: number;
+    /** Lifetime count of bonus prize-games purchased with $VIBESTR.
+     *  Bumped in /api/pinbook/purchase-prize-games on success. Drives
+     *  the Stacked quest. Forward-only — no retroactive backfill. */
+    lifetimeBonusGamesPurchased?: number;
+    /** Has collected at least one Event (promo partnership) pin.
+     *  Set in the `collect` action when a promo badge is processed.
+     *  Drives the Eventide quest. Retroactive credit is granted via
+     *  the promo zsets when computing PlayerContext. */
+    hasCollectedEventPin?: boolean;
 }
 
 interface DailyTracker {
@@ -95,7 +109,16 @@ async function incrementClassicPlays(username: string): Promise<DailyTracker> {
 // bumpDailyCounter is shared with referral + reroll via lib/daily-counters.
 
 function emptyPinBook(): PinBookData {
-    return { pins: {}, capsules: 0, totalOpened: 0, totalEarned: 0, totalFoundByTier: {} };
+    return {
+        pins: {},
+        capsules: 0,
+        totalOpened: 0,
+        totalEarned: 0,
+        totalFoundByTier: {},
+        lifetimeRerollsCompleted: 0,
+        lifetimeBonusGamesPurchased: 0,
+        hasCollectedEventPin: false,
+    };
 }
 
 /**
@@ -714,6 +737,12 @@ export async function POST(req: Request) {
                 await kv.del(pendingKey);
                 // ZINCRBY by 1 — counter doubles as leaderboard score.
                 const newCount = await kv.zincrby(promoLeaderboardKey(promoDef.id), 1, username);
+                // Eventide quest flag — flip once; cheap idempotent write
+                // since we hold the user lock for this whole branch.
+                if (!data.hasCollectedEventPin) {
+                    data.hasCollectedEventPin = true;
+                    await kv.set(key, data);
+                }
                 return NextResponse.json({
                     collected: true,
                     isPromo: true,

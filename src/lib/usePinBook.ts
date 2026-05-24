@@ -27,6 +27,14 @@ export interface PinBookState {
      *  server backfills from held counts on first mutation, and
      *  buildPlayerContext falls back to the same derivation client-side. */
     totalFoundByTier?: Partial<Record<BadgeTier, number>>;
+    /** Lifetime count of completed rerolls (server-maintained). Drives
+     *  the Redemption/S(pin) Cycle/Pin Magician/Pin Wizard quests. */
+    lifetimeRerollsCompleted?: number;
+    /** Lifetime count of bonus prize-games purchased with $VIBESTR
+     *  (server-maintained). Drives the Stacked quest. */
+    lifetimeBonusGamesPurchased?: number;
+    /** Has collected at least one Event/promo pin. Drives Eventide. */
+    hasCollectedEventPin?: boolean;
     loaded: boolean;
 }
 

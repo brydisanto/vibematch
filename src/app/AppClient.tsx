@@ -197,6 +197,9 @@ export default function AppClient() {
         hasPurchasedPrizeGame:
           (pinBook.state.bonusPrizeGames || 0) > 0 || !!flags.prizeGamePurchased,
         hasVibestrWallet: !!flags.vibestrHolder,
+        lifetimeRerollsCompleted: pinBook.state.lifetimeRerollsCompleted,
+        lifetimeBonusGamesPurchased: pinBook.state.lifetimeBonusGamesPurchased,
+        hasCollectedEventPin: pinBook.state.hasCollectedEventPin,
       });
       ctx.streak = streakData.streak || 0;
       ctx.referralCount = referralData.totalReferrals || 0;
@@ -341,6 +344,9 @@ export default function AppClient() {
           hasUploadedAvatar: !!userProfile?.avatarUrl,
           hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
           hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+          lifetimeRerollsCompleted: pinBook.state.lifetimeRerollsCompleted,
+          lifetimeBonusGamesPurchased: pinBook.state.lifetimeBonusGamesPurchased,
+          hasCollectedEventPin: pinBook.state.hasCollectedEventPin,
         });
         const ids = checkAchievements(gameEndStats, playerCtx, achievements.getUnlockedSet());
         if (ids.length > 0) {
@@ -1150,6 +1156,9 @@ export default function AppClient() {
                 hasUploadedAvatar: !!userProfile?.avatarUrl,
                 hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+                lifetimeRerollsCompleted: pinBook.state.lifetimeRerollsCompleted,
+                lifetimeBonusGamesPurchased: pinBook.state.lifetimeBonusGamesPurchased,
+                hasCollectedEventPin: pinBook.state.hasCollectedEventPin,
               });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) {
@@ -1188,6 +1197,9 @@ export default function AppClient() {
                 hasUploadedAvatar: !!userProfile?.avatarUrl,
                 hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
                 hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+                lifetimeRerollsCompleted: pinBook.state.lifetimeRerollsCompleted,
+                lifetimeBonusGamesPurchased: pinBook.state.lifetimeBonusGamesPurchased,
+                hasCollectedEventPin: pinBook.state.hasCollectedEventPin,
               });
               const ids = checkRetroactiveAchievements(ctx, achievements.getUnlockedSet());
               if (ids.length > 0) {
@@ -1259,6 +1271,9 @@ export default function AppClient() {
             hasUploadedAvatar: !!userProfile.avatarUrl,
             hasChangedMusic: typeof window !== "undefined" && localStorage.getItem("vibematch_bgm_track") !== null,
             hasPurchasedPrizeGame: (pinBook.state.bonusPrizeGames || 0) > 0,
+            lifetimeRerollsCompleted: pinBook.state.lifetimeRerollsCompleted,
+            lifetimeBonusGamesPurchased: pinBook.state.lifetimeBonusGamesPurchased,
+            hasCollectedEventPin: pinBook.state.hasCollectedEventPin,
           });
           ctx.streak = streakSnapshot;
           ctx.referralCount = referralSnapshot;

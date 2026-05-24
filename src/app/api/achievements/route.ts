@@ -141,6 +141,26 @@ export async function POST(req: Request) {
         const hasPurchasedPrizeGame = !!flagsRaw?.prizeGamePurchased;
         const hasVibestrWallet = !!flagsRaw?.vibestrHolder;
 
+        // Retroactive Eventide credit — players who pulled an Event
+        // (promo partnership) pin before the quest existed should
+        // unlock it on the next server check. Check all known promo
+        // ids; any non-zero zscore means they collected at least one.
+        let hasCollectedEventPin = !!(pinbook as { hasCollectedEventPin?: boolean }).hasCollectedEventPin;
+        if (!hasCollectedEventPin) {
+            try {
+                const { PROMO_BADGES, promoLeaderboardKey } = await import('@/lib/promo-badges');
+                for (const promo of PROMO_BADGES) {
+                    const score = await kv.zscore(promoLeaderboardKey(promo.id), username);
+                    if (typeof score === 'number' && score > 0) {
+                        hasCollectedEventPin = true;
+                        break;
+                    }
+                }
+            } catch {
+                // Best-effort; missing module / KV blip = no retro credit.
+            }
+        }
+
         // Build authoritative PlayerContext from stored pinbook state
         const ctx = buildPlayerContext(pinbook.pins, {
             totalPinsOpened: pinbook.totalOpened,
@@ -149,6 +169,9 @@ export async function POST(req: Request) {
             hasChangedMusic,
             hasPurchasedPrizeGame,
             hasVibestrWallet,
+            lifetimeRerollsCompleted: (pinbook as { lifetimeRerollsCompleted?: number }).lifetimeRerollsCompleted,
+            lifetimeBonusGamesPurchased: (pinbook as { lifetimeBonusGamesPurchased?: number }).lifetimeBonusGamesPurchased,
+            hasCollectedEventPin,
         });
 
         // Fetch streak + referral count
