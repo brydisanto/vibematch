@@ -122,11 +122,13 @@ interface DailyStats {
 }
 
 // Small circular avatar used on global feed rows. Falls back to the
-// GVC shaka when the user has no uploaded avatar. Handles data: URLs
-// (next/image refuses these in optimized mode) by routing them to a
-// plain <img>.
+// Default any_gvc pin (matches the DAILY PLAYS icon) when the user
+// has no uploaded avatar. Handles data: URLs (next/image refuses
+// these in optimized mode) by routing them to a plain <img>.
+const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
+
 function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
-    const src = avatarUrl || "/assets/gvc_shaka.png";
+    const src = avatarUrl || DEFAULT_AVATAR;
     const isData = !!avatarUrl && avatarUrl.startsWith("data:");
     const hasUpload = !!avatarUrl;
     return (
@@ -144,7 +146,7 @@ function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; usernam
             ) : hasUpload ? (
                 <Image src={src} alt={username} fill sizes="24px" className="object-cover" />
             ) : (
-                <Image src={src} alt="" fill sizes="24px" className="object-contain p-[3px]" />
+                <Image src={src} alt="" fill sizes="24px" className="object-contain p-[1px]" />
             )}
         </span>
     );
@@ -386,12 +388,23 @@ export default function LandingPageArcade({
 
     useEffect(() => {
         if (feedTab !== "global") return;
-        fetch("/api/recent-scores?scope=global&limit=6")
-            .then(r => r.json())
-            .then(data => {
-                if (Array.isArray(data.runs)) setGlobalRuns(data.runs);
-            })
-            .catch(() => { /* silent */ });
+        // Initial fetch + poll every 6s while the GLOBAL tab is
+        // visible, so games flow into the feed in near-realtime
+        // without a manual refresh. The endpoint sets a 5s edge
+        // cache (Cache-Control: public, s-maxage=5), so most of
+        // these polls hit Vercel's CDN — only the occasional
+        // refresh actually touches KV.
+        const fetchGlobal = () => {
+            fetch("/api/recent-scores?scope=global&limit=6")
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data.runs)) setGlobalRuns(data.runs);
+                })
+                .catch(() => { /* silent */ });
+        };
+        fetchGlobal();
+        const interval = setInterval(fetchGlobal, 6000);
+        return () => clearInterval(interval);
     }, [feedTab]);
 
     const handleProfileSave = async (newUsername: string, newAvatarUrl: string) => {
@@ -877,7 +890,13 @@ export default function LandingPageArcade({
                                                             />
                                                         )
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[10px]">🏄</div>
+                                                        <Image
+                                                            src={DEFAULT_AVATAR}
+                                                            alt=""
+                                                            fill
+                                                            sizes="22px"
+                                                            className="object-contain p-[1px]"
+                                                        />
                                                     )}
                                                 </div>
                                             ))}
@@ -1227,7 +1246,13 @@ export default function LandingPageArcade({
                                                     />
                                                 )
                                             ) : (
-                                                <div className="text-[42px] leading-none">🏄</div>
+                                                <Image
+                                                    src={DEFAULT_AVATAR}
+                                                    alt=""
+                                                    fill
+                                                    sizes="84px"
+                                                    className="object-contain p-2"
+                                                />
                                             )}
                                         </div>
                                     </div>
@@ -1629,7 +1654,7 @@ export default function LandingPageArcade({
                                 <button
                                     type="button"
                                     onClick={() => setFeedTab("global")}
-                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
+                                    className="font-display text-[10px] tracking-[0.3em] transition-colors cursor-pointer hover:brightness-110"
                                     style={{
                                         color: feedTab === "global" ? GOLD : "rgba(255,255,255,0.35)",
                                     }}
@@ -1640,7 +1665,7 @@ export default function LandingPageArcade({
                                 <button
                                     type="button"
                                     onClick={() => setFeedTab("mine")}
-                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
+                                    className="font-display text-[10px] tracking-[0.3em] transition-colors cursor-pointer hover:brightness-110"
                                     style={{
                                         color: feedTab === "mine" ? GOLD : "rgba(255,255,255,0.35)",
                                     }}

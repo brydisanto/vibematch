@@ -32,6 +32,12 @@ export const revalidate = 60;
 const CARD_BG = "#1F0942";
 const CARD_BORDER = "rgba(255,255,255,0.08)";
 
+// Default avatar fallback when a user has no uploaded avatarUrl.
+// Same any_gvc ("Citizen of Vibetown") badge used as the DAILY PLAYS
+// icon, so the brand stays consistent across every place an avatar
+// can be missing.
+const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
+
 type PageParams = { username: string };
 
 export async function generateMetadata({ params }: { params: Promise<PageParams> }): Promise<Metadata> {
@@ -473,11 +479,12 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
 }
 
 function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
-    const src = avatarUrl || "/assets/gvc_shaka.png";
+    const src = avatarUrl || DEFAULT_AVATAR;
     const isDataUrl = !!avatarUrl && avatarUrl.startsWith("data:");
     // Matches the main-page avatar: outer gold glow, spinning conic
-    // gradient ring, cosmic→pink inner bg, fall back to shaka if no
-    // avatar uploaded. Larger size for the hero.
+    // gradient ring, cosmic→pink inner bg, falls back to the any_gvc
+    // pin (matches DAILY PLAYS icon) when no avatar uploaded.
+    // Larger size for the hero.
     return (
         <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
             <div

@@ -158,9 +158,16 @@ function Avatar({ entry, size = 40, className = "" }: { entry: LeaderboardEntry;
                     <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
                 )
             ) : (
-                <span className="text-white/20 font-bold uppercase" style={{ fontSize: size * 0.3 }}>
-                    {entry.username.substring(0, 2)}
-                </span>
+                // Fallback: any_gvc pin (same default avatar used in
+                // the global feed + profile page) instead of the old
+                // username-initials placeholder.
+                <Image
+                    src="/badges/any_gvc_1759173799963.webp"
+                    alt=""
+                    width={size}
+                    height={size}
+                    className="object-contain w-full h-full p-[2px]"
+                />
             )}
         </div>
     );
