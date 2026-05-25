@@ -1,22 +1,20 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { GOLD, GOLD_DEEP } from "@/lib/arcade-tokens";
+import { GOLD } from "@/lib/arcade-tokens";
 
 type Tab = "book" | "trophy";
 
 /**
  * Tab toggle for the profile's showcase section. Both tabs are
  * server-rendered into the parent and passed in as ReactNodes; this
- * client island just manages which one is currently visible. Keeps
- * the page a server component while still letting the user flip
- * between PIN BOOK and TROPHY CASE without a navigation.
+ * client island just manages which one is currently visible.
  *
- * Pill-style toggle on a dark track, centered above the content.
- * Active tab takes a gold gradient fill matching the home-screen
- * CHUNKY button treatment; inactive tabs sit transparent on the
- * track and brighten on hover. Cursor pointer makes the affordance
- * obvious.
+ * Underline style — centered text buttons with a gold underline
+ * under the active tab + a hairline divider running across the
+ * full width. Matches the "Option G" treatment from the design
+ * preview: no pill, no chunky button, just clean type + a single
+ * accent under the active label.
  */
 export default function ProfileShowcaseTabs({
     pinBook,
@@ -28,22 +26,16 @@ export default function ProfileShowcaseTabs({
     const [active, setActive] = useState<Tab>("book");
     return (
         <div>
-            <div className="flex items-center justify-center mb-6">
-                <div
-                    className="inline-flex items-center gap-1 p-1 rounded-full"
-                    style={{
-                        background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 12px rgba(0,0,0,0.35)",
-                    }}
-                >
-                    <TabButton active={active === "book"} onClick={() => setActive("book")}>
-                        PIN BOOK
-                    </TabButton>
-                    <TabButton active={active === "trophy"} onClick={() => setActive("trophy")}>
-                        TROPHY CASE
-                    </TabButton>
-                </div>
+            <div
+                className="flex items-center justify-center gap-8 sm:gap-12 mb-6"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+            >
+                <TabButton active={active === "book"} onClick={() => setActive("book")}>
+                    PIN BOOK
+                </TabButton>
+                <TabButton active={active === "trophy"} onClick={() => setActive("trophy")}>
+                    TROPHY CASE
+                </TabButton>
             </div>
             <div className={active === "book" ? "" : "hidden"}>{pinBook}</div>
             <div className={active === "trophy" ? "" : "hidden"}>{trophyCase}</div>
@@ -64,22 +56,16 @@ function TabButton({
         <button
             type="button"
             onClick={onClick}
-            className="font-display font-black tracking-[0.18em] text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-full cursor-pointer transition-all"
-            style={
-                active
-                    ? {
-                          color: "#1A0E02",
-                          background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
-                          boxShadow: `0 2px 0 ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.4)`,
-                          textShadow: `0 1px 0 rgba(255,255,255,0.25)`,
-                      }
-                    : {
-                          color: "rgba(255,255,255,0.45)",
-                          background: "transparent",
-                      }
-            }
+            className="relative font-display font-black tracking-[0.18em] text-sm sm:text-base px-1 py-3 sm:py-4 cursor-pointer transition-colors bg-transparent border-0"
+            style={{ color: active ? GOLD : "rgba(255,255,255,0.4)" }}
         >
             {children}
+            {active && (
+                <span
+                    className="absolute left-0 right-0 -bottom-px h-[2px]"
+                    style={{ background: GOLD, boxShadow: `0 0 8px ${GOLD}80` }}
+                />
+            )}
         </button>
     );
 }

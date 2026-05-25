@@ -5,13 +5,11 @@ import { getProfile, type ProfileResponse } from "@/lib/profile";
 import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type Badge, type BadgeTier } from "@/lib/badges";
 import {
     GOLD,
-    GOLD_DEEP,
     ORANGE,
     ORANGE_DEEP,
     COSMIC,
     COSMIC_DEEP,
     PINK,
-    PINK_DEEP,
     INK_PANEL,
     INK_PANEL_LIGHT,
     INK_DARKEST,
@@ -120,15 +118,13 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 }}
             >
             <div
-                className={`profileHero w-full rounded-[14px] p-6 sm:p-8 relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
+                className={`profileHero w-full rounded-[14px] relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
                 style={isHolo || isCosmic ? undefined : {
-                    // Dark panel with tier-tinted ambient glows. Earlier the
-                    // inner bg used tier.color}26 alpha, but the chunky 100%
-                    // tier-color outer frame bled through, washing the entire
-                    // card in a flat tier color (gold-on-gold disappeared,
-                    // magenta-on-magenta clashed with the pills). Now the
-                    // surface is opaque dark like the stat tiles, with a soft
-                    // top + bottom tier glow so the tier identity reads
+                    // Dark panel with tier-tinted ambient glows. The chunky
+                    // 100% tier-color outer frame would otherwise bleed
+                    // through if we used a translucent tier wash, so the
+                    // surface is opaque dark like the stat tiles + a soft
+                    // top/bottom tier glow keeps the tier identity present
                     // without blanketing the content.
                     background: `
                         radial-gradient(ellipse at 50% 0%, ${tier.color}1f, transparent 55%),
@@ -195,9 +191,11 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                         TIER: {tier.label}
                     </span>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mt-2 sm:mt-0 relative z-10">
+                {/* Banner: avatar + username + joined. Tier sits in the
+                    corner badge above; ranks moved into the bottom strip. */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 relative z-10">
                     <ProfileAvatar avatarUrl={profile.avatarUrl} username={profile.username} />
-                    <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
+                    <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left justify-center">
                         <h1
                             className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight"
                             style={isHolo ? { textShadow: "0 1px 4px rgba(0,0,0,0.85)" } : undefined}
@@ -209,66 +207,66 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                                 Joined {joined}
                             </div>
                         )}
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
-                            {profile.rank.score !== null && (
-                                <RankPill
-                                    label="SCORE RANK"
-                                    value={`#${profile.rank.score}`}
-                                    color={GOLD}
-                                />
-                            )}
-                            {profile.rank.pins !== null && (
-                                <RankPill
-                                    label="PIN RANK"
-                                    value={`#${profile.rank.pins}`}
-                                    color={ORANGE}
-                                />
-                            )}
-                            {profile.streak > 0 && (
-                                <RankPill
-                                    label="STREAK"
-                                    value={`${profile.streak} ${profile.streak === 1 ? "DAY" : "DAYS"}`}
-                                    color={ORANGE}
-                                />
-                            )}
-                            {profile.rank.score === null && profile.rank.pins === null && profile.streak === 0 && (
-                                <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/50">
-                                    Not yet ranked
-                                </span>
-                            )}
-                        </div>
                     </div>
+                </div>
+                {/* Bottom stat strip — SCORE RANK | PIN RANK | STREAK
+                    laid flush across the bottom of the hero card with
+                    vertical dividers between cells. Empty values render
+                    as em-dash so the strip never collapses. */}
+                <div
+                    className="relative z-10 grid grid-cols-3 border-t"
+                    style={{
+                        borderColor: "rgba(255,255,255,0.08)",
+                        background: "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18))",
+                    }}
+                >
+                    <HeroStripCell
+                        label="SCORE RANK"
+                        value={profile.rank.score !== null ? `#${profile.rank.score}` : "—"}
+                        color={GOLD}
+                    />
+                    <HeroStripCell
+                        label="PIN RANK"
+                        value={profile.rank.pins !== null ? `#${profile.rank.pins}` : "—"}
+                        color={ORANGE}
+                        withBorder
+                    />
+                    <HeroStripCell
+                        label="STREAK"
+                        value={profile.streak > 0 ? `${profile.streak} ${profile.streak === 1 ? "DAY" : "DAYS"}` : "—"}
+                        color={COSMIC}
+                        withBorder
+                    />
                 </div>
             </div>
             </div>
 
-            {/* Stats grid — chunky tiles matching the home-screen
-                CAPSULES / EXTRA PINS treatment: 2px tier-color gradient
-                frame around a dark inner panel, with a "pressed-in"
-                bottom shadow. */}
-            <div className="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} deep={GOLD_DEEP} />
-                <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} deep={ORANGE_DEEP} />
-                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={COSMIC} deep={COSMIC_DEEP} />
-                <StatCard
-                    label="PIN COMPLETION"
-                    value={
-                        <>
-                            {profile.pins.unique}
-                            <span className="text-white/40" style={{ textShadow: "none" }}>
-                                {" "}/ {BADGES.length}
-                            </span>
-                            <span
-                                className="text-[14px] sm:text-[16px] text-white/55 font-display font-black ml-1.5"
-                                style={{ textShadow: "none" }}
-                            >
-                                ({profile.pins.completion}%)
-                            </span>
-                        </>
-                    }
-                    accent={PINK}
-                    deep={PINK_DEEP}
-                />
+            {/* Stats row — flat divider style. No chunky frames; just
+                top + bottom hairline borders with vertical dividers
+                between cells. Colors keep the home-screen palette
+                (gold / orange / cosmic / pink) for value text. */}
+            <div
+                className="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 mb-2"
+                style={{
+                    borderTop: "1px solid rgba(255,255,255,0.08)",
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+            >
+                <FlatStatCell label="BEST SCORE" color={GOLD} idx={0}>
+                    {profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"}
+                </FlatStatCell>
+                <FlatStatCell label="TODAY'S DAILY" color={ORANGE} idx={1}>
+                    {profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"}
+                </FlatStatCell>
+                <FlatStatCell label="GAMES PLAYED" color={COSMIC} idx={2}>
+                    {profile.gamesPlayed.toLocaleString()}
+                </FlatStatCell>
+                <FlatStatCell label="PIN COMPLETION" color={PINK} idx={3}>
+                    <>
+                        {profile.pins.unique}
+                        <span className="text-white/40"> / {BADGES.length}</span>
+                    </>
+                </FlatStatCell>
             </div>
 
             {/* Showcase — tabs between the full pin book (tier-grouped
@@ -455,52 +453,79 @@ function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; user
     );
 }
 
-function RankPill({ label, value, color }: { label: string; value: string; color: string }) {
+// Flush cell inside the hero's bottom stat strip. Centered label +
+// value, optional left border (so the first cell stays flush against
+// the card edge while interior cells get the vertical divider).
+function HeroStripCell({
+    label,
+    value,
+    color,
+    withBorder = false,
+}: {
+    label: string;
+    value: string;
+    color: string;
+    withBorder?: boolean;
+}) {
     return (
         <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{
-                background: "rgba(255,255,255,0.04)",
-                border: `1px solid ${color}55`,
-            }}
+            className="px-3 sm:px-4 py-4 text-center"
+            style={withBorder ? { borderLeft: "1px solid rgba(255,255,255,0.08)" } : undefined}
         >
-            <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
+            <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
                 {label}
-            </span>
-            <span className="font-display font-black text-[13px]" style={{ color }}>
+            </div>
+            <div
+                className="font-display font-black text-[20px] sm:text-[22px] tabular-nums mt-1"
+                style={{ color }}
+            >
                 {value}
-            </span>
+            </div>
         </div>
     );
 }
 
-function StatCard({ label, value, accent, deep }: { label: string; value: React.ReactNode; accent: string; deep: string }) {
-    // Chunky tile: outer p-[2px] frame in accent → deep gradient acts as
-    // a thick "metal" border, inner panel is the dark gradient background
-    // used by the home-screen CAPSULES / EXTRA PINS tiles, drop shadow
-    // gives the pressed-in feel.
+// Flat stat cell — no chunky frame, no drop shadow. The parent grid
+// supplies the outer top + bottom borders; this component adds the
+// per-cell dividers based on position. Grid is 2-col on mobile (so
+// cells 0+1 are the top row and 2+3 are the bottom row) and 4-col
+// on desktop (single row).
+//
+// Border map by idx:
+//   0 — no extras
+//   1 — left border (always; sits next to cell 0 on both layouts)
+//   2 — mobile: top border (it's the start of row 2). desktop: left border.
+//   3 — mobile: top + left borders. desktop: left border.
+function FlatStatCell({
+    label,
+    color,
+    children,
+    idx,
+}: {
+    label: string;
+    color: string;
+    children: ReactNode;
+    idx: 0 | 1 | 2 | 3;
+}) {
+    const cls =
+        idx === 0
+            ? ""
+            : idx === 1
+                ? "border-l border-white/[0.08]"
+                : idx === 2
+                    ? "border-t border-white/[0.08] sm:border-t-0 sm:border-l sm:border-white/[0.08]"
+                    : "border-t border-l border-white/[0.08]";
     return (
-        <div
-            className="rounded-xl p-[2px]"
-            style={{
-                background: `linear-gradient(180deg, ${accent} 0%, ${deep} 100%)`,
-                boxShadow: `0 3px 0 ${deep}, 0 5px 12px rgba(0,0,0,0.45)`,
-            }}
-        >
-            <div
-                className="rounded-[10px] px-4 py-4 flex flex-col items-start"
-                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+        <div className={`px-4 py-5 sm:py-6 flex flex-col items-start ${cls}`}>
+            <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45">
+                {label}
+            </span>
+            <span
+                className="font-display font-black text-[28px] sm:text-[32px] tabular-nums mt-1 leading-none"
+                style={{ color }}
             >
-                <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
-                    {label}
-                </span>
-                <span
-                    className="font-display font-black text-[22px] sm:text-[26px] tabular-nums mt-1"
-                    style={{ color: accent, textShadow: `0 2px 0 ${deep}` }}
-                >
-                    {value}
-                </span>
-            </div>
+                {children}
+            </span>
         </div>
     );
 }
