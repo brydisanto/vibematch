@@ -157,11 +157,14 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     // lowercase since the pinbook leaderboard zset keys members that
     // way (see /api/pinbook/leaderboard updateLeaderboardEntry).
     //
-    // Frenzy lookups: the frenzy_leaderboard zset doesn't exist yet
-    // (Frenzy ships on a separate branch). zscore + zrevrank return
-    // null against a missing key, so the profile gets `—` until Frenzy
-    // launches + scores start flowing. No code change needed at that
-    // point — the values will populate automatically.
+    // Frenzy lookups are gated behind NEXT_PUBLIC_FRENZY_ACTIVE so
+    // the profile never surfaces frenzy data before Frenzy ships
+    // (mirrors the NEXT_PUBLIC_PROMO_ACTIVE flag in
+    // lib/promo-badges.ts). Test scores written to frenzy_leaderboard
+    // from preview builds would otherwise leak onto prod profiles
+    // since KV is shared across deployments. Flip the env var to
+    // "true" in Vercel + redeploy at launch.
+    const frenzyActive = process.env.NEXT_PUBLIC_FRENZY_ACTIVE === "true";
     const [
         allTimeScore,
         allTimeRank,
@@ -174,8 +177,12 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         kv.zrevrank("classic_leaderboard", canonicalUsername) as Promise<number | null>,
         kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as Promise<number | null>,
         kv.zrevrank("pinbook:lb:rank", username) as Promise<number | null>,
-        kv.zscore("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
-        kv.zrevrank("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
+        frenzyActive
+            ? (kv.zscore("frenzy_leaderboard", canonicalUsername) as Promise<number | null>)
+            : Promise.resolve(null),
+        frenzyActive
+            ? (kv.zrevrank("frenzy_leaderboard", canonicalUsername) as Promise<number | null>)
+            : Promise.resolve(null),
     ]);
 
     const pinbook = pinbookRaw as
