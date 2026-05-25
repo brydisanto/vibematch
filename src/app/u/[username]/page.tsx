@@ -85,6 +85,12 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
     const tier = profile.tier;
     const isHolo = tier.id === "one_of_one";
     const isCosmic = tier.id === "cosmic";
+    // 69K Gold + Shadow Funk are the two mid-high tiers that previously
+    // got a static treatment — they sat between flat lower tiers and
+    // the animated Cosmic / One-Of-One backplates. A scattered sparkle
+    // field in the tier's own color adds elegance without competing
+    // with the rainbow holo + purple nebula above.
+    const hasSparkles = tier.id === "all_gold" || tier.id === "shadow_funk";
     return (
         <div
             className="min-h-screen w-full flex flex-col items-stretch px-4 py-6 sm:px-8 sm:py-10 relative"
@@ -160,6 +166,46 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                         <span className="tier-cosmic-particle" style={{ left: "82%", top: "28%", animationDelay: "2.4s" }} />
                         <span className="tier-cosmic-particle" style={{ left: "92%", top: "78%", animationDelay: "3.0s" }} />
                     </div>
+                )}
+                {/* Sparkle field for 69K Gold + Shadow Funk — 7 small
+                    tier-colored stars scattered across the card,
+                    twinkling on staggered cycles. The diagonal
+                    "profile-shimmer" sweep underneath runs a slow
+                    glint across the surface every ~9s for a "polished
+                    metal" feel without going as loud as cosmic. */}
+                {hasSparkles && (
+                    <>
+                        <div
+                            className="absolute inset-0 pointer-events-none profile-shimmer"
+                            aria-hidden
+                            style={{
+                                ["--shimmer-color" as string]: `${tier.color}26`,
+                            }}
+                        />
+                        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                            {[
+                                { left: "6%", top: "18%", delay: "0s" },
+                                { left: "16%", top: "72%", delay: "0.8s" },
+                                { left: "36%", top: "12%", delay: "1.6s" },
+                                { left: "52%", top: "62%", delay: "2.4s" },
+                                { left: "68%", top: "20%", delay: "3.2s" },
+                                { left: "84%", top: "70%", delay: "4.0s" },
+                                { left: "94%", top: "32%", delay: "4.8s" },
+                            ].map((p, i) => (
+                                <span
+                                    key={i}
+                                    className="profile-tier-sparkle"
+                                    style={{
+                                        left: p.left,
+                                        top: p.top,
+                                        animationDelay: p.delay,
+                                        background: tier.color,
+                                        boxShadow: `0 0 6px ${tier.color}, 0 0 12px ${tier.color}cc, 0 0 22px ${tier.color}66`,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
                 {/* Tier badge — top-right corner. Formatted as
                     "TIER: <LABEL>" per request, with tier-specific
@@ -381,6 +427,45 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     0%, 100% { opacity: 0; transform: scale(0.6); }
                     40%      { opacity: 1; transform: scale(1.1); }
                     60%      { opacity: 1; transform: scale(1.1); }
+                }
+                /* Tier-colored sparkle for 69K Gold + Shadow Funk.
+                   Each star fades up to a crisp 4-point cross via the
+                   star-shaped clip-path mask, holds for a beat, then
+                   fades back. Color comes from inline style (tier.color)
+                   so the same class powers both tiers. */
+                .profile-tier-sparkle {
+                    position: absolute;
+                    width: 4px;
+                    height: 4px;
+                    border-radius: 50%;
+                    opacity: 0;
+                    animation: profileTierSparkleKey 5s ease-in-out infinite;
+                }
+                @keyframes profileTierSparkleKey {
+                    0%, 100% { opacity: 0; transform: scale(0.45); }
+                    45%      { opacity: 1; transform: scale(1.3); }
+                    55%      { opacity: 1; transform: scale(1.3); }
+                }
+                /* Slow diagonal glint sweep — moves a thin tier-colored
+                   highlight band across the card every ~9s. Subtle
+                   enough to read as "polished surface" rather than a
+                   loud effect. */
+                .profile-shimmer {
+                    background: linear-gradient(
+                        110deg,
+                        transparent 35%,
+                        var(--shimmer-color, rgba(255,224,72,0.16)) 50%,
+                        transparent 65%
+                    );
+                    background-size: 220% 100%;
+                    background-position: 200% 0;
+                    animation: profileShimmerSweep 9s ease-in-out infinite;
+                    mix-blend-mode: screen;
+                }
+                @keyframes profileShimmerSweep {
+                    0%   { background-position: 200% 0; }
+                    55%  { background-position: -100% 0; }
+                    100% { background-position: -100% 0; }
                 }
             `}</style>
         </div>
