@@ -521,7 +521,7 @@ function PinShowcase({ topPins }: { topPins: ProfileResponse["pins"]["topPins"] 
                             </span>
                             <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
                         </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 sm:gap-3">
+                        <div className="grid grid-cols-4 sm:grid-cols-7 lg:grid-cols-8 gap-2 sm:gap-2.5">
                             {badges.map(badge => (
                                 <PinSlot
                                     key={badge.id}
