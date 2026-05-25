@@ -11,6 +11,7 @@ import {
     COSMIC,
     COSMIC_DEEP,
     PINK,
+    PINK_DEEP,
     INK_PANEL,
     INK_PANEL_LIGHT,
     INK_DARKEST,
@@ -248,7 +249,7 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
             <div className="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} deep={GOLD_DEEP} />
                 <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} deep={ORANGE_DEEP} />
-                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={GOLD} deep={GOLD_DEEP} />
+                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={COSMIC} deep={COSMIC_DEEP} />
                 <StatCard
                     label="PIN COMPLETION"
                     value={
@@ -260,8 +261,8 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                             </span>
                         </>
                     }
-                    accent={ORANGE}
-                    deep={ORANGE_DEEP}
+                    accent={PINK}
+                    deep={PINK_DEEP}
                 />
             </div>
 
@@ -299,7 +300,8 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 nebula plus twinkling particle field. Both ignore the
                 inline backplate styles via tier-* classes. */}
             <style>{`
-                .profileHero.tier-holo {
+                .profileHero.tier-holo,
+                .profileTrophyHolo {
                     background:
                         linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
                         conic-gradient(
@@ -516,7 +518,8 @@ function getEventAccent(eventId: string): string {
 function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
     const hasEvents = data.events.length > 0;
     const hasDailyWins = data.dailyWins > 0;
-    const isEmpty = !hasEvents && !hasDailyWins;
+    const hasPinDrop = data.completedPinBook;
+    const isEmpty = !hasEvents && !hasDailyWins && !hasPinDrop;
     if (isEmpty) {
         return (
             <div
@@ -538,10 +541,56 @@ function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
     }
     return (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {hasPinDrop && <PinDropTrophyCard totalPins={BADGES.length} />}
             {data.events.map(event => (
                 <EventTrophyCard key={event.id} event={event} />
             ))}
             {hasDailyWins && <DailyWinsCard wins={data.dailyWins} />}
+        </div>
+    );
+}
+
+function PinDropTrophyCard({ totalPins }: { totalPins: number }) {
+    // Exclusive trophy for completing the pin book. Uses the same
+    // animated holo treatment as the One-Of-One tier nameplate /
+    // PinBook "ONE OF ONE" row — rainbow conic gradient behind a
+    // dark scrim — because reaching 100% IS the One-Of-One tier.
+    // No accent border; the rotating frame is the border.
+    return (
+        <div className="profileTrophyHolo rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden transition-transform hover:-translate-y-[2px]">
+            {/* Dark scrim so text + the badge stand on something
+                readable instead of fighting the rainbow sweep. */}
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: "linear-gradient(180deg, rgba(8,4,20,0.62), rgba(8,4,20,0.78))" }}
+            />
+            <div className="relative w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] mb-3 z-10">
+                <Image
+                    src="/badges/pin_drop_complete.webp"
+                    alt="Pin Drop completionist badge"
+                    fill
+                    sizes="100px"
+                    className="object-contain drop-shadow-[0_4px_18px_rgba(255,255,255,0.45)]"
+                    unoptimized
+                />
+            </div>
+            <div className="relative z-10 font-mundial text-[9px] tracking-[0.28em] uppercase text-white/70">
+                EXCLUSIVE BADGE
+            </div>
+            <div
+                className="relative z-10 font-display font-black text-xl sm:text-2xl text-white leading-tight mt-0.5"
+                style={{ textShadow: "0 1px 4px rgba(0,0,0,0.85)" }}
+            >
+                PIN DROP!
+            </div>
+            <div
+                className="relative z-10 w-full h-px my-3"
+                style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)" }}
+            />
+            <div className="relative z-10 flex items-end justify-center gap-4 w-full">
+                <TrophyStat value={`${totalPins}`} label="PINS" color="#FFFFFF" />
+                <TrophyStat value="100%" label="COMPLETION" color="#FFFFFF" />
+            </div>
         </div>
     );
 }

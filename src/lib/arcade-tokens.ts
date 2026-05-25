@@ -19,6 +19,7 @@ export const RED_DEEP = "#6A0A05";
 export const RED_LIGHT = "#FF8A70";
 
 export const PINK = "#FF6B9D";
+export const PINK_DEEP = "#8E2A52";
 export const GREEN = "#2EFF2E";
 export const PURPLE_BG = "#7B3FA8";
 

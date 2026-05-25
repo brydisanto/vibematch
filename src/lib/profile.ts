@@ -50,6 +50,9 @@ export interface ProfileTrophyCase {
     /** Event trophies — one per promo/partnership the player engaged with.
      *  Empty when the player hasn't collected any promo pins yet. */
     events: ProfileEventTrophy[];
+    /** True when the player has hit 100% of BADGES.length unique pins,
+     *  unlocking the exclusive Pin Drop completionist badge. */
+    completedPinBook: boolean;
 }
 
 export interface ProfileTier {
@@ -230,9 +233,18 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
             } as ProfileEventTrophy;
         }),
     );
+    // Preview override: surface the Pin Drop completionist trophy on
+    // bry's profile even before he hits 100% so the design can be
+    // reviewed live. Drop this `|| username === "bry"` once the trophy
+    // is approved + actually earned in prod.
+    const completedPinBook =
+        (uniquePins >= BADGES.length && BADGES.length > 0) ||
+        username === "bry";
+
     const trophyCase: ProfileTrophyCase = {
         dailyWins: Number(dailyWinsRaw || 0),
         events: promoLookups.filter((t): t is ProfileEventTrophy => !!t),
+        completedPinBook,
     };
 
     const recentRuns: ProfileRecentRun[] = ((gameLogRaw as unknown[]) || [])
