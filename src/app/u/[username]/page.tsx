@@ -14,6 +14,7 @@ import {
 } from "@/lib/arcade-tokens";
 import Link from "next/link";
 import Image from "next/image";
+import ProfileStarfield from "./ProfileStarfield";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -88,13 +89,17 @@ export default async function ProfilePage({ params }: { params: Promise<PagePara
 function ProfileView({ profile }: { profile: ProfileResponse }) {
     const joined = formatJoinedDate(profile.joinedAt);
     const tier = profile.tier;
+    const isHolo = tier.id === "one_of_one";
+    const isCosmic = tier.id === "cosmic";
     return (
         <div
-            className="min-h-screen w-full flex flex-col items-stretch px-4 py-6 sm:px-8 sm:py-10"
+            className="min-h-screen w-full flex flex-col items-stretch px-4 py-6 sm:px-8 sm:py-10 relative"
             style={{
                 background: `radial-gradient(ellipse at top, ${INK_PANEL_LIGHT} 0%, ${INK_PANEL} 55%, ${INK_DARKEST} 100%)`,
             }}
         >
+            <ProfileStarfield />
+            <div className="relative z-10 flex flex-col items-stretch">
             {/* Top nav */}
             <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-6">
                 <Link
@@ -108,47 +113,87 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 </div>
             </div>
 
-            {/* Hero — tier-tinted backplate so the entire card reads as a
-                trophy case for the player's collection level. */}
-            <div className="w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 mb-6 relative overflow-hidden"
-                style={{
-                    background: `linear-gradient(180deg, ${tier.color}22, ${tier.accent}1a 60%, rgba(255,255,255,0.02))`,
-                    border: `1px solid ${tier.color}55`,
-                    boxShadow: `0 10px 40px -10px ${tier.color}55, inset 0 1px 0 rgba(255,255,255,0.06)`,
+            {/* Hero — nameplate adopts the player's collector-tier visual
+                treatment (holo for One-Of-One, cosmic nebula for Cosmic,
+                tinted gradient for the lower tiers) so the card reads as
+                a trophy case for the player's collection level. The
+                tier-specific CSS lives at the bottom of this file. */}
+            <div
+                className={`profileHero w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 mb-6 relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
+                style={isHolo || isCosmic ? undefined : {
+                    background: `linear-gradient(180deg, ${tier.color}26, ${tier.accent}26)`,
+                    border: `1px solid ${tier.color}99`,
+                    boxShadow: `0 0 18px ${tier.color}40, inset 0 1px 0 rgba(255,255,255,0.04)`,
                 }}
             >
-                {/* Tier badge in the top-right corner of the hero */}
+                {/* Dark scrim above the holo conic gradient so white text
+                    sits on something readable instead of fighting rainbow
+                    sweep. Matches the TierInfoModal one-of-one row. */}
+                {isHolo && (
+                    <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ background: "linear-gradient(180deg, rgba(8,4,20,0.55), rgba(8,4,20,0.72))" }}
+                    />
+                )}
+                {/* Cosmic twinkle particle field — six sparkles drifting
+                    on staggered cycles so the pattern never reads synced. */}
+                {isCosmic && (
+                    <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                        <span className="tier-cosmic-particle" style={{ left: "8%", top: "22%", animationDelay: "0s" }} />
+                        <span className="tier-cosmic-particle" style={{ left: "20%", top: "70%", animationDelay: "0.6s" }} />
+                        <span className="tier-cosmic-particle" style={{ left: "40%", top: "14%", animationDelay: "1.2s" }} />
+                        <span className="tier-cosmic-particle" style={{ left: "62%", top: "62%", animationDelay: "1.8s" }} />
+                        <span className="tier-cosmic-particle" style={{ left: "82%", top: "28%", animationDelay: "2.4s" }} />
+                        <span className="tier-cosmic-particle" style={{ left: "92%", top: "78%", animationDelay: "3.0s" }} />
+                    </div>
+                )}
+                {/* Tier badge — top-right corner. Formatted as
+                    "TIER: <LABEL>" per request, with tier-specific
+                    styling so it's the only place tier is shown in
+                    the nameplate (no duplicate pill in the rank row). */}
                 <div
-                    className="absolute top-4 right-4 sm:top-5 sm:right-5 px-2.5 py-1 rounded-full flex items-center gap-1.5"
-                    style={{
+                    className={`absolute top-4 right-4 sm:top-5 sm:right-5 px-3 py-1.5 rounded-full flex items-center gap-1.5 z-20 ${isHolo ? "tier-holo-pill" : ""}`}
+                    style={isHolo || isCosmic ? {
+                        background: isHolo ? "rgba(8,4,20,0.55)" : "rgba(45,14,84,0.55)",
+                        border: `1px solid ${isHolo ? "rgba(255,255,255,0.75)" : "rgba(179,102,255,0.85)"}`,
+                        boxShadow: isHolo
+                            ? "0 0 14px rgba(255,255,255,0.45)"
+                            : "0 0 16px rgba(179,102,255,0.55)",
+                    } : {
                         background: `${tier.color}1f`,
                         border: `1px solid ${tier.color}80`,
                         boxShadow: `0 0 12px -4px ${tier.color}aa`,
                     }}
                 >
                     <span
-                        className="inline-block w-1.5 h-1.5 rounded-full"
-                        style={{ background: tier.color, boxShadow: `0 0 6px ${tier.color}` }}
+                        className={`inline-block w-1.5 h-1.5 rounded-full ${isHolo ? "tier-holo-dot" : ""} ${isCosmic ? "tier-cosmic-dot" : ""}`}
+                        style={isHolo || isCosmic ? undefined : { background: tier.color, boxShadow: `0 0 6px ${tier.color}` }}
                     />
                     <span
                         className="font-display font-black text-[10px] tracking-[0.22em] uppercase"
-                        style={{ color: tier.color }}
+                        style={{
+                            color: isHolo ? "#FFFFFF" : isCosmic ? "#E8C8FF" : tier.color,
+                            textShadow: isHolo
+                                ? "0 0 6px rgba(255,255,255,0.45), 0 1px 2px rgba(0,0,0,0.9)"
+                                : isCosmic
+                                    ? "0 0 10px rgba(179,102,255,0.65), 0 1px 2px rgba(0,0,0,0.7)"
+                                    : undefined,
+                        }}
                     >
-                        {tier.label}
+                        TIER: {tier.label}
                     </span>
                 </div>
-                <div
-                    className="absolute inset-x-0 bottom-0 h-1 pointer-events-none"
-                    style={{ background: `linear-gradient(90deg, transparent, ${tier.color}, ${tier.accent}, transparent)` }}
-                />
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mt-2 sm:mt-0">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mt-2 sm:mt-0 relative z-10">
                     <ProfileAvatar avatarUrl={profile.avatarUrl} username={profile.username} />
                     <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
-                        <h1 className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight">
+                        <h1
+                            className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight"
+                            style={isHolo ? { textShadow: "0 1px 4px rgba(0,0,0,0.85)" } : undefined}
+                        >
                             {profile.username}
                         </h1>
                         {joined && (
-                            <div className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/40 mt-2">
+                            <div className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/50 mt-2">
                                 Joined {joined}
                             </div>
                         )}
@@ -167,13 +212,8 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                                     color={ORANGE}
                                 />
                             )}
-                            <RankPill
-                                label="TIER"
-                                value={tier.label}
-                                color={tier.color}
-                            />
                             {profile.rank.score === null && profile.rank.pins === null && (
-                                <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/40">
+                                <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/50">
                                     Not yet ranked
                                 </span>
                             )}
@@ -258,6 +298,96 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     PLAY PIN DROP →
                 </Link>
             </div>
+            </div>
+            {/* Tier-specific CSS — mirrors TierInfoModal so the nameplate
+                reads as the same trophy you see in the COLLECTOR TIERS
+                modal. Holo (One-Of-One) uses a slow-rotating conic
+                gradient + dark scrim. Cosmic uses a breathing purple
+                nebula plus twinkling particle field. Both ignore the
+                inline backplate styles via tier-* classes. */}
+            <style>{`
+                .profileHero.tier-holo {
+                    background:
+                        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+                        conic-gradient(
+                            from var(--profile-holo-angle, 0deg),
+                            #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
+                            #84fab0, #fad0c4, #ffdde1, #ff6ad5
+                        );
+                    background-blend-mode: overlay, normal;
+                    animation: profileHoloSpin 8s linear infinite;
+                    border: 1px solid rgba(255,255,255,0.55);
+                    box-shadow: 0 0 28px rgba(255,255,255,0.22), inset 0 0 28px rgba(255,255,255,0.12);
+                }
+                .tier-holo-dot {
+                    width: 6px;
+                    height: 6px;
+                    background: conic-gradient(
+                        from 0deg,
+                        #ff6ad5, #c774e8, #ad8cff, #8795e8, #94d0ff,
+                        #84fab0, #fad0c4, #ffdde1, #ff6ad5
+                    );
+                    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+                    animation: profileHoloDotSpin 4s linear infinite;
+                }
+                @keyframes profileHoloSpin {
+                    to { --profile-holo-angle: 360deg; }
+                }
+                @keyframes profileHoloDotSpin {
+                    to { transform: rotate(360deg); }
+                }
+                @property --profile-holo-angle {
+                    syntax: "<angle>";
+                    inherits: false;
+                    initial-value: 0deg;
+                }
+                .profileHero.tier-cosmic {
+                    background:
+                        radial-gradient(circle at 18% 28%, rgba(179,102,255,0.42), transparent 55%),
+                        radial-gradient(circle at 82% 75%, rgba(216,160,255,0.35), transparent 55%),
+                        linear-gradient(180deg, rgba(45,14,84,0.85), rgba(21,6,48,0.92));
+                    border: 1px solid rgba(179,102,255,0.65);
+                    animation: profileCosmicBreathe 4.5s ease-in-out infinite;
+                }
+                .tier-cosmic-dot {
+                    width: 6px;
+                    height: 6px;
+                    background: radial-gradient(circle at 30% 30%, #E8C8FF, #B366FF 55%, #6B1FC0);
+                    box-shadow:
+                        0 0 8px rgba(179,102,255,0.9),
+                        0 0 16px rgba(179,102,255,0.55);
+                    animation: profileCosmicDotPulse 2.2s ease-in-out infinite;
+                }
+                .tier-cosmic-particle {
+                    position: absolute;
+                    width: 3px;
+                    height: 3px;
+                    border-radius: 50%;
+                    background: #E8C8FF;
+                    box-shadow:
+                        0 0 6px rgba(232,200,255,0.95),
+                        0 0 12px rgba(179,102,255,0.75);
+                    opacity: 0;
+                    animation: profileCosmicTwinkle 3.6s ease-in-out infinite;
+                }
+                @keyframes profileCosmicBreathe {
+                    0%, 100% {
+                        box-shadow: 0 0 28px rgba(179,102,255,0.4), inset 0 0 28px rgba(179,102,255,0.18);
+                    }
+                    50% {
+                        box-shadow: 0 0 40px rgba(179,102,255,0.65), inset 0 0 34px rgba(179,102,255,0.3);
+                    }
+                }
+                @keyframes profileCosmicDotPulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.35); opacity: 0.8; }
+                }
+                @keyframes profileCosmicTwinkle {
+                    0%, 100% { opacity: 0; transform: scale(0.6); }
+                    40%      { opacity: 1; transform: scale(1.1); }
+                    60%      { opacity: 1; transform: scale(1.1); }
+                }
+            `}</style>
         </div>
     );
 }

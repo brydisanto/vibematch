@@ -138,9 +138,15 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         return a.name.localeCompare(b.name);
     });
     const topPins = owned.slice(0, 6);
-    const baseDenominator = BADGES.filter(b => !b.collectOnly).length;
-    const completion = baseDenominator > 0
-        ? Math.round((uniquePins / baseDenominator) * 100)
+    // Use BADGES.length so tier + completion stay in sync with the
+    // canonical Tier modal (TierInfoModal), the pin leaderboard
+    // (TOTAL_BADGES = BADGES.length), and the home-screen hero chip
+    // (LandingPageArcade uses BADGES.length too). Earlier this excluded
+    // collectOnly badges, which inflated cazsreyem (77 unique) to 100%
+    // / One-Of-One despite the pin leaderboard ranking him at #60.
+    const denominator = BADGES.length;
+    const completion = denominator > 0
+        ? Math.round((uniquePins / denominator) * 100)
         : 0;
 
     const recentRuns: ProfileRecentRun[] = ((gameLogRaw as unknown[]) || [])

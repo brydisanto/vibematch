@@ -1625,7 +1625,7 @@ export default function LandingPageArcade({
                             className="flex-1 relative flex flex-col items-stretch justify-start px-5 py-6"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${GOLD}14, transparent 60%)` }}
                         >
-                            <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-center justify-center gap-3 mb-3">
                                 <button
                                     type="button"
                                     onClick={() => setFeedTab("global")}
@@ -1634,7 +1634,7 @@ export default function LandingPageArcade({
                                         color: feedTab === "global" ? GOLD : "rgba(255,255,255,0.35)",
                                     }}
                                 >
-                                    RECENT GAMES
+                                    ALL GAMES
                                 </button>
                                 <div className="w-px h-3" style={{ background: "rgba(255,255,255,0.15)" }} />
                                 <button
