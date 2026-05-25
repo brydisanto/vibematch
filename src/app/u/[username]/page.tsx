@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getProfile, type ProfileResponse } from "@/lib/profile";
-import { TIER_COLORS, TIER_DISPLAY_NAMES, type BadgeTier } from "@/lib/badges";
+import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type Badge, type BadgeTier } from "@/lib/badges";
 import {
     GOLD,
     ORANGE,
@@ -63,25 +63,6 @@ function formatJoinedDate(iso: string | null): string | null {
     } catch {
         return null;
     }
-}
-
-function formatRunDate(ts: number): string {
-    if (!ts) return "";
-    try {
-        const d = new Date(ts);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    } catch {
-        return "";
-    }
-}
-
-function modeLabel(mode: string): string {
-    return (mode || "classic").toUpperCase().replace(/[_-]/g, " ");
-}
-
-function modeColor(mode: string): string {
-    if (mode === "daily") return ORANGE;
-    return GOLD;
 }
 
 export default async function ProfilePage({ params }: { params: Promise<PageParams> }) {
@@ -243,62 +224,16 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 <StatCard label="PIN COMPLETION" value={`${profile.pins.completion}%`} accent={ORANGE} />
             </div>
 
-            {/* Pin showcase — summary row on top so the grid below reads
-                as the actual book. Renders every owned pin, sorted by
-                tier (cosmic → blue) then name. */}
-            <div className="w-full max-w-4xl mx-auto mb-6">
-                <SectionHeader label="PIN SHOWCASE" accent={GOLD} />
-                <TierBreakdown byTier={profile.pins.byTier} unique={profile.pins.unique} total={profile.pins.total} />
-                {profile.pins.topPins.length === 0 ? (
-                    <div className="mt-4">
-                        <EmptyState text="No pins collected yet." />
-                    </div>
-                ) : (
-                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-6 gap-3">
-                        {profile.pins.topPins.map(pin => (
-                            <PinCard key={pin.id} pin={pin} />
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Recent runs */}
+            {/* Pin showcase — mirrors the PinBook layout: tier-grouped
+                grid (cosmic → blue) with locked "???" slots for unowned
+                pins, dotted-pill section headers, and a duplicate-count
+                badge in the top-right of stacked owned pins. */}
             <div className="w-full max-w-4xl mx-auto mb-10">
-                <SectionHeader label="RECENT RUNS" accent={GOLD} />
-                {profile.recentRuns.length === 0 ? (
-                    <EmptyState text="No runs yet." />
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        {profile.recentRuns.map((run, i) => (
-                            <div
-                                key={`${run.timestamp}-${i}`}
-                                className="rounded-lg px-4 py-3 flex items-center justify-between gap-3"
-                                style={{
-                                    background: CARD_BG,
-                                    border: `1px solid ${GOLD}22`,
-                                }}
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <span
-                                        className="font-display text-[9px] tracking-[0.18em] px-2 py-1 rounded-sm font-black"
-                                        style={{
-                                            color: "#1A0E02",
-                                            background: modeColor(run.mode),
-                                        }}
-                                    >
-                                        {modeLabel(run.mode)}
-                                    </span>
-                                    <span className="font-mundial text-[11px] text-white/50">
-                                        {formatRunDate(run.timestamp)}
-                                    </span>
-                                </div>
-                                <span className="font-display font-black tabular-nums text-[15px] text-white">
-                                    {run.score.toLocaleString()}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <SectionHeader label="PIN SHOWCASE" accent={GOLD} />
+                <PinShowcase topPins={profile.pins.topPins} />
+                <div className="mt-4 text-right font-mundial text-[10px] tracking-[0.22em] uppercase text-white/30">
+                    {profile.pins.unique} of {BADGES.length} pins collected
+                </div>
             </div>
 
             {/* Footer */}
@@ -521,88 +456,138 @@ function SectionHeader({ label, accent }: { label: string; accent: string }) {
     );
 }
 
-function EmptyState({ text }: { text: string }) {
+// Mirrors PinBook's design: BADGES grouped by tier in PinBook's
+// canonical order (cosmic → blue). Each tier section gets a colored
+// dot + name + owned/total header. Owned pins render full art with a
+// tier-color tint + glow + a duplicate-count chip; unowned slots
+// render as a flat dark card with a faded "???" label.
+const TIER_ORDER: BadgeTier[] = ["cosmic", "gold", "special", "silver", "blue"];
+
+const TIER_GLOW: Record<BadgeTier, string> = {
+    cosmic: "0 0 12px rgba(179, 102, 255, 0.6), 0 0 24px rgba(179, 102, 255, 0.25)",
+    gold: "0 0 12px rgba(255, 224, 72, 0.5), 0 0 24px rgba(255, 224, 72, 0.2)",
+    special: "0 0 12px rgba(255, 140, 66, 0.5), 0 0 24px rgba(255, 140, 66, 0.2)",
+    silver: "0 0 12px rgba(74, 158, 255, 0.5), 0 0 24px rgba(74, 158, 255, 0.2)",
+    blue: "0 0 10px rgba(224, 224, 224, 0.3), 0 0 20px rgba(224, 224, 224, 0.1)",
+};
+
+function PinShowcase({ topPins }: { topPins: ProfileResponse["pins"]["topPins"] }) {
+    const ownedById = new Map(topPins.map(p => [p.id, p]));
+    const groupedBadges: Record<BadgeTier, Badge[]> = {
+        cosmic: [],
+        gold: [],
+        special: [],
+        silver: [],
+        blue: [],
+    };
+    for (const badge of BADGES) {
+        groupedBadges[badge.tier].push(badge);
+    }
     return (
-        <div
-            className="rounded-xl px-5 py-8 text-center font-mundial text-[11px] uppercase tracking-[0.22em] text-white/40"
-            style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px dashed rgba(255,255,255,0.08)",
-            }}
-        >
-            {text}
+        <div className="flex flex-col gap-6">
+            {TIER_ORDER.map(tier => {
+                const badges = groupedBadges[tier];
+                if (badges.length === 0) return null;
+                const tierColor = TIER_COLORS[tier];
+                const tierName = TIER_DISPLAY_NAMES[tier];
+                const ownedInTier = badges.filter(b => ownedById.has(b.id)).length;
+                return (
+                    <div key={tier}>
+                        <div className="flex items-center gap-2.5 mb-3">
+                            <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ background: tierColor, boxShadow: `0 0 8px ${tierColor}` }}
+                            />
+                            <h3
+                                className="font-display text-sm font-black uppercase tracking-wider"
+                                style={{ color: tierColor }}
+                            >
+                                {tierName}
+                            </h3>
+                            <span className="text-white/30 text-[10px] font-mundial font-bold">
+                                {ownedInTier}/{badges.length}
+                            </span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
+                        </div>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 sm:gap-3">
+                            {badges.map(badge => (
+                                <PinSlot
+                                    key={badge.id}
+                                    badge={badge}
+                                    owned={ownedById.get(badge.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
 
-function PinCard({ pin }: { pin: ProfileResponse["pins"]["topPins"][number] }) {
-    const color = TIER_COLORS[pin.tier];
+function PinSlot({
+    badge,
+    owned,
+}: {
+    badge: Badge;
+    owned: ProfileResponse["pins"]["topPins"][number] | undefined;
+}) {
+    const tierColor = TIER_COLORS[badge.tier];
+    const isOwned = !!owned;
+    const count = owned?.count ?? 0;
     return (
-        <div
-            className="rounded-xl p-3 flex flex-col items-center text-center"
-            style={{
-                background: CARD_BG,
-                border: `1px solid ${color}55`,
-                boxShadow: `0 6px 20px -8px ${color}55`,
-            }}
-        >
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-2">
-                <Image
-                    src={pin.image}
-                    alt={pin.name}
-                    fill
-                    sizes="80px"
-                    className="object-contain"
-                    unoptimized
-                />
-            </div>
-            <span
-                className="font-mundial text-[8px] tracking-[0.22em] uppercase mb-1"
-                style={{ color }}
+        <div className="relative">
+            <div
+                className="relative rounded-xl overflow-hidden"
+                style={{
+                    background: isOwned
+                        ? `linear-gradient(135deg, ${tierColor}15, ${tierColor}08)`
+                        : CARD_BG,
+                    border: `1.5px solid ${isOwned ? `${tierColor}40` : "rgba(255,255,255,0.06)"}`,
+                    boxShadow: isOwned ? TIER_GLOW[badge.tier] : "none",
+                }}
             >
-                {TIER_DISPLAY_NAMES[pin.tier]}
-            </span>
-            <span className="font-display font-black text-[10px] text-white/90 leading-tight line-clamp-2">
-                {pin.name}
-            </span>
-            {pin.count > 1 && (
-                <span className="font-mundial text-[9px] text-white/40 mt-1">
-                    ×{pin.count}
-                </span>
-            )}
-        </div>
-    );
-}
-
-function TierBreakdown({ byTier, unique, total }: { byTier: Record<BadgeTier, number>; unique: number; total: number }) {
-    const tiers: BadgeTier[] = ["cosmic", "gold", "special", "silver", "blue"];
-    const hasAny = tiers.some(t => byTier[t] > 0);
-    if (!hasAny) return null;
-    return (
-        <div className="rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
-            style={{
-                background: CARD_BG,
-                border: `1px solid ${CARD_BORDER}`,
-            }}
-        >
-            <div className="flex flex-wrap gap-3">
-                {tiers.map(t => byTier[t] > 0 && (
-                    <div key={t} className="flex items-center gap-1.5">
+                <div className="relative aspect-square p-2">
+                    <Image
+                        src={badge.image}
+                        alt={isOwned ? badge.name : "Undiscovered"}
+                        fill
+                        sizes="(max-width: 640px) 80px, 100px"
+                        className="object-contain p-1.5"
+                        style={isOwned ? undefined : { filter: "brightness(0)", opacity: 0.15 }}
+                        unoptimized
+                    />
+                </div>
+                <div className="px-1.5 pb-2 text-center">
+                    <div className="flex items-center justify-center gap-1 mb-0.5">
                         <span
-                            className="inline-block w-2 h-2 rounded-full"
-                            style={{ background: TIER_COLORS[t] }}
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{
+                                background: isOwned ? tierColor : "rgba(255,255,255,0.15)",
+                            }}
                         />
-                        <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/50">
-                            {TIER_DISPLAY_NAMES[t]}
-                        </span>
-                        <span className="font-display font-black text-[11px] tabular-nums text-white/90">
-                            {byTier[t]}
+                        <span
+                            className={`text-[9px] sm:text-[10px] font-mundial font-bold leading-tight truncate ${
+                                isOwned ? "text-white/80" : "text-white/20"
+                            }`}
+                        >
+                            {isOwned ? badge.name : "???"}
                         </span>
                     </div>
-                ))}
-            </div>
-            <div className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/40">
-                {unique} unique · {total} total
+                </div>
+                {isOwned && count > 1 && (
+                    <div
+                        className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center"
+                        style={{
+                            background: tierColor,
+                            boxShadow: `0 0 8px ${tierColor}80`,
+                        }}
+                    >
+                        <span className="text-[9px] font-black font-mundial text-black leading-none">
+                            x{count}
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );
