@@ -40,6 +40,7 @@ import {
     ORANGE,
     ORANGE_DEEP,
     PINK,
+    RED as TOKEN_RED,
 } from "@/lib/arcade-tokens";
 
 interface LandingPageArcadeProps {
@@ -126,6 +127,28 @@ interface DailyStats {
 // has no uploaded avatar. Handles data: URLs (next/image refuses
 // these in optimized mode) by routing them to a plain <img>.
 const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
+
+// Tight single-letter mode chip used on global feed rows. Replaces the
+// wider CLASSIC / DAILY text pill so usernames have predictable room
+// next to the chip + avatar regardless of mode label length.
+//   C = Classic (gold), D = Daily (orange), F = Frenzy (red).
+function ModeChip({ mode }: { mode: string }) {
+    const map: Record<string, { letter: string; bg: string }> = {
+        classic: { letter: "C", bg: GOLD },
+        daily: { letter: "D", bg: ORANGE },
+        frenzy: { letter: "F", bg: TOKEN_RED },
+    };
+    const m = map[mode] || map.classic;
+    return (
+        <span
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0 font-display font-black text-[12px] leading-none"
+            style={{ background: m.bg, color: "#1A0E02" }}
+            aria-label={mode.toUpperCase()}
+        >
+            {m.letter}
+        </span>
+    );
+}
 
 function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
     const src = avatarUrl || DEFAULT_AVATAR;
@@ -1731,42 +1754,31 @@ export default function LandingPageArcade({
                                     </div>
                                 ) : (
                                     <div className="w-full flex flex-col gap-2">
-                                        {globalRuns.map((run, i) => {
-                                            const modeColorVal = run.mode === "daily" ? ORANGE : GOLD;
-                                            return (
-                                                <Link
-                                                    key={`${run.username}-${run.timestamp}-${i}`}
-                                                    href={`/u/${encodeURIComponent(run.username)}`}
-                                                    className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
-                                                    style={{
-                                                        background: "rgba(255,255,255,0.04)",
-                                                        border: `1px solid ${GOLD}15`,
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <FeedAvatar avatarUrl={run.avatarUrl} username={run.username} />
-                                                        <span
-                                                            className="font-display text-[11px] font-black truncate text-white/90"
-                                                            title={run.username}
-                                                        >
-                                                            {run.username}
-                                                        </span>
-                                                        <span
-                                                            className="font-display text-[8px] tracking-[0.18em] px-1.5 py-[2px] rounded-sm shrink-0"
-                                                            style={{
-                                                                color: "#1A0E02",
-                                                                background: modeColorVal,
-                                                            }}
-                                                        >
-                                                            {run.mode === "daily" ? "DAILY" : "CLASSIC"}
-                                                        </span>
-                                                    </div>
-                                                    <span className="font-display font-black tabular-nums text-[12px] text-white/85 shrink-0">
-                                                        {run.score.toLocaleString()}
+                                        {globalRuns.map((run, i) => (
+                                            <Link
+                                                key={`${run.username}-${run.timestamp}-${i}`}
+                                                href={`/u/${encodeURIComponent(run.username)}`}
+                                                className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
+                                                style={{
+                                                    background: "rgba(255,255,255,0.04)",
+                                                    border: `1px solid ${GOLD}15`,
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <FeedAvatar avatarUrl={run.avatarUrl} username={run.username} />
+                                                    <ModeChip mode={run.mode} />
+                                                    <span
+                                                        className="font-display text-[11px] font-black truncate text-white/90"
+                                                        title={run.username}
+                                                    >
+                                                        {run.username}
                                                     </span>
-                                                </Link>
-                                            );
-                                        })}
+                                                </div>
+                                                <span className="font-display font-black tabular-nums text-[12px] text-white/85 shrink-0">
+                                                    {run.score.toLocaleString()}
+                                                </span>
+                                            </Link>
+                                        ))}
                                     </div>
                                 )
                             )}
