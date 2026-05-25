@@ -428,6 +428,29 @@ export async function POST(req: Request) {
             }
         }
 
+        // Global activity feed for the home-screen RECENT RUNS "GLOBAL"
+        // tab. Capped at 50 entries by trimming after the add. Banned
+        // users were rejected at the isUserBanned gate above, so we
+        // never write entries for them. The trim keeps storage bounded
+        // and matches the desktop arcade panel size — older entries
+        // fall off as new ones come in.
+        try {
+            const feedTs = Date.now();
+            const feedEntry = JSON.stringify({
+                username: canonicalUsername,
+                mode,
+                score,
+                ts: feedTs,
+            });
+            const feedPipe = kv.pipeline();
+            feedPipe.zadd('global_feed', { score: feedTs, member: feedEntry });
+            feedPipe.zremrangebyrank('global_feed', 0, -51);
+            await feedPipe.exec();
+        } catch (feedErr) {
+            // Never let a feed-write failure block a legit score post.
+            console.warn('[Scores] global_feed write failed', feedErr);
+        }
+
         // Audit log — fire-and-forget. No-op when AUDIT_LOG_PEPPER
         // isn't configured. Awaiting here so the entry lands on KV
         // before we return; the helper has its own try/catch so
