@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { getProfile, type ProfileResponse } from "@/lib/profile";
 import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type Badge, type BadgeTier } from "@/lib/badges";
 import {
@@ -499,10 +500,19 @@ function StatCard({ label, value, accent, deep }: { label: string; value: React.
 
 // Trophy Case — running record of special-event achievements. Right
 // now the only ongoing event is the OpenSea promo (Aye Aye, Captain!)
-// and the Daily Challenge champion bonus. Both render as chunky
-// trophy cards mirroring the stat-tile treatment so the tab keeps
-// visual consistency with the rest of the profile. Adds will slot
-// in here as new event trophies + leaderboards ship.
+// and the Daily Challenge champion bonus. Tiles use the same "soft
+// raised glow" treatment as PinBook tiles (subtle accent-tinted bg
+// + accent border + soft accent glow) rather than the chunky
+// gold-framed treatment used by the nameplate and stat tiles, so
+// the section visually differentiates from what sits above it.
+// Each trophy gets a partner-appropriate glow color.
+const OPENSEA_BLUE = "#4A9EFF";
+
+function getEventAccent(eventId: string): string {
+    if (eventId === "promo_opensea") return OPENSEA_BLUE;
+    return GOLD;
+}
+
 function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
     const hasEvents = data.events.length > 0;
     const hasDailyWins = data.dailyWins > 0;
@@ -510,28 +520,24 @@ function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
     if (isEmpty) {
         return (
             <div
-                className="rounded-xl p-[2px]"
+                className="rounded-xl px-6 py-10 text-center"
                 style={{
-                    background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
-                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+                    background: `linear-gradient(135deg, ${GOLD}10, ${GOLD}05)`,
+                    border: `1.5px solid ${GOLD}30`,
+                    boxShadow: `0 0 14px ${GOLD}22, 0 0 28px ${GOLD}10`,
                 }}
             >
-                <div
-                    className="rounded-[10px] px-6 py-10 text-center"
-                    style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
-                >
-                    <div className="font-display font-black text-lg text-white/85 mb-2">
-                        No trophies yet
-                    </div>
-                    <div className="font-mundial text-[11px] tracking-[0.22em] uppercase text-white/40">
-                        Collect event pins and win daily challenges to fill this case.
-                    </div>
+                <div className="font-display font-black text-lg text-white/85 mb-2">
+                    No trophies yet
+                </div>
+                <div className="font-mundial text-[11px] tracking-[0.22em] uppercase text-white/40">
+                    Collect event pins and win daily challenges to fill this case.
                 </div>
             </div>
         );
     }
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {data.events.map(event => (
                 <EventTrophyCard key={event.id} event={event} />
             ))}
@@ -540,108 +546,110 @@ function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
     );
 }
 
-function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["events"][number] }) {
+function TrophyShell({
+    accent,
+    children,
+}: {
+    accent: string;
+    children: ReactNode;
+}) {
+    // Square-ish trophy plaque. PinBook-style soft accent glow +
+    // semi-transparent accent border, no chunky frame, no thick
+    // drop shadow. Distinct from the gold-framed nameplate +
+    // stat tiles above so the section reads as a different
+    // surface. Hover lift makes the trophy feel interactive.
     return (
         <div
-            className="rounded-xl p-[2px]"
+            className="rounded-xl p-4 flex flex-col items-center text-center transition-transform hover:-translate-y-[2px]"
             style={{
-                background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
-                boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+                background: `linear-gradient(135deg, ${accent}18, ${accent}06)`,
+                border: `1.5px solid ${accent}40`,
+                boxShadow: `0 0 14px ${accent}33, 0 0 28px ${accent}18`,
             }}
         >
-            <div
-                className="rounded-[10px] p-4 flex items-center gap-4"
-                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
-            >
-                <div
-                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full shrink-0 overflow-hidden"
-                    style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: `1.5px solid ${GOLD}55`,
-                        boxShadow: `0 0 14px ${GOLD}33`,
-                    }}
-                >
-                    <Image
-                        src={event.image}
-                        alt={event.name}
-                        fill
-                        sizes="64px"
-                        className="object-contain p-1.5"
-                        unoptimized
-                    />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
-                        {event.partnerName} EVENT
-                    </div>
-                    <div
-                        className="font-display font-black text-lg sm:text-xl text-white truncate"
-                        style={{ textShadow: `0 2px 0 ${GOLD_DEEP}` }}
-                    >
-                        {event.name}
-                    </div>
-                    <div className="flex items-baseline gap-3 mt-1.5">
-                        <div className="font-display font-black text-sm" style={{ color: GOLD }}>
-                            ×{event.owned}
-                            <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 ml-1.5">
-                                COLLECTED
-                            </span>
-                        </div>
-                        {event.rank !== null && (
-                            <div className="font-display font-black text-sm" style={{ color: ORANGE }}>
-                                #{event.rank}
-                                <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 ml-1.5">
-                                    EVENT RANK
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            {children}
         </div>
+    );
+}
+
+function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["events"][number] }) {
+    const accent = getEventAccent(event.id);
+    return (
+        <TrophyShell accent={accent}>
+            <div className="relative w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] mb-3">
+                <Image
+                    src={event.image}
+                    alt={event.name}
+                    fill
+                    sizes="100px"
+                    className="object-contain"
+                    unoptimized
+                />
+            </div>
+            <div className="font-display font-black text-sm sm:text-base text-white leading-tight line-clamp-2 min-h-[2.4em] flex items-center">
+                {event.name}
+            </div>
+            <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 mt-1">
+                {event.partnerName} EVENT
+            </div>
+            <div
+                className="w-full h-px my-3"
+                style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }}
+            />
+            <div className="flex items-end justify-center gap-4 w-full">
+                <TrophyStat value={`×${event.owned}`} label="COLLECTED" color={accent} />
+                {event.rank !== null && (
+                    <TrophyStat value={`#${event.rank}`} label="RANK" color={ORANGE} />
+                )}
+            </div>
+        </TrophyShell>
     );
 }
 
 function DailyWinsCard({ wins }: { wins: number }) {
     return (
-        <div
-            className="rounded-xl p-[2px]"
-            style={{
-                background: `linear-gradient(180deg, ${ORANGE} 0%, ${ORANGE_DEEP} 100%)`,
-                boxShadow: `0 3px 0 ${ORANGE_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
-            }}
-        >
+        <TrophyShell accent={ORANGE}>
             <div
-                className="rounded-[10px] p-4 flex items-center gap-4"
-                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+                className="w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] mb-3 rounded-full flex items-center justify-center"
+                style={{
+                    background: `radial-gradient(circle at 35% 28%, ${ORANGE}, ${ORANGE_DEEP})`,
+                    border: `1.5px solid ${ORANGE}77`,
+                    boxShadow: `0 0 18px ${ORANGE}55, inset 0 -8px 16px ${ORANGE_DEEP}`,
+                }}
             >
-                <div
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full shrink-0 flex items-center justify-center"
-                    style={{
-                        background: `radial-gradient(circle at 35% 28%, ${ORANGE}, ${ORANGE_DEEP})`,
-                        border: `1.5px solid ${ORANGE}66`,
-                        boxShadow: `0 0 14px ${ORANGE}55`,
-                    }}
+                <span
+                    className="font-display font-black text-3xl sm:text-4xl text-white"
+                    style={{ textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                 >
-                    <span className="font-display font-black text-2xl sm:text-3xl text-white" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}>
-                        {wins}
-                    </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
-                        DAILY CHALLENGE
-                    </div>
-                    <div
-                        className="font-display font-black text-lg sm:text-xl text-white"
-                        style={{ textShadow: `0 2px 0 ${ORANGE_DEEP}` }}
-                    >
-                        {wins === 1 ? "Champion Win" : "Champion Wins"}
-                    </div>
-                    <div className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/40 mt-1.5">
-                        Counting since the trophy case launched
-                    </div>
-                </div>
+                    {wins}
+                </span>
             </div>
+            <div className="font-display font-black text-sm sm:text-base text-white leading-tight line-clamp-2 min-h-[2.4em] flex items-center">
+                {wins === 1 ? "Champion Win" : "Champion Wins"}
+            </div>
+            <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 mt-1">
+                DAILY CHALLENGE
+            </div>
+            <div
+                className="w-full h-px my-3"
+                style={{ background: `linear-gradient(90deg, transparent, ${ORANGE}40, transparent)` }}
+            />
+            <div className="font-mundial text-[9px] tracking-[0.18em] uppercase text-white/40">
+                FORWARD-TRACKING
+            </div>
+        </TrophyShell>
+    );
+}
+
+function TrophyStat({ value, label, color }: { value: string; label: string; color: string }) {
+    return (
+        <div className="flex flex-col items-center">
+            <span className="font-display font-black text-base tabular-nums" style={{ color }}>
+                {value}
+            </span>
+            <span className="font-mundial text-[8px] tracking-[0.22em] uppercase text-white/45 mt-0.5">
+                {label}
+            </span>
         </div>
     );
 }
