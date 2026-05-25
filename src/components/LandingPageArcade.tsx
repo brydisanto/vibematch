@@ -131,18 +131,21 @@ const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
 // Tight single-letter mode chip used on global feed rows. Replaces the
 // wider CLASSIC / DAILY text pill so usernames have predictable room
 // next to the chip + avatar regardless of mode label length.
-//   C = Classic (gold), D = Daily (orange), F = Frenzy (red).
+//   C = Classic (gold), D = Daily (cosmic purple — matches the DAILY
+//   CHALLENGE box on the right rail), F = Frenzy (red).
+// White letter on the cosmic chip since the deep purple bg eats the
+// dark-text contrast that gold + red need.
 function ModeChip({ mode }: { mode: string }) {
-    const map: Record<string, { letter: string; bg: string }> = {
-        classic: { letter: "C", bg: GOLD },
-        daily: { letter: "D", bg: ORANGE },
-        frenzy: { letter: "F", bg: TOKEN_RED },
+    const map: Record<string, { letter: string; bg: string; fg: string }> = {
+        classic: { letter: "C", bg: GOLD, fg: "#1A0E02" },
+        daily: { letter: "D", bg: COSMIC, fg: "#FFFFFF" },
+        frenzy: { letter: "F", bg: TOKEN_RED, fg: "#1A0E02" },
     };
     const m = map[mode] || map.classic;
     return (
         <span
             className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0 font-display font-black text-[12px] leading-none"
-            style={{ background: m.bg, color: "#1A0E02" }}
+            style={{ background: m.bg, color: m.fg }}
             aria-label={mode.toUpperCase()}
         >
             {m.letter}
