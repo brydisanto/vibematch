@@ -1,6 +1,6 @@
 import { kv } from "@vercel/kv";
 import { BADGES, type BadgeTier } from "@/lib/badges";
-import { getEasternDailyKey } from "@/lib/daily-window";
+import { getEasternDailyKey, getEasternYesterdayKey } from "@/lib/daily-window";
 import { getTier, type TierInfo, type TierId } from "@/lib/tiers";
 
 /**
@@ -43,6 +43,10 @@ export interface ProfileResponse {
         pins: number | null;
     };
     tier: ProfileTier;
+    /** Active daily-play streak. Resets to 0 if the player hasn't logged
+     *  in today or yesterday (matching the streak API's active-window
+     *  rule), so the nameplate never shows a stale streak number. */
+    streak: number;
     best: {
         allTime: number | null;
         daily: number | null;
@@ -72,13 +76,23 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
 
     const today = getEasternDailyKey();
 
-    const [authRaw, profileRaw, pinbookRaw, gamesPlayedRaw, gameLogRaw] = await Promise.all([
+    const [authRaw, profileRaw, pinbookRaw, gamesPlayedRaw, gameLogRaw, streakRaw] = await Promise.all([
         kv.get(`user_auth:${username}`),
         kv.get(`user:${username}`),
         kv.get(`pinbook:${username}`),
         kv.hget("classic_matches_played", username),
         kv.zrange(`gamelog:${username}`, 0, 9, { rev: true }),
+        kv.get(`streak:${username}`) as Promise<{ streak?: number; lastPlayed?: string } | null>,
     ]);
+
+    // Match the streak API's "active streak" rule: only count if the
+    // player played today or yesterday. Otherwise the streak has lapsed
+    // and we surface 0 (same as the home screen + leaderboard).
+    const todayKey = getEasternDailyKey();
+    const yesterdayKey = getEasternYesterdayKey();
+    const rawStreak = Number(streakRaw?.streak || 0);
+    const streakActive = streakRaw?.lastPlayed === todayKey || streakRaw?.lastPlayed === yesterdayKey;
+    const streak = streakActive ? rawStreak : 0;
 
     const auth = authRaw as { username?: string; banned?: boolean; createdAt?: string } | null;
     const profile = profileRaw as { username?: string; avatarUrl?: string } | null;
@@ -137,7 +151,10 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         if (ai !== bi) return ai - bi;
         return a.name.localeCompare(b.name);
     });
-    const topPins = owned.slice(0, 6);
+    // Profile shows the whole collection rather than a top-6 slice,
+    // so the showcase reads as a real pinbook page. `topPins` keeps
+    // its sort (cosmic → blue → name) so the rarest pins lead.
+    const topPins = owned;
     // Use BADGES.length so tier + completion stay in sync with the
     // canonical Tier modal (TierInfoModal), the pin leaderboard
     // (TOTAL_BADGES = BADGES.length), and the home-screen hero chip
@@ -174,6 +191,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
             pins: pinRank !== null ? pinRank + 1 : null,
         },
         tier: tierFromInfo(getTier(completion)),
+        streak,
         best: {
             allTime: allTimeScore !== null ? Number(allTimeScore) : null,
             daily: dailyScore !== null ? Number(dailyScore) : null,

@@ -19,6 +19,12 @@ import ProfileStarfield from "./ProfileStarfield";
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
+// Solid card surface — sits opaquely over the radial purple bg so the
+// stats / pin cards / recent-run rows have visible weight instead of
+// looking translucent. Slightly lighter than INK_PANEL for contrast.
+const CARD_BG = "#1F0942";
+const CARD_BORDER = "rgba(255,255,255,0.08)";
+
 type PageParams = { username: string };
 
 export async function generateMetadata({ params }: { params: Promise<PageParams> }): Promise<Metadata> {
@@ -212,7 +218,14 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                                     color={ORANGE}
                                 />
                             )}
-                            {profile.rank.score === null && profile.rank.pins === null && (
+                            {profile.streak > 0 && (
+                                <RankPill
+                                    label="STREAK"
+                                    value={`${profile.streak} ${profile.streak === 1 ? "DAY" : "DAYS"}`}
+                                    color={ORANGE}
+                                />
+                            )}
+                            {profile.rank.score === null && profile.rank.pins === null && profile.streak === 0 && (
                                 <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/50">
                                     Not yet ranked
                                 </span>
@@ -230,19 +243,23 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 <StatCard label="PIN COMPLETION" value={`${profile.pins.completion}%`} accent={ORANGE} />
             </div>
 
-            {/* Pin showcase */}
+            {/* Pin showcase — summary row on top so the grid below reads
+                as the actual book. Renders every owned pin, sorted by
+                tier (cosmic → blue) then name. */}
             <div className="w-full max-w-4xl mx-auto mb-6">
                 <SectionHeader label="PIN SHOWCASE" accent={GOLD} />
+                <TierBreakdown byTier={profile.pins.byTier} unique={profile.pins.unique} total={profile.pins.total} />
                 {profile.pins.topPins.length === 0 ? (
-                    <EmptyState text="No pins collected yet." />
+                    <div className="mt-4">
+                        <EmptyState text="No pins collected yet." />
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-6 gap-3">
                         {profile.pins.topPins.map(pin => (
                             <PinCard key={pin.id} pin={pin} />
                         ))}
                     </div>
                 )}
-                <TierBreakdown byTier={profile.pins.byTier} unique={profile.pins.unique} total={profile.pins.total} />
             </div>
 
             {/* Recent runs */}
@@ -257,8 +274,8 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                                 key={`${run.timestamp}-${i}`}
                                 className="rounded-lg px-4 py-3 flex items-center justify-between gap-3"
                                 style={{
-                                    background: "rgba(255,255,255,0.04)",
-                                    border: `1px solid ${GOLD}15`,
+                                    background: CARD_BG,
+                                    border: `1px solid ${GOLD}22`,
                                 }}
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -479,8 +496,8 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
         <div
             className="rounded-xl px-4 py-4 flex flex-col items-start"
             style={{
-                background: "rgba(255,255,255,0.03)",
-                border: `1px solid ${accent}22`,
+                background: CARD_BG,
+                border: `1px solid ${accent}33`,
             }}
         >
             <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/40">
@@ -524,7 +541,7 @@ function PinCard({ pin }: { pin: ProfileResponse["pins"]["topPins"][number] }) {
         <div
             className="rounded-xl p-3 flex flex-col items-center text-center"
             style={{
-                background: "rgba(255,255,255,0.03)",
+                background: CARD_BG,
                 border: `1px solid ${color}55`,
                 boxShadow: `0 6px 20px -8px ${color}55`,
             }}
@@ -562,10 +579,10 @@ function TierBreakdown({ byTier, unique, total }: { byTier: Record<BadgeTier, nu
     const hasAny = tiers.some(t => byTier[t] > 0);
     if (!hasAny) return null;
     return (
-        <div className="mt-4 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+        <div className="rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
             style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: CARD_BG,
+                border: `1px solid ${CARD_BORDER}`,
             }}
         >
             <div className="flex flex-wrap gap-3">
