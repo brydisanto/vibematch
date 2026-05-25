@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile Header — Design Options</title>
+    <style>
+        @font-face {
+            font-family: "Brice";
+            src: url("/fonts/Brice-Black.otf") format("opentype");
+            font-weight: 900;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: "Brice";
+            src: url("/fonts/Brice-Bold.otf") format("opentype");
+            font-weight: 700;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: "Mundial";
+            src: url("/fonts/Mundial-Bold.otf") format("opentype");
+            font-weight: 700;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: "Mundial";
+            src: url("/fonts/Mundial-Regular.otf") format("opentype");
+            font-weight: 400;
+            font-display: swap;
+        }
+        :root {
+            --gold: #FFE048;
+            --gold-deep: #8B6914;
+            --orange: #FF5F1F;
+            --orange-deep: #5A1A08;
+            --cosmic: #B366FF;
+            --cosmic-deep: #6B1FC0;
+            --pink: #FF6B9D;
+            --pink-deep: #8E2A52;
+            --ink-darkest: #0a0418;
+            --ink-deep: #120421;
+            --ink-panel: #180630;
+            --ink-panel-light: #2D0B4E;
+            --card-bg: #1F0942;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at top, var(--ink-panel-light) 0%, var(--ink-panel) 55%, var(--ink-darkest) 100%);
+            color: #fff;
+            font-family: "Mundial", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 40px 24px 80px;
+        }
+        .page {
+            max-width: 1024px;
+            margin: 0 auto;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            font-family: "Brice", sans-serif;
+            font-weight: 900;
+            letter-spacing: 0.28em;
+            font-size: 11px;
+        }
+        .nav .back { color: rgba(255,255,255,0.6); text-decoration: none; }
+        .nav .right { color: var(--gold); letter-spacing: 0.32em; font-size: 10px; }
+        h2.section-label {
+            font-family: "Brice", sans-serif;
+            font-weight: 900;
+            font-size: 14px;
+            letter-spacing: 0.32em;
+            color: var(--gold);
+            margin: 56px 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2.section-label::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,224,72,0.27), transparent);
+        }
+        .note {
+            font-family: "Mundial", sans-serif;
+            font-weight: 400;
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            margin: 4px 0 18px;
+            line-height: 1.5;
+        }
+
+        /* ============================
+           Shared: avatar styles
+           ============================ */
+        .avatar {
+            position: relative;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .avatar .ring-outer {
+            position: absolute;
+            inset: -22px;
+            background: radial-gradient(circle, rgba(255,224,72,0.75) 0%, rgba(255,224,72,0.35) 40%, transparent 75%);
+            filter: blur(6px);
+            pointer-events: none;
+            opacity: 0.7;
+            border-radius: 50%;
+        }
+        .avatar .ring-conic {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--gold) 0deg, transparent 90deg, var(--gold) 180deg, transparent 270deg, var(--gold) 360deg);
+            padding: 2px;
+        }
+        .avatar .ring-conic-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #180630;
+        }
+        .avatar .ring-fill {
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--cosmic), var(--pink));
+            box-shadow: inset 0 -6px 14px var(--cosmic-deep), inset 0 3px 6px rgba(255,255,255,0.2);
+        }
+        .avatar .ring-fill img {
+            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* ============================
+           Generic small bits
+           ============================ */
+        .display {
+            font-family: "Brice", sans-serif;
+            font-weight: 900;
+        }
+        .mundial {
+            font-family: "Mundial", sans-serif;
+        }
+        .uppercase-tiny {
+            font-family: "Mundial", sans-serif;
+            font-weight: 700;
+            font-size: 9px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+        }
+
+        /* ============================
+           OPTION A — Centered Hero
+           ============================ */
+        .opt-a {
+            position: relative;
+            border-radius: 18px;
+            padding: 2px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
+            box-shadow: 0 4px 0 var(--gold-deep), 0 8px 18px rgba(0,0,0,0.45);
+        }
+        .opt-a .inner {
+            position: relative;
+            border-radius: 14px;
+            padding: 36px 24px 28px;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(255,224,72,0.12), transparent 55%),
+                radial-gradient(ellipse at 50% 100%, rgba(139,105,20,0.09), transparent 50%),
+                linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%);
+            text-align: center;
+        }
+        .opt-a .eyebrow {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 18px;
+        }
+        .opt-a .eyebrow .dot {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--gold); box-shadow: 0 0 6px var(--gold);
+            vertical-align: middle; margin: 0 8px;
+        }
+        .opt-a .avatar { width: 140px; height: 140px; margin: 0 auto 16px; }
+        .opt-a .name {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 56px; line-height: 1; letter-spacing: -0.01em;
+            margin: 0;
+        }
+        .opt-a .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 22px;
+        }
+        .opt-a .stat-tile {
+            border-radius: 12px;
+            padding: 2px;
+        }
+        .opt-a .stat-tile.gold { background: linear-gradient(180deg, var(--gold), var(--gold-deep)); box-shadow: 0 3px 0 var(--gold-deep); }
+        .opt-a .stat-tile.cosmic { background: linear-gradient(180deg, var(--cosmic), var(--cosmic-deep)); box-shadow: 0 3px 0 var(--cosmic-deep); }
+        .opt-a .stat-tile.orange { background: linear-gradient(180deg, var(--orange), var(--orange-deep)); box-shadow: 0 3px 0 var(--orange-deep); }
+        .opt-a .stat-tile .inner-tile {
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%);
+            text-align: center;
+        }
+        .opt-a .stat-tile .label {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .opt-a .stat-tile .value {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 22px; margin-top: 4px;
+        }
+        .opt-a .stat-tile.gold .value { color: var(--gold); text-shadow: 0 2px 0 var(--gold-deep); }
+        .opt-a .stat-tile.cosmic .value { color: var(--cosmic); text-shadow: 0 2px 0 var(--cosmic-deep); }
+        .opt-a .stat-tile.orange .value { color: var(--orange); text-shadow: 0 2px 0 var(--orange-deep); }
+
+        /* ============================
+           OPTION B — Compact Banner + Stat Strip
+           ============================ */
+        .opt-b {
+            position: relative;
+            border-radius: 18px;
+            padding: 2px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
+            box-shadow: 0 4px 0 var(--gold-deep), 0 8px 18px rgba(0,0,0,0.45);
+        }
+        .opt-b .inner {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(255,224,72,0.15), transparent 55%),
+                linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%);
+        }
+        .opt-b .banner {
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+        }
+        .opt-b .avatar { width: 96px; height: 96px; }
+        .opt-b .id { flex: 1; min-width: 0; }
+        .opt-b .id .row1 {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 4px;
+        }
+        .opt-b .id .name {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 36px; line-height: 1;
+        }
+        .opt-b .id .tier-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            background: rgba(255,224,72,0.12);
+            border: 1px solid rgba(255,224,72,0.55);
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--gold);
+        }
+        .opt-b .id .tier-chip .dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--gold); box-shadow: 0 0 6px var(--gold);
+        }
+        .opt-b .id .joined {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .opt-b .strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18));
+        }
+        .opt-b .strip .cell {
+            padding: 14px 18px;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .opt-b .strip .cell:last-child { border-right: none; }
+        .opt-b .strip .label {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .opt-b .strip .value {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 24px; margin-top: 4px;
+        }
+        .opt-b .strip .cell.gold .value { color: var(--gold); }
+        .opt-b .strip .cell.cosmic .value { color: var(--cosmic); }
+        .opt-b .strip .cell.orange .value { color: var(--orange); }
+
+        /* ============================
+           OPTION C — Two-Pane Player Card
+           ============================ */
+        .opt-c {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(255,224,72,0.06), rgba(0,0,0,0.04));
+            border: 1px solid rgba(255,224,72,0.45);
+            box-shadow: 0 0 30px rgba(255,224,72,0.18), 0 8px 22px rgba(0,0,0,0.45);
+        }
+        .opt-c .grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 240px;
+        }
+        @media (max-width: 640px) {
+            .opt-c .grid { grid-template-columns: 1fr; }
+        }
+        .opt-c .pane-left {
+            position: relative;
+            padding: 24px;
+            display: flex; align-items: center; justify-content: center;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255,224,72,0.22), transparent 65%),
+                linear-gradient(180deg, rgba(255,224,72,0.08), rgba(139,105,20,0.04));
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+        .opt-c .avatar { width: 160px; height: 160px; }
+        .opt-c .pane-right {
+            padding: 24px 28px;
+            display: flex; flex-direction: column; justify-content: center;
+            gap: 14px;
+        }
+        .opt-c .id .name {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 44px; line-height: 1;
+            margin: 0;
+        }
+        .opt-c .id .sub {
+            display: flex; align-items: center; gap: 10px;
+            margin-top: 8px;
+        }
+        .opt-c .id .tier-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            background: rgba(255,224,72,0.12);
+            border: 1px solid rgba(255,224,72,0.55);
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--gold);
+        }
+        .opt-c .id .tier-chip .dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--gold); box-shadow: 0 0 6px var(--gold);
+        }
+        .opt-c .id .joined {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .opt-c .stat-cols {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .opt-c .stat-cols .col .value {
+            font-family: "Brice", sans-serif; font-weight: 900;
+            font-size: 28px; line-height: 1;
+        }
+        .opt-c .stat-cols .col .label {
+            font-family: "Mundial", sans-serif; font-weight: 700;
+            font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.45);
+            margin-top: 6px;
+        }
+        .opt-c .stat-cols .col.gold .value { color: var(--gold); }
+        .opt-c .stat-cols .col.cosmic .value { color: var(--cosmic); }
+        .opt-c .stat-cols .col.orange .value { color: var(--orange); }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="nav">
+            <a class="back" href="/u/bry">&larr; BACK TO PROFILE</a>
+            <span class="right">HEADER DESIGN OPTIONS</span>
+        </div>
+
+        <!-- =======================================================
+             OPTION A — Centered Hero (player card)
+             ======================================================= -->
+        <h2 class="section-label">OPTION A · CENTERED HERO</h2>
+        <p class="note">
+            Avatar centered + sized up. Username large under it. Tier + joined date as a single muted eyebrow.
+            Three rank tiles flow inline using the same chunky treatment as the BEST SCORE row below.
+            Reads vertical, balanced on any width, no floating tier badge.
+        </p>
+        <div class="opt-a">
+            <div class="inner">
+                <div class="eyebrow">
+                    JOINED MAR 2026
+                    <span class="dot"></span>
+                    TIER: 69K GOLD
+                </div>
+                <div class="avatar">
+                    <div class="ring-outer"></div>
+                    <div class="ring-conic"><div class="ring-conic-inner"></div></div>
+                    <div class="ring-fill">
+                        <img src="https://placehold.co/280x280/B366FF/FF6B9D?text=bry" alt="" />
+                    </div>
+                </div>
+                <h1 class="name">bry</h1>
+                <div class="stat-row">
+                    <div class="stat-tile gold">
+                        <div class="inner-tile">
+                            <div class="label">SCORE RANK</div>
+                            <div class="value">#125</div>
+                        </div>
+                    </div>
+                    <div class="stat-tile cosmic">
+                        <div class="inner-tile">
+                            <div class="label">PIN RANK</div>
+                            <div class="value">#213</div>
+                        </div>
+                    </div>
+                    <div class="stat-tile orange">
+                        <div class="inner-tile">
+                            <div class="label">STREAK</div>
+                            <div class="value">5 DAYS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =======================================================
+             OPTION B — Compact Banner + Stat Strip
+             ======================================================= -->
+        <h2 class="section-label">OPTION B · COMPACT BANNER + STAT STRIP</h2>
+        <p class="note">
+            Avatar shrinks, name sits beside it with tier as a tiny inline chip. Stats live in a flush
+            strip at the bottom of the same card — no separate pills floating below. Tighter, no wasted
+            horizontal space on desktop.
+        </p>
+        <div class="opt-b">
+            <div class="inner">
+                <div class="banner">
+                    <div class="avatar">
+                        <div class="ring-outer"></div>
+                        <div class="ring-conic"><div class="ring-conic-inner"></div></div>
+                        <div class="ring-fill">
+                            <img src="https://placehold.co/200x200/B366FF/FF6B9D?text=bry" alt="" />
+                        </div>
+                    </div>
+                    <div class="id">
+                        <div class="row1">
+                            <div class="name">bry</div>
+                            <div class="tier-chip"><span class="dot"></span>69K GOLD</div>
+                        </div>
+                        <div class="joined">JOINED MAR 2026</div>
+                    </div>
+                </div>
+                <div class="strip">
+                    <div class="cell gold">
+                        <div class="label">SCORE RANK</div>
+                        <div class="value">#125</div>
+                    </div>
+                    <div class="cell cosmic">
+                        <div class="label">PIN RANK</div>
+                        <div class="value">#213</div>
+                    </div>
+                    <div class="cell orange">
+                        <div class="label">STREAK</div>
+                        <div class="value">5 DAYS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =======================================================
+             OPTION C — Two-Pane Player Card
+             ======================================================= -->
+        <h2 class="section-label">OPTION C · TWO-PANE PLAYER CARD</h2>
+        <p class="note">
+            30/70 split. Avatar pane on the left gets a tier-tinted backplate. Right pane stacks name +
+            tier chip + joined date at the top, stats as 3 mini-columns at the bottom (no pills). Soft
+            tier glow on the outer border instead of a heavy chunky frame.
+        </p>
+        <div class="opt-c">
+            <div class="grid">
+                <div class="pane-left">
+                    <div class="avatar">
+                        <div class="ring-outer"></div>
+                        <div class="ring-conic"><div class="ring-conic-inner"></div></div>
+                        <div class="ring-fill">
+                            <img src="https://placehold.co/320x320/B366FF/FF6B9D?text=bry" alt="" />
+                        </div>
+                    </div>
+                </div>
+                <div class="pane-right">
+                    <div class="id">
+                        <h1 class="name">bry</h1>
+                        <div class="sub">
+                            <div class="tier-chip"><span class="dot"></span>69K GOLD</div>
+                            <div class="joined">JOINED MAR 2026</div>
+                        </div>
+                    </div>
+                    <div class="stat-cols">
+                        <div class="col gold">
+                            <div class="value">#125</div>
+                            <div class="label">SCORE RANK</div>
+                        </div>
+                        <div class="col cosmic">
+                            <div class="value">#213</div>
+                            <div class="label">PIN RANK</div>
+                        </div>
+                        <div class="col orange">
+                            <div class="value">5 DAYS</div>
+                            <div class="label">STREAK</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
