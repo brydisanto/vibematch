@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
@@ -98,6 +99,16 @@ interface RecentRun {
     timestamp: number;
 }
 
+interface GlobalRun {
+    username: string;
+    avatarUrl: string | null;
+    mode: string;
+    score: number;
+    timestamp: number;
+}
+
+type FeedTab = "mine" | "global";
+
 interface VibingPlayer {
     username: string;
     avatarUrl: string;
@@ -142,6 +153,8 @@ export default function LandingPageArcade({
     const [pinRank, setPinRank] = useState<number | null>(null);
     const [scoreRank, setScoreRank] = useState<number | null>(null);
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
+    const [globalRuns, setGlobalRuns] = useState<GlobalRun[]>([]);
+    const [feedTab, setFeedTab] = useState<FeedTab>("mine");
     const [vibingPlayers, setVibingPlayers] = useState<VibingPlayer[]>([]);
     const [dailyStats, setDailyStats] = useState<DailyStats>({ yourBest: null, topScore: null, totalPlayers: 0, yourRank: null });
     const [playedDaily, setPlayedDaily] = useState<boolean>(false);
@@ -327,14 +340,28 @@ export default function LandingPageArcade({
     }, [username]);
 
     // Recent runs fetch — capped at 6 so the right-rail scrolls less.
+    // Two scopes feed the RECENT RUNS tab toggle: "mine" (the player's
+    // own history, auth required) and "global" (the rolling activity
+    // feed of everyone playing, public). We fetch mine eagerly on
+    // mount and global on first switch — most sessions never toggle.
     useEffect(() => {
-        fetch("/api/recent-scores?limit=6")
+        fetch("/api/recent-scores?scope=me&limit=6")
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data.runs)) setRecentRuns(data.runs);
             })
             .catch(() => { /* silent */ });
     }, [username]);
+
+    useEffect(() => {
+        if (feedTab !== "global") return;
+        fetch("/api/recent-scores?scope=global&limit=6")
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data.runs)) setGlobalRuns(data.runs);
+            })
+            .catch(() => { /* silent */ });
+    }, [feedTab]);
 
     const handleProfileSave = async (newUsername: string, newAvatarUrl: string) => {
         try {
@@ -1562,63 +1589,129 @@ export default function LandingPageArcade({
                             </div>
                         </div>
 
-                        {/* Recent Runs */}
+                        {/* Recent Runs — 2-tab toggle (GLOBAL / MINE) */}
                         <div
                             className="flex-1 relative flex flex-col items-stretch justify-start px-5 py-6"
                             style={{ background: `radial-gradient(circle at 50% 40%, ${GOLD}14, transparent 60%)` }}
                         >
-                            <div className="font-display text-[10px] tracking-[0.3em] mb-3 self-start" style={{ color: GOLD }}>
-                                RECENT RUNS
+                            <div className="flex items-center gap-3 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFeedTab("mine")}
+                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
+                                    style={{
+                                        color: feedTab === "mine" ? GOLD : "rgba(255,255,255,0.35)",
+                                    }}
+                                >
+                                    MINE
+                                </button>
+                                <div className="w-px h-3" style={{ background: "rgba(255,255,255,0.15)" }} />
+                                <button
+                                    type="button"
+                                    onClick={() => setFeedTab("global")}
+                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
+                                    style={{
+                                        color: feedTab === "global" ? GOLD : "rgba(255,255,255,0.35)",
+                                    }}
+                                >
+                                    GLOBAL
+                                </button>
                             </div>
-                            {taggedRuns.length === 0 ? (
-                                <div className="text-[11px] text-white/40 leading-relaxed">
-                                    No runs yet. Play a game to see your history here.
-                                </div>
-                            ) : (
-                                <div className="w-full flex flex-col gap-2">
-                                    {taggedRuns.map((run, i) => {
-                                        const labelColor = i === 0 && run.tag === "NEW BEST"
-                                            ? GOLD
-                                            : run.mode === "daily"
-                                                ? ORANGE
-                                                : i < 2
-                                                    ? "#ffffff88"
-                                                    : "#ffffff55";
-                                        return (
-                                            <div
-                                                key={`${run.timestamp}-${i}`}
-                                                className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
-                                                style={{
-                                                    background: "rgba(255,255,255,0.04)",
-                                                    border: `1px solid ${GOLD}15`,
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <span
-                                                        className="font-display text-[11px] font-black shrink-0"
-                                                        style={{ color: labelColor }}
-                                                    >
-                                                        {run.label}
-                                                    </span>
-                                                    {run.tag && (
+                            {feedTab === "mine" ? (
+                                taggedRuns.length === 0 ? (
+                                    <div className="text-[11px] text-white/40 leading-relaxed">
+                                        No runs yet. Play a game to see your history here.
+                                    </div>
+                                ) : (
+                                    <div className="w-full flex flex-col gap-2">
+                                        {taggedRuns.map((run, i) => {
+                                            const labelColor = i === 0 && run.tag === "NEW BEST"
+                                                ? GOLD
+                                                : run.mode === "daily"
+                                                    ? ORANGE
+                                                    : i < 2
+                                                        ? "#ffffff88"
+                                                        : "#ffffff55";
+                                            return (
+                                                <div
+                                                    key={`${run.timestamp}-${i}`}
+                                                    className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
+                                                    style={{
+                                                        background: "rgba(255,255,255,0.04)",
+                                                        border: `1px solid ${GOLD}15`,
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
                                                         <span
-                                                            className="font-display text-[8px] tracking-[0.18em] px-1.5 py-[2px] rounded-sm"
+                                                            className="font-display text-[11px] font-black shrink-0"
+                                                            style={{ color: labelColor }}
+                                                        >
+                                                            {run.label}
+                                                        </span>
+                                                        {run.tag && (
+                                                            <span
+                                                                className="font-display text-[8px] tracking-[0.18em] px-1.5 py-[2px] rounded-sm"
+                                                                style={{
+                                                                    color: run.tag === "NEW BEST" ? "#1A0E02" : "#fff",
+                                                                    background: run.tag === "NEW BEST" ? GOLD : `${ORANGE}cc`,
+                                                                }}
+                                                            >
+                                                                {run.tag}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-display font-black tabular-nums text-[12px] text-white/85">
+                                                        {run.score.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )
+                            ) : (
+                                globalRuns.length === 0 ? (
+                                    <div className="text-[11px] text-white/40 leading-relaxed">
+                                        Loading the latest plays...
+                                    </div>
+                                ) : (
+                                    <div className="w-full flex flex-col gap-2">
+                                        {globalRuns.map((run, i) => {
+                                            const modeColorVal = run.mode === "daily" ? ORANGE : GOLD;
+                                            return (
+                                                <Link
+                                                    key={`${run.username}-${run.timestamp}-${i}`}
+                                                    href={`/u/${encodeURIComponent(run.username)}`}
+                                                    className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
+                                                    style={{
+                                                        background: "rgba(255,255,255,0.04)",
+                                                        border: `1px solid ${GOLD}15`,
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span
+                                                            className="font-display text-[11px] font-black truncate text-white/90"
+                                                            title={run.username}
+                                                        >
+                                                            {run.username}
+                                                        </span>
+                                                        <span
+                                                            className="font-display text-[8px] tracking-[0.18em] px-1.5 py-[2px] rounded-sm shrink-0"
                                                             style={{
-                                                                color: run.tag === "NEW BEST" ? "#1A0E02" : "#fff",
-                                                                background: run.tag === "NEW BEST" ? GOLD : `${ORANGE}cc`,
+                                                                color: "#1A0E02",
+                                                                background: modeColorVal,
                                                             }}
                                                         >
-                                                            {run.tag}
+                                                            {run.mode === "daily" ? "DAILY" : "CLASSIC"}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <span className="font-display font-black tabular-nums text-[12px] text-white/85">
-                                                    {run.score.toLocaleString()}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                    </div>
+                                                    <span className="font-display font-black tabular-nums text-[12px] text-white/85 shrink-0">
+                                                        {run.score.toLocaleString()}
+                                                    </span>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>

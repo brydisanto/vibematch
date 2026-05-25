@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trophy } from "lucide-react";
 import { BADGES } from "@/lib/badges";
@@ -190,7 +191,11 @@ function PodiumSection({ entries, currentUsername, mode }: { entries: Leaderboar
                 const medal = medalColors[i];
                 const isUser = entry.username.toLowerCase() === currentUsername?.toLowerCase();
                 return (
-                    <div key={entry.username} className="flex flex-col items-center relative z-10">
+                    <Link
+                        key={entry.username}
+                        href={`/u/${encodeURIComponent(entry.username)}`}
+                        className="flex flex-col items-center relative z-10 transition-transform hover:-translate-y-[2px]"
+                    >
                         <div style={{
                             borderRadius: "50%",
                             border: rank === 1 ? "3px solid #FFD700" : `2px solid ${medal.border}`,
@@ -225,7 +230,7 @@ function PodiumSection({ entries, currentUsername, mode }: { entries: Leaderboar
                                 borderBottom: "none",
                             }}
                         />
-                    </div>
+                    </Link>
                 );
             })}
         </div>
@@ -250,7 +255,8 @@ function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: Leaderboa
     const medal = mode === "promo" ? MEDAL_ROW_STYLES[rank] : undefined;
 
     return (
-        <div
+        <Link
+            href={`/u/${encodeURIComponent(entry.username)}`}
             className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${isCurrentUser
                 ? "bg-[#B366FF]/10 border border-[#B366FF]/20"
                 : medal
@@ -286,7 +292,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser, mode }: { entry: Leaderboa
             <div className="flex-shrink-0 font-display font-extrabold text-[#FFD700] text-base tracking-[0.03em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 {formatScore(entry.score, mode)}
             </div>
-        </div>
+        </Link>
     );
 }
 
