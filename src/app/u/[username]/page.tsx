@@ -474,12 +474,32 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
 }
 
 function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
-    const src = avatarUrl || DEFAULT_AVATAR;
     const isDataUrl = !!avatarUrl && avatarUrl.startsWith("data:");
-    // Matches the main-page avatar: outer gold glow, spinning conic
-    // gradient ring, cosmic→pink inner bg, falls back to the any_gvc
-    // pin (matches DAILY PLAYS icon) when no avatar uploaded.
-    // Larger size for the hero.
+
+    // Default-badge path: render exactly like the DAILY PLAYS icon —
+    // the any_gvc pin at full size with a soft gold drop shadow.
+    // No outer conic ring, no glow, no clipping container, so the
+    // badge's own white border ring + gold rim stay fully visible.
+    if (!avatarUrl) {
+        return (
+            <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
+                <Image
+                    src={DEFAULT_AVATAR}
+                    alt=""
+                    fill
+                    sizes="116px"
+                    style={{
+                        objectFit: "contain",
+                        filter: `drop-shadow(0 3px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 18px ${GOLD}55)`,
+                    }}
+                />
+            </div>
+        );
+    }
+
+    // Uploaded avatar: keep the full arcade treatment (outer gold
+    // glow + spinning conic ring + cosmic→pink inner gradient bg +
+    // clipped photo).
     return (
         <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
             <div
@@ -504,46 +524,24 @@ function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; user
                 className="absolute rounded-full overflow-hidden flex items-center justify-center"
                 style={{
                     inset: 4,
-                    // Uploaded avatars sit on the cosmic→pink hero gradient
-                    // (covered by their photo anyway via object-cover).
-                    // Default badge fallback drops the gradient entirely so
-                    // the any_gvc pin reads as the avatar itself, not a pin
-                    // floating on top of a pink ring.
-                    background: avatarUrl
-                        ? `linear-gradient(135deg, ${COSMIC}, ${PINK})`
-                        : "#180630",
-                    boxShadow: avatarUrl
-                        ? `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`
-                        : undefined,
+                    background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
+                    boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
                 }}
             >
                 {isDataUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={src}
+                        src={avatarUrl}
                         alt={username}
                         className="absolute inset-0 w-full h-full object-cover"
                     />
-                ) : avatarUrl ? (
+                ) : (
                     <Image
-                        src={src}
+                        src={avatarUrl}
                         alt={username}
                         fill
                         sizes="116px"
                         className="object-cover"
-                    />
-                ) : (
-                    // Scale 1.35 pushes the badge's pin to the edges of
-                    // the avatar circle. overflow-hidden on the parent
-                    // clips the badge's transparent corners so the
-                    // scaled pin reads as filling the whole avatar.
-                    <Image
-                        src={src}
-                        alt=""
-                        fill
-                        sizes="116px"
-                        className="object-contain"
-                        style={{ transform: "scale(1.35)" }}
                     />
                 )}
             </div>

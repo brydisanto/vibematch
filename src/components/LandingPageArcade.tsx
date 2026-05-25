@@ -154,40 +154,46 @@ function ModeChip({ mode }: { mode: string }) {
 }
 
 function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
-    const src = avatarUrl || DEFAULT_AVATAR;
     const isData = !!avatarUrl && avatarUrl.startsWith("data:");
-    const hasUpload = !!avatarUrl;
+
+    // Default-badge path renders EXACTLY like the DAILY PLAYS icon —
+    // the any_gvc pin at full size with a soft gold drop shadow,
+    // NO clipping container + NO bordered ring around it. That keeps
+    // the badge's own white border + gold rim fully visible (the
+    // clipped/contained avatar treatment was eating both).
+    if (!avatarUrl) {
+        return (
+            <span className="relative shrink-0 inline-block w-6 h-6" aria-hidden>
+                <Image
+                    src={DEFAULT_AVATAR}
+                    alt=""
+                    fill
+                    sizes="24px"
+                    style={{
+                        objectFit: "contain",
+                        filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 5px ${GOLD}66)`,
+                    }}
+                />
+            </span>
+        );
+    }
+
+    // Uploaded avatars keep the bordered + clipped chip treatment so
+    // photos render inside a circle with a thin gold rim.
     return (
         <span
             className="relative shrink-0 inline-block w-6 h-6 rounded-full overflow-hidden"
             style={{
-                // Default badge fallback drops the cosmic→pink gradient
-                // backdrop so the any_gvc pin reads as the avatar itself
-                // (matches the profile hero + main-page bobbing avatar
-                // treatment). Uploaded avatars keep the white-tint bg
-                // they're covered by anyway.
-                background: hasUpload ? "rgba(255,255,255,0.06)" : "#180630",
+                background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,224,72,0.55)",
             }}
             aria-hidden
         >
             {isData ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} alt="" className="w-full h-full object-cover" />
-            ) : hasUpload ? (
-                <Image src={src} alt={username} fill sizes="24px" className="object-cover" />
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-                // scale 1.35 pushes the badge to the edges so the
-                // ring disappears. overflow-hidden on the parent
-                // clips the badge's transparent corners.
-                <Image
-                    src={src}
-                    alt=""
-                    fill
-                    sizes="24px"
-                    className="object-contain"
-                    style={{ transform: "scale(1.35)" }}
-                />
+                <Image src={avatarUrl} alt={username} fill sizes="24px" className="object-cover" />
             )}
         </span>
     );
@@ -1242,42 +1248,39 @@ export default function LandingPageArcade({
                                             animation: "vmAvatarBounce 3.6s ease-in-out infinite",
                                         }}
                                     >
-                                        <div
-                                            className="absolute rounded-full pointer-events-none"
-                                            style={{
-                                                inset: -20,
-                                                background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
-                                                filter: "blur(6px)",
-                                                animation: "vmAvatarGlow 3.6s ease-in-out infinite",
-                                            }}
-                                        />
-                                        <div
-                                            className="absolute inset-0 rounded-full"
-                                            style={{
-                                                background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
-                                                animation: "vmProfileSpin 8s linear infinite",
-                                                padding: 2,
-                                            }}
-                                        >
-                                            <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
-                                        </div>
-                                        <div
-                                            className="absolute rounded-full overflow-hidden flex items-center justify-center"
-                                            style={{
-                                                inset: 4,
-                                                // Default badge fallback drops the cosmic→pink
-                                                // backdrop so the any_gvc pin reads as the
-                                                // avatar itself, not a pin on a pink ring.
-                                                background: avatarUrl
-                                                    ? `linear-gradient(135deg, ${COSMIC}, ${PINK})`
-                                                    : "#180630",
-                                                boxShadow: avatarUrl
-                                                    ? `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`
-                                                    : undefined,
-                                            }}
-                                        >
-                                            {avatarUrl ? (
-                                                avatarUrl.startsWith("data:") ? (
+                                        {avatarUrl && (
+                                            <>
+                                                <div
+                                                    className="absolute rounded-full pointer-events-none"
+                                                    style={{
+                                                        inset: -20,
+                                                        background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
+                                                        filter: "blur(6px)",
+                                                        animation: "vmAvatarGlow 3.6s ease-in-out infinite",
+                                                    }}
+                                                />
+                                                <div
+                                                    className="absolute inset-0 rounded-full"
+                                                    style={{
+                                                        background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
+                                                        animation: "vmProfileSpin 8s linear infinite",
+                                                        padding: 2,
+                                                    }}
+                                                >
+                                                    <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
+                                                </div>
+                                            </>
+                                        )}
+                                        {avatarUrl ? (
+                                            <div
+                                                className="absolute rounded-full overflow-hidden flex items-center justify-center"
+                                                style={{
+                                                    inset: 4,
+                                                    background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
+                                                    boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
+                                                }}
+                                            >
+                                                {avatarUrl.startsWith("data:") ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={avatarUrl}
@@ -1292,18 +1295,28 @@ export default function LandingPageArcade({
                                                         sizes="84px"
                                                         className="object-cover"
                                                     />
-                                                )
-                                            ) : (
+                                                )}
+                                            </div>
+                                        ) : (
+                                            // Default badge — render exactly like the
+                                            // DAILY PLAYS icon: full any_gvc pin with
+                                            // its own border ring intact + soft gold
+                                            // drop shadow. No outer conic ring or
+                                            // clipping container so the design reads
+                                            // as the badge itself.
+                                            <div className="absolute" style={{ inset: 4 }}>
                                                 <Image
                                                     src={DEFAULT_AVATAR}
                                                     alt=""
                                                     fill
                                                     sizes="84px"
-                                                    className="object-contain"
-                                                    style={{ transform: "scale(1.35)" }}
+                                                    style={{
+                                                        objectFit: "contain",
+                                                        filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.6)) drop-shadow(0 0 12px ${GOLD}66)`,
+                                                    }}
                                                 />
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Username — sized between original 19
