@@ -255,13 +255,8 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     value={
                         <>
                             {profile.pins.unique}
-                            <span className="text-white/40" style={{ textShadow: "none" }}>
-                                {" "}/ {BADGES.length}
-                            </span>
-                            <span
-                                className="text-[14px] sm:text-[16px] text-white/55 font-display font-black ml-1.5"
-                                style={{ textShadow: "none" }}
-                            >
+                            <span> / {BADGES.length}</span>
+                            <span className="text-[14px] sm:text-[16px] font-display font-black ml-1.5">
                                 ({profile.pins.completion}%)
                             </span>
                         </>
