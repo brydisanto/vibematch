@@ -4,7 +4,9 @@ import { getProfile, type ProfileResponse } from "@/lib/profile";
 import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type Badge, type BadgeTier } from "@/lib/badges";
 import {
     GOLD,
+    GOLD_DEEP,
     ORANGE,
+    ORANGE_DEEP,
     COSMIC,
     COSMIC_DEEP,
     PINK,
@@ -103,14 +105,22 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
             {/* Hero — nameplate adopts the player's collector-tier visual
                 treatment (holo for One-Of-One, cosmic nebula for Cosmic,
                 tinted gradient for the lower tiers) so the card reads as
-                a trophy case for the player's collection level. The
-                tier-specific CSS lives at the bottom of this file. */}
+                a trophy case for the player's collection level. Wrapped
+                in a chunky 2px tier-color frame + drop shadow to match
+                the home-screen CAPSULES tile treatment. The tier-
+                specific CSS lives at the bottom of this file. */}
             <div
-                className={`profileHero w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 mb-6 relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
+                className="w-full max-w-4xl mx-auto rounded-2xl p-[2px] mb-6"
+                style={{
+                    background: `linear-gradient(180deg, ${tier.color} 0%, ${tier.accent} 100%)`,
+                    boxShadow: `0 4px 0 ${tier.accent}, 0 8px 18px rgba(0,0,0,0.45)`,
+                }}
+            >
+            <div
+                className={`profileHero w-full rounded-[14px] p-6 sm:p-8 relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
                 style={isHolo || isCosmic ? undefined : {
                     background: `linear-gradient(180deg, ${tier.color}26, ${tier.accent}26)`,
-                    border: `1px solid ${tier.color}99`,
-                    boxShadow: `0 0 18px ${tier.color}40, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06)`,
                 }}
             >
                 {/* Dark scrim above the holo conic gradient so white text
@@ -215,13 +225,17 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     </div>
                 </div>
             </div>
+            </div>
 
-            {/* Stats grid */}
+            {/* Stats grid — chunky tiles matching the home-screen
+                CAPSULES / EXTRA PINS treatment: 2px tier-color gradient
+                frame around a dark inner panel, with a "pressed-in"
+                bottom shadow. */}
             <div className="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} />
-                <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} />
-                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={GOLD} />
-                <StatCard label="PIN COMPLETION" value={`${profile.pins.completion}%`} accent={ORANGE} />
+                <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} deep={GOLD_DEEP} />
+                <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} deep={ORANGE_DEEP} />
+                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={GOLD} deep={GOLD_DEEP} />
+                <StatCard label="PIN COMPLETION" value={`${profile.pins.completion}%`} accent={ORANGE} deep={ORANGE_DEEP} />
             </div>
 
             {/* Pin showcase — mirrors the PinBook layout: tier-grouped
@@ -435,21 +449,33 @@ function RankPill({ label, value, color }: { label: string; value: string; color
     );
 }
 
-function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
+function StatCard({ label, value, accent, deep }: { label: string; value: string; accent: string; deep: string }) {
+    // Chunky tile: outer p-[2px] frame in accent → deep gradient acts as
+    // a thick "metal" border, inner panel is the dark gradient background
+    // used by the home-screen CAPSULES / EXTRA PINS tiles, drop shadow
+    // gives the pressed-in feel.
     return (
         <div
-            className="rounded-xl px-4 py-4 flex flex-col items-start"
+            className="rounded-xl p-[2px]"
             style={{
-                background: CARD_BG,
-                border: `1px solid ${accent}33`,
+                background: `linear-gradient(180deg, ${accent} 0%, ${deep} 100%)`,
+                boxShadow: `0 3px 0 ${deep}, 0 5px 12px rgba(0,0,0,0.45)`,
             }}
         >
-            <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/40">
-                {label}
-            </span>
-            <span className="font-display font-black text-[22px] sm:text-[26px] tabular-nums mt-1" style={{ color: accent }}>
-                {value}
-            </span>
+            <div
+                className="rounded-[10px] px-4 py-4 flex flex-col items-start"
+                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+            >
+                <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
+                    {label}
+                </span>
+                <span
+                    className="font-display font-black text-[22px] sm:text-[26px] tabular-nums mt-1"
+                    style={{ color: accent, textShadow: `0 2px 0 ${deep}` }}
+                >
+                    {value}
+                </span>
+            </div>
         </div>
     );
 }
