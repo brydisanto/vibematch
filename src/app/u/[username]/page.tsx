@@ -119,7 +119,19 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
             <div
                 className={`profileHero w-full rounded-[14px] p-6 sm:p-8 relative overflow-hidden ${isHolo ? "tier-holo" : ""} ${isCosmic ? "tier-cosmic" : ""}`}
                 style={isHolo || isCosmic ? undefined : {
-                    background: `linear-gradient(180deg, ${tier.color}26, ${tier.accent}26)`,
+                    // Dark panel with tier-tinted ambient glows. Earlier the
+                    // inner bg used tier.color}26 alpha, but the chunky 100%
+                    // tier-color outer frame bled through, washing the entire
+                    // card in a flat tier color (gold-on-gold disappeared,
+                    // magenta-on-magenta clashed with the pills). Now the
+                    // surface is opaque dark like the stat tiles, with a soft
+                    // top + bottom tier glow so the tier identity reads
+                    // without blanketing the content.
+                    background: `
+                        radial-gradient(ellipse at 50% 0%, ${tier.color}1f, transparent 55%),
+                        radial-gradient(ellipse at 50% 100%, ${tier.accent}17, transparent 50%),
+                        linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)
+                    `,
                     boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06)`,
                 }}
             >
