@@ -1758,25 +1758,23 @@ export default function LandingPageArcade({
                                             <Link
                                                 key={`${run.username}-${run.timestamp}-${i}`}
                                                 href={`/u/${encodeURIComponent(run.username)}`}
-                                                className="rounded-lg px-3 py-2 flex items-center justify-between gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
+                                                className="rounded-lg px-3 py-2 flex items-center gap-2 transition-all hover:bg-white/[0.06] hover:translate-x-[2px]"
                                                 style={{
                                                     background: "rgba(255,255,255,0.04)",
                                                     border: `1px solid ${GOLD}15`,
                                                 }}
                                             >
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    <FeedAvatar avatarUrl={run.avatarUrl} username={run.username} />
-                                                    <ModeChip mode={run.mode} />
-                                                    <span
-                                                        className="font-display text-[11px] font-black truncate text-white/90"
-                                                        title={run.username}
-                                                    >
-                                                        {run.username}
-                                                    </span>
-                                                </div>
+                                                <FeedAvatar avatarUrl={run.avatarUrl} username={run.username} />
+                                                <span
+                                                    className="font-display text-[11px] font-black truncate text-white/90 flex-1 min-w-0"
+                                                    title={run.username}
+                                                >
+                                                    {run.username}
+                                                </span>
                                                 <span className="font-display font-black tabular-nums text-[12px] text-white/85 shrink-0">
                                                     {run.score.toLocaleString()}
                                                 </span>
+                                                <ModeChip mode={run.mode} />
                                             </Link>
                                         ))}
                                     </div>
