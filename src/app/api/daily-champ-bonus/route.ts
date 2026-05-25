@@ -87,6 +87,16 @@ export async function GET() {
             console.error("daily-champ-bonus counter bump failed:", e);
         }
 
+        // Forward-only daily-win counter — powers the profile Trophy Case.
+        // The NX claim above guarantees we only bump once per win, so this
+        // hincrby is safe. Historical wins predating this counter aren't
+        // backfilled; the trophy case is a "running record going forward".
+        try {
+            await kv.hincrby("daily_wins", username, 1);
+        } catch (e) {
+            console.error("daily-champ-bonus wins counter bump failed:", e);
+        }
+
         return NextResponse.json({
             claimed: true,
             capsules: BONUS_CAPSULES,

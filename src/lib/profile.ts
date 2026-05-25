@@ -2,6 +2,7 @@ import { kv } from "@vercel/kv";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getEasternDailyKey, getEasternYesterdayKey } from "@/lib/daily-window";
 import { getTier, type TierInfo, type TierId } from "@/lib/tiers";
+import { PROMO_BADGES, promoLeaderboardKey, type PromoBadge } from "@/lib/promo-badges";
 
 /**
  * Shared profile-data aggregator used by both /api/profile/[username]
@@ -27,6 +28,30 @@ export interface ProfileRecentRun {
     timestamp: number;
 }
 
+export interface ProfileEventTrophy {
+    /** Promo / event badge id (e.g. "promo_opensea"). */
+    id: string;
+    /** Display name pulled from the PromoBadge definition. */
+    name: string;
+    image: string;
+    /** Partner / event label (e.g. "OpenSea Event"). */
+    partnerName: string;
+    /** Number of these the player collected. */
+    owned: number;
+    /** 1-indexed rank on the event leaderboard. Null when not ranked. */
+    rank: number | null;
+}
+
+export interface ProfileTrophyCase {
+    /** Forward-only count of confirmed Daily Challenge #1 finishes, bumped
+     *  in /api/daily-champ-bonus when a champion claims their bonus.
+     *  Historical wins predating that counter aren't included. */
+    dailyWins: number;
+    /** Event trophies — one per promo/partnership the player engaged with.
+     *  Empty when the player hasn't collected any promo pins yet. */
+    events: ProfileEventTrophy[];
+}
+
 export interface ProfileTier {
     id: TierId;
     label: string;
@@ -47,6 +72,7 @@ export interface ProfileResponse {
      *  in today or yesterday (matching the streak API's active-window
      *  rule), so the nameplate never shows a stale streak number. */
     streak: number;
+    trophyCase: ProfileTrophyCase;
     best: {
         allTime: number | null;
         daily: number | null;
@@ -76,13 +102,22 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
 
     const today = getEasternDailyKey();
 
-    const [authRaw, profileRaw, pinbookRaw, gamesPlayedRaw, gameLogRaw, streakRaw] = await Promise.all([
+    const [
+        authRaw,
+        profileRaw,
+        pinbookRaw,
+        gamesPlayedRaw,
+        gameLogRaw,
+        streakRaw,
+        dailyWinsRaw,
+    ] = await Promise.all([
         kv.get(`user_auth:${username}`),
         kv.get(`user:${username}`),
         kv.get(`pinbook:${username}`),
         kv.hget("classic_matches_played", username),
         kv.zrange(`gamelog:${username}`, 0, 9, { rev: true }),
         kv.get(`streak:${username}`) as Promise<{ streak?: number; lastPlayed?: string } | null>,
+        kv.hget("daily_wins", username),
     ]);
 
     // Match the streak API's "active streak" rule: only count if the
@@ -166,6 +201,38 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         ? Math.round((uniquePins / denominator) * 100)
         : 0;
 
+    // Trophy case — running record of special-event achievements. Today
+    // that means promo / partnership pins (e.g. OpenSea Aye Aye, Captain)
+    // and Daily Challenge wins. Adds to this list as more events ship.
+    //
+    // Event leaderboard ranks come from the promo:<id>:leaderboard zset
+    // (written by /api/pinbook collect when a promo pin drops). Promo
+    // pin counts come straight from the pinbook map. Daily wins are a
+    // forward-only hash counter bumped in /api/daily-champ-bonus when
+    // the bonus is successfully claimed.
+    const promoLookups = await Promise.all(
+        PROMO_BADGES.map(async (promo: PromoBadge) => {
+            const owned = Number(pinbook?.pins?.[promo.id]?.count || 0);
+            if (owned <= 0) return null;
+            const rank = (await kv.zrevrank(
+                promoLeaderboardKey(promo.id),
+                username,
+            )) as number | null;
+            return {
+                id: promo.id,
+                name: promo.name,
+                image: promo.image,
+                partnerName: promo.partnerName,
+                owned,
+                rank: rank !== null ? rank + 1 : null,
+            } as ProfileEventTrophy;
+        }),
+    );
+    const trophyCase: ProfileTrophyCase = {
+        dailyWins: Number(dailyWinsRaw || 0),
+        events: promoLookups.filter((t): t is ProfileEventTrophy => !!t),
+    };
+
     const recentRuns: ProfileRecentRun[] = ((gameLogRaw as unknown[]) || [])
         .map(entry => {
             try {
@@ -192,6 +259,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         },
         tier: tierFromInfo(getTier(completion)),
         streak,
+        trophyCase,
         best: {
             allTime: allTimeScore !== null ? Number(allTimeScore) : null,
             daily: dailyScore !== null ? Number(dailyScore) : null,

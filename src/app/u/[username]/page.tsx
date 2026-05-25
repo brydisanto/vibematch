@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import ProfileStarfield from "./ProfileStarfield";
+import ProfileShowcaseTabs from "./ProfileShowcaseTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -247,28 +248,32 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} deep={GOLD_DEEP} />
                 <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} deep={ORANGE_DEEP} />
                 <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={GOLD} deep={GOLD_DEEP} />
-                <StatCard label="PIN COMPLETION" value={`${profile.pins.completion}%`} accent={ORANGE} deep={ORANGE_DEEP} />
+                <StatCard
+                    label="PIN COMPLETION"
+                    value={
+                        <>
+                            {profile.pins.unique}
+                            <span className="text-white/35"> / {BADGES.length}</span>
+                            <span className="text-[14px] sm:text-[16px] text-white/55 font-display font-black ml-1.5">
+                                ({profile.pins.completion}%)
+                            </span>
+                        </>
+                    }
+                    accent={ORANGE}
+                    deep={ORANGE_DEEP}
+                />
             </div>
 
-            {/* Pin showcase — mirrors the PinBook layout: tier-grouped
-                grid (cosmic → blue) with locked "???" slots for unowned
-                pins, dotted-pill section headers, and a duplicate-count
-                badge in the top-right of stacked owned pins. */}
+            {/* Showcase — tabs between the full pin book (tier-grouped
+                grid with locked "???" slots) and the trophy case
+                (event trophies + Daily Champion count). PIN COMPLETION
+                lives in the stats grid above, so the showcase section
+                no longer carries a duplicate count line. */}
             <div className="w-full max-w-4xl mx-auto mb-10">
-                <SectionHeader label="PIN SHOWCASE" accent={GOLD} />
-                <div className="mb-5 flex items-baseline gap-3 flex-wrap">
-                    <span
-                        className="font-display font-black text-2xl sm:text-3xl tabular-nums"
-                        style={{ color: GOLD }}
-                    >
-                        {profile.pins.unique}
-                        <span className="text-white/35"> / {BADGES.length}</span>
-                    </span>
-                    <span className="font-mundial text-[11px] tracking-[0.22em] uppercase text-white/45">
-                        pins collected
-                    </span>
-                </div>
-                <PinShowcase topPins={profile.pins.topPins} />
+                <ProfileShowcaseTabs
+                    pinBook={<PinShowcase topPins={profile.pins.topPins} />}
+                    trophyCase={<TrophyCase data={profile.trophyCase} />}
+                />
             </div>
 
             {/* Footer */}
@@ -461,7 +466,7 @@ function RankPill({ label, value, color }: { label: string; value: string; color
     );
 }
 
-function StatCard({ label, value, accent, deep }: { label: string; value: string; accent: string; deep: string }) {
+function StatCard({ label, value, accent, deep }: { label: string; value: React.ReactNode; accent: string; deep: string }) {
     // Chunky tile: outer p-[2px] frame in accent → deep gradient acts as
     // a thick "metal" border, inner panel is the dark gradient background
     // used by the home-screen CAPSULES / EXTRA PINS tiles, drop shadow
@@ -492,16 +497,151 @@ function StatCard({ label, value, accent, deep }: { label: string; value: string
     );
 }
 
-function SectionHeader({ label, accent }: { label: string; accent: string }) {
-    return (
-        <div className="flex items-center gap-3 mb-4">
-            <span
-                className="font-display font-black text-xl sm:text-2xl tracking-[0.18em]"
-                style={{ color: accent }}
+// Trophy Case — running record of special-event achievements. Right
+// now the only ongoing event is the OpenSea promo (Aye Aye, Captain!)
+// and the Daily Challenge champion bonus. Both render as chunky
+// trophy cards mirroring the stat-tile treatment so the tab keeps
+// visual consistency with the rest of the profile. Adds will slot
+// in here as new event trophies + leaderboards ship.
+function TrophyCase({ data }: { data: ProfileResponse["trophyCase"] }) {
+    const hasEvents = data.events.length > 0;
+    const hasDailyWins = data.dailyWins > 0;
+    const isEmpty = !hasEvents && !hasDailyWins;
+    if (isEmpty) {
+        return (
+            <div
+                className="rounded-xl p-[2px]"
+                style={{
+                    background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
+                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+                }}
             >
-                {label}
-            </span>
-            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${accent}44, transparent)` }} />
+                <div
+                    className="rounded-[10px] px-6 py-10 text-center"
+                    style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+                >
+                    <div className="font-display font-black text-lg text-white/85 mb-2">
+                        No trophies yet
+                    </div>
+                    <div className="font-mundial text-[11px] tracking-[0.22em] uppercase text-white/40">
+                        Collect event pins and win daily challenges to fill this case.
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {data.events.map(event => (
+                <EventTrophyCard key={event.id} event={event} />
+            ))}
+            {hasDailyWins && <DailyWinsCard wins={data.dailyWins} />}
+        </div>
+    );
+}
+
+function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["events"][number] }) {
+    return (
+        <div
+            className="rounded-xl p-[2px]"
+            style={{
+                background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
+                boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+            }}
+        >
+            <div
+                className="rounded-[10px] p-4 flex items-center gap-4"
+                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+            >
+                <div
+                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full shrink-0 overflow-hidden"
+                    style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: `1.5px solid ${GOLD}55`,
+                        boxShadow: `0 0 14px ${GOLD}33`,
+                    }}
+                >
+                    <Image
+                        src={event.image}
+                        alt={event.name}
+                        fill
+                        sizes="64px"
+                        className="object-contain p-1.5"
+                        unoptimized
+                    />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
+                        {event.partnerName} EVENT
+                    </div>
+                    <div
+                        className="font-display font-black text-lg sm:text-xl text-white truncate"
+                        style={{ textShadow: `0 2px 0 ${GOLD_DEEP}` }}
+                    >
+                        {event.name}
+                    </div>
+                    <div className="flex items-baseline gap-3 mt-1.5">
+                        <div className="font-display font-black text-sm" style={{ color: GOLD }}>
+                            ×{event.owned}
+                            <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 ml-1.5">
+                                COLLECTED
+                            </span>
+                        </div>
+                        {event.rank !== null && (
+                            <div className="font-display font-black text-sm" style={{ color: ORANGE }}>
+                                #{event.rank}
+                                <span className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 ml-1.5">
+                                    EVENT RANK
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DailyWinsCard({ wins }: { wins: number }) {
+    return (
+        <div
+            className="rounded-xl p-[2px]"
+            style={{
+                background: `linear-gradient(180deg, ${ORANGE} 0%, ${ORANGE_DEEP} 100%)`,
+                boxShadow: `0 3px 0 ${ORANGE_DEEP}, 0 5px 12px rgba(0,0,0,0.45)`,
+            }}
+        >
+            <div
+                className="rounded-[10px] p-4 flex items-center gap-4"
+                style={{ background: "linear-gradient(180deg, #1A0A2E 0%, #0C0418 100%)" }}
+            >
+                <div
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full shrink-0 flex items-center justify-center"
+                    style={{
+                        background: `radial-gradient(circle at 35% 28%, ${ORANGE}, ${ORANGE_DEEP})`,
+                        border: `1.5px solid ${ORANGE}66`,
+                        boxShadow: `0 0 14px ${ORANGE}55`,
+                    }}
+                >
+                    <span className="font-display font-black text-2xl sm:text-3xl text-white" style={{ textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}>
+                        {wins}
+                    </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/50">
+                        DAILY CHALLENGE
+                    </div>
+                    <div
+                        className="font-display font-black text-lg sm:text-xl text-white"
+                        style={{ textShadow: `0 2px 0 ${ORANGE_DEEP}` }}
+                    >
+                        {wins === 1 ? "Champion Win" : "Champion Wins"}
+                    </div>
+                    <div className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/40 mt-1.5">
+                        Counting since the trophy case launched
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
