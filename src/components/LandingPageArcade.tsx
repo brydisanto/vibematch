@@ -161,7 +161,12 @@ function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; usernam
         <span
             className="relative shrink-0 inline-block w-6 h-6 rounded-full overflow-hidden"
             style={{
-                background: hasUpload ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#B366FF,#FF6B9D)",
+                // Default badge fallback drops the cosmic→pink gradient
+                // backdrop so the any_gvc pin reads as the avatar itself
+                // (matches the profile hero + main-page bobbing avatar
+                // treatment). Uploaded avatars keep the white-tint bg
+                // they're covered by anyway.
+                background: hasUpload ? "rgba(255,255,255,0.06)" : "#180630",
                 border: "1px solid rgba(255,224,72,0.55)",
             }}
             aria-hidden
@@ -172,7 +177,17 @@ function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; usernam
             ) : hasUpload ? (
                 <Image src={src} alt={username} fill sizes="24px" className="object-cover" />
             ) : (
-                <Image src={src} alt="" fill sizes="24px" className="object-contain p-[1px]" />
+                // scale 1.35 pushes the badge to the edges so the
+                // ring disappears. overflow-hidden on the parent
+                // clips the badge's transparent corners.
+                <Image
+                    src={src}
+                    alt=""
+                    fill
+                    sizes="24px"
+                    className="object-contain"
+                    style={{ transform: "scale(1.35)" }}
+                />
             )}
         </span>
     );
