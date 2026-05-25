@@ -1250,8 +1250,15 @@ export default function LandingPageArcade({
                                             className="absolute rounded-full overflow-hidden flex items-center justify-center"
                                             style={{
                                                 inset: 4,
-                                                background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
-                                                boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
+                                                // Default badge fallback drops the cosmic→pink
+                                                // backdrop so the any_gvc pin reads as the
+                                                // avatar itself, not a pin on a pink ring.
+                                                background: avatarUrl
+                                                    ? `linear-gradient(135deg, ${COSMIC}, ${PINK})`
+                                                    : "#180630",
+                                                boxShadow: avatarUrl
+                                                    ? `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`
+                                                    : undefined,
                                             }}
                                         >
                                             {avatarUrl ? (
@@ -1277,7 +1284,8 @@ export default function LandingPageArcade({
                                                     alt=""
                                                     fill
                                                     sizes="84px"
-                                                    className="object-contain p-2"
+                                                    className="object-contain"
+                                                    style={{ transform: "scale(1.35)" }}
                                                 />
                                             )}
                                         </div>

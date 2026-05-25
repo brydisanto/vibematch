@@ -232,10 +232,6 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     }}
                 >
                     <span
-                        className={`inline-block w-1.5 h-1.5 rounded-full ${isHolo ? "tier-holo-dot" : ""} ${isCosmic ? "tier-cosmic-dot" : ""}`}
-                        style={isHolo || isCosmic ? undefined : { background: tier.color, boxShadow: `0 0 6px ${tier.color}` }}
-                    />
-                    <span
                         className="font-display font-black text-[10px] tracking-[0.22em] uppercase"
                         style={{
                             color: isHolo ? "#FFFFFF" : isCosmic ? "#E8C8FF" : tier.color,
@@ -321,7 +317,6 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                     value={
                         <>
                             {profile.pins.unique}
-                            <span> / {BADGES.length}</span>
                             <span className="text-[14px] sm:text-[16px] font-display font-black ml-1.5">
                                 ({profile.pins.completion}%)
                             </span>
@@ -509,8 +504,17 @@ function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; user
                 className="absolute rounded-full overflow-hidden flex items-center justify-center"
                 style={{
                     inset: 4,
-                    background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
-                    boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
+                    // Uploaded avatars sit on the cosmic→pink hero gradient
+                    // (covered by their photo anyway via object-cover).
+                    // Default badge fallback drops the gradient entirely so
+                    // the any_gvc pin reads as the avatar itself, not a pin
+                    // floating on top of a pink ring.
+                    background: avatarUrl
+                        ? `linear-gradient(135deg, ${COSMIC}, ${PINK})`
+                        : "#180630",
+                    boxShadow: avatarUrl
+                        ? `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`
+                        : undefined,
                 }}
             >
                 {isDataUrl ? (
@@ -529,12 +533,17 @@ function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; user
                         className="object-cover"
                     />
                 ) : (
+                    // Scale 1.35 pushes the badge's pin to the edges of
+                    // the avatar circle. overflow-hidden on the parent
+                    // clips the badge's transparent corners so the
+                    // scaled pin reads as filling the whole avatar.
                     <Image
                         src={src}
                         alt=""
                         fill
                         sizes="116px"
-                        className="object-contain p-3"
+                        className="object-contain"
+                        style={{ transform: "scale(1.35)" }}
                     />
                 )}
             </div>

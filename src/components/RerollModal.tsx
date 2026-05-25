@@ -106,6 +106,27 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         return getBurnableDuplicates(livePins, tier) >= BURN_COST[tier] * qty;
     });
 
+    // MAX REROLL — set every tier counter to the highest reroll quantity
+    // its duplicates support, capped by the per-tier 20-row UI cap + the
+    // server's 50-rerolls-per-tx limit. Iterates blue → cosmic so the
+    // cap (when it bites) burns cheaper duplicates first and preserves
+    // rare-tier dupes. No-op when no tier has enough dupes for even one
+    // reroll.
+    const canMaxReroll = TIER_ORDER.some(t => getBurnableDuplicates(livePins, t) >= BURN_COST[t]);
+    const handleMaxReroll = () => {
+        let remaining = MAX_REROLLS_PER_TX;
+        const next: Record<BadgeTier, number> = { blue: 0, silver: 0, special: 0, gold: 0, cosmic: 0 };
+        for (const tier of TIER_ORDER) {
+            if (remaining <= 0) break;
+            const dupes = getBurnableDuplicates(livePins, tier);
+            const maxForTier = Math.min(20, Math.floor(dupes / BURN_COST[tier]));
+            const take = Math.min(maxForTier, remaining);
+            next[tier] = take;
+            remaining -= take;
+        }
+        setBurns(next);
+    };
+
     const startPolling = (hash: string, capturedBurns: Record<BadgeTier, number>) => {
         setVerifying(true);
         pollingRef.current = true;
@@ -298,9 +319,25 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                             ) : (
                                 <>
                                     <h2 className="font-display text-2xl font-black text-[#FF8C42] mb-1 uppercase">Pin Reroll</h2>
-                                    <p className="text-white/50 text-xs font-mundial mb-4">
-                                        Burn duplicate pins + {VIBESTR_PER_REROLL} $VIBESTR for a new random capsule.
-                                    </p>
+                                    <div className="flex items-start justify-between gap-3 mb-4">
+                                        <p className="text-white/50 text-xs font-mundial flex-1 min-w-0">
+                                            Burn duplicate pins + {VIBESTR_PER_REROLL} $VIBESTR for a new random capsule.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleMaxReroll}
+                                            disabled={!canMaxReroll}
+                                            className="shrink-0 px-3 py-1.5 rounded-md font-display font-black text-[10px] tracking-[0.18em] uppercase transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                                            style={{
+                                                background: "rgba(255,140,66,0.15)",
+                                                border: "1px solid rgba(255,140,66,0.55)",
+                                                color: "#FF8C42",
+                                            }}
+                                            title="Fill every tier counter to its max within the 50-reroll cap"
+                                        >
+                                            Max Reroll
+                                        </button>
+                                    </div>
 
                                     {/* Per-tier burn controls — Option C: two-column rows */}
                                     <div className="space-y-2 mb-4">
