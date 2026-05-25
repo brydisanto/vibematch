@@ -230,10 +230,19 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 badge in the top-right of stacked owned pins. */}
             <div className="w-full max-w-4xl mx-auto mb-10">
                 <SectionHeader label="PIN SHOWCASE" accent={GOLD} />
-                <PinShowcase topPins={profile.pins.topPins} />
-                <div className="mt-4 text-right font-mundial text-[10px] tracking-[0.22em] uppercase text-white/30">
-                    {profile.pins.unique} of {BADGES.length} pins collected
+                <div className="mb-5 flex items-baseline gap-3 flex-wrap">
+                    <span
+                        className="font-display font-black text-2xl sm:text-3xl tabular-nums"
+                        style={{ color: GOLD }}
+                    >
+                        {profile.pins.unique}
+                        <span className="text-white/35"> / {BADGES.length}</span>
+                    </span>
+                    <span className="font-mundial text-[11px] tracking-[0.22em] uppercase text-white/45">
+                        pins collected
+                    </span>
                 </div>
+                <PinShowcase topPins={profile.pins.topPins} />
             </div>
 
             {/* Footer */}
@@ -447,8 +456,11 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
 
 function SectionHeader({ label, accent }: { label: string; accent: string }) {
     return (
-        <div className="flex items-center gap-3 mb-3">
-            <span className="font-display text-[10px] tracking-[0.32em]" style={{ color: accent }}>
+        <div className="flex items-center gap-3 mb-4">
+            <span
+                className="font-display font-black text-xl sm:text-2xl tracking-[0.18em]"
+                style={{ color: accent }}
+            >
                 {label}
             </span>
             <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${accent}44, transparent)` }} />
