@@ -205,26 +205,28 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     // that means promo / partnership pins (e.g. OpenSea Aye Aye, Captain)
     // and Daily Challenge wins. Adds to this list as more events ship.
     //
-    // Event leaderboard ranks come from the promo:<id>:leaderboard zset
-    // (written by /api/pinbook collect when a promo pin drops). Promo
-    // pin counts come straight from the pinbook map. Daily wins are a
-    // forward-only hash counter bumped in /api/daily-champ-bonus when
-    // the bonus is successfully claimed.
+    // Promo pins are tracked ENTIRELY in the promo:<id>:leaderboard zset
+    // (member = username, score = collection count) — they're never
+    // written to pinbook.pins. So both the owned count and the rank
+    // come from the same zset: zscore for count, zrevrank for rank.
+    // Daily wins are a forward-only hash counter bumped in
+    // /api/daily-champ-bonus on successful claim.
     const promoLookups = await Promise.all(
         PROMO_BADGES.map(async (promo: PromoBadge) => {
-            const owned = Number(pinbook?.pins?.[promo.id]?.count || 0);
+            const lbKey = promoLeaderboardKey(promo.id);
+            const [scoreRaw, rankRaw] = await Promise.all([
+                kv.zscore(lbKey, username) as Promise<number | null>,
+                kv.zrevrank(lbKey, username) as Promise<number | null>,
+            ]);
+            const owned = scoreRaw !== null ? Number(scoreRaw) : 0;
             if (owned <= 0) return null;
-            const rank = (await kv.zrevrank(
-                promoLeaderboardKey(promo.id),
-                username,
-            )) as number | null;
             return {
                 id: promo.id,
                 name: promo.name,
                 image: promo.image,
                 partnerName: promo.partnerName,
                 owned,
-                rank: rank !== null ? rank + 1 : null,
+                rank: rankRaw !== null ? rankRaw + 1 : null,
             } as ProfileEventTrophy;
         }),
     );
