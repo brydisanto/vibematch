@@ -268,13 +268,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
             } as ProfileEventTrophy;
         }),
     );
-    // Preview override: surface the Pin Drop completionist trophy on
-    // bry's profile even before he hits 100% so the design can be
-    // reviewed live. Drop this `|| username === "bry"` once the trophy
-    // is approved + actually earned in prod.
-    const completedPinBook =
-        (uniquePins >= BADGES.length && BADGES.length > 0) ||
-        username === "bry";
+    const completedPinBook = uniquePins >= BADGES.length && BADGES.length > 0;
 
     const trophyCase: ProfileTrophyCase = {
         dailyWins: Number(dailyWinsRaw || 0),
