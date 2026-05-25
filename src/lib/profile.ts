@@ -67,7 +67,12 @@ export interface ProfileResponse {
     avatarUrl: string | null;
     joinedAt: string | null;
     rank: {
+        /** All-time Classic rank (1-indexed, null if unranked). */
         score: number | null;
+        /** All-time Frenzy rank (1-indexed). Null while Frenzy is
+         *  pre-launch — frenzy_leaderboard zset is empty so zrevrank
+         *  returns null. Backfills automatically when Frenzy ships. */
+        frenzy: number | null;
         pins: number | null;
     };
     tier: ProfileTier;
@@ -77,7 +82,15 @@ export interface ProfileResponse {
     streak: number;
     trophyCase: ProfileTrophyCase;
     best: {
+        /** Personal best Classic score, all-time. Null until first
+         *  classic submission. */
         allTime: number | null;
+        /** Personal best Frenzy score, all-time. Null while Frenzy is
+         *  pre-launch — same zset-empty story as rank.frenzy. */
+        frenzy: number | null;
+        /** Personal best Daily Challenge score for today only. Kept
+         *  on the data layer for any future consumer; the public
+         *  profile no longer surfaces it. */
         daily: number | null;
     };
     gamesPlayed: number;
@@ -141,13 +154,28 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     const canonicalUsername = profile?.username || auth.username || rawUsername;
 
     // Score rank reads from the canonical-cased entry; pin rank uses
-    // lowercase since the pinbook leaderboard zset keys members that way
-    // (see /api/pinbook/leaderboard updateLeaderboardEntry).
-    const [allTimeScore, allTimeRank, dailyScore, pinRank] = await Promise.all([
+    // lowercase since the pinbook leaderboard zset keys members that
+    // way (see /api/pinbook/leaderboard updateLeaderboardEntry).
+    //
+    // Frenzy lookups: the frenzy_leaderboard zset doesn't exist yet
+    // (Frenzy ships on a separate branch). zscore + zrevrank return
+    // null against a missing key, so the profile gets `—` until Frenzy
+    // launches + scores start flowing. No code change needed at that
+    // point — the values will populate automatically.
+    const [
+        allTimeScore,
+        allTimeRank,
+        dailyScore,
+        pinRank,
+        frenzyScore,
+        frenzyRank,
+    ] = await Promise.all([
         kv.zscore("classic_leaderboard", canonicalUsername) as Promise<number | null>,
         kv.zrevrank("classic_leaderboard", canonicalUsername) as Promise<number | null>,
         kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as Promise<number | null>,
         kv.zrevrank("pinbook:lb:rank", username) as Promise<number | null>,
+        kv.zscore("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
+        kv.zrevrank("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
     ]);
 
     const pinbook = pinbookRaw as
@@ -269,6 +297,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         joinedAt: auth.createdAt || null,
         rank: {
             score: allTimeRank !== null ? allTimeRank + 1 : null,
+            frenzy: frenzyRank !== null ? frenzyRank + 1 : null,
             pins: pinRank !== null ? pinRank + 1 : null,
         },
         tier: tierFromInfo(getTier(completion)),
@@ -276,6 +305,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         trophyCase,
         best: {
             allTime: allTimeScore !== null ? Number(allTimeScore) : null,
+            frenzy: frenzyScore !== null ? Number(frenzyScore) : null,
             daily: dailyScore !== null ? Number(dailyScore) : null,
         },
         gamesPlayed: Number(gamesPlayedRaw || 0),

@@ -12,6 +12,8 @@ import {
     COSMIC_DEEP,
     PINK,
     PINK_DEEP,
+    RED,
+    RED_DEEP,
     INK_PANEL,
     INK_PANEL_LIGHT,
     INK_DARKEST,
@@ -209,33 +211,30 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                                 Joined {joined}
                             </div>
                         )}
+                        {/* Pills always render all 4 slots — placeholder
+                            "—" stands in for pre-launch Frenzy and any
+                            still-unranked Classic / Pin / Streak metrics. */}
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
-                            {profile.rank.score !== null && (
-                                <RankPill
-                                    label="SCORE RANK"
-                                    value={`#${profile.rank.score}`}
-                                    color={GOLD}
-                                />
-                            )}
-                            {profile.rank.pins !== null && (
-                                <RankPill
-                                    label="PIN RANK"
-                                    value={`#${profile.rank.pins}`}
-                                    color={ORANGE}
-                                />
-                            )}
-                            {profile.streak > 0 && (
-                                <RankPill
-                                    label="STREAK"
-                                    value={`${profile.streak} ${profile.streak === 1 ? "DAY" : "DAYS"}`}
-                                    color={ORANGE}
-                                />
-                            )}
-                            {profile.rank.score === null && profile.rank.pins === null && profile.streak === 0 && (
-                                <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/50">
-                                    Not yet ranked
-                                </span>
-                            )}
+                            <RankPill
+                                label="CLASSIC RANK"
+                                value={profile.rank.score !== null ? `#${profile.rank.score}` : "—"}
+                                color={GOLD}
+                            />
+                            <RankPill
+                                label="FRENZY RANK"
+                                value={profile.rank.frenzy !== null ? `#${profile.rank.frenzy}` : "—"}
+                                color={RED}
+                            />
+                            <RankPill
+                                label="PIN RANK"
+                                value={profile.rank.pins !== null ? `#${profile.rank.pins}` : "—"}
+                                color={COSMIC}
+                            />
+                            <RankPill
+                                label="STREAK"
+                                value={profile.streak > 0 ? `${profile.streak} ${profile.streak === 1 ? "DAY" : "DAYS"}` : "—"}
+                                color={ORANGE}
+                            />
                         </div>
                     </div>
                 </div>
@@ -247,11 +246,26 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 frame around a dark inner panel, with a "pressed-in"
                 bottom shadow. */}
             <div className="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <StatCard label="BEST SCORE" value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"} accent={GOLD} deep={GOLD_DEEP} />
-                <StatCard label="TODAY'S DAILY" value={profile.best.daily !== null ? profile.best.daily.toLocaleString() : "—"} accent={ORANGE} deep={ORANGE_DEEP} />
-                <StatCard label="GAMES PLAYED" value={profile.gamesPlayed.toLocaleString()} accent={COSMIC} deep={COSMIC_DEEP} />
                 <StatCard
-                    label="PIN COMPLETION"
+                    label="BEST CLASSIC SCORE"
+                    value={profile.best.allTime !== null ? profile.best.allTime.toLocaleString() : "—"}
+                    accent={GOLD}
+                    deep={GOLD_DEEP}
+                />
+                <StatCard
+                    label="BEST FRENZY SCORE"
+                    value={profile.best.frenzy !== null ? profile.best.frenzy.toLocaleString() : "—"}
+                    accent={RED}
+                    deep={RED_DEEP}
+                />
+                <StatCard
+                    label="GAMES PLAYED"
+                    value={profile.gamesPlayed.toLocaleString()}
+                    accent={COSMIC}
+                    deep={COSMIC_DEEP}
+                />
+                <StatCard
+                    label="PINS COLLECTED"
                     value={
                         <>
                             {profile.pins.unique}
@@ -278,20 +292,6 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 />
             </div>
 
-            {/* Footer */}
-            <div className="w-full max-w-4xl mx-auto text-center pb-6">
-                <Link
-                    href="/"
-                    className="inline-block font-display text-[11px] tracking-[0.28em] px-6 py-3 rounded-lg transition-all"
-                    style={{
-                        color: GOLD,
-                        background: "rgba(255,255,255,0.04)",
-                        border: `1px solid ${GOLD}33`,
-                    }}
-                >
-                    PLAY PIN DROP →
-                </Link>
-            </div>
             </div>
             {/* Tier-specific CSS — mirrors TierInfoModal so the nameplate
                 reads as the same trophy you see in the COLLECTOR TIERS
