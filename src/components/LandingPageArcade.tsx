@@ -121,6 +121,35 @@ interface DailyStats {
     yourRank: number | null;
 }
 
+// Small circular avatar used on global feed rows. Falls back to the
+// GVC shaka when the user has no uploaded avatar. Handles data: URLs
+// (next/image refuses these in optimized mode) by routing them to a
+// plain <img>.
+function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
+    const src = avatarUrl || "/assets/gvc_shaka.png";
+    const isData = !!avatarUrl && avatarUrl.startsWith("data:");
+    const hasUpload = !!avatarUrl;
+    return (
+        <span
+            className="relative shrink-0 inline-block w-6 h-6 rounded-full overflow-hidden"
+            style={{
+                background: hasUpload ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#B366FF,#FF6B9D)",
+                border: "1px solid rgba(255,224,72,0.55)",
+            }}
+            aria-hidden
+        >
+            {isData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={src} alt="" className="w-full h-full object-cover" />
+            ) : hasUpload ? (
+                <Image src={src} alt={username} fill sizes="24px" className="object-cover" />
+            ) : (
+                <Image src={src} alt="" fill sizes="24px" className="object-contain p-[3px]" />
+            )}
+        </span>
+    );
+}
+
 /* ========= MAIN ========= */
 export default function LandingPageArcade({
     onStartGame,
@@ -1690,6 +1719,7 @@ export default function LandingPageArcade({
                                                     }}
                                                 >
                                                     <div className="flex items-center gap-2 min-w-0">
+                                                        <FeedAvatar avatarUrl={run.avatarUrl} username={run.username} />
                                                         <span
                                                             className="font-display text-[11px] font-black truncate text-white/90"
                                                             title={run.username}
