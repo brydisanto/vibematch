@@ -154,7 +154,9 @@ export default function LandingPageArcade({
     const [scoreRank, setScoreRank] = useState<number | null>(null);
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
     const [globalRuns, setGlobalRuns] = useState<GlobalRun[]>([]);
-    const [feedTab, setFeedTab] = useState<FeedTab>("mine");
+    // GLOBAL is the default — the panel is more interesting filled with
+    // everyone's plays than just the current user's history.
+    const [feedTab, setFeedTab] = useState<FeedTab>("global");
     const [vibingPlayers, setVibingPlayers] = useState<VibingPlayer[]>([]);
     const [dailyStats, setDailyStats] = useState<DailyStats>({ yourBest: null, topScore: null, totalPlayers: 0, yourRank: null });
     const [playedDaily, setPlayedDaily] = useState<boolean>(false);
@@ -1597,24 +1599,24 @@ export default function LandingPageArcade({
                             <div className="flex items-center gap-3 mb-3">
                                 <button
                                     type="button"
-                                    onClick={() => setFeedTab("mine")}
-                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
-                                    style={{
-                                        color: feedTab === "mine" ? GOLD : "rgba(255,255,255,0.35)",
-                                    }}
-                                >
-                                    MINE
-                                </button>
-                                <div className="w-px h-3" style={{ background: "rgba(255,255,255,0.15)" }} />
-                                <button
-                                    type="button"
                                     onClick={() => setFeedTab("global")}
                                     className="font-display text-[10px] tracking-[0.3em] transition-colors"
                                     style={{
                                         color: feedTab === "global" ? GOLD : "rgba(255,255,255,0.35)",
                                     }}
                                 >
-                                    GLOBAL
+                                    RECENT GAMES
+                                </button>
+                                <div className="w-px h-3" style={{ background: "rgba(255,255,255,0.15)" }} />
+                                <button
+                                    type="button"
+                                    onClick={() => setFeedTab("mine")}
+                                    className="font-display text-[10px] tracking-[0.3em] transition-colors"
+                                    style={{
+                                        color: feedTab === "mine" ? GOLD : "rgba(255,255,255,0.35)",
+                                    }}
+                                >
+                                    MY GAMES
                                 </button>
                             </div>
                             {feedTab === "mine" ? (
@@ -1671,7 +1673,7 @@ export default function LandingPageArcade({
                             ) : (
                                 globalRuns.length === 0 ? (
                                     <div className="text-[11px] text-white/40 leading-relaxed">
-                                        Loading the latest plays...
+                                        Loading the latest games played...
                                     </div>
                                 ) : (
                                     <div className="w-full flex flex-col gap-2">

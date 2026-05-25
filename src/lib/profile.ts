@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getEasternDailyKey } from "@/lib/daily-window";
+import { getTier, type TierInfo, type TierId } from "@/lib/tiers";
 
 /**
  * Shared profile-data aggregator used by both /api/profile/[username]
@@ -10,14 +11,6 @@ import { getEasternDailyKey } from "@/lib/daily-window";
  */
 
 const tierOrder: BadgeTier[] = ["cosmic", "gold", "special", "silver", "blue"];
-
-function getWeeklyKey(): string {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(d.setDate(diff)).toISOString().split("T")[0];
-    return `classic_weekly:${monday}`;
-}
 
 export interface ProfileBadge {
     id: string;
@@ -34,14 +27,22 @@ export interface ProfileRecentRun {
     timestamp: number;
 }
 
+export interface ProfileTier {
+    id: TierId;
+    label: string;
+    color: string;
+    accent: string;
+}
+
 export interface ProfileResponse {
     username: string;
     avatarUrl: string | null;
     joinedAt: string | null;
     rank: {
-        allTime: number | null;
-        weekly: number | null;
+        score: number | null;
+        pins: number | null;
     };
+    tier: ProfileTier;
     best: {
         allTime: number | null;
         daily: number | null;
@@ -57,6 +58,10 @@ export interface ProfileResponse {
     recentRuns: ProfileRecentRun[];
 }
 
+function tierFromInfo(info: TierInfo): ProfileTier {
+    return { id: info.id, label: info.label, color: info.color, accent: info.accent };
+}
+
 export async function getProfile(rawUsername: string): Promise<ProfileResponse | null> {
     if (!rawUsername || typeof rawUsername !== "string") return null;
     const username = decodeURIComponent(rawUsername).toLowerCase();
@@ -66,7 +71,6 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     if (!/^[a-z0-9_]{1,32}$/.test(username)) return null;
 
     const today = getEasternDailyKey();
-    const weeklyKey = getWeeklyKey();
 
     const [authRaw, profileRaw, pinbookRaw, gamesPlayedRaw, gameLogRaw] = await Promise.all([
         kv.get(`user_auth:${username}`),
@@ -84,14 +88,15 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
 
     const canonicalUsername = profile?.username || auth.username || rawUsername;
 
-    const [allTimeScore, allTimeRank, weeklyScore, weeklyRank, dailyScore] = await Promise.all([
+    // Score rank reads from the canonical-cased entry; pin rank uses
+    // lowercase since the pinbook leaderboard zset keys members that way
+    // (see /api/pinbook/leaderboard updateLeaderboardEntry).
+    const [allTimeScore, allTimeRank, dailyScore, pinRank] = await Promise.all([
         kv.zscore("classic_leaderboard", canonicalUsername) as Promise<number | null>,
         kv.zrevrank("classic_leaderboard", canonicalUsername) as Promise<number | null>,
-        kv.zscore(weeklyKey, canonicalUsername) as Promise<number | null>,
-        kv.zrevrank(weeklyKey, canonicalUsername) as Promise<number | null>,
         kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as Promise<number | null>,
+        kv.zrevrank("pinbook:lb:rank", username) as Promise<number | null>,
     ]);
-    void weeklyScore;
 
     const pinbook = pinbookRaw as
         | { pins?: Record<string, { count: number; firstEarned: string }> }
@@ -159,9 +164,10 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         avatarUrl: profile?.avatarUrl || null,
         joinedAt: auth.createdAt || null,
         rank: {
-            allTime: allTimeRank !== null ? allTimeRank + 1 : null,
-            weekly: weeklyRank !== null ? weeklyRank + 1 : null,
+            score: allTimeRank !== null ? allTimeRank + 1 : null,
+            pins: pinRank !== null ? pinRank + 1 : null,
         },
+        tier: tierFromInfo(getTier(completion)),
         best: {
             allTime: allTimeScore !== null ? Number(allTimeScore) : null,
             daily: dailyScore !== null ? Number(dailyScore) : null,

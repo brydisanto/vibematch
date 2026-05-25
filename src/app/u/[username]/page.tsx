@@ -2,7 +2,16 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getProfile, type ProfileResponse } from "@/lib/profile";
 import { TIER_COLORS, TIER_DISPLAY_NAMES, type BadgeTier } from "@/lib/badges";
-import { GOLD, ORANGE } from "@/lib/arcade-tokens";
+import {
+    GOLD,
+    ORANGE,
+    COSMIC,
+    COSMIC_DEEP,
+    PINK,
+    INK_PANEL,
+    INK_PANEL_LIGHT,
+    INK_DARKEST,
+} from "@/lib/arcade-tokens";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -78,10 +87,13 @@ export default async function ProfilePage({ params }: { params: Promise<PagePara
 
 function ProfileView({ profile }: { profile: ProfileResponse }) {
     const joined = formatJoinedDate(profile.joinedAt);
+    const tier = profile.tier;
     return (
         <div
             className="min-h-screen w-full flex flex-col items-stretch px-4 py-6 sm:px-8 sm:py-10"
-            style={{ background: "linear-gradient(180deg, #1a0c2e 0%, #0a0418 60%, #14081f 100%)" }}
+            style={{
+                background: `radial-gradient(ellipse at top, ${INK_PANEL_LIGHT} 0%, ${INK_PANEL} 55%, ${INK_DARKEST} 100%)`,
+            }}
         >
             {/* Top nav */}
             <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-6">
@@ -96,19 +108,40 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                 </div>
             </div>
 
-            {/* Hero */}
+            {/* Hero — tier-tinted backplate so the entire card reads as a
+                trophy case for the player's collection level. */}
             <div className="w-full max-w-4xl mx-auto rounded-2xl p-6 sm:p-8 mb-6 relative overflow-hidden"
                 style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: `1px solid ${GOLD}22`,
-                    boxShadow: `0 10px 40px -10px ${ORANGE}22, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                    background: `linear-gradient(180deg, ${tier.color}22, ${tier.accent}1a 60%, rgba(255,255,255,0.02))`,
+                    border: `1px solid ${tier.color}55`,
+                    boxShadow: `0 10px 40px -10px ${tier.color}55, inset 0 1px 0 rgba(255,255,255,0.06)`,
                 }}
             >
+                {/* Tier badge in the top-right corner of the hero */}
+                <div
+                    className="absolute top-4 right-4 sm:top-5 sm:right-5 px-2.5 py-1 rounded-full flex items-center gap-1.5"
+                    style={{
+                        background: `${tier.color}1f`,
+                        border: `1px solid ${tier.color}80`,
+                        boxShadow: `0 0 12px -4px ${tier.color}aa`,
+                    }}
+                >
+                    <span
+                        className="inline-block w-1.5 h-1.5 rounded-full"
+                        style={{ background: tier.color, boxShadow: `0 0 6px ${tier.color}` }}
+                    />
+                    <span
+                        className="font-display font-black text-[10px] tracking-[0.22em] uppercase"
+                        style={{ color: tier.color }}
+                    >
+                        {tier.label}
+                    </span>
+                </div>
                 <div
                     className="absolute inset-x-0 bottom-0 h-1 pointer-events-none"
-                    style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, ${ORANGE}, transparent)` }}
+                    style={{ background: `linear-gradient(90deg, transparent, ${tier.color}, ${tier.accent}, transparent)` }}
                 />
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mt-2 sm:mt-0">
                     <ProfileAvatar avatarUrl={profile.avatarUrl} username={profile.username} />
                     <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
                         <h1 className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight">
@@ -120,21 +153,26 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
                             </div>
                         )}
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
-                            {profile.rank.allTime !== null && (
+                            {profile.rank.score !== null && (
                                 <RankPill
-                                    label="ALL-TIME"
-                                    value={`#${profile.rank.allTime}`}
+                                    label="SCORE RANK"
+                                    value={`#${profile.rank.score}`}
                                     color={GOLD}
                                 />
                             )}
-                            {profile.rank.weekly !== null && (
+                            {profile.rank.pins !== null && (
                                 <RankPill
-                                    label="THIS WEEK"
-                                    value={`#${profile.rank.weekly}`}
+                                    label="PIN RANK"
+                                    value={`#${profile.rank.pins}`}
                                     color={ORANGE}
                                 />
                             )}
-                            {profile.rank.allTime === null && profile.rank.weekly === null && (
+                            <RankPill
+                                label="TIER"
+                                value={tier.label}
+                                color={tier.color}
+                            />
+                            {profile.rank.score === null && profile.rank.pins === null && (
                                 <span className="font-mundial text-[10px] tracking-[0.22em] uppercase text-white/40">
                                     Not yet ranked
                                 </span>
@@ -226,23 +264,63 @@ function ProfileView({ profile }: { profile: ProfileResponse }) {
 
 function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
     const src = avatarUrl || "/assets/gvc_shaka.png";
+    const isDataUrl = !!avatarUrl && avatarUrl.startsWith("data:");
+    // Matches the main-page avatar: outer gold glow, spinning conic
+    // gradient ring, cosmic→pink inner bg, fall back to shaka if no
+    // avatar uploaded. Larger size for the hero.
     return (
-        <div
-            className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shrink-0"
-            style={{
-                background: avatarUrl ? "rgba(255,255,255,0.04)" : `radial-gradient(circle at 50% 40%, ${GOLD}22, transparent 70%)`,
-                border: `2px solid ${GOLD}66`,
-                boxShadow: `0 0 30px -8px ${GOLD}55`,
-            }}
-        >
-            <Image
-                src={src}
-                alt={username}
-                fill
-                sizes="112px"
-                className="object-contain p-2"
-                unoptimized
+        <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
+            <div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                    inset: -22,
+                    background: `radial-gradient(circle, ${GOLD}bf 0%, ${GOLD}59 40%, transparent 75%)`,
+                    filter: "blur(6px)",
+                    opacity: 0.7,
+                }}
             />
+            <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                    background: `conic-gradient(from 0deg, ${GOLD} 0deg, ${GOLD}00 90deg, ${GOLD} 180deg, ${GOLD}00 270deg, ${GOLD} 360deg)`,
+                    padding: 2,
+                }}
+            >
+                <div className="w-full h-full rounded-full" style={{ background: "#180630" }} />
+            </div>
+            <div
+                className="absolute rounded-full overflow-hidden flex items-center justify-center"
+                style={{
+                    inset: 4,
+                    background: `linear-gradient(135deg, ${COSMIC}, ${PINK})`,
+                    boxShadow: `inset 0 -6px 14px ${COSMIC_DEEP}, inset 0 3px 6px rgba(255,255,255,0.2)`,
+                }}
+            >
+                {isDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={src}
+                        alt={username}
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                ) : avatarUrl ? (
+                    <Image
+                        src={src}
+                        alt={username}
+                        fill
+                        sizes="116px"
+                        className="object-cover"
+                    />
+                ) : (
+                    <Image
+                        src={src}
+                        alt=""
+                        fill
+                        sizes="116px"
+                        className="object-contain p-3"
+                    />
+                )}
+            </div>
         </div>
     );
 }
