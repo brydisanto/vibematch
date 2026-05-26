@@ -224,6 +224,19 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
 
         if (score === displayedScore) return;
 
+        // Mobile shortcut: skip the 750ms rAF tween entirely. Each frame
+        // calls setDisplayedScore, forcing a HUD re-render at 60fps for
+        // ~1s per match. That's ~45 commits per match on the main
+        // thread, competing with cascade animations for frame budget.
+        // The score-fly popups already provide "climbing" feedback, so
+        // snapping the HUD value is visually fine on mobile.
+        if (typeof window !== "undefined" && window.innerWidth < 768) {
+            if (tweenRafRef.current) cancelAnimationFrame(tweenRafRef.current);
+            tweenStartRef.current = null;
+            setDisplayedScore(score);
+            return;
+        }
+
         // Hold a beat before starting the tween so the popup can pop +
         // hold at its match position before the counter starts moving.
         // After this delay, tween from current displayed value to the

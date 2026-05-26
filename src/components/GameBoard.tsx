@@ -278,6 +278,38 @@ const Tile = memo(function Tile({
             )}
         </button>
     );
+}, (prev, next) => {
+    // Custom comparator: every applyGravity call spreads new cell
+    // objects for the entire board, so a default shallow compare on
+    // `cell` always sees a reference mismatch and re-renders every
+    // tile on every cascade frame. Compare the FIELDS that actually
+    // drive what this tile renders — id, badge, special, drop flags
+    // — so a survivor cell that didn't visually change can skip.
+    // This is the big mobile cascade win: deep cascades touch maybe
+    // 10-20 tiles each frame but were re-rendering all 64.
+    return (
+        prev.cell.id === next.cell.id &&
+        prev.cell.badge === next.cell.badge &&
+        prev.cell.isSpecial === next.cell.isSpecial &&
+        prev.cell.isNew === next.cell.isNew &&
+        prev.cell.dropDistance === next.cell.dropDistance &&
+        prev.cell.cosmicTargetBadgeId === next.cell.cosmicTargetBadgeId &&
+        prev.row === next.row &&
+        prev.col === next.col &&
+        prev.isSelected === next.isSelected &&
+        prev.isHinted === next.isHinted &&
+        prev.isInvalidSwap === next.isInvalidSwap &&
+        prev.isSwap1 === next.isSwap1 &&
+        prev.isSwap2 === next.isSwap2 &&
+        prev.swapDx === next.swapDx &&
+        prev.swapDy === next.swapDy &&
+        prev.isDealing === next.isDealing &&
+        prev.dealDelay === next.dealDelay &&
+        prev.isDroppingTile === next.isDroppingTile &&
+        prev.dropPx === next.dropPx &&
+        prev.onPointerDown === next.onPointerDown &&
+        prev.onClick === next.onClick
+    );
 });
 
 /* ===== MATCH PARTICLES — Enhanced per-tier ===== */
