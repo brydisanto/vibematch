@@ -92,6 +92,26 @@ export interface GameState {
      *  stores this but doesn't replay it yet — Phase 2 of the
      *  server-authoritative score scope. */
     moveSequence: MoveAction[];
+    /** Stateful RNG closure for THIS game. Threads through processTurn /
+     *  triggerSpecialTile / applyGravity so every tile refill is
+     *  deterministic from the match's server-issued seed. Optional
+     *  because legacy GameState (DemoClient's synthetic HUD state,
+     *  in-flight games at deploy time) won't have it — engine fns fall
+     *  back to Math.random when this is undefined. */
+    rng?: Rng;
+}
+
+/** Stateful per-game random number source. Returns [0, 1). Mutates
+ *  internal state on each call so successive invocations produce a
+ *  deterministic sequence given a seed. */
+export type Rng = () => number;
+
+/** Build a per-game RNG from the server-issued seed (or fall back to
+ *  Math.random when no seed is provided). The `+ 1000` offset matches
+ *  the original board-fill seed transform so the FIRST tiles produced
+ *  by this RNG match what createBoard used to generate locally. */
+export function makeGameRng(seed?: number): Rng {
+    return seed !== undefined ? seededRandom(seed + 1000) : Math.random;
 }
 
 const BOARD_SIZE = 8;
@@ -121,7 +141,13 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[], expl
         : (mode === "daily" ? getDailySeed() : undefined);
     const gameBadges = draftedBadges ?? selectGameBadges(6, seed);
 
-    const board = createBoard(gameBadges, seed);
+    // ONE rng per game. createBoard burns ~64 calls populating the
+    // initial board; subsequent applyGravity calls continue advancing
+    // the same closure so the live game's tile sequence is deterministic
+    // from the seed. Replay creates its own RNG with the same seed and
+    // gets an identical sequence.
+    const rng = makeGameRng(seed);
+    const board = createBoard(gameBadges, rng);
 
     return {
         board,
@@ -144,13 +170,17 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[], expl
         bonusCapsuleAwarded: false,
         moveLog: [],
         moveSequence: [],
+        rng,
     };
 }
 
-export function createBoard(badges: Badge[], seed?: number): Cell[][] {
-    const rng = seed !== undefined
-        ? seededRandom(seed + 1000)
-        : Math.random;
+export function createBoard(badges: Badge[], rngOrSeed?: Rng | number): Cell[][] {
+    // Back-compat: original signature took a `seed: number`. New callers
+    // pass an Rng closure directly so the initial board fill and later
+    // applyGravity refills share state. Both shapes are supported here.
+    const rng: Rng = typeof rngOrSeed === 'function'
+        ? rngOrSeed
+        : (typeof rngOrSeed === 'number' ? seededRandom(rngOrSeed + 1000) : Math.random);
 
     const board: Cell[][] = [];
 
@@ -512,8 +542,18 @@ export function applyGravity(
      * the cosmic-blast feel. Only applies to the immediate post-blast
      * refill; subsequent cascades repopulate normally.
      */
-    excludedBadgeIds?: Set<string>
+    excludedBadgeIds?: Set<string>,
+    /**
+     * Per-game RNG threaded from createInitialState. When supplied,
+     * tile refills draw deterministically from the seeded sequence so
+     * replays can reproduce the exact tile drops. When undefined,
+     * falls back to Math.random for backwards compatibility with
+     * legacy callers (DemoClient + any in-flight game whose GameState
+     * predates the rng field).
+     */
+    rng?: Rng
 ): Cell[][] {
+    const r: Rng = rng ?? Math.random;
     const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
     // Filter the refill pool. Falls back to the full pool if filtering
     // would leave us with nothing to draw from (defensive — shouldn't
@@ -543,8 +583,11 @@ export function applyGravity(
                 const drop = row - originalRow; // how many rows this tile fell
                 newBoard[row][col] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             } else {
-                // Generate new tile — drops from above the board
-                const badge = effectivePool[Math.floor(Math.random() * effectivePool.length)];
+                // Generate new tile — drops from above the board.
+                // Uses the per-game RNG (or Math.random fallback) so the
+                // same seed produces the same refill sequence across
+                // live play and server replay.
+                const badge = effectivePool[Math.floor(r() * effectivePool.length)];
                 // New tiles enter from above: distance = their target row + 1
                 // (relative to the top of the visible board)
                 newBoard[row][col] = {
@@ -690,7 +733,8 @@ export function processTurn(
     pos1: Position,
     pos2: Position,
     gameBadges: Badge[],
-    comboCarryIn: number = 0
+    comboCarryIn: number = 0,
+    rng?: Rng
 ): TurnResult | null {
     // Swap tiles
     let currentBoard = swapTiles(board, pos1, pos2);
@@ -829,7 +873,7 @@ export function processTurn(
         // blast just detonated, so the refill doesn't sneak the just-
         // cleared type back onto the board.
         const cosmicTargetsThisIter = collectCosmicTargetsFromMatched(currentBoard);
-        currentBoard = applyGravity(currentBoard, gameBadges, cosmicTargetsThisIter);
+        currentBoard = applyGravity(currentBoard, gameBadges, cosmicTargetsThisIter, rng);
 
         // Place specials on the cells that now occupy the original positions.
         // After gravity, these positions have new tiles — assign the special to them.
@@ -902,7 +946,8 @@ export function processTurn(
 export function triggerSpecialTile(
     board: Cell[][],
     pos: Position,
-    gameBadges: Badge[]
+    gameBadges: Badge[],
+    rng?: Rng
 ): TurnResult | null {
     const cell = board[pos.row][pos.col];
     if (!cell.isSpecial) return null;
@@ -966,7 +1011,7 @@ export function triggerSpecialTile(
     // Apply gravity. Exclude any cosmic blast targets that were part of
     // the initial detonation — see collectCosmicTargetsFromMatched.
     const initialCosmicTargets = collectCosmicTargetsFromMatched(currentBoard);
-    currentBoard = applyGravity(currentBoard, gameBadges, initialCosmicTargets);
+    currentBoard = applyGravity(currentBoard, gameBadges, initialCosmicTargets, rng);
 
     // Process any resulting cascades
     const MAX_CASCADES = 50;
@@ -1007,7 +1052,7 @@ export function triggerSpecialTile(
 
         // Same exclusion pattern for cascade gravity calls.
         const cascadeCosmicTargets = collectCosmicTargetsFromMatched(currentBoard);
-        currentBoard = applyGravity(currentBoard, gameBadges, cascadeCosmicTargets);
+        currentBoard = applyGravity(currentBoard, gameBadges, cascadeCosmicTargets, rng);
         matches = findAllMatches(currentBoard);
     }
 
@@ -1098,6 +1143,12 @@ export function replayMoveSequence(opts: ReplayInputs): ReplayResult {
     const gameBadges = initial.gameBadges;
     let movesLeft = initial.movesLeft;
     let comboCarry = 0;
+    // Critical for determinism: pull the same per-game RNG createInitialState
+    // built and thread it through every engine call. Without this, tile
+    // refills inside applyGravity diverge from the live game and the
+    // replay scores ~5-50× lower than what was actually played (which is
+    // exactly the false-positive pattern shadow mode was surfacing).
+    const rng = initial.rng;
 
     let finalScore = 0;
     let maxCombo = 0;
@@ -1116,9 +1167,9 @@ export function replayMoveSequence(opts: ReplayInputs): ReplayResult {
         if (move.kind === 'swap') {
             // Adjacency / format are validated by the route before this
             // function is called, so we trust the move shape here.
-            result = processTurn(board, move.from, move.to, gameBadges, comboCarry);
+            result = processTurn(board, move.from, move.to, gameBadges, comboCarry, rng);
         } else if (move.kind === 'tap') {
-            result = triggerSpecialTile(board, move.at, gameBadges);
+            result = triggerSpecialTile(board, move.at, gameBadges, rng);
         }
 
         // Invalid swap (no match formed) or tap on a non-special cell —

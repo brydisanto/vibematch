@@ -547,7 +547,7 @@ export function useGame(): UseGameReturn {
             if (state.selectedTile.row === pos.row && state.selectedTile.col === pos.col) {
                 const cell = state.board[pos.row]?.[pos.col];
                 if (cell?.isSpecial) {
-                    const result = triggerSpecialTile(state.board, pos, state.gameBadges);
+                    const result = triggerSpecialTile(state.board, pos, state.gameBadges, state.rng);
                     if (result) {
                         if (cell.isSpecial === "bomb") playBombSound();
                         else if (cell.isSpecial === "cosmic_blast") playCosmicBlastSound();
@@ -578,7 +578,7 @@ export function useGame(): UseGameReturn {
             }
 
             // Adjacent tile — attempt swap
-            const result = processTurn(state.board, state.selectedTile, pos, state.gameBadges, state.comboCarry);
+            const result = processTurn(state.board, state.selectedTile, pos, state.gameBadges, state.comboCarry, state.rng);
 
             if (!result) {
                 // Invalid swap — no match. Animate bounce then deselect
@@ -627,7 +627,7 @@ export function useGame(): UseGameReturn {
             setHintMessage(null);
 
             // Attempt swap
-            const result = processTurn(state.board, from, to, state.gameBadges, state.comboCarry);
+            const result = processTurn(state.board, from, to, state.gameBadges, state.comboCarry, state.rng);
 
             if (!result) {
                 playInvalidSwapSound();
