@@ -374,18 +374,22 @@ function StatCard({
     label,
     value,
     color,
-    icon: Icon,
     delay,
 }: {
     label: string;
     value: string | number;
     color: string;
-    icon: React.ElementType;
+    /** Kept in the prop list for source-call compatibility; no longer
+     *  rendered. The icons were stacked above the label and ate ~22px
+     *  per tile of vertical space with no real informational value
+     *  (the label below names the stat). Dropping them lets the action
+     *  buttons fit on screen without scroll. */
+    icon?: React.ElementType;
     delay: number;
 }) {
     return (
         <motion.div
-            className="relative bg-[#1a0533]/95 border border-white/[0.08] rounded-2xl p-3 sm:p-4 overflow-hidden group"
+            className="relative bg-[#1a0533]/95 border border-white/[0.08] rounded-2xl p-3 sm:p-3.5 overflow-hidden group"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
@@ -398,11 +402,8 @@ function StatCard({
             {/* Subtle top highlight */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-            <div className="flex flex-col items-center gap-1 mb-1.5">
-                <Icon size={14} className={`${color} opacity-50`} />
-                <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider">
-                    {label}
-                </div>
+            <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider text-center mb-1">
+                {label}
             </div>
             <div className={`font-display text-xl sm:text-2xl font-bold text-center ${color}`}>
                 {value}
