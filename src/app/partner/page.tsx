@@ -212,8 +212,9 @@ function WhatIsPinDrop() {
                                 {
                                     image: "/badges/promo/opensea.webp",
                                     tier: "Event",
-                                    color: COSMIC,
+                                    color: "#4A9EFF",
                                     label: "Aye Aye, Captain!",
+                                    featured: true,
                                 },
                                 {
                                     image: "/badges/cosmic_guardian1759173818340.webp",
@@ -261,21 +262,48 @@ function PinTile({
     tier,
     color,
     label,
+    featured = false,
 }: {
     image: string;
     tier: string;
     color: string;
     label: string;
+    /** When true, the tile is rendered as the OpenSea event partner —
+     *  brighter accent fill + a "PARTNER PIN" ribbon, with a soft
+     *  breathing glow to draw the eye in a grid of similar tiles. */
+    featured?: boolean;
 }) {
     return (
         <div
-            className="rounded-xl p-3 flex flex-col items-center text-center"
+            className={`relative rounded-xl p-3 flex flex-col items-center text-center ${
+                featured ? "partner-featured" : ""
+            }`}
             style={{
-                background: `linear-gradient(135deg, ${color}15, ${color}06)`,
-                border: `1.5px solid ${color}40`,
-                boxShadow: `0 0 10px ${color}33`,
+                background: featured
+                    ? `linear-gradient(135deg, ${color}33, ${color}10)`
+                    : `linear-gradient(135deg, ${color}15, ${color}06)`,
+                border: featured
+                    ? `2px solid ${color}cc`
+                    : `1.5px solid ${color}40`,
+                boxShadow: featured
+                    ? `0 0 22px ${color}66, 0 0 40px ${color}33, inset 0 0 14px ${color}22`
+                    : `0 0 10px ${color}33`,
             }}
         >
+            {featured && (
+                <div
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full font-display font-black uppercase whitespace-nowrap z-10"
+                    style={{
+                        fontSize: 8,
+                        letterSpacing: "0.22em",
+                        background: color,
+                        color: "#0A0418",
+                        boxShadow: `0 2px 6px ${color}55`,
+                    }}
+                >
+                    Partner Pin
+                </div>
+            )}
             <div className="relative aspect-square w-full mb-2">
                 <Image
                     src={image}
@@ -292,7 +320,12 @@ function PinTile({
             >
                 {tier}
             </div>
-            <div className="font-display font-black text-[10px] text-white leading-tight line-clamp-2">
+            <div
+                className={`font-display font-black text-[10px] leading-tight line-clamp-2 ${
+                    featured ? "text-white" : "text-white"
+                }`}
+                style={featured ? { textShadow: `0 0 8px ${color}66` } : undefined}
+            >
                 {label}
             </div>
         </div>
@@ -690,6 +723,16 @@ function Animations() {
             @keyframes vmPartnerTwinkle {
                 0%, 100% { opacity: 0.22; transform: scale(1); }
                 50%      { opacity: 0.8; transform: scale(1.3); }
+            }
+            /* Featured (OpenSea partner) pin tile — gentle pulsing
+               glow that draws the eye amongst the other six pins in
+               the showcase grid without dominating the layout. */
+            .partner-featured {
+                animation: vmPartnerFeaturedGlow 3.4s ease-in-out infinite;
+            }
+            @keyframes vmPartnerFeaturedGlow {
+                0%, 100% { transform: translateY(0); filter: brightness(1); }
+                50%      { transform: translateY(-2px); filter: brightness(1.12); }
             }
         `}</style>
     );
