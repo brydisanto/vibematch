@@ -419,15 +419,13 @@ function Insertions() {
         {
             n: 5,
             title: "Custom Board Background",
-            body: "The entire game scene carries a co-designed background skin during the event so every session is visually wrapped in your community's identity. Skyline, palette, ambient details, all tuned to your brand.",
-            example: "OpenSea-themed board scene during the live event",
+            body: "We can collaborate on a custom board wrap that sits behind the game's playing surface. This is especially visible for desktop players.",
             preview: "board",
         },
         {
             n: 6,
             title: "Custom Logo Treatment",
-            body: "Your logo locks up with the Pin Drop wordmark above the board during the event, a permanent co-brand visible on every screenshot, every share, every minute of gameplay.",
-            example: "Pin Drop × OpenSea wordmark in the header",
+            body: "We can add your logo alongside Pin Drop on the gameplay screen.",
             preview: "logo",
         },
     ];
@@ -1055,28 +1053,25 @@ function FinalCTA() {
 
 function Footer() {
     return (
-        <footer className="pt-12 mt-12 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
-            <div className="font-mundial text-white/35 text-[11px] tracking-[0.18em] uppercase">
-                Pin Drop · A Good Vibes Club joint
+        <footer className="pt-12 mt-12 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 text-center sm:text-left">
+            <div className="font-mundial text-white/40 text-[11px] tracking-[0.18em] uppercase flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <span>© 2026 Pin Drop</span>
+                <span className="hidden sm:inline text-white/20">·</span>
+                <span>
+                    Created by{" "}
+                    <a
+                        href="https://x.com/brydisanto"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-colors hover:text-white"
+                        style={{ color: GOLD }}
+                    >
+                        @brydisanto
+                    </a>
+                </span>
             </div>
-            <div className="flex items-center gap-6 font-mundial text-[11px] tracking-[0.18em] uppercase">
-                <a
-                    href={PIN_DROP_PLAY}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white/40 hover:text-white transition-colors"
-                >
-                    pindropgame.com
-                </a>
-                <a
-                    href={CTA_TWITTER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-colors"
-                    style={{ color: GOLD }}
-                >
-                    @RonnyGuy
-                </a>
+            <div className="font-mundial text-white/40 text-[11px] tracking-[0.18em] uppercase">
+                A game from Good Vibes Club
             </div>
         </footer>
     );
