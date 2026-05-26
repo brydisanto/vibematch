@@ -906,28 +906,34 @@ function BoardPreview() {
 }
 
 function LogoLockupPreview() {
+    const tileColors = [GOLD, PINK, COSMIC, ORANGE, "#5fd1a3"];
+    const tiles = Array.from({ length: 16 }, (_, i) => {
+        const seed = (i * 11 + 3) % tileColors.length;
+        const isPartner = i === 5 || i === 10;
+        return { color: isPartner ? OS_BLUE : tileColors[seed], isPartner };
+    });
     return (
         <PreviewFrame pad={false} accent={OS_BLUE}>
             <div className="relative w-full h-full overflow-hidden rounded-xl">
                 <div
                     className="absolute inset-0"
                     style={{
-                        background: `radial-gradient(circle at 50% 30%, ${OS_BLUE}55 0%, ${OS_BLUE}22 35%, rgba(0,0,0,0.55) 100%)`,
+                        background: `radial-gradient(circle at 50% 25%, ${OS_BLUE}55 0%, ${OS_BLUE}22 40%, rgba(0,0,0,0.6) 100%)`,
                     }}
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 gap-1.5">
-                    <Image
-                        src="/assets/logo-v3.png"
-                        alt="Pin Drop"
-                        width={110}
-                        height={76}
-                        className="object-contain"
-                        unoptimized
-                        style={{ filter: `drop-shadow(0 4px 10px ${GOLD}55)` }}
-                    />
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="absolute inset-0 flex flex-col items-center justify-start px-2 pt-3 gap-2">
+                    <div className="flex items-center gap-1.5">
+                        <Image
+                            src="/assets/logo-v3.png"
+                            alt="Pin Drop"
+                            width={66}
+                            height={45}
+                            className="object-contain"
+                            unoptimized
+                            style={{ filter: `drop-shadow(0 2px 6px ${GOLD}55)` }}
+                        />
                         <span
-                            className="font-display font-black text-white/45 text-base leading-none"
+                            className="font-display font-black text-white/55 text-sm leading-none"
                             style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
                         >
                             ×
@@ -935,20 +941,38 @@ function LogoLockupPreview() {
                         <Image
                             src="/badges/promo/opensea.webp"
                             alt=""
-                            width={22}
-                            height={22}
+                            width={26}
+                            height={26}
                             className="object-contain"
                             unoptimized
+                            style={{ filter: `drop-shadow(0 0 6px ${OS_BLUE}88)` }}
                         />
-                        <span
-                            className="font-display font-black text-[11px] tracking-[0.18em] uppercase"
-                            style={{
-                                color: OS_BLUE,
-                                textShadow: `0 0 8px ${OS_BLUE}88`,
-                            }}
-                        >
-                            OpenSea
-                        </span>
+                    </div>
+                    <div
+                        className="w-[88%] flex-1 rounded-md p-1 mb-2"
+                        style={{
+                            background: "rgba(8,12,28,0.8)",
+                            border: `1.5px solid ${GOLD}cc`,
+                            boxShadow: `0 0 10px ${GOLD}33, inset 0 0 8px rgba(0,0,0,0.6)`,
+                        }}
+                    >
+                        <div className="grid grid-cols-4 gap-[2px] w-full h-full">
+                            {tiles.map((t, i) => (
+                                <div
+                                    key={i}
+                                    className="rounded-[2px]"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${t.color}cc, ${t.color}66)`,
+                                        boxShadow: t.isPartner
+                                            ? `0 0 5px ${OS_BLUE}, inset 0 0 3px ${OS_BLUE}aa`
+                                            : "inset 0 0 2px rgba(255,255,255,0.25)",
+                                        border: t.isPartner
+                                            ? `1px solid ${OS_BLUE}`
+                                            : "1px solid rgba(255,255,255,0.18)",
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
