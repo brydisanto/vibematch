@@ -108,14 +108,14 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                     Capsule Pull
                 </div>
 
-                <div className="relative h-[260px] sm:h-[280px] flex items-center justify-center overflow-hidden">
+                <div className="relative h-[300px] sm:h-[320px] flex items-center justify-center overflow-hidden">
                     <Suspense fallback={<CapsuleFallback />}>
                         <div
                             className="absolute top-1/2 left-1/2 cursor-pointer select-none"
                             style={{
                                 width: 700,
                                 height: 700,
-                                transform: "translate(-50%, -50%) scale(0.38)",
+                                transform: "translate(-50%, -50%) scale(0.46)",
                                 transformOrigin: "center center",
                                 visibility: isRevealed ? "hidden" : "visible",
                             }}
@@ -125,7 +125,6 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                                 tier="cosmic"
                                 phase={phase}
                                 onTap={handleTap}
-                                badgeImage="/badges/promo/opensea.webp"
                             />
                         </div>
                     </Suspense>
