@@ -108,7 +108,7 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                     Capsule Pull
                 </div>
 
-                <div className="relative h-[300px] sm:h-[320px] flex items-center justify-center overflow-hidden">
+                <div className="relative h-[210px] sm:h-[230px] flex items-center justify-center overflow-hidden">
                     <Suspense fallback={<CapsuleFallback />}>
                         <div
                             className="absolute top-1/2 left-1/2 cursor-pointer select-none"
@@ -168,7 +168,7 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                     )}
                 </div>
 
-                <div className="mt-4 text-center min-h-[88px] flex flex-col items-center justify-start">
+                <div className="mt-2 text-center min-h-[76px] flex flex-col items-center justify-start">
                     {isRevealed ? (
                         <div
                             className="flex flex-col items-center gap-2"
@@ -210,7 +210,7 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                     )}
                 </div>
 
-                <div className="mt-4 flex justify-center">
+                <div className="mt-3 flex justify-center">
                     <button
                         type="button"
                         onClick={isRevealed ? reset : handleTap}
