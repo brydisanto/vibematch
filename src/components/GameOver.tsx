@@ -677,7 +677,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
 
             {/* Card */}
             <motion.div
-                className="relative w-full max-w-md max-h-[90vh] overflow-y-auto"
+                className="relative w-full max-w-md max-h-[96vh] overflow-y-auto"
                 style={{ scrollbarWidth: "none" }}
                 initial={{ scale: 0.8, y: 50, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -697,7 +697,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                     }}
                 >
                     <div
-                        className="rounded-[26px] px-5 py-6 sm:px-8 sm:py-7 text-center relative overflow-hidden"
+                        className="rounded-[26px] px-5 py-5 sm:px-8 sm:py-5 text-center relative overflow-hidden"
                         style={{
                             background: "linear-gradient(180deg, #151515 0%, #0d0d0d 100%)",
                         }}
@@ -757,7 +757,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
 
                         {/* ===== ANIMATED SCORE ===== */}
                         <motion.div
-                            className="mb-4 relative"
+                            className="mb-3 relative"
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
