@@ -385,7 +385,7 @@ function Insertions() {
         {
             n: 1,
             title: "Custom Co-Designed Pin",
-            body: "We co-design a hero pin with your team to live as a real game asset. It appears as a board tile players can match and as a floating background element on the home screen. The pin embodies your brand inside the gameplay loop.",
+            body: "We co-design a hero pin with your team that lives as a playable game asset. It appears as a board tile players can match and as a floating background element on the home screen. The pin embodies your brand inside the gameplay loop.",
             example: "OpenSea's “Aye Aye, Captain!” pin",
             preview: "pin",
         },
@@ -406,7 +406,7 @@ function Insertions() {
         {
             n: 4,
             title: "Permanent Spot in Player Trophy Cases",
-            body: "Your pin drops from capsules during the event and is collected by players forever. Every player who finds one gets a permanent badge in their public profile's Trophy Case, a memento that lives on long after the event ends.",
+            body: "Your pin drops from capsules during the event and is collected by players. Every player who finds one gets a permanent badge in their public profile's Trophy Case that flexes their rank and accumulation.",
             preview: "trophy",
         },
         {
@@ -428,11 +428,12 @@ function Insertions() {
         <section className="py-16 sm:py-24">
             <SectionEyebrow label="The Surface Area" />
             <h2 className="font-display font-black text-white text-3xl sm:text-5xl tracking-tight mb-3 max-w-[820px]">
-                Six ways your community lives inside Pin Drop.
+                Six ways your community can live inside Pin Drop.
             </h2>
-            <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[680px] mb-12">
-                Every partnership uses the same six insertion points. We shape them
-                to your event. Below: how OpenSea did it for their launch event with us.
+            <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[760px] mb-12">
+                Every partnership can leverage six placements. We shape them to your
+                brand and event. See below for examples of how OpenSea did it for
+                their launch event with us.
             </p>
             <div className="space-y-4">
                 {items.map((item) => (
