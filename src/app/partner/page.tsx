@@ -15,11 +15,11 @@ import {
 export const metadata: Metadata = {
     title: "Partner with Pin Drop",
     description:
-        "Bring your community into Pin Drop — a match-3 puzzle game with a pin-collection meta. Custom pins, custom leaderboards, live events for your holders.",
+        "Bring your community into Pin Drop, a match-3 puzzle game with a pin-collection meta. Custom pins, custom leaderboards, live events for your holders.",
     openGraph: {
         title: "Partner with Pin Drop",
         description:
-            "Bring your community into Pin Drop — a match-3 puzzle game with a pin-collection meta.",
+            "Bring your community into Pin Drop, a match-3 puzzle game with a pin-collection meta.",
         url: "https://pindropgame.com/partner",
         siteName: "Pin Drop",
         images: [{ url: "https://pindropgame.com/badges/promo/opensea.webp" }],
@@ -172,15 +172,15 @@ function WhatIsPinDrop() {
                 <div className="font-mundial text-white/65 leading-relaxed space-y-4 text-[15px] sm:text-base">
                     <p>
                         Players match tiles to score. Big scores award pin capsules.
-                        Cracking a capsule drops one of 100+ collectible pins, each with
-                        a rarity tier — Common, Rare, Strategic, Legendary, Cosmic, and
-                        the ultra-rare One-Of-One.
+                        Cracking a capsule drops one of 100+ collectible pins across
+                        six rarity tiers: Common, Rare, Strategic, Legendary, Cosmic,
+                        and the ultra-rare One-Of-One.
                     </p>
                     <p>
-                        The hook isn&apos;t the matching. It&apos;s the pin-book — a
-                        growing collection that players check in on every single day,
-                        race up the leaderboards with, and trade duplicates for new
-                        capsules. The match-3 is the engine. The pins are the soul.
+                        The pin-book is the hook. A growing collection that players
+                        check in on every single day, race up the leaderboards with,
+                        and trade duplicates for new capsules. The match-3 is the
+                        engine. The pins are the soul.
                     </p>
                     <p>
                         We launched in early 2026 and the community is built around{" "}
@@ -268,7 +268,7 @@ function PinTile({
     tier: string;
     color: string;
     label: string;
-    /** When true, the tile is rendered as the OpenSea event partner —
+    /** When true, the tile is rendered as the OpenSea event partner ,
      *  brighter accent fill + a "PARTNER PIN" ribbon, with a soft
      *  breathing glow to draw the eye in a grid of similar tiles. */
     featured?: boolean;
@@ -336,25 +336,25 @@ function CoreLoop() {
     const steps = [
         {
             n: 1,
-            label: "Score",
-            body: "Players match tiles in Classic, Daily, or Frenzy modes.",
+            label: "Score Big",
+            body: "Players match pin tiles in Classic, Daily, or Frenzy modes.",
             color: GOLD,
         },
         {
             n: 2,
             label: "Win Capsules",
-            body: "High scores award sealed pin capsules.",
+            body: "High scores award sealed Pin Capsules. Higher scores = win more capsules.",
             color: ORANGE,
         },
         {
             n: 3,
-            label: "Rip Them Open",
-            body: "Cracking a capsule reveals a random pin from the catalog.",
+            label: "Rip 'Em Open",
+            body: "Each capsule reveals a random pin from the catalog. Event pins are inserted as potential pulls.",
             color: PINK,
         },
         {
             n: 4,
-            label: "Collect + Climb",
+            label: "Collect & Climb",
             body: "Build the pin book. Climb leaderboards. Earn tier upgrades.",
             color: COSMIC,
         },
@@ -399,41 +399,41 @@ function CoreLoop() {
 }
 
 function Insertions() {
-    const items = [
+    const items: InsertionItem[] = [
         {
             n: 1,
             title: "Custom Co-Designed Pin",
-            body: "We co-design a hero pin with your team to live as a real game asset. It appears as a board tile players can match + as a floating background element on the home screen. The pin embodies your brand inside the gameplay loop.",
+            body: "We co-design a hero pin with your team to live as a real game asset. It appears as a board tile players can match and as a floating background element on the home screen. The pin embodies your brand inside the gameplay loop.",
             example: "OpenSea's “Aye Aye, Captain!” pin",
-            image: "/badges/promo/opensea.webp",
+            preview: "pin",
         },
         {
             n: 2,
-            title: "Permanent Spot in Player Trophy Cases",
-            body: "Your pin drops from capsules during the event and is collected by players forever. Every player who finds one gets a permanent badge in their public profile's Trophy Case — a memento that lives on long after the event ends.",
-            example: "Every Aye Aye, Captain! collector keeps their pin",
-            image: "/badges/promo/opensea.webp",
+            title: "Custom Event Leaderboard + Prizes",
+            body: "A live leaderboard ranks the top collectors of your custom pin during the event window. You supply the prize pool: NFTs, allowlist slots, cash, merch, your call. Top finders earn real rewards from your community.",
+            example: "OpenSea contributed prizes for top Aye Aye finders",
+            preview: "leaderboard",
         },
         {
             n: 3,
-            title: "Custom Event Leaderboard + Prizes",
-            body: "A live leaderboard ranks the top collectors of your custom pin during the event window. You supply the prize pool — NFTs, allowlist slots, cash, merch, your call. Top finders earn real rewards from your community.",
-            example: "OpenSea contributed prizes for top Aye Aye finders",
-            image: "/badges/promo/opensea.webp",
+            title: "Permanent Spot in Player Trophy Cases",
+            body: "Your pin drops from capsules during the event and is collected by players forever. Every player who finds one gets a permanent badge in their public profile's Trophy Case, a memento that lives on long after the event ends.",
+            example: "Every Aye Aye, Captain! collector keeps their pin",
+            preview: "trophy",
         },
         {
             n: 4,
             title: "Custom Board Background",
             body: "The match-3 board carries a co-designed background skin during the event so every game session is visually branded with your community's identity.",
             example: "OpenSea-themed board during the live event",
-            image: "/assets/logo.png",
+            preview: "board",
         },
         {
             n: 5,
             title: "Custom Logo Treatment",
-            body: "Your logo locks up with the Pin Drop wordmark above the board during the event — a permanent co-brand visible on every screenshot, every share, every minute of gameplay.",
+            body: "Your logo locks up with the Pin Drop wordmark above the board during the event, a permanent co-brand visible on every screenshot, every share, every minute of gameplay.",
             example: "Pin Drop × OpenSea wordmark in the header",
-            image: "/assets/logo.png",
+            preview: "logo",
         },
     ];
     return (
@@ -443,7 +443,7 @@ function Insertions() {
                 Five ways your community lives inside Pin Drop.
             </h2>
             <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[680px] mb-12">
-                Every partnership uses the same five insertion points — we shape them
+                Every partnership uses the same five insertion points. We shape them
                 to your event. Below: how OpenSea did it for their launch event with us.
             </p>
             <div className="space-y-4">
@@ -455,22 +455,26 @@ function Insertions() {
     );
 }
 
+type PreviewType = "pin" | "leaderboard" | "trophy" | "board" | "logo";
+
+type InsertionItem = {
+    n: number;
+    title: string;
+    body: string;
+    example: string;
+    preview: PreviewType;
+};
+
 function InsertionRow({
     n,
     title,
     body,
     example,
-    image,
-}: {
-    n: number;
-    title: string;
-    body: string;
-    example: string;
-    image: string;
-}) {
+    preview,
+}: InsertionItem) {
     return (
         <div
-            className="rounded-2xl p-5 sm:p-7 grid grid-cols-1 sm:grid-cols-[auto_1fr_160px] gap-5 sm:gap-7 items-start"
+            className="rounded-2xl p-5 sm:p-7 grid grid-cols-1 sm:grid-cols-[auto_1fr_200px] gap-5 sm:gap-7 items-start"
             style={{
                 background: "rgba(255,255,255,0.03)",
                 border: `1px solid ${GOLD}1a`,
@@ -506,24 +510,363 @@ function InsertionRow({
                 </div>
             </div>
             <div className="hidden sm:flex items-center justify-center">
-                <div
-                    className="relative w-[140px] h-[140px] rounded-xl p-3 flex items-center justify-center"
-                    style={{
-                        background: "linear-gradient(180deg, rgba(179,102,255,0.08), rgba(0,0,0,0.2))",
-                        border: `1px solid ${COSMIC}33`,
-                    }}
-                >
-                    <Image
-                        src={image}
-                        alt=""
-                        width={120}
-                        height={120}
-                        className="object-contain"
-                        unoptimized
-                    />
-                </div>
+                <InsertionPreview type={preview} />
             </div>
         </div>
+    );
+}
+
+function InsertionPreview({ type }: { type: PreviewType }) {
+    switch (type) {
+        case "pin":
+            return <PinPreview />;
+        case "leaderboard":
+            return <LeaderboardPreview />;
+        case "trophy":
+            return <TrophyCasePreview />;
+        case "board":
+            return <BoardPreview />;
+        case "logo":
+            return <LogoLockupPreview />;
+    }
+}
+
+const OS_BLUE = "#4A9EFF";
+const CAPSULE_GREEN = "#5FD66A";
+
+function PreviewFrame({
+    children,
+    accent = OS_BLUE,
+    pad = true,
+}: {
+    children: React.ReactNode;
+    accent?: string;
+    pad?: boolean;
+}) {
+    return (
+        <div
+            className={`relative w-[180px] h-[180px] rounded-xl ${pad ? "p-3" : ""} flex items-center justify-center overflow-hidden`}
+            style={{
+                background: `linear-gradient(180deg, ${accent}14, rgba(0,0,0,0.5))`,
+                border: `1px solid ${accent}44`,
+                boxShadow: `0 0 18px -6px ${accent}55`,
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+function PinPreview() {
+    return (
+        <PreviewFrame pad={false}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
+                <div className="relative flex items-center justify-center mb-1.5">
+                    {[0, 1, 2].map((i) => (
+                        <span
+                            key={i}
+                            className="absolute rounded-full"
+                            style={{
+                                width: 60 + i * 20,
+                                height: 60 + i * 20,
+                                border: `1px solid ${OS_BLUE}${["55", "30", "18"][i]}`,
+                            }}
+                        />
+                    ))}
+                    <Image
+                        src="/badges/promo/opensea.webp"
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="object-contain relative z-10"
+                        unoptimized
+                        style={{ filter: `drop-shadow(0 0 10px ${OS_BLUE}88)` }}
+                    />
+                </div>
+                <div
+                    className="font-display font-black text-white text-[11px] leading-tight text-center mb-1"
+                    style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
+                >
+                    Aye Aye, Captain!
+                </div>
+                <span
+                    className="font-display font-black text-[7px] tracking-[0.24em] uppercase px-2 py-[2px] rounded mb-1"
+                    style={{ background: OS_BLUE, color: "#fff" }}
+                >
+                    Event
+                </span>
+                <span
+                    className="font-display font-black text-[7px] tracking-[0.18em] uppercase px-2 py-[2px] rounded"
+                    style={{
+                        color: CAPSULE_GREEN,
+                        border: `1px solid ${CAPSULE_GREEN}`,
+                        textShadow: `0 0 6px ${CAPSULE_GREEN}88`,
+                    }}
+                >
+                    New Pin Collected
+                </span>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function LeaderboardPreview() {
+    const rows = [
+        { rank: 1, name: "laserguy", score: "28", color: GOLD },
+        { rank: 2, name: "bunya", score: "27", color: "#C9C9C9" },
+        { rank: 3, name: "btdwayne", score: "27", color: "#C97D3F" },
+    ];
+    return (
+        <PreviewFrame>
+            <div className="w-full">
+                <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-display font-black text-[7px] tracking-[0.18em] uppercase text-white/35">
+                        Leaderboards
+                    </span>
+                    <span
+                        className="font-display font-black text-[6px] tracking-[0.22em] uppercase px-1.5 py-[2px] rounded"
+                        style={{ background: "#fff", color: "#000" }}
+                    >
+                        Event
+                    </span>
+                </div>
+                <div className="flex flex-col items-center mb-1.5">
+                    <Image
+                        src="/badges/promo/opensea.webp"
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="object-contain"
+                        unoptimized
+                        style={{ filter: `drop-shadow(0 2px 4px ${OS_BLUE}77)` }}
+                    />
+                </div>
+                <div className="space-y-1">
+                    {rows.map((r) => (
+                        <div
+                            key={r.rank}
+                            className="flex items-center gap-1.5 px-1.5 py-[3px] rounded"
+                            style={{
+                                background: `${r.color}10`,
+                                border: `1px solid ${r.color}55`,
+                            }}
+                        >
+                            <span
+                                className="font-display font-black text-[8px] w-2 text-center"
+                                style={{ color: r.color }}
+                            >
+                                {r.rank}
+                            </span>
+                            <span className="font-display font-black text-white text-[8px] truncate flex-1">
+                                {r.name}
+                            </span>
+                            <span
+                                className="font-display font-black text-[8px]"
+                                style={{ color: r.color }}
+                            >
+                                {r.score}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function TrophyCasePreview() {
+    return (
+        <PreviewFrame>
+            <div className="w-full">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="font-display font-black text-[6px] tracking-[0.22em] uppercase text-white/35">
+                        Pin Book
+                    </span>
+                    <span
+                        className="font-display font-black text-[6px] tracking-[0.22em] uppercase pb-[2px]"
+                        style={{ color: GOLD, borderBottom: `1.5px solid ${GOLD}` }}
+                    >
+                        Trophy Case
+                    </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                    <div
+                        className="rounded-md p-1.5 flex flex-col items-center"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3))",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                        }}
+                    >
+                        <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center mb-1"
+                            style={{
+                                background: `radial-gradient(circle, ${GOLD}55, transparent 70%)`,
+                                border: `1.5px solid ${GOLD}`,
+                            }}
+                        >
+                            <span
+                                className="font-display font-black text-[5px] leading-none text-white text-center"
+                                style={{ textShadow: `0 0 4px ${GOLD}` }}
+                            >
+                                PIN
+                                <br />
+                                DROP
+                            </span>
+                        </div>
+                        <div
+                            className="font-display font-black text-[6px] text-white leading-tight text-center"
+                        >
+                            Pin Drop!
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 mt-1">
+                            <div className="text-center">
+                                <div
+                                    className="font-display font-black text-[8px]"
+                                    style={{ color: GOLD }}
+                                >
+                                    101
+                                </div>
+                                <div className="font-mundial text-[4px] tracking-[0.18em] uppercase text-white/40">
+                                    Pins
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div
+                                    className="font-display font-black text-[8px]"
+                                    style={{ color: GOLD }}
+                                >
+                                    100%
+                                </div>
+                                <div className="font-mundial text-[4px] tracking-[0.18em] uppercase text-white/40">
+                                    Done
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        className="rounded-md p-1.5 flex flex-col items-center"
+                        style={{
+                            background: `linear-gradient(135deg, ${OS_BLUE}22, rgba(0,0,0,0.3))`,
+                            border: `1.5px solid ${OS_BLUE}aa`,
+                            boxShadow: `0 0 10px ${OS_BLUE}44`,
+                        }}
+                    >
+                        <Image
+                            src="/badges/promo/opensea.webp"
+                            alt=""
+                            width={28}
+                            height={28}
+                            className="object-contain mb-1"
+                            unoptimized
+                        />
+                        <div className="font-display font-black text-[6px] text-white leading-tight text-center">
+                            Aye Aye, Captain!
+                        </div>
+                        <div
+                            className="font-mundial text-[4px] tracking-[0.18em] uppercase mt-0.5"
+                            style={{ color: OS_BLUE }}
+                        >
+                            OpenSea Event
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 mt-1">
+                            <div className="text-center">
+                                <div
+                                    className="font-display font-black text-[8px]"
+                                    style={{ color: OS_BLUE }}
+                                >
+                                    ×27
+                                </div>
+                                <div className="font-mundial text-[4px] tracking-[0.18em] uppercase text-white/40">
+                                    Got
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div
+                                    className="font-display font-black text-[8px]"
+                                    style={{ color: ORANGE }}
+                                >
+                                    #2
+                                </div>
+                                <div className="font-mundial text-[4px] tracking-[0.18em] uppercase text-white/40">
+                                    Rank
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function BoardPreview() {
+    const tileColors = [GOLD, PINK, COSMIC, ORANGE, "#5fd1a3"];
+    const tiles = Array.from({ length: 16 }, (_, i) => {
+        const seed = (i * 13 + 7) % tileColors.length;
+        const isPartner = i === 5 || i === 10;
+        return { color: isPartner ? OS_BLUE : tileColors[seed], isPartner };
+    });
+    return (
+        <PreviewFrame>
+            <div
+                className="w-full aspect-square rounded-md p-1.5"
+                style={{
+                    background: `radial-gradient(circle at 50% 30%, ${OS_BLUE}55, ${OS_BLUE}10 60%, rgba(0,0,0,0.5))`,
+                    border: `1px solid ${OS_BLUE}55`,
+                }}
+            >
+                <div className="grid grid-cols-4 gap-0.5 w-full h-full">
+                    {tiles.map((t, i) => (
+                        <div
+                            key={i}
+                            className="rounded-sm"
+                            style={{
+                                background: `linear-gradient(135deg, ${t.color}aa, ${t.color}55)`,
+                                boxShadow: t.isPartner
+                                    ? `0 0 6px ${OS_BLUE}aa, inset 0 0 4px ${OS_BLUE}55`
+                                    : `inset 0 0 2px rgba(255,255,255,0.2)`,
+                                border: t.isPartner
+                                    ? `1px solid ${OS_BLUE}`
+                                    : "1px solid rgba(255,255,255,0.12)",
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function LogoLockupPreview() {
+    return (
+        <PreviewFrame>
+            <div className="flex flex-col items-center gap-1.5">
+                <div
+                    className="font-display font-black text-white text-[13px] tracking-[0.2em] uppercase"
+                    style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
+                >
+                    Pin Drop
+                </div>
+                <div
+                    className="font-display font-black text-white/45 text-lg leading-none"
+                    style={{ marginTop: -2, marginBottom: -2 }}
+                >
+                    ×
+                </div>
+                <div
+                    className="font-display font-black text-[13px] tracking-[0.2em] uppercase"
+                    style={{ color: OS_BLUE, textShadow: `0 0 10px ${OS_BLUE}77` }}
+                >
+                    OpenSea
+                </div>
+                <div
+                    className="font-mundial text-[7px] tracking-[0.28em] uppercase mt-1"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                >
+                    Header Lockup
+                </div>
+            </div>
+        </PreviewFrame>
     );
 }
 
@@ -567,7 +910,7 @@ function CaseStudy() {
                         Launch Event · 2026
                     </div>
                     <h3 className="font-display font-black text-white text-2xl sm:text-3xl tracking-tight">
-                        “Aye Aye, Captain!” — the OpenSea community pin
+                        “Aye Aye, Captain!” the OpenSea community pin
                     </h3>
                     <p className="font-mundial text-white/60 text-[14px] sm:text-[15px] leading-relaxed">
                         OpenSea co-designed a hero pin with us for their on-platform
@@ -684,7 +1027,7 @@ function SectionEyebrow({ label }: { label: string }) {
 }
 
 function Starfield() {
-    // Static deterministic starfield (server-rendered) — matches the
+    // Static deterministic starfield (server-rendered) , matches the
     // /game-guide + /u/[username] ambient backdrop. Deterministic offsets
     // so the page is fully SSR-safe with no hydration mismatch.
     const stars = Array.from({ length: 50 }, (_, i) => {
@@ -724,7 +1067,7 @@ function Animations() {
                 0%, 100% { opacity: 0.22; transform: scale(1); }
                 50%      { opacity: 0.8; transform: scale(1.3); }
             }
-            /* Featured (OpenSea partner) pin tile — gentle pulsing
+            /* Featured (OpenSea partner) pin tile , gentle pulsing
                glow that draws the eye amongst the other six pins in
                the showcase grid without dominating the layout. */
             .partner-featured {
