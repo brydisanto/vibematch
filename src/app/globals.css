@@ -1925,7 +1925,14 @@ body {
     pointer-events: none;
 }
 
-/* Reduced motion */
+/* Reduced motion — respect the OS preference for decorative motion
+   (logo bobs, ambient drifts, background twinkle, idle pulses) but
+   preserve gameplay-essential animations. The match-burst / cascade-
+   fall / shake / select-pulse / score-popup / combo-fire classes are
+   how the engine communicates what just happened on the board; killing
+   them under reduced-motion left Windows-11 users (Accessibility →
+   Show animations OFF) with "plain tiles swapping and nothing else."
+   Restore each one to its declared duration after the universal kill. */
 @media (prefers-reduced-motion: reduce) {
 
   *,
@@ -1934,6 +1941,27 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .tile-selected {
+    animation-duration: 0.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .tile-matched {
+    animation-duration: 0.42s !important;
+  }
+  .tile-cascade {
+    animation-duration: 0.48s !important;
+  }
+  .tile-shake {
+    animation-duration: 0.4s !important;
+  }
+  .score-popup {
+    animation-duration: 0.8s !important;
+  }
+  .combo-fire {
+    animation-duration: 0.5s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
