@@ -108,11 +108,17 @@ export default function PartnerCapsuleDemo({ onRevealed }: PartnerCapsuleDemoPro
                     Capsule Pull
                 </div>
 
-                <div className="relative h-[240px] sm:h-[260px] flex items-center justify-center">
+                <div className="relative h-[260px] sm:h-[280px] flex items-center justify-center overflow-hidden">
                     <Suspense fallback={<CapsuleFallback />}>
                         <div
-                            className="absolute inset-0 cursor-pointer select-none"
-                            style={{ visibility: isRevealed ? "hidden" : "visible" }}
+                            className="absolute top-1/2 left-1/2 cursor-pointer select-none"
+                            style={{
+                                width: 700,
+                                height: 700,
+                                transform: "translate(-50%, -50%) scale(0.38)",
+                                transformOrigin: "center center",
+                                visibility: isRevealed ? "hidden" : "visible",
+                            }}
                         >
                             <CapsuleSphere3D
                                 key={renderKey}
