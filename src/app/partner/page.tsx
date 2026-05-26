@@ -11,6 +11,7 @@ import {
     INK_PANEL_LIGHT,
     INK_DARKEST,
 } from "@/lib/arcade-tokens";
+import PartnerFloatingBadges from "@/components/PartnerFloatingBadges";
 
 export const metadata: Metadata = {
     title: "Partner with Pin Drop",
@@ -45,6 +46,7 @@ export default function PartnerPage() {
                 background: `radial-gradient(ellipse at top, ${INK_PANEL_LIGHT} 0%, ${INK_PANEL} 55%, ${INK_DARKEST} 100%)`,
             }}
         >
+            <PartnerFloatingBadges />
             <Starfield />
 
             <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-8 pt-10 pb-24">
@@ -155,30 +157,26 @@ function WhatIsPinDrop() {
             <div className="grid md:grid-cols-2 gap-10 items-center">
                 <div className="font-mundial text-white/65 leading-relaxed space-y-4 text-[15px] sm:text-base">
                     <p>
-                        Players match tiles to score. Big scores award pin capsules.
+                        Pin Drop is a casual puzzle game where players match Pin
+                        tiles to score points.{" "}
+                        <strong className="font-bold text-white">
+                            Big scores award Pin Capsules.
+                        </strong>{" "}
                         Cracking a capsule drops one of 100+ collectible pins across
                         six rarity tiers: Common, Rare, Strategic, Legendary, Cosmic,
-                        and the ultra-rare One-Of-One.
+                        and the ultra-rare One-Of-One. &ldquo;Event&rdquo; pins get
+                        added to the mix when partners join.
                     </p>
                     <p>
-                        The pin-book is the hook. A growing collection that players
-                        check in on every single day, race up the leaderboards with,
-                        and trade duplicates for new capsules. The match-3 is the
-                        engine. The pins are the soul.
+                        Three game modes exist: Classic (30 turns), Frenzy
+                        (60 seconds), and the Daily Challenge (1 try per day, same
+                        board for everyone).
                     </p>
                     <p>
-                        We launched in early 2026 and the community is built around{" "}
-                        <a
-                            href="https://opensea.io/collection/good-vibes-club"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline decoration-dotted underline-offset-4"
-                            style={{ color: GOLD }}
-                        >
-                            Good Vibes Club
-                        </a>
-                        , an NFT collection on Ethereum that&apos;s been online since
-                        2021. The players show up daily.
+                        The Pin Book is the core meta game. It&apos;s an
+                        ever-growing collection that players work towards completing,
+                        and serves as the foundation for custom leaderboards and
+                        special events.
                     </p>
                 </div>
                 <div className="relative">
