@@ -138,180 +138,6 @@ const TIER_IDLE_CLASS: Record<BadgeTier, string> = {
     cosmic: "tile-tier-cosmic",
 };
 
-/* ===== MEMOIZED TILE =====
- * Extracted out of the inline .map().map() so React.memo can skip
- * unchanged tiles when board state mutates incrementally
- * (selectedTile flip, hintCells update, invalidSwapCells flash,
- * swapAnim transition). Previously, ANY state change re-rendered
- * all 64 tile buttons and re-allocated 64 inline closures + style
- * objects per render — that allocation churn was visible as jank
- * on mid-tier mobile.
- *
- * Cascade frames still re-render every tile because applyGravity
- * spreads new objects for the full board. That's a separate
- * engine-side optimization.
- */
-interface TileProps {
-    cell: Cell;
-    row: number;
-    col: number;
-    isSelected: boolean;
-    isHinted: boolean;
-    isInvalidSwap: boolean;
-    isSwap1: boolean;
-    isSwap2: boolean;
-    swapDx: number;
-    swapDy: number;
-    isDealing: boolean;
-    dealDelay: number;
-    isDroppingTile: boolean;
-    dropPx: number;
-    onPointerDown: (e: React.PointerEvent, row: number, col: number) => void;
-    onClick: (pos: Position) => void;
-}
-
-const Tile = memo(function Tile({
-    cell,
-    row,
-    col,
-    isSelected,
-    isHinted,
-    isInvalidSwap,
-    isSwap1,
-    isSwap2,
-    swapDx,
-    swapDy,
-    isDealing,
-    dealDelay,
-    isDroppingTile,
-    dropPx,
-    onPointerDown,
-    onClick,
-}: TileProps) {
-    const tierColor = TIER_COLORS[cell.badge.tier];
-    const tierBorder = TIER_BORDER_COLORS[cell.badge.tier];
-    const tierClass = TIER_IDLE_CLASS[cell.badge.tier];
-    const Overlay =
-        cell.isSpecial === "bomb" ? BombOverlay
-            : cell.isSpecial === "vibestreak" ? LaserPartyOverlay
-                : cell.isSpecial === "cosmic_blast" ? CosmicBlastOverlay
-                    : null;
-    const isTileAnimating = isInvalidSwap || isSwap1 || isSwap2 || isDroppingTile || isDealing;
-
-    return (
-        <button
-            className={`
-                game-tile
-                cursor-pointer hover:brightness-110
-                relative aspect-square rounded-lg sm:rounded-xl overflow-hidden
-                transition-colors duration-150
-                border-2
-                ${tierClass}
-                ${isSelected ? "tile-selected z-10" : ""}
-                ${cell.isSpecial ? "special-glow" : ""}
-                ${isDealing ? "tile-deal" : ""}
-                ${isHinted && !isSelected ? "ring-[3px] ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]" : ""}
-                ${isInvalidSwap ? "game-tile--invalid-shake" : ""}
-                ${isDroppingTile && !isSwap1 && !isSwap2 ? "game-tile--dropping" : ""}
-                ${(isSwap1 || isSwap2) ? "game-tile--swapping" : ""}
-                ${isTileAnimating ? "game-tile--animating" : ""}
-            `}
-            style={{
-                borderColor: isSelected ? tierColor : tierBorder,
-                animationDelay: isDealing ? `${dealDelay}s` : undefined,
-                "--swap-dx": (isSwap1 || isSwap2) ? `${swapDx}px` : undefined,
-                "--swap-dy": (isSwap1 || isSwap2) ? `${swapDy}px` : undefined,
-                "--drop-distance": isDroppingTile ? `${-dropPx}px` : undefined,
-                "--drop-delay": isDroppingTile ? `${col * 0.02}s` : undefined,
-            } as React.CSSProperties}
-            onPointerDown={(e) => onPointerDown(e, row, col)}
-            onClick={() => onClick({ row, col })}
-            /* No `disabled` attribute — useGame's selectTile already
-               queues taps during isAnimating and replays them when the
-               animation window clears. Skipping disabled here means
-               Tile doesn't re-render every time isAnimating flips,
-               which preserves the memo win across cascade frames. */
-        >
-            {/* Badge image. Plain <img> + decoding="async" + the warm cache
-                primed by preloadBadgeImages at game start. async lets the
-                browser decode off the main thread, so re-renders during
-                cascades don't block the compositor on 64 sync decodes. */}
-            <div
-                className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden"
-                style={{ backgroundColor: `${tierColor}40` }}
-            >
-                <img
-                    src={cell.badge.image}
-                    alt={cell.badge.name}
-                    loading="eager"
-                    decoding="async"
-                    draggable={false}
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-            </div>
-
-            {Overlay && <Overlay />}
-
-            {isHinted && !isSelected && (
-                <div className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none hint-pulse-overlay" />
-            )}
-
-            {isSelected && (
-                <div
-                    className="absolute inset-0 rounded-lg sm:rounded-xl selected-highlight-ring"
-                    style={{
-                        border: `2px solid ${tierColor}`,
-                        "--sel-color": tierColor,
-                        "--sel-border": tierBorder,
-                    } as React.CSSProperties}
-                />
-            )}
-
-            {isSelected && (
-                <div
-                    className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none tile-select-ripple"
-                    style={{
-                        border: "2px solid rgba(255, 224, 72, 0.8)",
-                        borderRadius: "inherit",
-                    }}
-                />
-            )}
-        </button>
-    );
-}, (prev, next) => {
-    // Custom comparator: every applyGravity call spreads new cell
-    // objects for the entire board, so a default shallow compare on
-    // `cell` always sees a reference mismatch and re-renders every
-    // tile on every cascade frame. Compare the FIELDS that actually
-    // drive what this tile renders — id, badge, special, drop flags
-    // — so a survivor cell that didn't visually change can skip.
-    // This is the big mobile cascade win: deep cascades touch maybe
-    // 10-20 tiles each frame but were re-rendering all 64.
-    return (
-        prev.cell.id === next.cell.id &&
-        prev.cell.badge === next.cell.badge &&
-        prev.cell.isSpecial === next.cell.isSpecial &&
-        prev.cell.isNew === next.cell.isNew &&
-        prev.cell.dropDistance === next.cell.dropDistance &&
-        prev.cell.cosmicTargetBadgeId === next.cell.cosmicTargetBadgeId &&
-        prev.row === next.row &&
-        prev.col === next.col &&
-        prev.isSelected === next.isSelected &&
-        prev.isHinted === next.isHinted &&
-        prev.isInvalidSwap === next.isInvalidSwap &&
-        prev.isSwap1 === next.isSwap1 &&
-        prev.isSwap2 === next.isSwap2 &&
-        prev.swapDx === next.swapDx &&
-        prev.swapDy === next.swapDy &&
-        prev.isDealing === next.isDealing &&
-        prev.dealDelay === next.dealDelay &&
-        prev.isDroppingTile === next.isDroppingTile &&
-        prev.dropPx === next.dropPx &&
-        prev.onPointerDown === next.onPointerDown &&
-        prev.onClick === next.onClick
-    );
-});
-
 /* ===== MATCH PARTICLES — Enhanced per-tier ===== */
 function MatchParticles({ effect }: { effect: MatchEffect }) {
     const [particles, setParticles] = useState<
@@ -1096,39 +922,18 @@ function GameBoardImpl({
     const didSwipe = useRef(false);
     const SWIPE_THRESHOLD = 18;
 
-    // Refs hold the latest values of props that change frequently. The
-    // stable callbacks below read through the refs so their identity
-    // never changes — that lets <Tile> stay memoized across parent
-    // re-renders. Without this, every parent render invalidates the
-    // tile memo and we re-render all 64 buttons.
-    const onTileClickRef = useRef(onTileClick);
-    onTileClickRef.current = onTileClick;
-    const onPointerTrustRef = useRef(onPointerTrust);
-    onPointerTrustRef.current = onPointerTrust;
-    const isAnimatingRef = useRef(isAnimating);
-    isAnimatingRef.current = isAnimating;
-
     const handlePointerDown = useCallback((e: React.PointerEvent, row: number, col: number) => {
-        if (isAnimatingRef.current) return;
+        if (isAnimating) return;
         // Behavioral telemetry: synthetic dispatchEvent calls produce
         // isTrusted: false. Surface every pointerDown's trust flag so
         // useGame can tally per-game synthetic-input count for the
         // bot-detection audit.
-        onPointerTrustRef.current?.(e.isTrusted);
+        onPointerTrust?.(e.isTrusted);
         swipeStartTile.current = { row, col };
         swipeStartXY.current = { x: e.clientX, y: e.clientY };
         didSwipe.current = false;
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    }, []);
-
-    const handleTileClick = useCallback((pos: Position) => {
-        // Swipe consumed this gesture — don't fire the click too.
-        if (didSwipe.current) {
-            didSwipe.current = false;
-            return;
-        }
-        onTileClickRef.current(pos);
-    }, []);
+    }, [isAnimating, onPointerTrust]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
         if (!swipeStartTile.current || !swipeStartXY.current || didSwipe.current || !onSwipe) return;
@@ -1265,39 +1070,103 @@ function GameBoardImpl({
                                 const isSelected =
                                     selectedTile?.row === rowIdx && selectedTile?.col === colIdx;
                                 const isHinted = hintCells.has(`${rowIdx},${colIdx}`);
-                                const isInvalidSwap = invalidSwapCells?.some(
-                                    c => c.row === rowIdx && c.col === colIdx
-                                ) ?? false;
+                                const invalidIdx = invalidSwapCells?.findIndex(c => c.row === rowIdx && c.col === colIdx) ?? -1;
+                                const isInvalidSwap = invalidIdx !== -1;
                                 const isSwap1 = swapAnim?.pos1.row === rowIdx && swapAnim?.pos1.col === colIdx;
                                 const isSwap2 = swapAnim?.pos2.row === rowIdx && swapAnim?.pos2.col === colIdx;
                                 const swapDx = isSwap1 ? (swapAnim!.pos2.col - swapAnim!.pos1.col) * cellSize
                                     : isSwap2 ? (swapAnim!.pos1.col - swapAnim!.pos2.col) * cellSize : 0;
                                 const swapDy = isSwap1 ? (swapAnim!.pos2.row - swapAnim!.pos1.row) * cellSize
                                     : isSwap2 ? (swapAnim!.pos1.row - swapAnim!.pos2.row) * cellSize : 0;
+                                const tierColor = TIER_COLORS[cell.badge.tier];
+                                const tierBorder = TIER_BORDER_COLORS[cell.badge.tier];
+                                const tierClass = TIER_IDLE_CLASS[cell.badge.tier];
+                                const Overlay =
+                                    cell.isSpecial === "bomb" ? BombOverlay
+                                        : cell.isSpecial === "vibestreak" ? LaserPartyOverlay
+                                            : cell.isSpecial === "cosmic_blast" ? CosmicBlastOverlay
+                                                : null;
+
                                 const dealDelay = isDealing ? (rowIdx * 0.06 + colIdx * 0.02) : 0;
                                 const isDroppingTile = !isDealing && (cell.dropDistance ?? 0) > 0;
                                 const dropPx = isDroppingTile ? (cell.dropDistance! * cellSize) : 0;
+                                const isTileAnimating = isInvalidSwap || isSwap1 || isSwap2 || isDroppingTile || isDealing;
 
                                 return (
-                                    <Tile
+                                    <button
                                         key={cell.id}
-                                        cell={cell}
-                                        row={rowIdx}
-                                        col={colIdx}
-                                        isSelected={isSelected}
-                                        isHinted={isHinted}
-                                        isInvalidSwap={isInvalidSwap}
-                                        isSwap1={isSwap1}
-                                        isSwap2={isSwap2}
-                                        swapDx={swapDx}
-                                        swapDy={swapDy}
-                                        isDealing={isDealing}
-                                        dealDelay={dealDelay}
-                                        isDroppingTile={isDroppingTile}
-                                        dropPx={dropPx}
-                                        onPointerDown={handlePointerDown}
-                                        onClick={handleTileClick}
-                                    />
+                                        className={`
+                                            game-tile
+                                            cursor-pointer hover:brightness-110
+                                            relative aspect-square rounded-lg sm:rounded-xl overflow-hidden
+                                            transition-colors duration-150
+                                            border-2
+                                            ${tierClass}
+                                            ${isSelected ? "tile-selected z-10" : ""}
+                                            ${cell.isSpecial ? "special-glow" : ""}
+                                            ${isDealing ? "tile-deal" : ""}
+                                            ${isHinted && !isSelected ? "ring-[3px] ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.5)]" : ""}
+                                            ${isInvalidSwap ? "game-tile--invalid-shake" : ""}
+                                            ${isDroppingTile && !isSwap1 && !isSwap2 ? "game-tile--dropping" : ""}
+                                            ${(isSwap1 || isSwap2) ? "game-tile--swapping" : ""}
+                                            ${isTileAnimating ? "game-tile--animating" : ""}
+                                        `}
+                                        style={{
+                                            borderColor: isSelected ? tierColor : tierBorder,
+                                            animationDelay: isDealing ? `${dealDelay}s` : undefined,
+                                            "--swap-dx": (isSwap1 || isSwap2) ? `${swapDx}px` : undefined,
+                                            "--swap-dy": (isSwap1 || isSwap2) ? `${swapDy}px` : undefined,
+                                            "--drop-distance": isDroppingTile ? `${-dropPx}px` : undefined,
+                                            "--drop-delay": isDroppingTile ? `${colIdx * 0.02}s` : undefined,
+                                        } as React.CSSProperties}
+                                        onPointerDown={(e) => handlePointerDown(e, rowIdx, colIdx)}
+                                        onClick={() => {
+                                            if (didSwipe.current) { didSwipe.current = false; return; }
+                                            onTileClick({ row: rowIdx, col: colIdx });
+                                        }}
+                                        disabled={isAnimating}
+                                    >
+                                        <div
+                                            className="absolute inset-[2px] sm:inset-[3px] rounded-md sm:rounded-lg overflow-hidden"
+                                            style={{ backgroundColor: `${tierColor}40` }}
+                                        >
+                                            <img
+                                                src={cell.badge.image}
+                                                alt={cell.badge.name}
+                                                loading="eager"
+                                                decoding="async"
+                                                draggable={false}
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                        </div>
+
+                                        {Overlay && <Overlay />}
+
+                                        {isHinted && !isSelected && (
+                                            <div className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none hint-pulse-overlay" />
+                                        )}
+
+                                        {isSelected && (
+                                            <div
+                                                className="absolute inset-0 rounded-lg sm:rounded-xl selected-highlight-ring"
+                                                style={{
+                                                    border: `2px solid ${tierColor}`,
+                                                    "--sel-color": tierColor,
+                                                    "--sel-border": tierBorder,
+                                                } as React.CSSProperties}
+                                            />
+                                        )}
+
+                                        {isSelected && (
+                                            <div
+                                                className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none tile-select-ripple"
+                                                style={{
+                                                    border: "2px solid rgba(255, 224, 72, 0.8)",
+                                                    borderRadius: "inherit",
+                                                }}
+                                            />
+                                        )}
+                                    </button>
                                 );
                             })
                         )}
