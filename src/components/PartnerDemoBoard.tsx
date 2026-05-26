@@ -424,9 +424,10 @@ export default function PartnerDemoBoard() {
                 </div>
 
                 <div className="flex items-center justify-between mt-4 gap-3">
-                    <p className="font-mundial text-white/55 text-[11px] sm:text-[12px] leading-snug max-w-[360px]">
-                        Tap two adjacent pins to swap. Match three or more of the
-                        same pin. Matching the OpenSea pin scores big.
+                    <p className="font-mundial text-white/55 text-[11px] sm:text-[12px] leading-snug max-w-[420px]">
+                        Tap two adjacent pins to swap. Line up 3+ of the same pin in
+                        a row to make a match. Bigger matches and combos score more
+                        points.
                     </p>
                     <button
                         type="button"
