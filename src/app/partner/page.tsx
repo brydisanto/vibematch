@@ -1093,7 +1093,16 @@ function Footer() {
                 </span>
             </div>
             <div className="font-mundial text-white/40 text-[11px] tracking-[0.18em] uppercase">
-                A game from Good Vibes Club
+                A game from{" "}
+                <a
+                    href="https://x.com/goodvibesclub"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors hover:text-white"
+                    style={{ color: GOLD }}
+                >
+                    Good Vibes Club
+                </a>
             </div>
         </footer>
     );
