@@ -14,6 +14,11 @@ interface CapsuleSphere3DProps {
   tier: BadgeTier;
   phase: Phase;
   onTap: () => void;
+  /** Optional override for the badge texture mapped onto the capsule's center.
+   *  Defaults to the canonical any-GVC shaka so existing callers (VibeCapsule)
+   *  keep their look unchanged. Pass an event-pin path here to surface a
+   *  partner badge inside the capsule. */
+  badgeImage?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +162,7 @@ interface ParticleData {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DProps) {
+export default function CapsuleSphere3D({ tier, phase, onTap, badgeImage }: CapsuleSphere3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -355,7 +360,7 @@ export default function CapsuleSphere3D({ tier, phase, onTap }: CapsuleSphere3DP
 
     // Badge texture
     const textureLoader = new THREE.TextureLoader();
-    const badgeTexture = textureLoader.load("/badges/any_gvc_1759173799963.webp");
+    const badgeTexture = textureLoader.load(badgeImage ?? "/badges/any_gvc_1759173799963.webp");
     badgeTexture.colorSpace = THREE.SRGBColorSpace;
 
     // Track disposables
