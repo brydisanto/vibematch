@@ -94,9 +94,9 @@ function TopBar() {
 
 function Hero() {
     return (
-        <section className="text-center pt-6 pb-16 sm:pb-24">
+        <section className="text-center pt-2 pb-16 sm:pb-24">
             <div
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
                 style={{
                     background: `${GOLD}12`,
                     border: `1px solid ${GOLD}55`,
@@ -112,6 +112,24 @@ function Hero() {
                 >
                     Partnerships
                 </span>
+            </div>
+            <div
+                className="mx-auto mb-6 cursor-default"
+                style={{
+                    animation: "vmPartnerBob 3.2s ease-in-out infinite",
+                    width: 360,
+                    maxWidth: "75%",
+                }}
+            >
+                <Image
+                    src="/assets/logo-v3.png"
+                    alt="Pin Drop"
+                    width={1854}
+                    height={1623}
+                    priority
+                    className="w-full h-auto"
+                    style={{ filter: `drop-shadow(0 16px 30px ${GOLD}55)` }}
+                />
             </div>
             <h1
                 className="font-display font-black text-white tracking-tight leading-[0.95] text-4xl sm:text-6xl md:text-7xl mb-5"
@@ -1066,6 +1084,10 @@ function Animations() {
             @keyframes vmPartnerTwinkle {
                 0%, 100% { opacity: 0.22; transform: scale(1); }
                 50%      { opacity: 0.8; transform: scale(1.3); }
+            }
+            @keyframes vmPartnerBob {
+                0%, 100% { transform: translateY(0); }
+                50%      { transform: translateY(-6px); }
             }
             /* Featured (OpenSea partner) pin tile , gentle pulsing
                glow that draws the eye amongst the other six pins in
