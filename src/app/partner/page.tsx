@@ -89,16 +89,12 @@ function Hero() {
     return (
         <section className="text-center pt-12 sm:pt-16 pb-16 sm:pb-24">
             <div
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
+                className="inline-flex items-center px-4 py-1.5 rounded-full mb-5"
                 style={{
                     background: `${GOLD}12`,
                     border: `1px solid ${GOLD}55`,
                 }}
             >
-                <span
-                    className="inline-block w-1.5 h-1.5 rounded-full"
-                    style={{ background: GOLD, boxShadow: `0 0 8px ${GOLD}` }}
-                />
                 <span
                     className="font-display font-black text-[10px] tracking-[0.32em] uppercase"
                     style={{ color: GOLD }}
