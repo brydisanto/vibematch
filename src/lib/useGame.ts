@@ -286,6 +286,7 @@ export function useGame(): UseGameReturn {
         costMove: boolean,
         prevMovesLeft: number,
         prevBonusCapsuleAwarded: boolean,
+        gameMode: GameMode = "classic",
     ): MatchIntensity => {
         const newMovesLeft = costMove ? prevMovesLeft - 1 : prevMovesLeft;
         const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
@@ -331,8 +332,12 @@ export function useGame(): UseGameReturn {
             setTimeout(() => playShapeBonusSound(result.shapeBonus!.type), 150);
         }
 
-        // Final move warning sound
-        if (costMove && newMovesLeft >= 1 && newMovesLeft <= 3) {
+        // Final move warning heartbeat — frenzy-only tension cue.
+        // Was firing in Classic too, where the accelerating thump-thump
+        // (0.8s → 0.5s → 0.3s gaps as movesLeft falls) reads as the BGM
+        // changing tempo. Players found that confusing in Classic; the
+        // urgency cue makes sense only on the time-pressure mode.
+        if (costMove && newMovesLeft >= 1 && newMovesLeft <= 3 && gameMode !== "classic" && gameMode !== "daily") {
             setTimeout(() => playFinalMoveWarning(newMovesLeft), 600);
         }
 
@@ -498,8 +503,22 @@ export function useGame(): UseGameReturn {
                 setIsAnimating(false);
             }, 1800);
         } else {
+            // Open input as soon as the state update commits, instead of
+            // waiting on the cleanup timer below. Mobile was eating a
+            // flat 120ms of dead-air per swap because setIsAnimating(false)
+            // was nested inside the cleanup setTimeout — that's pure
+            // input lockout the player feels as "lag/hanging" on basic
+            // swaps. setTimeout(0) escapes the current setState reducer
+            // so it fires as soon as React processes this turn's commit.
+            setTimeout(() => setIsAnimating(false), 0);
+            // Cleanup the drop-distance + isNew flags from cells that
+            // moved this turn. CSS `forwards` fill keeps the tile at its
+            // visual end-state (translateY(0)) so this is hygiene rather
+            // than a visual correction — the next move's applyGravity
+            // would overwrite the flags anyway. Run it on the original
+            // delay so any in-flight cascade-fall animation completes
+            // before we strip the class.
             setTimeout(() => {
-                setIsAnimating(false);
                 setState(prev2 => {
                     if (!prev2) return prev2;
                     const cleaned = prev2.board.map(row =>
@@ -547,7 +566,7 @@ export function useGame(): UseGameReturn {
         costMove: boolean,
         moveAction?: MoveAction,
     ): GameState => {
-        triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded);
+        triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded, prev.gameMode);
         return applyResultState(prev, result, costMove, moveAction);
     }, [triggerMatchEffects, applyResultState]);
 
@@ -646,7 +665,7 @@ export function useGame(): UseGameReturn {
                 // particles) immediately, then defer the actual board
                 // state update by hit-stop ms on mega/ultra so the player
                 // sees the matched tiles flash IN PLACE before the cascade.
-                const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
+                const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded, state.gameMode) : "normal";
                 const hitStop = getHitStopMs(intensity);
                 const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swapAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
@@ -688,7 +707,7 @@ export function useGame(): UseGameReturn {
             setIsAnimating(true);
             setTimeout(() => {
                 setSwapAnim(null);
-                const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded) : "normal";
+                const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded, state.gameMode) : "normal";
                 const hitStop = getHitStopMs(intensity);
                 const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swipeAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
