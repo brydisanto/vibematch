@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     },
 };
 
-const CTA_TWITTER = "https://x.com/brydisanto";
+const CTA_TWITTER = "https://x.com/RonnyGuy";
 const PIN_DROP_PLAY = "https://pindropgame.com";
 
 export default function PartnerPage() {
@@ -47,8 +47,8 @@ export default function PartnerPage() {
         >
             <Starfield />
 
-            <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-8 pt-8 pb-24">
-                <TopBar />
+            <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-8 pt-10 pb-24">
+                <OpenGameButton />
                 <Hero />
                 <WhatIsPinDrop />
                 <CoreLoop />
@@ -63,38 +63,31 @@ export default function PartnerPage() {
     );
 }
 
-function TopBar() {
+function OpenGameButton() {
     return (
-        <div className="flex items-center justify-between mb-16 sm:mb-24">
+        <div className="absolute top-10 right-5 sm:right-8 z-20">
             <Link
-                href="/"
-                className="flex items-center gap-2 font-display font-black text-[12px] tracking-[0.28em] uppercase text-white/60 hover:text-white transition-colors"
+                href={PIN_DROP_PLAY}
+                className="inline-flex items-center justify-center font-display font-black uppercase rounded-full transition-transform hover:-translate-y-[1px]"
+                style={{
+                    padding: "9px 18px",
+                    fontSize: 11,
+                    letterSpacing: "0.2em",
+                    background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
+                    color: "#1A0E02",
+                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
+                    textShadow: "0 1px 0 rgba(255,255,255,0.25)",
+                }}
             >
-                <Image
-                    src="/assets/gvc_shaka.png"
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="object-contain"
-                />
-                Pin Drop
+                Open Game
             </Link>
-            <a
-                href={CTA_TWITTER}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display font-black text-[11px] tracking-[0.28em] uppercase transition-colors"
-                style={{ color: GOLD }}
-            >
-                DM us →
-            </a>
         </div>
     );
 }
 
 function Hero() {
     return (
-        <section className="text-center pt-2 pb-16 sm:pb-24">
+        <section className="text-center pt-12 sm:pt-16 pb-16 sm:pb-24">
             <div
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
                 style={{
@@ -427,27 +420,33 @@ function Insertions() {
         },
         {
             n: 2,
-            title: "Custom Event Leaderboard + Prizes",
-            body: "A live leaderboard ranks the top collectors of your custom pin during the event window. You supply the prize pool: NFTs, allowlist slots, cash, merch, your call. Top finders earn real rewards from your community.",
-            example: "OpenSea contributed prizes for top Aye Aye finders",
-            preview: "leaderboard",
+            title: "Special Event Insert",
+            body: "Your custom pin enters the global Pin Capsule pool for the duration of your event window. Every capsule players rip carries a chance at your pin as a limited-time find, complete with an EVENT chip and a branded New Pin Collected celebration moment.",
+            example: "Aye Aye, Captain! dropped from capsules during the OpenSea window",
+            preview: "capsulePull",
         },
         {
             n: 3,
-            title: "Permanent Spot in Player Trophy Cases",
-            body: "Your pin drops from capsules during the event and is collected by players forever. Every player who finds one gets a permanent badge in their public profile's Trophy Case, a memento that lives on long after the event ends.",
-            example: "Every Aye Aye, Captain! collector keeps their pin",
-            preview: "trophy",
+            title: "Custom Event Leaderboard + Prizes",
+            body: "A live leaderboard ranks the top collectors of your custom pin during the event window. You supply the prize pool: NFTs, allowlist slots, cash, merch, your call. Top finders earn real rewards from your community.",
+            example: "OpenSea contributed NFT prizes for top “Aye Aye, Captain!” pin finders",
+            preview: "leaderboard",
         },
         {
             n: 4,
-            title: "Custom Board Background",
-            body: "The match-3 board carries a co-designed background skin during the event so every game session is visually branded with your community's identity.",
-            example: "OpenSea-themed board during the live event",
-            preview: "board",
+            title: "Permanent Spot in Player Trophy Cases",
+            body: "Your pin drops from capsules during the event and is collected by players forever. Every player who finds one gets a permanent badge in their public profile's Trophy Case, a memento that lives on long after the event ends.",
+            preview: "trophy",
         },
         {
             n: 5,
+            title: "Custom Board Background",
+            body: "The entire game scene carries a co-designed background skin during the event so every session is visually wrapped in your community's identity. Skyline, palette, ambient details, all tuned to your brand.",
+            example: "OpenSea-themed board scene during the live event",
+            preview: "board",
+        },
+        {
+            n: 6,
             title: "Custom Logo Treatment",
             body: "Your logo locks up with the Pin Drop wordmark above the board during the event, a permanent co-brand visible on every screenshot, every share, every minute of gameplay.",
             example: "Pin Drop × OpenSea wordmark in the header",
@@ -458,10 +457,10 @@ function Insertions() {
         <section className="py-16 sm:py-24">
             <SectionEyebrow label="The Surface Area" />
             <h2 className="font-display font-black text-white text-3xl sm:text-5xl tracking-tight mb-3 max-w-[820px]">
-                Five ways your community lives inside Pin Drop.
+                Six ways your community lives inside Pin Drop.
             </h2>
             <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[680px] mb-12">
-                Every partnership uses the same five insertion points. We shape them
+                Every partnership uses the same six insertion points. We shape them
                 to your event. Below: how OpenSea did it for their launch event with us.
             </p>
             <div className="space-y-4">
@@ -473,13 +472,13 @@ function Insertions() {
     );
 }
 
-type PreviewType = "pin" | "leaderboard" | "trophy" | "board" | "logo";
+type PreviewType = "pin" | "capsulePull" | "leaderboard" | "trophy" | "board" | "logo";
 
 type InsertionItem = {
     n: number;
     title: string;
     body: string;
-    example: string;
+    example?: string;
     preview: PreviewType;
 };
 
@@ -511,21 +510,23 @@ function InsertionRow({
                 <p className="font-mundial text-white/60 text-[14px] sm:text-[15px] leading-relaxed mb-3">
                     {body}
                 </p>
-                <div className="flex items-center gap-2 mt-3">
-                    <span
-                        className="font-mundial font-bold text-[9px] tracking-[0.22em] uppercase px-2 py-1 rounded"
-                        style={{
-                            color: COSMIC,
-                            background: `${COSMIC}15`,
-                            border: `1px solid ${COSMIC}40`,
-                        }}
-                    >
-                        Example
-                    </span>
-                    <span className="font-mundial text-white/70 text-[13px]">
-                        {example}
-                    </span>
-                </div>
+                {example && (
+                    <div className="flex items-center gap-2 mt-3">
+                        <span
+                            className="font-mundial font-bold text-[9px] tracking-[0.22em] uppercase px-2 py-1 rounded"
+                            style={{
+                                color: COSMIC,
+                                background: `${COSMIC}15`,
+                                border: `1px solid ${COSMIC}40`,
+                            }}
+                        >
+                            Example
+                        </span>
+                        <span className="font-mundial text-white/70 text-[13px]">
+                            {example}
+                        </span>
+                    </div>
+                )}
             </div>
             <div className="hidden sm:flex items-center justify-center">
                 <InsertionPreview type={preview} />
@@ -538,6 +539,8 @@ function InsertionPreview({ type }: { type: PreviewType }) {
     switch (type) {
         case "pin":
             return <PinPreview />;
+        case "capsulePull":
+            return <CapsulePullPreview />;
         case "leaderboard":
             return <LeaderboardPreview />;
         case "trophy":
@@ -576,6 +579,22 @@ function PreviewFrame({
 }
 
 function PinPreview() {
+    return (
+        <PreviewFrame>
+            <Image
+                src="/badges/promo/opensea.webp"
+                alt=""
+                width={150}
+                height={150}
+                className="object-contain"
+                unoptimized
+                style={{ filter: `drop-shadow(0 6px 18px ${OS_BLUE}99)` }}
+            />
+        </PreviewFrame>
+    );
+}
+
+function CapsulePullPreview() {
     return (
         <PreviewFrame pad={false}>
             <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
@@ -819,36 +838,71 @@ function TrophyCasePreview() {
 
 function BoardPreview() {
     const tileColors = [GOLD, PINK, COSMIC, ORANGE, "#5fd1a3"];
-    const tiles = Array.from({ length: 16 }, (_, i) => {
+    const tiles = Array.from({ length: 20 }, (_, i) => {
         const seed = (i * 13 + 7) % tileColors.length;
-        const isPartner = i === 5 || i === 10;
+        const isPartner = i === 6 || i === 13;
         return { color: isPartner ? OS_BLUE : tileColors[seed], isPartner };
     });
     return (
-        <PreviewFrame>
-            <div
-                className="w-full aspect-square rounded-md p-1.5"
-                style={{
-                    background: `radial-gradient(circle at 50% 30%, ${OS_BLUE}55, ${OS_BLUE}10 60%, rgba(0,0,0,0.5))`,
-                    border: `1px solid ${OS_BLUE}55`,
-                }}
-            >
-                <div className="grid grid-cols-4 gap-0.5 w-full h-full">
-                    {tiles.map((t, i) => (
-                        <div
-                            key={i}
-                            className="rounded-sm"
-                            style={{
-                                background: `linear-gradient(135deg, ${t.color}aa, ${t.color}55)`,
-                                boxShadow: t.isPartner
-                                    ? `0 0 6px ${OS_BLUE}aa, inset 0 0 4px ${OS_BLUE}55`
-                                    : `inset 0 0 2px rgba(255,255,255,0.2)`,
-                                border: t.isPartner
-                                    ? `1px solid ${OS_BLUE}`
-                                    : "1px solid rgba(255,255,255,0.12)",
-                            }}
-                        />
-                    ))}
+        <PreviewFrame pad={false} accent={OS_BLUE}>
+            <div className="relative w-full h-full overflow-hidden rounded-xl">
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: `linear-gradient(180deg, #FFB7D5 0%, #FF8FB8 18%, ${OS_BLUE}88 45%, #1B3A6A 80%, #0E2244 100%)`,
+                    }}
+                />
+                <div
+                    className="absolute left-0 right-0 top-[28%] h-[18%]"
+                    style={{
+                        clipPath:
+                            "polygon(0% 100%, 0% 60%, 5% 50%, 9% 65%, 14% 30%, 19% 55%, 24% 35%, 29% 70%, 35% 45%, 41% 60%, 47% 25%, 53% 55%, 59% 40%, 65% 65%, 72% 35%, 78% 55%, 84% 40%, 90% 60%, 96% 35%, 100% 50%, 100% 100%)",
+                        background: "linear-gradient(180deg, #C44A8E 0%, #6B2A52 100%)",
+                        opacity: 0.85,
+                    }}
+                />
+                <div
+                    className="absolute bottom-1 left-0 right-0 h-[6%]"
+                    style={{
+                        background: "linear-gradient(180deg, #5BA5C6 0%, #2A4D7A 100%)",
+                    }}
+                />
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 z-10">
+                    <Image
+                        src="/assets/logo-v3.png"
+                        alt=""
+                        width={44}
+                        height={30}
+                        className="object-contain"
+                        unoptimized
+                        style={{ filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.5))` }}
+                    />
+                </div>
+                <div
+                    className="absolute inset-x-3 bottom-2 top-[48%] rounded-md p-1"
+                    style={{
+                        background: "rgba(8,12,28,0.78)",
+                        border: `1.5px solid ${GOLD}cc`,
+                        boxShadow: `0 0 10px ${GOLD}44, inset 0 0 8px rgba(0,0,0,0.6)`,
+                    }}
+                >
+                    <div className="grid grid-cols-5 gap-[2px] w-full h-full">
+                        {tiles.map((t, i) => (
+                            <div
+                                key={i}
+                                className="rounded-[2px]"
+                                style={{
+                                    background: `linear-gradient(135deg, ${t.color}cc, ${t.color}66)`,
+                                    boxShadow: t.isPartner
+                                        ? `0 0 6px ${OS_BLUE}, inset 0 0 3px ${OS_BLUE}aa`
+                                        : `inset 0 0 2px rgba(255,255,255,0.25)`,
+                                    border: t.isPartner
+                                        ? `1px solid ${OS_BLUE}`
+                                        : "1px solid rgba(255,255,255,0.18)",
+                                }}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </PreviewFrame>
@@ -857,31 +911,49 @@ function BoardPreview() {
 
 function LogoLockupPreview() {
     return (
-        <PreviewFrame>
-            <div className="flex flex-col items-center gap-1.5">
+        <PreviewFrame pad={false} accent={OS_BLUE}>
+            <div className="relative w-full h-full overflow-hidden rounded-xl">
                 <div
-                    className="font-display font-black text-white text-[13px] tracking-[0.2em] uppercase"
-                    style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-                >
-                    Pin Drop
-                </div>
-                <div
-                    className="font-display font-black text-white/45 text-lg leading-none"
-                    style={{ marginTop: -2, marginBottom: -2 }}
-                >
-                    ×
-                </div>
-                <div
-                    className="font-display font-black text-[13px] tracking-[0.2em] uppercase"
-                    style={{ color: OS_BLUE, textShadow: `0 0 10px ${OS_BLUE}77` }}
-                >
-                    OpenSea
-                </div>
-                <div
-                    className="font-mundial text-[7px] tracking-[0.28em] uppercase mt-1"
-                    style={{ color: "rgba(255,255,255,0.35)" }}
-                >
-                    Header Lockup
+                    className="absolute inset-0"
+                    style={{
+                        background: `radial-gradient(circle at 50% 30%, ${OS_BLUE}55 0%, ${OS_BLUE}22 35%, rgba(0,0,0,0.55) 100%)`,
+                    }}
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 gap-1.5">
+                    <Image
+                        src="/assets/logo-v3.png"
+                        alt="Pin Drop"
+                        width={110}
+                        height={76}
+                        className="object-contain"
+                        unoptimized
+                        style={{ filter: `drop-shadow(0 4px 10px ${GOLD}55)` }}
+                    />
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                            className="font-display font-black text-white/45 text-base leading-none"
+                            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
+                        >
+                            ×
+                        </span>
+                        <Image
+                            src="/badges/promo/opensea.webp"
+                            alt=""
+                            width={22}
+                            height={22}
+                            className="object-contain"
+                            unoptimized
+                        />
+                        <span
+                            className="font-display font-black text-[11px] tracking-[0.18em] uppercase"
+                            style={{
+                                color: OS_BLUE,
+                                textShadow: `0 0 8px ${OS_BLUE}88`,
+                            }}
+                        >
+                            OpenSea
+                        </span>
+                    </div>
                 </div>
             </div>
         </PreviewFrame>
@@ -975,7 +1047,7 @@ function FinalCTA() {
                     something together.
                 </span>
             </h2>
-            <p className="font-mundial text-white/60 max-w-[560px] mx-auto text-base sm:text-lg leading-relaxed mb-9">
+            <p className="font-mundial text-white/60 max-w-[820px] mx-auto text-base sm:text-lg leading-relaxed mb-9">
                 Tell us about your community, your event window, and what you&apos;d
                 like the prize pool to look like. We&apos;ll draft a partnership shape
                 in 48 hours.
@@ -992,7 +1064,7 @@ function FinalCTA() {
                     textShadow: "0 1px 0 rgba(255,255,255,0.25)",
                 }}
             >
-                DM @brydisanto on X →
+                DM @RonnyGuy to Partner →
             </a>
         </section>
     );
@@ -1020,7 +1092,7 @@ function Footer() {
                     className="transition-colors"
                     style={{ color: GOLD }}
                 >
-                    @brydisanto
+                    @RonnyGuy
                 </a>
             </div>
         </footer>
