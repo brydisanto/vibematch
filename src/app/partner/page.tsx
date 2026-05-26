@@ -13,6 +13,7 @@ import {
 } from "@/lib/arcade-tokens";
 import PartnerFloatingBadges from "@/components/PartnerFloatingBadges";
 import PartnerDemoBoard from "@/components/PartnerDemoBoard";
+import PartnerCapsuleDemo from "@/components/PartnerCapsuleDemo";
 
 export const metadata: Metadata = {
     title: "Partner with Pin Drop",
@@ -972,10 +973,13 @@ function LiveDemo() {
                 Try a match. Feel the loop.
             </h2>
             <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[680px] mb-8">
-                A live mini-board, using the actual game tiles. Swap pins, watch the
-                cascades, and see how an OpenSea event pin fires inside the gameplay.
+                A live mini-board and a sealed capsule, using the actual game tiles.
+                Swap pins to trigger cascades, rip a capsule to see an event pin pop.
             </p>
-            <PartnerDemoBoard />
+            <div className="grid lg:grid-cols-[1fr_320px] gap-5 sm:gap-6 items-start">
+                <PartnerDemoBoard />
+                <PartnerCapsuleDemo />
+            </div>
         </section>
     );
 }
