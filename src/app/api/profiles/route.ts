@@ -121,16 +121,18 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Username required' }, { status: 400 });
     }
 
-    // Gate on session to block unauthenticated user enumeration (previously
-    // anyone could probe arbitrary usernames). Signed-in users can still look
-    // up anyone's profile — leaderboards + pin book need other players'
-    // avatars. Also strip internal/PII fields like walletAddress from the
-    // response for non-self lookups.
+    // Anonymous lookups return ONLY {username, avatarUrl} — the same
+    // payload non-self authenticated lookups get. This unblocks the
+    // leaderboard modal's lazy avatar fetch for logged-out visitors
+    // (otherwise non-self PFPs render blank for them).
+    //
+    // Trade-off: this allows username enumeration. Usernames already
+    // leak through every public leaderboard + global recent-scores
+    // feed, so the protection was mostly notional. PII (walletAddress,
+    // etc.) stays gated behind a logged-in self-lookup below.
     const session = await getSession();
-    if (!session?.username) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const isSelf = (session.username as string).toLowerCase() === username.toLowerCase();
+    const isAnon = !session?.username;
+    const isSelf = !isAnon && (session!.username as string).toLowerCase() === username.toLowerCase();
 
     try {
         const key = `user:${username.toLowerCase()}`;
