@@ -155,7 +155,14 @@ function WhatIsPinDrop() {
                 A match-3 puzzle game with a pin-collection meta.
             </h2>
             <div className="grid md:grid-cols-2 gap-10 items-center">
-                <div className="font-mundial text-white/65 leading-relaxed space-y-4 text-[15px] sm:text-base">
+                <div
+                    className="font-mundial text-white/80 leading-relaxed space-y-4 text-[15px] sm:text-base rounded-2xl p-5 sm:p-6"
+                    style={{
+                        background: "rgba(12,8,28,0.78)",
+                        border: `1px solid ${GOLD}1f`,
+                        boxShadow: "0 12px 32px -12px rgba(0,0,0,0.6)",
+                    }}
+                >
                     <p>
                         Pin Drop is a casual puzzle game where players match Pin
                         tiles to score points.{" "}
@@ -184,8 +191,8 @@ function WhatIsPinDrop() {
                         className="rounded-2xl p-4 sm:p-6"
                         style={{
                             background:
-                                "linear-gradient(180deg, rgba(255,224,72,0.08), rgba(0,0,0,0.4))",
-                            border: `1px solid ${GOLD}33`,
+                                "linear-gradient(180deg, rgba(255,224,72,0.14), rgba(8,4,20,0.88))",
+                            border: `1px solid ${GOLD}40`,
                             boxShadow: `0 12px 32px -10px ${GOLD}33`,
                         }}
                     >
@@ -354,8 +361,8 @@ function CoreLoop() {
                         key={step.n}
                         className="rounded-xl p-5 relative overflow-hidden"
                         style={{
-                            background: `linear-gradient(180deg, ${step.color}10, rgba(0,0,0,0.25))`,
-                            border: `1px solid ${step.color}33`,
+                            background: `linear-gradient(180deg, ${step.color}18, rgba(10,6,24,0.85))`,
+                            border: `1px solid ${step.color}55`,
                         }}
                     >
                         <div
@@ -465,8 +472,9 @@ function InsertionRow({
         <div
             className="rounded-2xl p-5 sm:p-7 grid grid-cols-1 sm:grid-cols-[auto_1fr_200px] gap-5 sm:gap-7 items-start"
             style={{
-                background: "rgba(255,255,255,0.03)",
-                border: `1px solid ${GOLD}1a`,
+                background: "rgba(12,8,28,0.82)",
+                border: `1px solid ${GOLD}33`,
+                boxShadow: "0 8px 24px -10px rgba(0,0,0,0.55)",
             }}
         >
             <div
@@ -967,9 +975,9 @@ function CaseStudy() {
                 className="rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-[280px_1fr]"
                 style={{
                     background:
-                        "linear-gradient(135deg, rgba(74,158,255,0.18), rgba(0,0,0,0.4))",
-                    border: "1.5px solid rgba(74,158,255,0.45)",
-                    boxShadow: "0 0 32px rgba(74,158,255,0.18)",
+                        "linear-gradient(135deg, rgba(74,158,255,0.28), rgba(8,4,20,0.9))",
+                    border: "1.5px solid rgba(74,158,255,0.55)",
+                    boxShadow: "0 0 32px rgba(74,158,255,0.22), 0 12px 32px -10px rgba(0,0,0,0.6)",
                 }}
             >
                 <div
