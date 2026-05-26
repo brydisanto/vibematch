@@ -68,6 +68,9 @@ interface PendingLogPayload {
      *  side without being read — Phase 3 will use this. May be empty
      *  for older queued entries from before this field existed. */
     moveSequence?: unknown[];
+    /** Tier-1 bot-detection telemetry. Optional so legacy queued
+     *  entries (queued before this field existed) still POST cleanly. */
+    behavioral?: { webdriver: boolean; untrustedEvents: number; gameDurationMs: number };
     queuedAt: number;
 }
 
@@ -205,6 +208,7 @@ async function flushPendingLogs(): Promise<void> {
             gameMode: entry.gameMode,
             stats: entry.stats,
             moveSequence: entry.moveSequence ?? [],
+            behavioral: entry.behavioral,
         });
         if (ok) {
             localStorage.removeItem(key);
@@ -388,7 +392,11 @@ export function usePinBook() {
         crossCount: number;
         shapesLanded: Array<{ type: string; count: number }>;
         gameOverReason: string;
-    }, gameMode: string = 'classic', moveSequence: unknown[] = []): Promise<void> => {
+    }, gameMode: string = 'classic', moveSequence: unknown[] = [], behavioral?: {
+        webdriver: boolean;
+        untrustedEvents: number;
+        gameDurationMs: number;
+    }): Promise<void> => {
         // Retry + queue: previously a single await fetch with no .ok check.
         // Any 4xx/5xx silently succeeded at the await, dropping the gamelog
         // entry without telling anyone. logGameWithRetry now does 4 total
@@ -396,14 +404,20 @@ export function usePinBook() {
         // the payload to localStorage for replay on the next pinbook.load().
         //
         // moveSequence is Phase 2 of the server-authoritative score scope:
-        // the deterministic record of swaps + special-tile taps. Server
-        // stores it but doesn't replay it yet — that's Phase 3.
+        // the deterministic record of swaps + special-tile taps. Each
+        // entry also carries optional t (ms since game start) + trusted
+        // (PointerEvent.isTrusted) for behavioral analysis.
+        //
+        // behavioral is Tier-1 bot-detection telemetry — game-level
+        // counters the per-move sequence can't carry (webdriver flag,
+        // total game wall-time, untrusted-input count).
         await logGameWithRetry({
             action: "logGame",
             matchId: activeMatchIdRef.current,
             gameMode,
             stats,
             moveSequence,
+            behavioral,
         });
     }, []);
 

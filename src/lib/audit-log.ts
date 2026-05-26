@@ -28,7 +28,8 @@ export type AuditAction =
     | "score.rejected"
     | "capsule.open"
     | "capsule.purchase"
-    | "reroll.post";
+    | "reroll.post"
+    | "game.behavioral";
 
 export interface AuditEvent {
     ts: number;

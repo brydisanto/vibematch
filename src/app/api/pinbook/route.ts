@@ -456,28 +456,73 @@ export async function POST(req: Request) {
                 typeof (p as { col: unknown }).col === 'number' &&
                 (p as { row: number }).row >= 0 && (p as { row: number }).row < 8 &&
                 (p as { col: number }).col >= 0 && (p as { col: number }).col < 8;
-            const safeMoveSequence: Array<
-                { kind: 'swap'; from: { row: number; col: number }; to: { row: number; col: number } } |
-                { kind: 'tap'; at: { row: number; col: number } }
-            > = [];
+            type SafeSwap = { kind: 'swap'; from: { row: number; col: number }; to: { row: number; col: number }; t?: number; trusted?: boolean };
+            type SafeTap = { kind: 'tap'; at: { row: number; col: number }; t?: number; trusted?: boolean };
+            const safeMoveSequence: Array<SafeSwap | SafeTap> = [];
+            // Per-move behavioral signals are optional and bounded:
+            //   t        positive integer ms from game start (clamped 0..30min)
+            //   trusted  boolean (PointerEvent.isTrusted) — false flags
+            //            synthetic dispatchEvent calls
+            const sanitizeMoveT = (v: unknown): number | undefined => {
+                if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return undefined;
+                return Math.min(Math.floor(v), 30 * 60 * 1000);
+            };
+            const sanitizeTrust = (v: unknown): boolean | undefined =>
+                typeof v === 'boolean' ? v : undefined;
             if (Array.isArray(body.moveSequence)) {
                 for (const m of body.moveSequence.slice(0, MAX_MOVES)) {
                     if (!m || typeof m !== 'object') continue;
                     const kind = (m as { kind: unknown }).kind;
+                    const t = sanitizeMoveT((m as { t?: unknown }).t);
+                    const trusted = sanitizeTrust((m as { trusted?: unknown }).trusted);
                     if (kind === 'swap') {
                         const from = (m as { from?: unknown }).from;
                         const to = (m as { to?: unknown }).to;
                         if (isPos(from) && isPos(to)) {
-                            safeMoveSequence.push({ kind: 'swap', from, to });
+                            safeMoveSequence.push({ kind: 'swap', from, to, t, trusted });
                         }
                     } else if (kind === 'tap') {
                         const at = (m as { at?: unknown }).at;
                         if (isPos(at)) {
-                            safeMoveSequence.push({ kind: 'tap', at });
+                            safeMoveSequence.push({ kind: 'tap', at, t, trusted });
                         }
                     }
                 }
             }
+
+            // Tier-1 behavioral telemetry — derived from the per-move
+            // timing series + client-reported game-level signals.
+            // Computed once here so /api/scores can read it off matchstats
+            // without recomputing on every submission.
+            const moveTimes = safeMoveSequence
+                .map(m => m.t)
+                .filter((t): t is number => typeof t === 'number');
+            const firstMoveMs = moveTimes.length > 0 ? moveTimes[0] : null;
+            let moveStdDevMs: number | null = null;
+            if (moveTimes.length >= 3) {
+                const deltas: number[] = [];
+                for (let i = 1; i < moveTimes.length; i++) {
+                    deltas.push(moveTimes[i] - moveTimes[i - 1]);
+                }
+                const mean = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+                const variance = deltas.reduce((s, d) => s + (d - mean) ** 2, 0) / deltas.length;
+                moveStdDevMs = Math.round(Math.sqrt(variance));
+            }
+            const behavioralIn = (body.behavioral as { webdriver?: unknown; untrustedEvents?: unknown; gameDurationMs?: unknown } | undefined) ?? {};
+            const behavioral = {
+                webdriver: behavioralIn.webdriver === true,
+                untrustedEvents: Number.isFinite(behavioralIn.untrustedEvents)
+                    ? Math.min(Math.max(0, Math.floor(behavioralIn.untrustedEvents as number)), 1000)
+                    : 0,
+                gameDurationMs: Number.isFinite(behavioralIn.gameDurationMs)
+                    ? Math.min(Math.max(0, Math.floor(behavioralIn.gameDurationMs as number)), 30 * 60 * 1000)
+                    : 0,
+                firstMoveMs,
+                moveStdDevMs,
+                trustedRatio: safeMoveSequence.length > 0
+                    ? Number((safeMoveSequence.filter(m => m.trusted !== false).length / safeMoveSequence.length).toFixed(3))
+                    : 1,
+            };
 
             // Sanity-bound every numeric stat so forged payloads can't bloat storage
             const safeNum = (v: unknown, max: number) => {
@@ -535,6 +580,7 @@ export async function POST(req: Request) {
                 matchId: matchId || null,
                 validatedMatch,
                 timestamp: Date.now(),
+                behavioral,
             };
 
             // Sorted set keyed by timestamp for easy pagination
@@ -581,6 +627,42 @@ export async function POST(req: Request) {
             // the client's retry attempts) the retry escape hatch rate.
             // Key fields are kept on one line so jq/grep is straightforward.
             console.log(`[logGame] user=${username} mode=${gameMode} matchId=${matchId || 'none'} score=${safeStats.score} validated=${validatedMatch} totalLogged=${count} moves=${safeMoveSequence.length}`);
+
+            // Tier-1 bot-detection audit. Flag games whose behavioral
+            // signature looks synthetic so the admin dashboard surfaces
+            // them next to score events. Fires on EVERY classic logGame
+            // so we capture both clean + suspicious baselines; trust the
+            // dashboard's sort/filter to triage the spike.
+            if (gameMode === 'classic' && validatedMatch) {
+                const flags: string[] = [];
+                if (behavioral.webdriver) flags.push('webdriver');
+                if (behavioral.untrustedEvents > 0) flags.push(`untrustedEvents=${behavioral.untrustedEvents}`);
+                if (behavioral.trustedRatio < 1) flags.push(`trustedRatio=${behavioral.trustedRatio}`);
+                if (behavioral.moveStdDevMs !== null && behavioral.moveStdDevMs < 300 && safeMoveSequence.length >= 10) {
+                    flags.push(`tightMoveStdDev=${behavioral.moveStdDevMs}`);
+                }
+                if (behavioral.firstMoveMs !== null && behavioral.firstMoveMs < 250) {
+                    flags.push(`fastFirstMove=${behavioral.firstMoveMs}`);
+                }
+                await logAuditEvent({
+                    req,
+                    username,
+                    action: 'game.behavioral',
+                    meta: {
+                        matchId: matchId || 'none',
+                        mode: gameMode,
+                        score: safeStats.score,
+                        moves: safeMoveSequence.length,
+                        webdriver: behavioral.webdriver,
+                        untrustedEvents: behavioral.untrustedEvents,
+                        gameDurationMs: behavioral.gameDurationMs,
+                        firstMoveMs: behavioral.firstMoveMs ?? -1,
+                        moveStdDevMs: behavioral.moveStdDevMs ?? -1,
+                        trustedRatio: behavioral.trustedRatio,
+                        flags: flags.length > 0 ? flags.join(',') : '-',
+                    },
+                });
+            }
 
             return NextResponse.json({ logged: true });
 

@@ -88,6 +88,12 @@ export interface UseGameReturn {
     startGame: (mode: GameMode, opts?: { seed?: number }) => Promise<void>;
     startGameWithBadges: (mode: GameMode, badges: Badge[], opts?: { seed?: number }) => Promise<void>;
     resetGame: (opts?: { seed?: number }) => Promise<void>;
+    /** Behavioral telemetry callbacks. recordEventTrust is invoked by
+     *  GameBoard's pointerDown handler to flag synthetic inputs.
+     *  getBehavioralMeta is called at game-over to bundle the per-game
+     *  signals into the logGame payload. */
+    recordEventTrust: (trusted: boolean) => void;
+    getBehavioralMeta: () => { webdriver: boolean; untrustedEvents: number; gameDurationMs: number };
 }
 
 function getIntensity(score: number, combo: number, maxMatchSize: number): MatchIntensity {
@@ -112,6 +118,33 @@ export function useGame(): UseGameReturn {
     const hintShownThisGame = useRef(false);
     const popupCounter = useRef(0);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    // Behavioral telemetry — captured per game, sent with logGame. Lets
+    // the server compute timing distributions + flag synthetic-input
+    // signatures without us streaming every event. All three reset at
+    // game start (applyStartState below).
+    const gameStartMsRef = useRef<number>(0);
+    const untrustedEventsRef = useRef<number>(0);
+    const webdriverRef = useRef<boolean>(false);
+
+    // Read the active tap's trust flag. Browser InputEvents set
+    // isTrusted: true; programmatic dispatchEvent / Synthetic events
+    // set false. We stash it on a ref during the pointerDown handler
+    // (which fires before click), then read it when the move resolves.
+    const lastEventTrustedRef = useRef<boolean | null>(null);
+    const recordTrust = useCallback((trusted: boolean) => {
+        lastEventTrustedRef.current = trusted;
+        if (!trusted) untrustedEventsRef.current += 1;
+    }, []);
+    const consumeMoveMeta = useCallback((): { t: number; trusted: boolean } => {
+        const t = gameStartMsRef.current > 0 ? Math.round(performance.now() - gameStartMsRef.current) : 0;
+        // Default to trusted=true when no event was captured (e.g., automation
+        // tests / replay-driven UIs); flag a real synthetic input only when
+        // the pointerDown handler explicitly recorded false.
+        const trusted = lastEventTrustedRef.current !== false;
+        lastEventTrustedRef.current = null;
+        return { t, trusted };
+    }, []);
 
     const resetHintTimer = useCallback((board: Cell[][]) => {
         if (hintTimer.current) clearTimeout(hintTimer.current);
@@ -171,6 +204,13 @@ export function useGame(): UseGameReturn {
         setIsAnimating(false);
         setHintMessage(null);
         hintShownThisGame.current = false;
+        // Reset behavioral telemetry for this match. WebDriver flag is
+        // sticky across the session (browsers don't toggle it mid-game),
+        // but timing + untrusted counters restart per game.
+        gameStartMsRef.current = performance.now();
+        untrustedEventsRef.current = 0;
+        lastEventTrustedRef.current = null;
+        webdriverRef.current = typeof navigator !== "undefined" && navigator.webdriver === true;
         resetHintTimer(initialState.board);
         playGameStartSound();
     }, [resetHintTimer]);
@@ -553,7 +593,8 @@ export function useGame(): UseGameReturn {
                         else if (cell.isSpecial === "cosmic_blast") playCosmicBlastSound();
                         else if (cell.isSpecial === "vibestreak") playVibestreakSound();
                         else playBombSound();
-                        const tapAction: MoveAction = { kind: 'tap', at: pos };
+                        const meta = consumeMoveMeta();
+                        const tapAction: MoveAction = { kind: 'tap', at: pos, t: meta.t, trusted: meta.trusted };
                         setState(prev => prev ? applyResult(prev, result, pos, true, tapAction) : prev);
                         // Re-arm the hint timer against the post-detonation board.
                         // Without this, a hint scheduled before the tap-activate
@@ -593,7 +634,8 @@ export function useGame(): UseGameReturn {
             // Valid swap — show slide animation first, then apply turn result
             const swapPos1 = state.selectedTile;
             const swapPos2 = pos;
-            const swapAction: MoveAction = { kind: 'swap', from: swapPos1, to: swapPos2 };
+            const swapMeta = consumeMoveMeta();
+            const swapAction: MoveAction = { kind: 'swap', from: swapPos1, to: swapPos2, t: swapMeta.t, trusted: swapMeta.trusted };
             resetHintTimer(result.board);
             setSwapAnim({ pos1: swapPos1, pos2: swapPos2 });
             setState({ ...state, selectedTile: null });
@@ -638,7 +680,8 @@ export function useGame(): UseGameReturn {
             }
 
             // Valid swap — animate then apply
-            const swipeAction: MoveAction = { kind: 'swap', from, to };
+            const swipeMeta = consumeMoveMeta();
+            const swipeAction: MoveAction = { kind: 'swap', from, to, t: swipeMeta.t, trusted: swipeMeta.trusted };
             resetHintTimer(result.board);
             setSwapAnim({ pos1: from, pos2: to });
             setState({ ...state, selectedTile: null });
@@ -672,6 +715,14 @@ export function useGame(): UseGameReturn {
         }
     }, [isAnimating, selectTile, swipeTiles]);
 
+    const getBehavioralMeta = useCallback(() => ({
+        webdriver: webdriverRef.current,
+        untrustedEvents: untrustedEventsRef.current,
+        gameDurationMs: gameStartMsRef.current > 0
+            ? Math.round(performance.now() - gameStartMsRef.current)
+            : 0,
+    }), []);
+
     return {
         state,
         scorePopups,
@@ -687,5 +738,7 @@ export function useGame(): UseGameReturn {
         startGame,
         startGameWithBadges,
         resetGame,
+        recordEventTrust: recordTrust,
+        getBehavioralMeta,
     };
 }

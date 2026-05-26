@@ -43,6 +43,10 @@ interface GameBoardProps {
     invalidSwapCells?: { row: number; col: number }[] | null;
     swapAnim?: { pos1: Position; pos2: Position } | null;
     isPrizeGame?: boolean;
+    /** Optional behavioral-telemetry hook. Called on every PointerDown
+     *  with `e.isTrusted` so useGame can flag synthetic-input games for
+     *  the bot-detection audit log. */
+    onPointerTrust?: (trusted: boolean) => void;
 }
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
@@ -878,6 +882,7 @@ function GameBoardImpl({
     invalidSwapCells = null,
     swapAnim = null,
     isPrizeGame = false,
+    onPointerTrust,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -919,11 +924,16 @@ function GameBoardImpl({
 
     const handlePointerDown = useCallback((e: React.PointerEvent, row: number, col: number) => {
         if (isAnimating) return;
+        // Behavioral telemetry: synthetic dispatchEvent calls produce
+        // isTrusted: false. Surface every pointerDown's trust flag so
+        // useGame can tally per-game synthetic-input count for the
+        // bot-detection audit.
+        onPointerTrust?.(e.isTrusted);
         swipeStartTile.current = { row, col };
         swipeStartXY.current = { x: e.clientX, y: e.clientY };
         didSwipe.current = false;
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    }, [isAnimating]);
+    }, [isAnimating, onPointerTrust]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
         if (!swipeStartTile.current || !swipeStartXY.current || didSwipe.current || !onSwipe) return;
@@ -1135,8 +1145,16 @@ function GameBoardImpl({
                                                 src={cell.badge.image}
                                                 alt={cell.badge.name}
                                                 loading="eager"
-                                                decoding="sync"
-                                                fetchPriority="high"
+                                                /* decoding="async" lets the browser decode
+                                                   off the main thread. With preloadBadgeImages
+                                                   priming the cache at game start, the bytes
+                                                   are already local — async still paints
+                                                   instantly but doesn't block the compositor
+                                                   on every re-render. The previous sync setting
+                                                   was 64 main-thread decodes on every render
+                                                   tick, which on mid-tier phones produced
+                                                   visible jank around power-tile cascades. */
+                                                decoding="async"
                                                 draggable={false}
                                                 className="absolute inset-0 w-full h-full object-cover"
                                             />

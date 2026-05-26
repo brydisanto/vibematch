@@ -274,6 +274,9 @@ export default function AppClient() {
       //    moveSequence is the deterministic record of player actions —
       //    Phase 2 of the server-authoritative score scope. Stored
       //    server-side now; Phase 3 will replay it to validate the score.
+      //    behavioral is Tier-1 bot-detection telemetry: navigator.webdriver
+      //    flag, count of untrusted PointerEvents, and total game duration.
+      const behavioral = game.getBehavioralMeta();
       await pinBook.logGame({
         score: gs.score || 0,
         matchCount: gs.matchCount || 0,
@@ -285,7 +288,7 @@ export default function AppClient() {
         crossCount: stats.crossCount || 0,
         shapesLanded: stats.shapesLanded || [],
         gameOverReason: gs.gameOverReason || 'unknown',
-      }, mode, gs.moveSequence ?? []);
+      }, mode, gs.moveSequence ?? [], behavioral);
 
       // 3. Award capsule if score threshold met. Also gates which first-time
       // FTUE modal (if any) fires on this game-over.
@@ -886,6 +889,7 @@ export default function AppClient() {
                     invalidSwapCells={game.invalidSwapCells}
                     swapAnim={game.swapAnim}
                     isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && !pinBook.currentMatchIsExtra}
+                    onPointerTrust={game.recordEventTrust}
                   />
                 </div>
               </div>

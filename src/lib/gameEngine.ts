@@ -42,10 +42,20 @@ export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
  *   - tap:  a double-tap activation on a special tile
  * Both are sufficient inputs for processTurn / triggerSpecialTile to
  * reproduce the game given the same seed + gameBadges.
+ *
+ * Optional behavioral signals appended per move so the server can
+ * derive timing distributions without holding the full event stream:
+ *   - t        ms since game start, captured at the moment the move
+ *              resolved. Lets us compute inter-move stddev + game
+ *              duration. Human play stddev ≈ 800-3000ms; bot play
+ *              clusters tight (sub-300ms stddev).
+ *   - trusted  whether the originating PointerEvent had isTrusted
+ *              === true. Synthetic dispatchEvent calls produce
+ *              isTrusted: false — a strong synthetic-input signal.
  */
 export type MoveAction =
-    | { kind: 'swap'; from: Position; to: Position }
-    | { kind: 'tap'; at: Position };
+    | { kind: 'swap'; from: Position; to: Position; t?: number; trusted?: boolean }
+    | { kind: 'tap'; at: Position; t?: number; trusted?: boolean };
 
 /**
  * Per-turn record for the move-history view. Captures the metrics we
