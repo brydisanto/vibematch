@@ -48,7 +48,6 @@ export default function PartnerPage() {
             <Starfield />
 
             <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-8 pt-10 pb-24">
-                <OpenGameButton />
                 <Hero />
                 <WhatIsPinDrop />
                 <CoreLoop />
@@ -60,28 +59,6 @@ export default function PartnerPage() {
 
             <Animations />
         </main>
-    );
-}
-
-function OpenGameButton() {
-    return (
-        <div className="absolute top-10 right-5 sm:right-8 z-20">
-            <Link
-                href={PIN_DROP_PLAY}
-                className="inline-flex items-center justify-center font-display font-black uppercase rounded-full transition-transform hover:-translate-y-[1px]"
-                style={{
-                    padding: "9px 18px",
-                    fontSize: 11,
-                    letterSpacing: "0.2em",
-                    background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
-                    color: "#1A0E02",
-                    boxShadow: `0 3px 0 ${GOLD_DEEP}, 0 6px 14px rgba(0,0,0,0.45)`,
-                    textShadow: "0 1px 0 rgba(255,255,255,0.25)",
-                }}
-            >
-                Open Game
-            </Link>
-        </div>
     );
 }
 
@@ -137,7 +114,7 @@ function Hero() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
                 <a
-                    href={CTA_TWITTER}
+                    href={PIN_DROP_PLAY}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-7 py-4 rounded-xl font-display font-black text-sm tracking-[0.22em] uppercase transition-transform hover:-translate-y-[2px]"
@@ -148,10 +125,10 @@ function Hero() {
                         textShadow: "0 1px 0 rgba(255,255,255,0.25)",
                     }}
                 >
-                    Start a Conversation →
+                    Try the Game →
                 </a>
                 <a
-                    href={PIN_DROP_PLAY}
+                    href={CTA_TWITTER}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-6 py-4 rounded-xl font-display font-black text-sm tracking-[0.22em] uppercase transition-colors"
@@ -161,7 +138,7 @@ function Hero() {
                         border: "1px solid rgba(255,255,255,0.12)",
                     }}
                 >
-                    Try the Game
+                    Message Us
                 </a>
             </div>
         </section>
@@ -1030,30 +1007,9 @@ function CaseStudy() {
                         collector a permanent slot in their Trophy Case. OpenSea
                         contributed prizes for the top of the event leaderboard.
                     </p>
-                    <div className="grid grid-cols-3 gap-4 pt-2">
-                        <CaseStat n="100+" label="Pins minted to players" />
-                        <CaseStat n="5" label="Days of partnership coverage" />
-                        <CaseStat n="∞" label="Pins kept by collectors forever" />
-                    </div>
                 </div>
             </div>
         </section>
-    );
-}
-
-function CaseStat({ n, label }: { n: string; label: string }) {
-    return (
-        <div>
-            <div
-                className="font-display font-black text-2xl sm:text-3xl"
-                style={{ color: "#4A9EFF" }}
-            >
-                {n}
-            </div>
-            <div className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45 mt-1 leading-tight">
-                {label}
-            </div>
-        </div>
     );
 }
 
