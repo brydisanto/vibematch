@@ -219,6 +219,10 @@ export default function LandingPageArcade({
     userProfile,
 }: LandingPageArcadeProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
+    const openProfile = () => {
+        (window as unknown as { __pdEnsureWallet?: () => void }).__pdEnsureWallet?.();
+        setProfileOpen(true);
+    };
     const [isTierInfoOpen, setTierInfoOpen] = useState(false);
     // Leaderboard modal open-state doubles as its initial tab, so the
     // Leaders nav button can open on "classic" while the DAILY CHALLENGE
@@ -1169,7 +1173,7 @@ export default function LandingPageArcade({
                                     />
                                     <div className="grid grid-cols-5 relative z-10 gap-1.5">
                                         {[
-                                            { label: "Profile", onClick: () => setProfileOpen(true), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
+                                            { label: "Profile", onClick: openProfile, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
                                             { label: "Pins", onClick: () => onOpenPinBook?.(), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>) },
                                             { label: "Quests", onClick: onOpenAchievements, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>) },
                                             { label: "Leaders", onClick: () => setLeaderboardTab("classic"), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>) },
@@ -1233,7 +1237,7 @@ export default function LandingPageArcade({
                         <div className="relative px-5 pt-6 pb-5 border-b border-white/5">
                             <button
                                 type="button"
-                                onClick={() => setProfileOpen(true)}
+                                onClick={openProfile}
                                 className="relative w-full text-left cursor-pointer transition-all hover:opacity-90"
                             >
                                 <div className="relative flex flex-col items-center gap-3">

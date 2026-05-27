@@ -101,6 +101,17 @@ export default function AppClient() {
       setWalletReady(true);
     }
   }, [showReroll, showBuyPrizeGames]);
+  // Wallet-touching surfaces nested deep in landing components (Profile
+  // modal -> WalletTracker + RainbowConnectButton) can't lift their open
+  // state up. Expose a global so any click handler can flip walletReady
+  // sync, and React batches it with the consumer's own state update so
+  // WagmiProvider mounts in the same render the child needs context.
+  useEffect(() => {
+    (window as unknown as { __pdEnsureWallet?: () => void }).__pdEnsureWallet = () => setWalletReady(true);
+    return () => {
+      delete (window as unknown as { __pdEnsureWallet?: () => void }).__pdEnsureWallet;
+    };
+  }, []);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();

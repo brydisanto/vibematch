@@ -80,6 +80,10 @@ export default function LandingPageQuest({
     userProfile,
 }: LandingPageQuestProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
+    const openProfile = () => {
+        (window as unknown as { __pdEnsureWallet?: () => void }).__pdEnsureWallet?.();
+        setProfileOpen(true);
+    };
     const [isAuthOpen, setAuthOpen] = useState(false);
     const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
     const [streak, setStreak] = useState(0);
@@ -204,7 +208,7 @@ export default function LandingPageQuest({
                     pinPct={pinPct}
                     streak={streak}
                     countdown={countdown}
-                    onOpenProfile={() => setProfileOpen(true)}
+                    onOpenProfile={openProfile}
                     onSignIn={() => setAuthOpen(true)}
                 />
 
@@ -499,7 +503,7 @@ export default function LandingPageQuest({
                     isLoggedIn={isLoggedIn}
                     capsuleCount={capsuleCount}
                     achievementCount={achievementCount}
-                    onProfile={() => isLoggedIn ? setProfileOpen(true) : setAuthOpen(true)}
+                    onProfile={() => isLoggedIn ? openProfile() : setAuthOpen(true)}
                     onPins={() => isLoggedIn ? onOpenPinBook?.() : setAuthOpen(true)}
                     onQuests={() => isLoggedIn ? onOpenAchievements?.() : setAuthOpen(true)}
                     onLeaders={() => setLeaderboardOpen(true)}
