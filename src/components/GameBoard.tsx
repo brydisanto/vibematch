@@ -515,12 +515,13 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
 
             {/* Slammed-in headline label, portal'd to the viewport-top
                 stack so it doesn't overlay the playing field. Stacks
-                between combo (2vh) and shape (10vh) so all three text
-                pop-ups read simultaneously without collision. */}
+                below shape (10vh) and combo (16vh), out of the
+                playing field but close enough to read in the same
+                glance as the score. */}
             {mounted && createPortal(
                 <div
                     className="fixed left-0 right-0 flex justify-center pointer-events-none power-tile-create-label"
-                    style={{ top: "6vh", zIndex: 73 }}
+                    style={{ top: "22vh", zIndex: 73 }}
                 >
                     <div
                         className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
@@ -591,13 +592,13 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
 
     // Portal at viewport top so the banner clears the board entirely.
     // Frenzy players were reporting the banner blocked the upper rows
-    // of the board mid-chain — moving it above the board (paired with
-    // power-tile creation at 6vh + ShapeAnnouncement at 10vh) keeps
-    // the sight line clear during rapid swap sequences.
+    // of the board mid-chain — settling into the gap between the top
+    // HUD and the start of the board (~25vh on iPhone). Stacked with
+    // ShapeAnnouncement at 10vh and power-tile creation at 22vh.
     return createPortal(
         <div
             className="fixed left-0 right-0 flex flex-col items-center pointer-events-none combo-banner-enter px-2"
-            style={{ top: "2vh", zIndex: 74 }}
+            style={{ top: "16vh", zIndex: 74 }}
         >
             {/* Static radial background flash — sized to the banner's
                 bounding box so it tracks the floating text instead of
