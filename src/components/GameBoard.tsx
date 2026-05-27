@@ -44,6 +44,11 @@ interface GameBoardProps {
     invalidSwapCells?: { row: number; col: number }[] | null;
     swapAnim?: { pos1: Position; pos2: Position } | null;
     isPrizeGame?: boolean;
+    /** Active game mode. Used to gate Frenzy-specific UI (penalty
+     *  popups + flash) and to suppress mode-inappropriate effects
+     *  (e.g., score-milestone banners are noisy in Frenzy where the
+     *  player is already chasing a moving clock). */
+    gameMode?: "classic" | "daily" | "frenzy";
     /** Timestamp of the most recent Frenzy time penalty. Drives a brief
      *  red full-board wash so the -1s clock loss reads visually. Null
      *  when no penalty is active. */
@@ -892,6 +897,7 @@ export default function GameBoard({
     invalidSwapCells = null,
     swapAnim = null,
     isPrizeGame = false,
+    gameMode = "classic",
     frenzyPenaltyAt = null,
     timePenaltyPopups = EMPTY_TIME_PENALTY_POPUPS,
 }: GameBoardProps) {
@@ -972,20 +978,25 @@ export default function GameBoard({
         swipeStartXY.current = null;
     }, []);
 
-    // Feature 2: milestone tracking
+    // Feature 2: milestone tracking. Suppressed in Frenzy mode —
+    // players reported the milestone banners (and their accompanying
+    // milestone sting) read as additional clock-stealing noise when
+    // they're already racing a moving timer. Still fires for Classic
+    // + Daily where the celebration moments fit the pace.
     const prevScoreRef = useRef(score);
     const [milestone, setMilestone] = useState<number | null>(null);
 
     useEffect(() => {
         const prev = prevScoreRef.current;
         prevScoreRef.current = score;
+        if (gameMode === "frenzy") return;
         const crossed = MILESTONE_THRESHOLDS.find(t => prev < t && score >= t);
         if (crossed !== undefined) {
             setMilestone(crossed);
             const timer = setTimeout(() => setMilestone(null), 2200);
             return () => clearTimeout(timer);
         }
-    }, [score]);
+    }, [score, gameMode]);
 
     useEffect(() => {
         const update = () => {

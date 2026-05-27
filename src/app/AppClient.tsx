@@ -839,6 +839,7 @@ export default function AppClient() {
                     invalidSwapCells={game.invalidSwapCells}
                     swapAnim={game.swapAnim}
                     isPrizeGame={(game.state?.gameMode || 'classic') === 'classic' && !pinBook.currentMatchIsExtra}
+                    gameMode={game.state?.gameMode}
                     frenzyPenaltyAt={game.frenzyPenaltyAt}
                     timePenaltyPopups={game.timePenaltyPopups}
                   />
