@@ -514,22 +514,16 @@ export function useGame(): UseGameReturn {
                 setIsAnimating(false);
             }, 1800);
         } else {
-            // Open input as soon as the state update commits, instead of
-            // waiting on the cleanup timer below. Mobile was eating a
-            // flat 120ms of dead-air per swap because setIsAnimating(false)
-            // was nested inside the cleanup setTimeout — that's pure
-            // input lockout the player feels as "lag/hanging" on basic
-            // swaps. setTimeout(0) escapes the current setState reducer
-            // so it fires as soon as React processes this turn's commit.
-            setTimeout(() => setIsAnimating(false), 0);
-            // Cleanup the drop-distance + isNew flags from cells that
-            // moved this turn. CSS `forwards` fill keeps the tile at its
-            // visual end-state (translateY(0)) so this is hygiene rather
-            // than a visual correction — the next move's applyGravity
-            // would overwrite the flags anyway. Run it on the original
-            // delay so any in-flight cascade-fall animation completes
-            // before we strip the class.
+            // Keep isAnimating=true through the cleanup timer. An earlier
+            // attempt at setTimeout(0) to "open input sooner" actually
+            // made cascades laggier — the queued tap fired while gravity
+            // was still drawing tiles, processTurn wrote a new board mid-
+            // animation, and every dropDistance value snap-changed,
+            // forcing extra reconciliation work + visual jitter. Matching
+            // Frenzy branch's 120ms mobile / 300ms desktop: lets the
+            // cascade-fall animation complete before input reopens.
             setTimeout(() => {
+                setIsAnimating(false);
                 setState(prev2 => {
                     if (!prev2) return prev2;
                     const cleaned = prev2.board.map(row =>
