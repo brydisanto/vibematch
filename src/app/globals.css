@@ -1942,7 +1942,18 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
 
+/* Desktop ONLY restores gameplay animations under reduced-motion.
+   Mobile users with the OS reduced-motion setting on get the universal
+   kill — matches the Frenzy branch's behavior, where they reported
+   gameplay was buttery smooth. The thinking: phones with reduced-
+   motion enabled tend to be lower-end devices whose users have it on
+   precisely because animations make their device sluggish; honoring
+   that preference is both polite a11y and faster. The desktop recovery
+   keeps the gameplay feedback visible for keyboard/screen-reader
+   users who set reduced-motion but have CPU headroom. */
+@media (prefers-reduced-motion: reduce) and (min-width: 768px) {
   .tile-selected {
     animation-duration: 0.6s !important;
     animation-iteration-count: infinite !important;
@@ -1963,11 +1974,6 @@ body {
     animation-duration: 0.5s !important;
     animation-iteration-count: infinite !important;
   }
-  /* These are the classes the live GameBoard actually applies. Without
-     them you get "tiles teleport instead of sliding," cascade tiles
-     snap into place, and invalid swaps don't shake — symptoms read as
-     lag + dropped inputs because the player has no visual confirmation
-     the swap actually fired. */
   .game-tile--swapping {
     animation-duration: 0.22s !important;
   }
@@ -1983,15 +1989,6 @@ body {
   .hint-pulse-overlay {
     animation-duration: 0.95s !important;
     animation-iteration-count: infinite !important;
-  }
-}
-
-/* Mobile keeps a slightly slower swap easing (no overshoot, 0.24s).
-   Restore that under reduced-motion too so the previous mobile-tuned
-   feel survives the universal kill rule. */
-@media (prefers-reduced-motion: reduce) and (max-width: 767px) {
-  .game-tile--swapping {
-    animation-duration: 0.24s !important;
   }
 }
 
