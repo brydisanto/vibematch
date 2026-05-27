@@ -468,6 +468,8 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * "I just made this."
  */
 function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const created = effect.specialTilesCreated;
     if (!created || created.length === 0 || cellSize === 0) return null;
 
@@ -511,35 +513,30 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
                 );
             })}
 
-            {/* Slammed-in headline label, screen-center. Uses the same
-                layered treatment as the combo banners: white fill +
-                tier-colored stroke + solid drop-shadow band beneath in
-                the same color, so the text reads as four stacked layers
-                (white body → colored outline → colored shadow band →
-                blurry black shadow). */}
-            {/* Anchored near the TOP of the board (not screen-center)
-                so it doesn't collide with the centered combo banner
-                when a single move both spawns a power tile AND lands
-                a 2+ combo (common — 4-match always does both). The
-                power tile label gets the top zone; combo stays
-                centered; both readable simultaneously. */}
-            <div
-                className="absolute left-0 right-0 flex justify-center pointer-events-none z-39 power-tile-create-label"
-                style={{ top: "6%" }}
-            >
+            {/* Slammed-in headline label, portal'd to the viewport-top
+                stack so it doesn't overlay the playing field. Stacks
+                between combo (2vh) and shape (10vh) so all three text
+                pop-ups read simultaneously without collision. */}
+            {mounted && createPortal(
                 <div
-                    className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
-                    style={{
-                        color: "#FFFFFF",
-                        WebkitTextStroke: `5px ${headline.color}`,
-                        paintOrder: "stroke fill",
-                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
-                        letterSpacing: "-0.01em",
-                    }}
+                    className="fixed left-0 right-0 flex justify-center pointer-events-none power-tile-create-label"
+                    style={{ top: "6vh", zIndex: 73 }}
                 >
-                    {headline.label}
-                </div>
-            </div>
+                    <div
+                        className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
+                        style={{
+                            color: "#FFFFFF",
+                            WebkitTextStroke: `5px ${headline.color}`,
+                            paintOrder: "stroke fill",
+                            textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
+                            letterSpacing: "-0.01em",
+                        }}
+                    >
+                        {headline.label}
+                    </div>
+                </div>,
+                document.body
+            )}
         </>
     );
 }
@@ -604,12 +601,12 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // Portal at viewport top so the banner clears the board entirely.
     // Frenzy players were reporting the banner blocked the upper rows
     // of the board mid-chain — moving it above the board (paired with
-    // ShapeAnnouncement at 10vh + power-tile creation at 20vh) keeps
+    // power-tile creation at 6vh + ShapeAnnouncement at 10vh) keeps
     // the sight line clear during rapid swap sequences.
     return createPortal(
         <div
             className="fixed left-0 right-0 flex flex-col items-center pointer-events-none combo-banner-enter px-2"
-            style={{ top: "4vh", zIndex: 74 }}
+            style={{ top: "2vh", zIndex: 74 }}
         >
             {/* Static radial background flash — sized to the banner's
                 bounding box so it tracks the floating text instead of
