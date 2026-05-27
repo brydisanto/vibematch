@@ -67,7 +67,7 @@ function Star({ filled, color, glowColor, gradientId, index }: {
     if (!filled) {
         return (
             <motion.div
-                className="w-9 h-9 sm:w-11 sm:h-11 relative"
+                className="w-7 h-7 sm:w-9 sm:h-9 relative"
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 + index * 0.15, duration: 0.3 }}
@@ -82,7 +82,7 @@ function Star({ filled, color, glowColor, gradientId, index }: {
 
     return (
         <motion.div
-            className="w-9 h-9 sm:w-11 sm:h-11 relative"
+            className="w-7 h-7 sm:w-9 sm:h-9 relative"
             initial={{ opacity: 0.15, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{
@@ -160,7 +160,7 @@ function RankStars({ filledCount, color, glowColor, label }: {
     return (
         <div className="relative flex flex-col items-center mx-auto mb-2">
             {/* Container for rays, bloom, and stars */}
-            <div className="relative flex justify-center items-center" style={{ width: 320, height: 90 }}>
+            <div className="relative flex justify-center items-center" style={{ width: 260, height: 72 }}>
                 {/* Rotating light rays (conic gradient) */}
                 {filledCount >= 3 && (
                     <motion.div
@@ -316,7 +316,7 @@ function AnimatedScore({ target, color }: { target: number; color: string }) {
             </AnimatePresence>
 
             <motion.span
-                className="font-display text-5xl sm:text-7xl font-black tabular-nums"
+                className="font-display text-4xl sm:text-6xl font-black tabular-nums"
                 style={{
                     color,
                     textShadow: `0 0 40px ${color}60, 0 0 80px ${color}20`,
@@ -389,7 +389,7 @@ function StatCard({
 }) {
     return (
         <motion.div
-            className="relative bg-[#1a0533]/95 border border-white/[0.08] rounded-2xl p-3 sm:p-3.5 overflow-hidden group"
+            className="relative bg-[#1a0533]/95 border border-white/[0.08] rounded-2xl p-2 sm:p-2.5 overflow-hidden group"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
@@ -405,7 +405,7 @@ function StatCard({
             <div className="text-[10px] sm:text-xs text-white/35 font-mundial uppercase tracking-wider text-center mb-1">
                 {label}
             </div>
-            <div className={`font-display text-xl sm:text-2xl font-bold text-center ${color}`}>
+            <div className={`font-display text-lg sm:text-xl font-bold text-center ${color}`}>
                 {value}
             </div>
         </motion.div>
@@ -727,7 +727,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
 
                         {/* ===== RANK LABEL — with scale pop ===== */}
                         <motion.div
-                            className="font-display text-xl sm:text-2xl font-black tracking-wider mb-0.5"
+                            className="font-display text-lg sm:text-xl font-black tracking-wider mb-0.5"
                             style={{
                                 color: rank.color,
                                 textShadow: `0 0 24px ${rank.color}50`,
