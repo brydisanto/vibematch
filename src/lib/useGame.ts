@@ -132,11 +132,22 @@ export function useGame(): UseGameReturn {
     // set false. We stash it on a ref during the pointerDown handler
     // (which fires before click), then read it when the move resolves.
     const lastEventTrustedRef = useRef<boolean | null>(null);
+    // Mobile no-ops the entire telemetry pipeline. Even though each
+    // individual hook is cheap (a ref read + write, plus one
+    // performance.now() per move), they cross the GameBoard ->
+    // AppClient -> useGame component boundary on every pointerDown
+    // and every move resolve. On low-end phones the cross-boundary
+    // calls + extra MoveAction field allocation showed up as
+    // measurable per-input overhead. Desktop keeps the full telemetry
+    // because the perf headroom is there and bot-detection signal is
+    // primarily a desktop-attacker concern anyway.
     const recordTrust = useCallback((trusted: boolean) => {
+        if (isMobile) return;
         lastEventTrustedRef.current = trusted;
         if (!trusted) untrustedEventsRef.current += 1;
-    }, []);
-    const consumeMoveMeta = useCallback((): { t: number; trusted: boolean } => {
+    }, [isMobile]);
+    const consumeMoveMeta = useCallback((): { t?: number; trusted?: boolean } => {
+        if (isMobile) return {};
         const t = gameStartMsRef.current > 0 ? Math.round(performance.now() - gameStartMsRef.current) : 0;
         // Default to trusted=true when no event was captured (e.g., automation
         // tests / replay-driven UIs); flag a real synthetic input only when
@@ -144,7 +155,7 @@ export function useGame(): UseGameReturn {
         const trusted = lastEventTrustedRef.current !== false;
         lastEventTrustedRef.current = null;
         return { t, trusted };
-    }, []);
+    }, [isMobile]);
 
     const resetHintTimer = useCallback((board: Cell[][]) => {
         if (hintTimer.current) clearTimeout(hintTimer.current);
