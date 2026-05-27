@@ -549,7 +549,9 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
  * the pre-juice production banner exactly.
  */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
-    if (effect.combo < 2) return null;
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (effect.combo < 2 || !mounted) return null;
 
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
@@ -594,19 +596,19 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effect.timestamp]);
 
-    // Positioned at the TOP of the board container instead of centered.
-    // The banner sits in the upper ~20% so the middle/lower 80% of the
-    // playing field stays unobstructed — critical for fast Frenzy chains
-    // where the player needs to see next-move options while a combo is
-    // mid-animation. Centered-over-board (the previous treatment) blocked
-    // the prime sight line.
-    return (
+    // Portal at viewport top so the banner clears the board entirely.
+    // Frenzy players were reporting the banner blocked the upper rows
+    // of the board mid-chain — moving it above the board (paired with
+    // ShapeAnnouncement at 10vh + power-tile creation at 20vh) keeps
+    // the sight line clear during rapid swap sequences.
+    return createPortal(
         <div
-            className="absolute left-0 right-0 top-0 flex flex-col items-center pointer-events-none z-40 combo-banner-enter px-2 pt-1"
+            className="fixed left-0 right-0 flex flex-col items-center pointer-events-none combo-banner-enter px-2"
+            style={{ top: "4vh", zIndex: 74 }}
         >
             {/* Static radial background flash — sized to the banner's
-                bounding box rather than the whole board so it tracks the
-                repositioned text instead of lighting up the playing field. */}
+                bounding box so it tracks the floating text instead of
+                lighting up the page behind it. */}
             <div
                 className="absolute inset-x-0 top-0 bottom-0 opacity-30"
                 style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 70%)` }}
@@ -639,7 +641,8 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
             >
                 x{effect.combo} COMBO
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
