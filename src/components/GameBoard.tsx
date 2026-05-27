@@ -551,36 +551,24 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
  * the pre-juice production banner exactly.
  */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
+    // All hooks called unconditionally before any early return —
+    // React error #310 fires if hook count varies across renders.
+    // Previously: useState + useEffect → early return → useMemo. On
+    // the mount tick that flipped `mounted` to true, useMemo was
+    // suddenly called when it hadn't been on the prior render.
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
-    if (effect.combo < 2 || !mounted) return null;
 
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
-    //
-    // All tiers share the "layered" treatment that RAD! had: WHITE fill
-    // + tier-colored stroke + matching solid drop-shadow underneath.
-    // The white body + colored outline + colored shadow band gives the
-    // text a stacked, dimensional read that solid-color fills (the old
-    // VIBES / ELECTRIC / MAX STOKED treatment) didn't have.
     const COMBO_TIERS = [
         // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
-        // overflows the viewport on mobile. Drop to text-3xl on phones
-        // (still chunky enough to read as a combo banner) while keeping
-        // text-7xl on sm+ where there's room.
+        // overflows the viewport on mobile. Drop to text-3xl on phones.
         { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!!!!",   fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        // Combo 4 also rotates — ELECTRIC!!! / YUUUUSSSS!!! per banner.
         { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
         { minCombo: 3, label: "EPIC!!",           fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
-        // Combo 2 rotates between RAD!/DOPE!/SICK! per banner — `labelPool`
-        // overrides `label` when present. Pick is locked per-banner via
-        // useMemo below so it doesn't flicker mid-animation.
-        //
-        // Orange/red palette — the GVC brand orange (#FF5F1F). Has enough
-        // saturation to contrast cleanly against the white text body
-        // without the legibility issues yellow had.
         { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
@@ -597,6 +585,9 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         return tier.label;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effect.timestamp]);
+
+    // Early return AFTER all hooks — preserves stable hook order.
+    if (effect.combo < 2 || !mounted) return null;
 
     // Portal at viewport top so the banner clears the board entirely.
     // Frenzy players were reporting the banner blocked the upper rows
