@@ -89,6 +89,18 @@ export default function AppClient() {
   const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const [prizeOnboarding, setPrizeOnboarding] = useState<null | { variant: "running-low" | "capped"; remaining: number }>(null);
   const [showReroll, setShowReroll] = useState(false);
+  // WalletProvider lazy-mount gate. Mounting WagmiProvider +
+  // QueryClientProvider + RainbowKitProvider at root on every render
+  // was the dominant mobile-perf regression vs the Frenzy branch — even
+  // when no wallet UI was visible. Defer mount until a wallet-using
+  // surface actually needs the context, then stay mounted for the
+  // session so connection state persists across modal opens.
+  const [walletReady, setWalletReady] = useState(false);
+  useEffect(() => {
+    if (showReroll || showBuyPrizeGames) {
+      setWalletReady(true);
+    }
+  }, [showReroll, showBuyPrizeGames]);
   const trackLabelTimeout = useRef<NodeJS.Timeout | null>(null);
   const game = useGame();
   const pinBook = usePinBook();
@@ -671,17 +683,18 @@ export default function AppClient() {
   const movesLeft = game.state?.movesLeft ?? 30;
   const combo = game.state?.combo ?? 0;
 
-  return (
-    // Hoisted to root so wallet state persists across modal opens.
-    // Each per-modal WalletProvider used to spin up its own WagmiProvider
-    // context that died when the modal closed — players saw "disconnected"
-    // every time they reopened ProfileModal even though their wallet was
-    // still authorized. With a single provider at root, the wagmi state
-    // lives for the whole session and all wallet-aware children
-    // (ProfileModal, RerollModal, PrizeShopDrawer, VibestrHolderProbe)
-    // share it.
-    <WalletProvider>
-      <main className="min-h-screen bg-[#050505] relative">
+  // Lazy-wrap the entire tree in WalletProvider only once a wallet
+  // flow is requested. Wagmi + RainbowKit + QueryClient mounting at
+  // root was running react-context machinery + RainbowKit DOM injection
+  // on every parent render during gameplay, which on iPhone Safari
+  // showed up as a measurable mobile lag vs the Frenzy branch. Once
+  // mounted, the provider stays mounted for the session so wallet
+  // connection state persists across modal opens (the original reason
+  // for hoisting it). Wallet-aware modals (Reroll, BuyPrizeGames,
+  // ProfileModal, etc.) all live inside `inner`, so once the wrap
+  // flips on they get the context they expect.
+  const inner = (
+    <main className="min-h-screen bg-[#050505] relative">
 
       {view === "playing" && <FlameBackground />}
       <AnimatePresence mode="wait">
@@ -1436,6 +1449,7 @@ export default function AppClient() {
         )}
       </AnimatePresence>
       </main >
-    </WalletProvider>
   );
+
+  return walletReady ? <WalletProvider>{inner}</WalletProvider> : inner;
 }
