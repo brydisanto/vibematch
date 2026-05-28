@@ -408,25 +408,30 @@ function Insertions() {
         },
         {
             n: 3,
-            title: "Custom Event Leaderboard + Prizes",
-            body: "A live leaderboard ranks the top collectors of your custom pin during the event window. You supply the prize pool: NFTs, allowlist slots, cash, merch, your call. Top finders earn real rewards from your community.",
-            example: "OpenSea contributed NFT prizes for top “Aye Aye, Captain!” pin finders",
-            preview: "leaderboard",
+            title: "Live Event Banner in the Header",
+            body: "An event banner sits in the desktop header during your event. Tapping it slides out an event drawer with more details about the event and partnership.",
+            preview: "eventBanner",
         },
         {
             n: 4,
+            title: "Dedicated Event Drawer",
+            body: "Tapping the banner opens a full-width drawer with your branded hero, event details, live countdown, real-time collector count, player stats & ranks, and the top-50 leaderboard. You supply the prize pool: NFTs, allowlist slots, cash, merch, your call.",
+            preview: "eventDrawer",
+        },
+        {
+            n: 5,
             title: "Permanent Spot in Player Trophy Cases",
             body: "Your pin drops from capsules during the event and is collected by players. Every player who finds one gets a permanent badge in their public profile's Trophy Case that flexes their rank and accumulation.",
             preview: "trophy",
         },
         {
-            n: 5,
+            n: 6,
             title: "Custom Board Background",
             body: "We can collaborate on a custom board wrap that sits behind the game's playing surface. This is especially visible for desktop players.",
             preview: "board",
         },
         {
-            n: 6,
+            n: 7,
             title: "Custom Logo Treatment",
             body: "We can add your logo alongside Pin Drop on the gameplay screen.",
             preview: "logo",
@@ -436,12 +441,12 @@ function Insertions() {
         <section className="py-16 sm:py-24">
             <SectionEyebrow label="The Surface Area" />
             <h2 className="font-display font-black text-white text-3xl sm:text-5xl tracking-tight mb-3 max-w-[820px]">
-                Six ways your community can live inside Pin Drop.
+                Seven ways your community can live inside Pin Drop.
             </h2>
             <p className="font-mundial text-white/55 text-sm sm:text-base max-w-[760px] mb-12">
-                Every partnership can leverage six placements. We shape them to your
-                brand and event. See below for examples of how OpenSea did it for
-                their launch event with us.
+                Every partnership can leverage seven placements. We shape them to
+                your brand and event. See below for examples of how OpenSea did it
+                for their launch event with us.
             </p>
             <div className="space-y-4">
                 {items.map((item) => (
@@ -452,7 +457,7 @@ function Insertions() {
     );
 }
 
-type PreviewType = "pin" | "capsulePull" | "leaderboard" | "trophy" | "board" | "logo";
+type PreviewType = "pin" | "capsulePull" | "eventBanner" | "eventDrawer" | "leaderboard" | "trophy" | "board" | "logo";
 
 type InsertionItem = {
     n: number;
@@ -522,6 +527,10 @@ function InsertionPreview({ type }: { type: PreviewType }) {
             return <PinPreview />;
         case "capsulePull":
             return <CapsulePullPreview />;
+        case "eventBanner":
+            return <EventBannerPreview />;
+        case "eventDrawer":
+            return <EventDrawerPreview />;
         case "leaderboard":
             return <LeaderboardPreview />;
         case "trophy":
@@ -623,6 +632,193 @@ function CapsulePullPreview() {
                 >
                     New Pin Collected
                 </span>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function EventBannerPreview() {
+    // EVENT pill shown in context — sitting in a faux desktop header
+    // strip with the Pin Drop logo visible below so the surface reads as
+    // "lives at the top of the game" rather than a chip floating in space.
+    const sparkles = [
+        { top: "22%", left: "12%", size: 7, delay: "0s" },
+        { top: "60%", left: "44%", size: 5, delay: "0.9s" },
+        { top: "26%", left: "76%", size: 6, delay: "1.8s" },
+    ];
+    return (
+        <PreviewFrame pad={false}>
+            <div className="absolute inset-0 flex flex-col">
+                {/* Faux header strip — full-width dark bar with the EVENT
+                    pill centered, matching the real desktop marquee. */}
+                <div
+                    className="relative w-full flex items-center justify-center px-2 py-1.5"
+                    style={{
+                        background: "linear-gradient(180deg, #0a0418ee, #0a041877 80%, transparent)",
+                        borderBottom: `1px solid ${GOLD}22`,
+                    }}
+                >
+                    <span
+                        className="relative inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] overflow-hidden"
+                        style={{
+                            background: `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
+                            border: `1px solid ${GOLD}66`,
+                            boxShadow: `0 0 8px ${GOLD}33`,
+                        }}
+                    >
+                        {sparkles.map((s, i) => (
+                            <svg
+                                key={i}
+                                aria-hidden
+                                className="pointer-events-none absolute"
+                                viewBox="0 0 24 24"
+                                style={{
+                                    top: s.top,
+                                    left: s.left,
+                                    width: s.size,
+                                    height: s.size,
+                                    animation: `sparkle-twinkle 2.7s ease-in-out ${s.delay} infinite both`,
+                                    filter: `drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px ${GOLD})`,
+                                }}
+                            >
+                                <path
+                                    d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
+                                    fill="#ffffff"
+                                />
+                            </svg>
+                        ))}
+                        <span
+                            className="relative font-display font-black text-[7px] tracking-[0.2em]"
+                            style={{ color: GOLD }}
+                        >
+                            EVENT LIVE
+                        </span>
+                        <span
+                            className="relative inline-block h-2.5 w-px"
+                            style={{ background: `${GOLD}55` }}
+                        />
+                        <Image
+                            src="/badges/promo/opensea.webp"
+                            alt=""
+                            width={11}
+                            height={11}
+                            className="relative object-contain shrink-0"
+                            unoptimized
+                        />
+                        <span className="relative font-display font-black text-[7px] tracking-[0.16em] uppercase text-white/85">
+                            OpenSea
+                        </span>
+                    </span>
+                </div>
+                {/* Pin Drop logo area below — gives the banner context as
+                    "lives above the play area". */}
+                <div className="flex-1 flex items-center justify-center relative">
+                    <Image
+                        src="/assets/logo-v3.png"
+                        alt=""
+                        width={130}
+                        height={114}
+                        className="object-contain opacity-90"
+                        style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" }}
+                    />
+                </div>
+            </div>
+        </PreviewFrame>
+    );
+}
+
+function EventDrawerPreview() {
+    // Compressed mockup of the EventDrawer hero: blue radial glow, EVENT
+    // LIVE pill, partner pin, partner name, event title, countdown digits.
+    // Wrapped in a blue-bordered drawer chrome (top-rounded with a drag
+    // handle) so the preview reads as the actual drawer surface, not just
+    // a static card.
+    const cells = [
+        { v: "11", l: "D" },
+        { v: "21", l: "H" },
+        { v: "42", l: "M" },
+    ];
+    return (
+        <PreviewFrame pad={false} accent={OS_BLUE}>
+            <div
+                className="absolute inset-x-2 bottom-2 top-4 rounded-t-2xl overflow-hidden flex flex-col items-center pt-2 pb-2 px-2"
+                style={{
+                    background: "linear-gradient(180deg, #0e0820 0%, #0a0418 100%)",
+                    border: `1.5px solid ${OS_BLUE}88`,
+                    borderBottom: "none",
+                    boxShadow: `0 -6px 18px -6px ${OS_BLUE}88, inset 0 0 30px ${OS_BLUE}14`,
+                }}
+            >
+                {/* Drag handle to signal "drawer". */}
+                <div
+                    className="rounded-full mb-1"
+                    style={{ width: 22, height: 3, background: "rgba(255,255,255,0.18)" }}
+                />
+                <div
+                    className="flex-1 w-full flex flex-col items-center justify-center"
+                    style={{
+                        background: `radial-gradient(ellipse 80% 60% at 50% 10%, ${OS_BLUE}33 0%, transparent 70%)`,
+                    }}
+                >
+                {/* EVENT LIVE pill at top */}
+                <span
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-[2px] mb-1.5"
+                    style={{
+                        background: `linear-gradient(180deg, ${GOLD}1f, ${GOLD}0a)`,
+                        border: `1px solid ${GOLD}66`,
+                    }}
+                >
+                    <span className="block w-[3px] h-[3px] rounded-full" style={{ background: OS_BLUE, boxShadow: `0 0 4px ${OS_BLUE}` }} />
+                    <span className="font-display font-black text-[6px] tracking-[0.18em]" style={{ color: GOLD }}>EVENT LIVE</span>
+                </span>
+                {/* Pin */}
+                <Image
+                    src="/badges/promo/opensea.webp"
+                    alt=""
+                    width={42}
+                    height={42}
+                    className="object-contain"
+                    unoptimized
+                    style={{ filter: `drop-shadow(0 4px 10px ${OS_BLUE}88)` }}
+                />
+                {/* Partner */}
+                <div className="font-mundial text-[7px] tracking-[0.2em] uppercase text-white/45 mt-1.5">
+                    OpenSea
+                </div>
+                {/* Title */}
+                <div
+                    className="font-display font-black text-white text-[10px] leading-tight text-center mt-0.5 mb-1.5"
+                    style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
+                >
+                    Aye Aye, Captain!
+                </div>
+                {/* Countdown digits */}
+                <div className="flex items-end gap-1 tabular-nums">
+                    {cells.map((c, i) => (
+                        <div key={c.l} className="flex items-end gap-1">
+                            <div className="flex flex-col items-center">
+                                <div
+                                    className="font-display font-black leading-none text-[11px]"
+                                    style={{ color: OS_BLUE, textShadow: `0 0 6px ${OS_BLUE}55` }}
+                                >
+                                    {c.v}
+                                </div>
+                                <div className="font-display text-white/40 text-[5px] tracking-[0.2em] mt-[1px]">
+                                    {c.l}
+                                </div>
+                            </div>
+                            {i < cells.length - 1 && (
+                                <div
+                                    className="font-display font-black text-[10px] leading-none pb-2"
+                                    style={{ color: `${OS_BLUE}55` }}
+                                >
+                                    :
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                </div>
             </div>
         </PreviewFrame>
     );
