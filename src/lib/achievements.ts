@@ -550,6 +550,27 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 3,
         order: 22,
     },
+    // ── Lowball quests ──────────────────────────────────────────────
+    // Self-deprecating participation rewards. Score under 7,500 in a
+    // single game — bad enough to mean it on purpose.
+    {
+        id: "lowball_classic",
+        category: "mastery",
+        icon: "🫠",
+        title: "Off Day",
+        description: "Score under 7,500 in a single Classic game",
+        capsules: 1,
+        order: 22.5,
+    },
+    {
+        id: "lowball_frenzy",
+        category: "mastery",
+        icon: "🐢",
+        title: "Slow Lane",
+        description: "Score under 7,500 in a single Frenzy game",
+        capsules: 1,
+        order: 22.6,
+    },
     {
         id: "l_shapes_3",
         category: "mastery",
@@ -996,6 +1017,12 @@ export function checkAchievements(
     check("frenzy_690k", isFrenzy && stats.score >= 690000);
     check("frenzy_750k", isFrenzy && stats.score >= 750000);
     check("frenzy_1m", isFrenzy && stats.score >= 1000000);
+    // Lowball quests — require at least one match played so empty
+    // "started and quit" games don't auto-unlock. Single match counts
+    // as "you tried" without giving away the gag.
+    const playedAtLeastOnce = stats.matchCount > 0;
+    check("lowball_classic", isClassic && playedAtLeastOnce && stats.score < 7500);
+    check("lowball_frenzy", isFrenzy && playedAtLeastOnce && stats.score < 7500);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
