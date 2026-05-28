@@ -63,21 +63,23 @@ const THRESHOLDS_BY_MODE = {
         scorePerMatchImpossible: 4800,
     },
     frenzy: {
-        // Frenzy ceiling is meaningfully lower than Classic — a god-tier
-        // 120s round with sustained TURBO peaks around 250-300K. Above
-        // 500K is mathematically implausible.
-        score: 300_000,
-        combo: 25,
-        cascades: 80,
-        bombs: 25,
-        matches: 400,
-        vibestreaks: 20,
-        cosmicBlasts: 15,
-        // TURBO 3x baselines legitimate score/match into 1500-3000.
-        // Bot signal lives well above that.
-        scorePerMatch: 3500,
-        scoreImpossible: 500_000,
-        scorePerMatchImpossible: 8000,
+        // Frenzy scores have come in noticeably higher than pre-launch
+        // projections — TURBO 3x sustained + bonus-time stacking lets
+        // top players push well past Classic numbers. Thresholds are
+        // tuned wider than Classic to match observed runs; tighten once
+        // we have more leaderboard data to read off.
+        score: 750_000,
+        combo: 30,
+        cascades: 200,
+        bombs: 50,
+        matches: 800,
+        vibestreaks: 35,
+        cosmicBlasts: 25,
+        // TURBO 3x + cascade chains baseline legit score/match into the
+        // 3000-5000 range; bot signal lives well above that.
+        scorePerMatch: 6000,
+        scoreImpossible: 1_200_000,
+        scorePerMatchImpossible: 15000,
     },
 } as const;
 

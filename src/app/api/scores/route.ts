@@ -37,10 +37,12 @@ const BEHAVIORAL_CUTOFFS = {
 // from 500K alongside the scoring system change (base scores +50%, combo
 // multiplier 0.75x → 1.0x).
 const MAX_PLAUSIBLE_SCORE = 800_000;
-// Frenzy ceiling: a god-tier 60s round with full bonus-time + heat 2x
-// sustained shouldn't crack ~300K. 500K leaves headroom for tuning the
-// scoring math without us needing to bump this immediately.
-const MAX_PLAUSIBLE_FRENZY_SCORE = 500_000;
+// Frenzy ceiling: legit scores have come in noticeably higher than
+// pre-launch projections — TURBO 3x sustained + bonus-time stacking
+// pushes the top of the curve well above the initial 500K guess.
+// 1.5M gives runway for top players without flagging real god-tier
+// runs as forgeries.
+const MAX_PLAUSIBLE_FRENZY_SCORE = 1_500_000;
 // Generous upper bound on round duration. Clock cap is 2:30 (FRENZY_MAX_MS),
 // plus board-load grace + final cascade resolving = ~30s buffer.
 const MAX_FRENZY_ROUND_MS = FRENZY_MAX_MS + 30_000;
