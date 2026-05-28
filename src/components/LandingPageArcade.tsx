@@ -148,7 +148,7 @@ function ModeChip({ mode }: { mode: string }) {
     const map: Record<string, { letter: string; bg: string; fg: string }> = {
         classic: { letter: "C", bg: GOLD, fg: "#1A0E02" },
         daily: { letter: "D", bg: COSMIC, fg: "#FFFFFF" },
-        frenzy: { letter: "F", bg: TOKEN_RED, fg: "#1A0E02" },
+        frenzy: { letter: "F", bg: ORANGE_LIGHT, fg: "#1A0E02" },
     };
     const m = map[mode] || map.classic;
     return (
@@ -1613,17 +1613,17 @@ export default function LandingPageArcade({
                                     onClick={() => setLeaderboardTab("frenzy")}
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.12]"
                                     style={{
-                                        background: `linear-gradient(180deg, ${TOKEN_RED}1A, ${TOKEN_RED}08)`,
-                                        border: `1px solid ${TOKEN_RED}44`,
+                                        background: `linear-gradient(180deg, ${ORANGE_LIGHT}1A, ${ORANGE_LIGHT}08)`,
+                                        border: `1px solid ${ORANGE_LIGHT}44`,
                                     }}
                                 >
                                     <div
                                         className="font-display font-black text-[14px] tabular-nums leading-none"
-                                        style={{ color: TOKEN_RED }}
+                                        style={{ color: ORANGE_LIGHT }}
                                     >
                                         {frenzyRank !== null ? `#${frenzyRank}` : "—"}
                                     </div>
-                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${TOKEN_RED}cc` }}>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE_LIGHT}cc` }}>
                                         FRENZY RANK
                                     </div>
                                 </button>
@@ -1648,7 +1648,7 @@ export default function LandingPageArcade({
                                         {streak}
                                     </div>
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE}cc` }}>
-                                        # DAY STREAK
+                                        DAY STREAK
                                     </div>
                                 </div>
                                 <div
@@ -1675,13 +1675,13 @@ export default function LandingPageArcade({
                                 <div
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
                                     style={{
-                                        background: `linear-gradient(180deg, ${TOKEN_RED}1A, ${TOKEN_RED}08)`,
-                                        border: `1px solid ${TOKEN_RED}44`,
+                                        background: `linear-gradient(180deg, ${ORANGE_LIGHT}1A, ${ORANGE_LIGHT}08)`,
+                                        border: `1px solid ${ORANGE_LIGHT}44`,
                                     }}
                                 >
                                     <div
                                         className="font-display font-black text-[14px] tabular-nums leading-none"
-                                        style={{ color: TOKEN_RED }}
+                                        style={{ color: ORANGE_LIGHT }}
                                     >
                                         {frenzyBest > 0
                                             ? frenzyBest >= 1000
@@ -1689,7 +1689,7 @@ export default function LandingPageArcade({
                                                 : String(frenzyBest)
                                             : "—"}
                                     </div>
-                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${TOKEN_RED}cc` }}>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE_LIGHT}cc` }}>
                                         BEST SCORE
                                     </div>
                                 </div>
