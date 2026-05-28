@@ -15,7 +15,8 @@ interface DailyStats {
     date: string;
     dau: number;             // unique users with any activity that day
     newUsers: number;        // user_auth records with createdAt on this day
-    classicPlays: number;    // sum of game starts across all users
+    classicPlays: number;    // PURE classic plays (combined trackers minus frenzy subset)
+    frenzyPlays: number;     // frenzy plays (subset of the combined plays counter)
     capsulesEarned: number;  // sum of capsules awarded across all sources
     rerolls: number;         // count of reroll transactions
     vibestrSpent: number;    // sum of all tx amounts
@@ -68,6 +69,7 @@ export async function GET(req: Request) {
             users: Set<string>;
             newUsers: number;
             classicPlays: number;
+            frenzyPlays: number;
             capsulesEarned: number;
             vibestrSpent: number;
             rerolls: number;
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
         const ensure = (date: string) => {
             let b = buckets.get(date);
             if (!b) {
-                b = { users: new Set(), newUsers: 0, classicPlays: 0, capsulesEarned: 0, vibestrSpent: 0, rerolls: 0 };
+                b = { users: new Set(), newUsers: 0, classicPlays: 0, frenzyPlays: 0, capsulesEarned: 0, vibestrSpent: 0, rerolls: 0 };
                 buckets.set(date, b);
             }
             return b;
@@ -91,7 +93,13 @@ export async function GET(req: Request) {
             if (!data) continue;
             const b = ensure(date);
             b.users.add(username);
-            b.classicPlays += Number(data.classicPlays) || 0;
+            // The on-disk classicPlays counter is the combined classic+frenzy
+            // total used for cap enforcement. The chart shows them split, so
+            // subtract the frenzy subset off the classicPlays bucket here.
+            const combined = Number(data.classicPlays) || 0;
+            const frenzy = Number(data.frenzyPlays) || 0;
+            b.classicPlays += Math.max(0, combined - frenzy);
+            b.frenzyPlays += frenzy;
             b.capsulesEarned += Number(data.capsulesEarned) || 0;
         }
 
@@ -148,6 +156,7 @@ export async function GET(req: Request) {
                 dau: b ? b.users.size : 0,
                 newUsers: b ? b.newUsers : 0,
                 classicPlays: b ? b.classicPlays : 0,
+                frenzyPlays: b ? b.frenzyPlays : 0,
                 capsulesEarned: b ? b.capsulesEarned : 0,
                 rerolls: b ? b.rerolls : 0,
                 vibestrSpent: b ? Number(b.vibestrSpent.toFixed(2)) : 0,

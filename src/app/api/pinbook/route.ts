@@ -68,7 +68,7 @@ export interface PinBookData {
 }
 
 interface DailyTracker {
-    classicPlays: number;
+    classicPlays: number;       // combined classic + frenzy plays (cap enforcement)
     date: string;
     bonusPrizeGames?: number;   // additional prize games purchased today
     // ===== Daily activity counters =====
@@ -80,6 +80,11 @@ interface DailyTracker {
     capsulesOpened?: number;    // capsule open actions today
     pinsFound?: number;         // pins added to the pinbook today (any source)
     newPinsFound?: number;      // unique-to-pinbook pins added today
+    // Subset of classicPlays specifically for Frenzy. classicPlays
+    // continues to be the combined counter for daily cap enforcement;
+    // frenzyPlays lets the admin chart split the two modes. Pure
+    // Classic plays = classicPlays - (frenzyPlays || 0).
+    frenzyPlays?: number;
 }
 
 export function getTodayKey(username: string): string {
@@ -94,13 +99,16 @@ export async function getDailyTracker(username: string): Promise<DailyTracker> {
     return { classicPlays: 0, date: today, bonusPrizeGames: 0 };
 }
 
-async function incrementClassicPlays(username: string): Promise<DailyTracker> {
+async function incrementClassicPlays(username: string, mode: 'classic' | 'frenzy' = 'classic'): Promise<DailyTracker> {
     // Ensure the tracker exists with today's date (so bonusPrizeGames isn't lost on rollover)
     const key = getTodayKey(username);
     const existing = await getDailyTracker(username);
     const updated: DailyTracker = {
         ...existing,
         classicPlays: existing.classicPlays + 1,
+        // frenzyPlays is a subset of classicPlays — keep them in sync so
+        // `classicPlays - frenzyPlays` is always the pure Classic count.
+        frenzyPlays: (existing.frenzyPlays || 0) + (mode === 'frenzy' ? 1 : 0),
         date: existing.date,
         bonusPrizeGames: existing.bonusPrizeGames || 0,
     };
@@ -419,7 +427,7 @@ export async function POST(req: Request) {
                         bonusPrizeGames: tracker.bonusPrizeGames || 0,
                     }, { status: 429 });
                 }
-                const updated = await incrementClassicPlays(username);
+                const updated = await incrementClassicPlays(username, gameMode === 'frenzy' ? 'frenzy' : 'classic');
                 classicPlays = updated.classicPlays;
             }
 

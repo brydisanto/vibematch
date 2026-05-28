@@ -8,12 +8,13 @@ interface DailyStats {
     dau: number;
     newUsers: number;
     classicPlays: number;
+    frenzyPlays: number;
     capsulesEarned: number;
     rerolls: number;
     vibestrSpent: number;
 }
 
-type SeriesKey = "dau" | "newUsers" | "classicPlays" | "capsulesEarned" | "rerolls" | "vibestrSpent";
+type SeriesKey = "dau" | "newUsers" | "classicPlays" | "frenzyPlays" | "capsulesEarned" | "rerolls" | "vibestrSpent";
 
 interface SeriesDef {
     key: SeriesKey;
@@ -25,7 +26,8 @@ interface SeriesDef {
 const SERIES: SeriesDef[] = [
     { key: "dau", label: "DAU", color: "#B366FF" },
     { key: "newUsers", label: "New Users", color: "#22D3EE" },
-    { key: "classicPlays", label: "Games Played", color: "#FFE048" },
+    { key: "classicPlays", label: "Classic Plays", color: "#FFE048" },
+    { key: "frenzyPlays", label: "Frenzy Plays", color: "#FF3B30" },
     { key: "capsulesEarned", label: "Capsules Earned", color: "#4ADE80" },
     { key: "rerolls", label: "Rerolls", color: "#FF8C42" },
     { key: "vibestrSpent", label: "$VIBESTR Spent", color: "#FF6B9D", format: (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
@@ -49,6 +51,7 @@ export default function DailyStatsChart() {
         dau: true,
         newUsers: true,
         classicPlays: true,
+        frenzyPlays: true,
         capsulesEarned: true,
         rerolls: true,
         vibestrSpent: true,
