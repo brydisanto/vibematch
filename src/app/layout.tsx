@@ -30,7 +30,12 @@ export const metadata: Metadata = {
   description: "Match-3 puzzle game featuring GVC pins. Match pins, score big, climb the leaderboard.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192x192.png",
+    // Browser tab favicon = GVC shaka pin (typed PNG, served from public/).
+    // The Next.js App Router file convention (src/app/icon.png) didn't
+    // auto-emit a <link rel="icon"> in the deployed HTML, so we declare
+    // it explicitly here. PWA install / home-screen icons come from
+    // manifest.json + apple-touch-icon and use the Pin Drop logo.
+    icon: [{ url: "/icon-favicon.png", type: "image/png", sizes: "256x256" }],
     apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
