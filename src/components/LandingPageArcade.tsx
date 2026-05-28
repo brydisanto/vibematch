@@ -148,7 +148,7 @@ function ModeChip({ mode }: { mode: string }) {
     const map: Record<string, { letter: string; bg: string; fg: string }> = {
         classic: { letter: "C", bg: GOLD, fg: "#1A0E02" },
         daily: { letter: "D", bg: COSMIC, fg: "#FFFFFF" },
-        frenzy: { letter: "F", bg: ORANGE_LIGHT, fg: "#1A0E02" },
+        frenzy: { letter: "F", bg: ORANGE, fg: "#1A0E02" },
     };
     const m = map[mode] || map.classic;
     return (
@@ -553,7 +553,7 @@ export default function LandingPageArcade({
             } else if (run.mode === "daily" && dateStr === todayStr) {
                 tag = "TODAY";
             }
-            const label = run.mode === "daily" ? "Daily" : "Classic";
+            const label = run.mode === "daily" ? "Daily" : run.mode === "frenzy" ? "Frenzy" : "Classic";
             return { ...run, label, tag };
         });
     }, [recentRuns, personalBest]);
@@ -1613,17 +1613,17 @@ export default function LandingPageArcade({
                                     onClick={() => setLeaderboardTab("frenzy")}
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.12]"
                                     style={{
-                                        background: `linear-gradient(180deg, ${ORANGE_LIGHT}1A, ${ORANGE_LIGHT}08)`,
-                                        border: `1px solid ${ORANGE_LIGHT}44`,
+                                        background: `linear-gradient(180deg, ${ORANGE}1A, ${ORANGE}08)`,
+                                        border: `1px solid ${ORANGE}44`,
                                     }}
                                 >
                                     <div
                                         className="font-display font-black text-[14px] tabular-nums leading-none"
-                                        style={{ color: ORANGE_LIGHT }}
+                                        style={{ color: ORANGE }}
                                     >
                                         {frenzyRank !== null ? `#${frenzyRank}` : "—"}
                                     </div>
-                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE_LIGHT}cc` }}>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE}cc` }}>
                                         FRENZY RANK
                                     </div>
                                 </button>
@@ -1675,13 +1675,13 @@ export default function LandingPageArcade({
                                 <div
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center"
                                     style={{
-                                        background: `linear-gradient(180deg, ${ORANGE_LIGHT}1A, ${ORANGE_LIGHT}08)`,
-                                        border: `1px solid ${ORANGE_LIGHT}44`,
+                                        background: `linear-gradient(180deg, ${ORANGE}1A, ${ORANGE}08)`,
+                                        border: `1px solid ${ORANGE}44`,
                                     }}
                                 >
                                     <div
                                         className="font-display font-black text-[14px] tabular-nums leading-none"
-                                        style={{ color: ORANGE_LIGHT }}
+                                        style={{ color: ORANGE }}
                                     >
                                         {frenzyBest > 0
                                             ? frenzyBest >= 1000
@@ -1689,7 +1689,7 @@ export default function LandingPageArcade({
                                                 : String(frenzyBest)
                                             : "—"}
                                     </div>
-                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE_LIGHT}cc` }}>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE}cc` }}>
                                         BEST SCORE
                                     </div>
                                 </div>
@@ -1890,12 +1890,12 @@ export default function LandingPageArcade({
                                             className="rounded-lg px-1.5 py-2 text-center"
                                             style={{
                                                 background: "rgba(255,255,255,0.04)",
-                                                border: `1px solid ${ORANGE}33`,
+                                                border: `1px solid ${COSMIC}33`,
                                             }}
                                         >
                                             <div
                                                 className="font-display font-black text-[14px] tabular-nums leading-none"
-                                                style={{ color: ORANGE }}
+                                                style={{ color: COSMIC }}
                                             >
                                                 {dailyStats.topScore !== null
                                                     ? dailyStats.topScore >= 1000
@@ -1903,7 +1903,7 @@ export default function LandingPageArcade({
                                                         : String(dailyStats.topScore)
                                                     : "—"}
                                             </div>
-                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${ORANGE}cc` }}>
+                                            <div className="font-display text-[8px] tracking-[0.12em] mt-1" style={{ color: `${COSMIC}cc` }}>
                                                 TOP SCORE
                                             </div>
                                         </div>
@@ -1997,10 +1997,12 @@ export default function LandingPageArcade({
                                             const labelColor = i === 0 && run.tag === "NEW BEST"
                                                 ? GOLD
                                                 : run.mode === "daily"
-                                                    ? ORANGE
-                                                    : i < 2
-                                                        ? "#ffffff88"
-                                                        : "#ffffff55";
+                                                    ? COSMIC
+                                                    : run.mode === "frenzy"
+                                                        ? ORANGE
+                                                        : i < 2
+                                                            ? "#ffffff88"
+                                                            : "#ffffff55";
                                             return (
                                                 <div
                                                     key={`${run.timestamp}-${i}`}
