@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { GameState } from "@/lib/gameEngine";
+import { GameState, frenzyCapsulesForScore } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 import { RotateCcw, Home, Target, Flame, Zap, ScrollText } from "lucide-react";
 import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
@@ -581,17 +581,25 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     // errors (immediate + 500ms + 1500ms + 4000ms) so a transient blip
     // doesn't silently drop the leaderboard write. 4xx responses are
     // terminal — they come from server-side anti-cheat / "skipped" paths
-    // and retrying won't change the outcome.
+    // and retrying won't change the outcome. Frenzy includes start +
+    // end timestamps so the server can reject any submission that claims
+    // to have completed faster than FRENZY_MIN_ROUND_MS.
     useEffect(() => {
         if (!(score > 0 && userProfile?.username)) return;
         let cancelled = false;
         const RETRY_DELAYS_MS = [500, 1500, 4000];
-        const payload = JSON.stringify({
+        const body: Record<string, unknown> = {
             username: userProfile.username,
             mode: gameMode,
             score: score,
             matchId: matchId,
-        });
+        };
+        if (gameMode === "frenzy") {
+            body.roundStartedAt = state.frenzyStartedAt;
+            body.roundEndedAt = Date.now();
+            body.bonusMsEarned = state.frenzyBonusMsEarned;
+        }
+        const payload = JSON.stringify(body);
         const submit = async () => {
             for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt++) {
                 if (cancelled) return;
@@ -635,11 +643,16 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
         };
         submit();
         return () => { cancelled = true; };
-    }, [score, gameMode, userProfile?.username, matchId]);
+    }, [score, gameMode, userProfile?.username, state.frenzyStartedAt, state.frenzyBonusMsEarned, matchId]);
 
-    // Capsule count derived from score thresholds (mirrors server logic in /api/pinbook/earn).
-    const capsuleCount = score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0;
-    const canShare = score >= 15000 && !!userProfile?.username;
+    // Capsule count derived from score thresholds (mirrors server logic
+    // in /api/pinbook/earn). Frenzy uses its own ladder via
+    // frenzyCapsulesForScore — see gameEngine.ts.
+    const capsuleCount = gameMode === "frenzy"
+        ? frenzyCapsulesForScore(score)
+        : (score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0);
+    const shareScoreFloor = gameMode === "frenzy" ? 30000 : 15000;
+    const canShare = score >= shareScoreFloor && !!userProfile?.username;
 
     const handleShareX = () => {
         if (!canShare) return;
@@ -744,7 +757,21 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                             {rank.label}
                         </motion.div>
 
-                        {/* No valid moves explanation */}
+                        {/* Game over reason — frenzy time expired wins out
+                            over no-valid-moves since time can run out mid-
+                            cascade and we want the player to see the right
+                            cause. */}
+                        {gameOverReason === "time_expired" && (
+                            <motion.div
+                                className="text-[#FFE048]/80 text-[10px] sm:text-xs font-mundial font-black tracking-wider uppercase mb-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.7 }}
+                                style={{ textShadow: "0 0 12px rgba(255,224,72,0.4)" }}
+                            >
+                                Time&apos;s up
+                            </motion.div>
+                        )}
                         {gameOverReason === "no_valid_moves" && (
                             <motion.div
                                 className="text-white/40 text-[10px] sm:text-xs font-mundial tracking-wider uppercase mb-1"

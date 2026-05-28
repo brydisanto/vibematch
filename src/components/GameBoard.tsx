@@ -2,11 +2,12 @@
 
 import { Cell, Position, SpecialTileType } from "@/lib/gameEngine";
 import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
-import { ScorePopup, MatchEffect } from "@/lib/useGame";
+import { ScorePopup, MatchEffect, TimePenaltyPopup } from "@/lib/useGame";
 import { memo, useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 const EMPTY_HINT_SET = new Set<string>();
+const EMPTY_TIME_PENALTY_POPUPS: TimePenaltyPopup[] = [];
 
 /* ===== EFFECT PRIORITY SYSTEM ===== */
 const EFFECT_PRIORITY: Record<string, number> = {
@@ -43,6 +44,18 @@ interface GameBoardProps {
     invalidSwapCells?: { row: number; col: number }[] | null;
     swapAnim?: { pos1: Position; pos2: Position } | null;
     isPrizeGame?: boolean;
+    /** Active game mode. Used to gate Frenzy-specific UI (penalty
+     *  popups + flash) and to suppress mode-inappropriate effects
+     *  (e.g., score-milestone banners are noisy in Frenzy where the
+     *  player is already chasing a moving clock). */
+    gameMode?: "classic" | "daily" | "frenzy";
+    /** Timestamp of the most recent Frenzy time penalty. Drives a brief
+     *  red full-board wash so the -1s clock loss reads visually. Null
+     *  when no penalty is active. */
+    frenzyPenaltyAt?: number | null;
+    /** Flying "-1 SECOND" bubbles for the Frenzy penalty. Each pops at
+     *  the midpoint of the offending swap and flies to the HUD timer. */
+    timePenaltyPopups?: TimePenaltyPopup[];
     /** Optional behavioral-telemetry hook. Called on every PointerDown
      *  with `e.isTrusted` so useGame can flag synthetic-input games for
      *  the bot-detection audit log. */
@@ -299,11 +312,12 @@ function TileMatchFlash({ effect, cellSize, gridOffset }: { effect: MatchEffect;
                 >
                     <div
                         style={{
-                            width: cellSize * 0.9,
-                            height: cellSize * 0.9,
+                            width: cellSize * 1.1,
+                            height: cellSize * 1.1,
                             transform: "translateX(-50%) translateY(-50%)",
-                            background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,224,72,0.6) 45%, transparent 70%)",
+                            background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 30%, rgba(255,224,72,0.65) 55%, transparent 75%)",
                             borderRadius: "50%",
+                            boxShadow: "0 0 18px rgba(255,224,72,0.55)",
                         }}
                     />
                 </div>
@@ -463,6 +477,8 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * "I just made this."
  */
 function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const created = effect.specialTilesCreated;
     if (!created || created.length === 0 || cellSize === 0) return null;
 
@@ -506,35 +522,31 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
                 );
             })}
 
-            {/* Slammed-in headline label, screen-center. Uses the same
-                layered treatment as the combo banners: white fill +
-                tier-colored stroke + solid drop-shadow band beneath in
-                the same color, so the text reads as four stacked layers
-                (white body → colored outline → colored shadow band →
-                blurry black shadow). */}
-            {/* Anchored near the TOP of the board (not screen-center)
-                so it doesn't collide with the centered combo banner
-                when a single move both spawns a power tile AND lands
-                a 2+ combo (common — 4-match always does both). The
-                power tile label gets the top zone; combo stays
-                centered; both readable simultaneously. */}
-            <div
-                className="absolute left-0 right-0 flex justify-center pointer-events-none z-39 power-tile-create-label"
-                style={{ top: "6%" }}
-            >
+            {/* Slammed-in headline label, portal'd to the viewport-top
+                stack so it doesn't overlay the playing field. Stacks
+                below shape (10vh) and combo (16vh), out of the
+                playing field but close enough to read in the same
+                glance as the score. */}
+            {mounted && createPortal(
                 <div
-                    className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
-                    style={{
-                        color: "#FFFFFF",
-                        WebkitTextStroke: `5px ${headline.color}`,
-                        paintOrder: "stroke fill",
-                        textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
-                        letterSpacing: "-0.01em",
-                    }}
+                    className="fixed left-0 right-0 flex justify-center pointer-events-none power-tile-create-label"
+                    style={{ top: "22vh", zIndex: 73 }}
                 >
-                    {headline.label}
-                </div>
-            </div>
+                    <div
+                        className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
+                        style={{
+                            color: "#FFFFFF",
+                            WebkitTextStroke: `5px ${headline.color}`,
+                            paintOrder: "stroke fill",
+                            textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
+                            letterSpacing: "-0.01em",
+                        }}
+                    >
+                        {headline.label}
+                    </div>
+                </div>,
+                document.body
+            )}
         </>
     );
 }
@@ -549,34 +561,24 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
  * the pre-juice production banner exactly.
  */
 function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
-    if (effect.combo < 2) return null;
+    // All hooks called unconditionally before any early return —
+    // React error #310 fires if hook count varies across renders.
+    // Previously: useState + useEffect → early return → useMemo. On
+    // the mount tick that flipped `mounted` to true, useMemo was
+    // suddenly called when it hadn't been on the prior render.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
-    //
-    // All tiers share the "layered" treatment that RAD! had: WHITE fill
-    // + tier-colored stroke + matching solid drop-shadow underneath.
-    // The white body + colored outline + colored shadow band gives the
-    // text a stacked, dimensional read that solid-color fills (the old
-    // VIBES / ELECTRIC / MAX STOKED treatment) didn't have.
     const COMBO_TIERS = [
         // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
-        // overflows the viewport on mobile. Drop to text-3xl on phones
-        // (still chunky enough to read as a combo banner) while keeping
-        // text-7xl on sm+ where there's room.
+        // overflows the viewport on mobile. Drop to text-3xl on phones.
         { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!!!!",   fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        // Combo 4 also rotates — ELECTRIC!!! / YUUUUSSSS!!! per banner.
         { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
         { minCombo: 3, label: "EPIC!!",           fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
-        // Combo 2 rotates between RAD!/DOPE!/SICK! per banner — `labelPool`
-        // overrides `label` when present. Pick is locked per-banner via
-        // useMemo below so it doesn't flicker mid-animation.
-        //
-        // Orange/red palette — the GVC brand orange (#FF5F1F). Has enough
-        // saturation to contrast cleanly against the white text body
-        // without the legibility issues yellow had.
         { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
@@ -594,15 +596,25 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effect.timestamp]);
 
-    return (
+    // Early return AFTER all hooks — preserves stable hook order.
+    if (effect.combo < 2 || !mounted) return null;
+
+    // Portal at viewport top so the banner clears the board entirely.
+    // Frenzy players were reporting the banner blocked the upper rows
+    // of the board mid-chain — settling into the gap between the top
+    // HUD and the start of the board (~25vh on iPhone). Stacked with
+    // ShapeAnnouncement at 10vh and power-tile creation at 22vh.
+    return createPortal(
         <div
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-40 combo-banner-enter"
+            className="fixed left-0 right-0 flex flex-col items-center pointer-events-none combo-banner-enter px-2"
+            style={{ top: "16vh", zIndex: 74 }}
         >
-            {/* Static radial background flash — original production
-                treatment. Single layer at 30% opacity. */}
+            {/* Static radial background flash — sized to the banner's
+                bounding box so it tracks the floating text instead of
+                lighting up the page behind it. */}
             <div
-                className="absolute inset-0 opacity-30"
-                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 65%)` }}
+                className="absolute inset-x-0 top-0 bottom-0 opacity-30"
+                style={{ background: `radial-gradient(ellipse at center, ${tier.shadow} 0%, transparent 70%)` }}
             />
 
             {/* Main combo text */}
@@ -632,7 +644,8 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
             >
                 x{effect.combo} COMBO
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -882,6 +895,9 @@ function GameBoardImpl({
     invalidSwapCells = null,
     swapAnim = null,
     isPrizeGame = false,
+    gameMode = "classic",
+    frenzyPenaltyAt = null,
+    timePenaltyPopups = EMPTY_TIME_PENALTY_POPUPS,
     onPointerTrust,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
@@ -966,20 +982,25 @@ function GameBoardImpl({
         swipeStartXY.current = null;
     }, []);
 
-    // Feature 2: milestone tracking
+    // Feature 2: milestone tracking. Suppressed in Frenzy mode —
+    // players reported the milestone banners (and their accompanying
+    // milestone sting) read as additional clock-stealing noise when
+    // they're already racing a moving timer. Still fires for Classic
+    // + Daily where the celebration moments fit the pace.
     const prevScoreRef = useRef(score);
     const [milestone, setMilestone] = useState<number | null>(null);
 
     useEffect(() => {
         const prev = prevScoreRef.current;
         prevScoreRef.current = score;
+        if (gameMode === "frenzy") return;
         const crossed = MILESTONE_THRESHOLDS.find(t => prev < t && score >= t);
         if (crossed !== undefined) {
             setMilestone(crossed);
             const timer = setTimeout(() => setMilestone(null), 2200);
             return () => clearTimeout(timer);
         }
-    }, [score]);
+    }, [score, gameMode]);
 
     useEffect(() => {
         const update = () => {
@@ -1217,6 +1238,16 @@ function GameBoardImpl({
                 </div>
             ))}
 
+            {/* Frenzy invalid-swap penalty flash — keyed by frenzyPenaltyAt
+                so each fresh penalty restarts the keyframe. Sits above the
+                board but below score popups. */}
+            {frenzyPenaltyAt !== null && (
+                <div
+                    key={frenzyPenaltyAt}
+                    className="absolute inset-0 pointer-events-none z-40 rounded-2xl overflow-hidden frenzy-penalty-flash"
+                />
+            )}
+
             {/* Score popups layer. Each popup pops at its match position,
                 holds, then accelerates toward the HUD score box (Candy
                 Crush-style) — so the player sees the points "fly into"
@@ -1224,6 +1255,13 @@ function GameBoardImpl({
                 the per-popup target lookup. */}
             {scorePopups.map((popup) => (
                 <ScoreFlyPopup key={popup.id} popup={popup} />
+            ))}
+
+            {/* Frenzy invalid-swap "-1 SECOND" bubbles. Sibling of
+                ScoreFlyPopup but flies to the HUD timer instead of the
+                score box, and pulses the timer red on arrival. */}
+            {timePenaltyPopups.map(popup => (
+                <TimePenaltyFlyPopup key={popup.id} popup={popup} />
             ))}
         </div>
     );
@@ -1398,6 +1436,84 @@ function ScoreFlyPopup({ popup }: { popup: ScorePopup }) {
                 ) : (
                     <>+{popup.value.toLocaleString()}</>
                 )}
+            </span>
+        </div>
+    );
+}
+
+/* ===== TIME PENALTY FLY POPUP =====
+ *
+ * Mirrors ScoreFlyPopup's mount-time target lookup, but resolves to the
+ * Frenzy timer element ([data-hud-timer-target]) and uses a red, smaller
+ * pill. On animation end, pulses the timer so the player sees the
+ * "thing they lost" register on the meter that lost it.
+ */
+function TimePenaltyFlyPopup({ popup }: { popup: TimePenaltyPopup }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        const popupRect = ref.current.getBoundingClientRect();
+        // Multiple HUDs can mount on mobile (top + bottom). Pick the
+        // visible (non-zero-size) one.
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-timer-target]"));
+        const targetEl = candidates.find(el => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        });
+        if (!targetEl) return;
+        const targetRect = targetEl.getBoundingClientRect();
+        const dx = (targetRect.left + targetRect.width / 2) - (popupRect.left + popupRect.width / 2);
+        const dy = (targetRect.top + targetRect.height / 2) - (popupRect.top + popupRect.height / 2);
+        setTarget({ x: dx, y: dy });
+    }, []);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || !target) return;
+        const onEnd = () => {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-hud-timer-target]"));
+            const targetEl = candidates.find(c => {
+                const r = c.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+            if (!targetEl) return;
+            targetEl.classList.remove("timer-penalty-pulse");
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            targetEl.offsetWidth;
+            targetEl.classList.add("timer-penalty-pulse");
+            setTimeout(() => targetEl.classList.remove("timer-penalty-pulse"), 380);
+        };
+        el.addEventListener("animationend", onEnd, { once: true });
+        return () => el.removeEventListener("animationend", onEnd);
+    }, [target]);
+
+    const animClass = target ? "time-penalty-fly-to-hud" : "time-penalty-float";
+
+    return (
+        <div
+            ref={ref}
+            className={`absolute pointer-events-none z-50 flex items-center justify-center ${animClass}`}
+            style={{
+                left: `${(popup.x / 8) * 100 + 6.25}%`,
+                top: `${(popup.y / 8) * 100 + 6.25}%`,
+                '--target-x': target ? `${target.x}px` : "0px",
+                '--target-y': target ? `${target.y}px` : "-60px",
+            } as React.CSSProperties}
+        >
+            <span
+                className="font-display font-black text-lg sm:text-xl px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                style={{
+                    color: "#FFEAEA",
+                    background: "rgba(80, 8, 8, 0.92)",
+                    border: "2px solid rgba(239, 68, 68, 0.95)",
+                    textShadow: "0 0 8px rgba(239, 68, 68, 0.9)",
+                    boxShadow: "0 0 14px rgba(239, 68, 68, 0.65), 0 2px 6px rgba(0, 0, 0, 0.55)",
+                    letterSpacing: "0.04em",
+                }}
+            >
+                -1 SECOND
             </span>
         </div>
     );

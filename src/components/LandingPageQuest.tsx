@@ -227,11 +227,10 @@ export default function LandingPageQuest({
                 />
 
                 {/* Logo — PIN DROP cropped treatment (1854x1623 source).
-                    mt-10 gives the logo clear breathing room below the
-                    header rail so it doesn't feel crowded.
-                    Wrapped so hover-scale lives on the outer element without
-                    stomping the inner bob keyframe. */}
-                <div className="flex justify-center mt-10">
+                    Compact sizing + tighter mt keeps the mode panels up in
+                    the viewport. Wrapped so hover-scale lives on the outer
+                    element without stomping the inner bob keyframe. */}
+                <div className="flex justify-center mt-4">
                     <div className="transition-transform duration-300 hover:scale-105">
                         <Image
                             src="/assets/logo-v3.png"
@@ -239,7 +238,7 @@ export default function LandingPageQuest({
                             width={1854}
                             height={1623}
                             priority
-                            className="w-[240px] sm:w-[320px] h-auto max-w-full"
+                            className="w-[180px] sm:w-[240px] h-auto max-w-full"
                             style={{
                                 filter: "drop-shadow(0 10px 30px rgba(255,224,72,0.3))",
                                 animation: "vmLogoBob 4s ease-in-out infinite",
@@ -255,9 +254,7 @@ export default function LandingPageQuest({
                 </div>
 
                 {/* ========== QUEST CARDS ========== */}
-                {/* mt-4 keeps the cards close under the logo so the stack
-                    pulls up in the viewport. */}
-                <div className="flex flex-col gap-3 mt-4">
+                <div className="flex flex-col gap-2 mt-3">
                     {/* Classic */}
                     <button
                         type="button"
@@ -277,20 +274,20 @@ export default function LandingPageQuest({
                                 background: `radial-gradient(circle at 20% 15%, ${GOLD}22, transparent 40%), radial-gradient(circle at 80% 80%, ${GOLD}22, transparent 50%)`,
                             }}
                         />
-                        <div className="relative p-4 flex items-center gap-3.5">
+                        <div className="relative p-3 flex items-center gap-3">
                             {/* 30 MOVES circle */}
                             <div
                                 className="shrink-0 rounded-full relative flex flex-col items-center justify-center overflow-hidden"
                                 style={{
-                                    width: 76, height: 76,
+                                    width: 64, height: 64,
                                     background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 50%, ${GOLD_DEEP})`,
                                     boxShadow: `inset 0 -6px 10px ${GOLD_DEEP}88, 0 4px 8px rgba(0,0,0,0.5)`,
                                     border: "3px solid #2A1A0A",
                                 }}
                             >
                                 <span
-                                    className="mt-[6px] font-display font-black leading-none"
-                                    style={{ color: "#1A0633", fontSize: 32, textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
+                                    className="mt-[5px] font-display font-black leading-none"
+                                    style={{ color: "#1A0633", fontSize: 26, textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
                                 >30</span>
                                 <span
                                     className="mt-[2px] font-mundial font-black tracking-wider"
@@ -302,9 +299,9 @@ export default function LandingPageQuest({
                                     className="font-display font-black uppercase leading-[0.9]"
                                     style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                 >
-                                    <span style={{ fontSize: 18 }}>Classic</span>
+                                    <span style={{ fontSize: 16 }}>Classic</span>
                                     <br />
-                                    <span style={{ fontSize: 26 }}>Pin Drop</span>
+                                    <span style={{ fontSize: 22 }}>Pin Drop</span>
                                 </h2>
                                 <p className="text-white/55 text-[11px] font-mundial mt-1.5">
                                     Match pins and score as high as you can.
@@ -315,6 +312,71 @@ export default function LandingPageQuest({
                                     style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
                                 >
                                     PLAY
+                                </ChunkyButton>
+                            </div>
+                        </div>
+                    </EnamelCard>
+                    </button>
+
+                    {/* Pin Frenzy — speed mode */}
+                    <button
+                        type="button"
+                        onClick={() => onStartGame("frenzy", username || undefined, avatarUrl || undefined)}
+                        className="block w-full text-left outline-none transition-transform duration-200 ease-out hover:-translate-y-1 active:translate-y-0.5"
+                    >
+                    <EnamelCard
+                        color={ORANGE}
+                        deep={ORANGE_DEEP}
+                        inner="linear-gradient(155deg, #3a1408 0%, #1a0a03 60%, #0c0502 100%)"
+                        tilt={0.6}
+                        depth={6}
+                    >
+                        <div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: `radial-gradient(circle at 25% 20%, ${ORANGE}22, transparent 45%), radial-gradient(circle at 80% 80%, ${ORANGE}22, transparent 50%)`,
+                            }}
+                        />
+                        <div className="relative p-3 flex items-center gap-3">
+                            {/* 1:00 SPEED circle */}
+                            <div
+                                className="shrink-0 rounded-full relative flex flex-col items-center justify-center overflow-hidden"
+                                style={{
+                                    width: 64, height: 64,
+                                    background: `radial-gradient(circle at 35% 30%, #FFD8A6, ${ORANGE} 50%, ${ORANGE_DEEP})`,
+                                    boxShadow: `inset 0 -6px 10px ${ORANGE_DEEP}88, 0 4px 8px rgba(0,0,0,0.5)`,
+                                    border: "3px solid #2A0A0A",
+                                }}
+                            >
+                                <span
+                                    className="font-display font-black leading-none"
+                                    style={{ color: "#2A0A0A", fontSize: 24, textShadow: "0 2px 0 rgba(255,255,255,0.3)" }}
+                                >60</span>
+                                <span
+                                    className="mt-[2px] font-mundial font-black tracking-wider"
+                                    style={{ color: "#2A0A0A", fontSize: 7 }}
+                                >SECONDS</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h2
+                                    className="font-display font-black uppercase leading-[0.9]"
+                                    style={{ color: ORANGE, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                >
+                                    <span style={{ fontSize: 14 }}>Pin Drop</span>
+                                    <br />
+                                    <span style={{ fontSize: 22 }}>Frenzy</span>
+                                </h2>
+                                <p className="text-white/55 text-[11px] font-mundial mt-1.5">
+                                    Max chaos. Match pins as fast as you can.
+                                </p>
+                            </div>
+                            <div className="shrink-0 self-end">
+                                <ChunkyButton
+                                    color={ORANGE}
+                                    deep={ORANGE_DEEP}
+                                    style={{ padding: "8px 14px", fontSize: 11, fontWeight: 900, letterSpacing: "0.1em" }}
+                                >
+                                    GO
                                 </ChunkyButton>
                             </div>
                         </div>
@@ -341,12 +403,12 @@ export default function LandingPageQuest({
                                 background: `radial-gradient(circle at 80% 20%, ${COSMIC}22, transparent 40%), radial-gradient(circle at 15% 80%, rgba(255,107,157,0.1), transparent 50%)`,
                             }}
                         />
-                        <div className="relative p-4 flex items-center gap-3.5">
+                        <div className="relative p-3 flex items-center gap-3">
                             {/* Star circle */}
                             <div
                                 className="shrink-0 rounded-full relative flex items-center justify-center"
                                 style={{
-                                    width: 76, height: 76,
+                                    width: 64, height: 64,
                                     background: `radial-gradient(circle at 35% 30%, #E8C0FF, ${COSMIC} 50%, ${COSMIC_DEEP})`,
                                     boxShadow: `inset 0 -6px 10px ${COSMIC_DEEP}aa, 0 4px 8px rgba(0,0,0,0.5)`,
                                     border: "3px solid #1a0a2e",
@@ -354,14 +416,14 @@ export default function LandingPageQuest({
                             >
                                 <span
                                     className="font-display font-black leading-none"
-                                    style={{ color: "#1A0633", fontSize: 34 }}
+                                    style={{ color: "#1A0633", fontSize: 28 }}
                                 >★</span>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     <h2
                                         className="font-display font-black uppercase leading-[0.9]"
-                                        style={{ color: COSMIC, fontSize: 20, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                        style={{ color: COSMIC, fontSize: 17, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
                                     >
                                         The Daily<br />Challenge
                                     </h2>

@@ -256,6 +256,108 @@ export function stopBGM() {
     stopMP3();
 }
 
+// ===== FRENZY AUDIO =====
+// Frenzy gets its own BGM treatment: forced to the "Werq" track (the
+// chosen high-energy default). Plays at the original 1.0x speed for
+// the first 30 seconds, then linearly ramps up to 1.40x as the clock
+// counts down — so the urgency builds with the timer instead of
+// hitting full sweat from the jump. Pitch preservation stays on so
+// the track stays musical instead of chipmunk.
+const FRENZY_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Werq");
+const FRENZY_BASE_RATE = 1.0;
+const FRENZY_PEAK_RATE = 1.40;
+const FRENZY_RAMP_START_MS = 30_000;
+let savedTrackBeforeFrenzy: number | null = null;
+
+function applyPlaybackRate(rate: number) {
+    if (!bgmAudio) return;
+    try {
+        if (rate === 1.0) {
+            // Reset to native playback: turn OFF preservesPitch so mobile
+            // Safari doesn't keep the time-stretch filter alive in the
+            // background. Setting preservesPitch=true triggers a continuous
+            // audio-processing filter on mobile that competes with the main
+            // thread even when the rate is technically 1.0 — that was the
+            // observed source of Frenzy-mode sluggishness.
+            (bgmAudio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = false;
+            bgmAudio.playbackRate = 1.0;
+            return;
+        }
+        // Non-1.0 rate: preservesPitch keeps the track musical instead of
+        // pitched up. We pay the time-stretch perf cost only when we
+        // actually need it (frenzy bands 2 + 3).
+        (bgmAudio as HTMLAudioElement & { preservesPitch?: boolean; mozPreservesPitch?: boolean; webkitPreservesPitch?: boolean }).preservesPitch = true;
+        bgmAudio.playbackRate = rate;
+    } catch {
+        // Older engines may not support playbackRate setter — silent no-op.
+    }
+}
+
+export function startFrenzyBGM() {
+    savedTrackBeforeFrenzy = currentBGMTrack;
+    currentBGMTrack = FRENZY_TRACK_INDEX >= 0 ? FRENZY_TRACK_INDEX : 0;
+    bgmShouldPlay = true;
+    if (bgmAudio) stopMP3();
+    startMP3();
+    // No preemptive applyPlaybackRate(1.0) here. The audio element's
+    // default rate is already 1.0 with preservesPitch=false (cheap), so
+    // explicitly setting it at start just enables the time-stretch
+    // filter for the first 30s of the round at no benefit. Mobile
+    // Safari users perceived this as Frenzy "feeling sluggish" vs
+    // classic. setFrenzyTempo() below will apply a non-1.0 rate (and
+    // enable preservesPitch) once we hit the first band crossing at
+    // 30s remaining.
+}
+
+/** Set the Frenzy playback rate based on remaining ms. Three discrete
+ *  bands instead of a continuous ramp — every playbackRate change on
+ *  mobile Safari triggers an expensive time-stretch recompute that
+ *  can stutter the BGM. Three changes per round (and only when crossing
+ *  a band) keeps it musical without skipping. */
+export function setFrenzyTempo(remainingMs: number) {
+    if (!bgmAudio) return;
+    let rate = FRENZY_BASE_RATE;       // 1.00 above 30s remaining
+    if (remainingMs <= 15_000) rate = 1.25;    // last 15s: hectic
+    else if (remainingMs <= 30_000) rate = 1.12; // 15-30s: faster
+    applyPlaybackRate(rate);
+}
+
+export function stopFrenzyBGM() {
+    applyPlaybackRate(1.0);
+    if (savedTrackBeforeFrenzy !== null) {
+        currentBGMTrack = savedTrackBeforeFrenzy;
+        savedTrackBeforeFrenzy = null;
+        if (bgmAudio) stopMP3();
+        if (bgmShouldPlay) startMP3();
+    }
+}
+
+/** Urgency tick for the last-10s countdown. Short high beep on top of
+ *  a low pulse — reads as "clock running out" without overwhelming the
+ *  match SFX layer. */
+export function playFrenzyTick() {
+    playNote(880, 0.06, "triangle", 0.18);
+    playNote(120, 0.08, "sine", 0.22, 0.02);
+}
+
+/** Final-second urgency burst — louder pitched-up version of tick for
+ *  the last 3 seconds. */
+export function playFrenzyFinalTick() {
+    playNote(1320, 0.08, "triangle", 0.24);
+    playNote(660, 0.10, "sine", 0.18, 0.03);
+}
+
+/** Time-penalty sting — fires when an invalid swap costs the player a
+ *  second of Frenzy clock. Descending two-note motif (high → low) +
+ *  a sub-bass thud so it reads as "uh, that cost you" not "you matched". */
+export function playFrenzyPenaltySound() {
+    // Descending sawtooth: short, harsh, clearly negative.
+    playNote(440, 0.10, "sawtooth", 0.18);          // A4
+    playNote(220, 0.14, "sawtooth", 0.20, 0.06);    // A3 — drop an octave
+    // Sub-bass thud underneath for weight.
+    playNote(80, 0.18, "sine", 0.22, 0.02);
+}
+
 // Ensure AudioContext is only created immediately when needed, or unlocked on touch
 export function unlockAudio() {
     getAudioContext();

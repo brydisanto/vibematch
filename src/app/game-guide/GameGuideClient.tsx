@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Flame, Trophy, Calendar, Pin, Star, HandHeart, Target, Sparkles,
-    TrendingUp, ArrowRight, Lock, Globe,
+    TrendingUp, ArrowRight, Lock, Globe, Clock, Zap, AlertTriangle,
 } from "lucide-react";
 import { ChunkyButton } from "@/components/arcade";
 import {
@@ -57,6 +57,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
     { id: "pins", label: "Pins and Rarity" },
     { id: "ladder", label: "Collector Ladder" },
     { id: "daily", label: "Daily Challenge" },
+    { id: "frenzy", label: "Pin Drop Frenzy" },
     { id: "quests", label: "Quests" },
     { id: "rerolls", label: "Rerolls" },
     { id: "leaderboards", label: "Leaderboards" },
@@ -102,6 +103,7 @@ export default function GameGuideClient() {
                 <PinsSection />
                 <CollectorLadder />
                 <DailyChallenge />
+                <Frenzy />
                 <Quests quests={quests} />
                 <Rerolls />
                 <Leaderboards />
@@ -1993,6 +1995,128 @@ function CrownBadge() {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   SECTION 8.5: Pin Drop Frenzy
+   ════════════════════════════════════════════════════════════════ */
+function Frenzy() {
+    return (
+        <section className="mb-20">
+            <SectionHeader
+                id="frenzy"
+                tag="60 seconds, max chaos"
+                title="Pin Drop Frenzy"
+                sub="Frenzy is all about speed and momentum. The clock starts the moment you make your first match. Match as fast as you can, chain combos to bank time, and ride TURBO multipliers when you get on a roll. There's no move limit. The only thing that ends the run is the timer hitting zero."
+            />
+
+            {/* Core mechanics — four pillar cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Card accent={ORANGE}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Clock size={18} style={{ color: ORANGE }} />
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>60-Second Clock</h3>
+                    </div>
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        You get 60 seconds to make as many matches and score as many points as you can. Strategize first, the clock doesn&apos;t start until you make your first match. Big combos add time. Penalties take it away.
+                    </p>
+                </Card>
+                <Card accent={GOLD}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp size={18} style={{ color: GOLD }} />
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Big Matches Add Time</h3>
+                    </div>
+                    <p className="font-mundial text-[14px] leading-relaxed mb-2" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        Long matches, big combos, and power tiles add time back onto the clock.
+                    </p>
+                    <ul className="font-mundial text-[13px] pl-5 m-0" style={{ color: "rgba(255,255,255,0.9)" }}>
+                        <li className="mb-1"><strong style={{ color: GOLD }}>4+ match or power tile:</strong> +2 seconds</li>
+                        <li className="mb-1"><strong style={{ color: GOLD }}>Combo peak 4+:</strong> +2 seconds</li>
+                        <li><strong style={{ color: GOLD }}>Combo peak 6+:</strong> +5 seconds</li>
+                    </ul>
+                </Card>
+                <Card accent={COSMIC}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Zap size={18} style={{ color: COSMIC }} />
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Go Turbo Mode</h3>
+                    </div>
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        Make three fast matches within five seconds and it&apos;ll take you{" "}
+                        <strong
+                            style={{
+                                background: `linear-gradient(135deg, ${GOLD} 0%, ${ORANGE} 100%)`,
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                fontWeight: 900,
+                                letterSpacing: "0.05em",
+                                textShadow: "none",
+                            }}
+                        >
+                            TURBO!
+                        </strong>{" "}
+                        Every match while TURBO scores 3x (it lasts 5 seconds).
+                    </p>
+                </Card>
+                <Card accent={"#EF4444"}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle size={18} style={{ color: "#EF4444" }} />
+                        <h3 className="font-display font-black uppercase text-[16px]" style={{ color: "#fff" }}>Penalties</h3>
+                    </div>
+                    <p className="font-mundial text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+                        If you try to swap two tiles that don&apos;t form a match, you&apos;ll get hit with a beep and lose <strong style={{ color: "#EF4444" }}>1 second</strong> off the clock. Move fast, but precisely.
+                    </p>
+                </Card>
+            </div>
+
+            {/* Capsule ladder — Daily-Champion-style hero card */}
+            <div
+                className="rounded-2xl text-center py-10 px-6 relative overflow-hidden"
+                style={{
+                    background: `radial-gradient(ellipse at center, ${ORANGE}28, transparent 70%), linear-gradient(180deg, rgba(26,10,46,0.93), rgba(12,4,24,0.97))`,
+                    border: `2px solid ${ORANGE}99`,
+                    boxShadow: `0 0 48px ${ORANGE}44`,
+                }}
+            >
+                <Flame size={56} style={{ color: ORANGE, margin: "0 auto", display: "block", filter: `drop-shadow(0 0 20px ${ORANGE}aa)` }} />
+                <div className="font-display font-black uppercase text-[11px] tracking-[0.35em] mt-4" style={{ color: ORANGE, opacity: 0.95 }}>
+                    Frenzy Mode Capsules
+                </div>
+                <div
+                    className="font-display font-black leading-none mt-3"
+                    style={{ fontSize: 36, color: ORANGE, textShadow: `0 3px 0 rgba(0,0,0,0.55), 0 0 24px ${ORANGE}66` }}
+                >
+                    SCORE BIG TO WIN
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-6 max-w-[520px] mx-auto">
+                    {[
+                        { threshold: "30K", capsules: 1 },
+                        { threshold: "60K", capsules: 2 },
+                        { threshold: "100K", capsules: 3 },
+                    ].map(row => (
+                        <div
+                            key={row.threshold}
+                            className="rounded-xl py-3 px-2"
+                            style={{ background: "rgba(12,4,24,0.85)", border: `1px solid ${ORANGE}66` }}
+                        >
+                            <div className="font-display font-black text-[24px] leading-none" style={{ color: ORANGE }}>
+                                {row.threshold}
+                            </div>
+                            <div className="flex items-center justify-center gap-1.5 mt-2">
+                                <CapsuleIcon size={14} />
+                                <span className="font-display font-black text-[14px]" style={{ color: GOLD }}>
+                                    x{row.capsules}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <p className="font-mundial text-[13px] mt-5 max-w-[480px] mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
+                    Just like in Classic mode, you can win capsules based on score threshold hit. Frenzy mode pulls from the same bank of daily plays.
+                </p>
+            </div>
+        </section>
+    );
+}
+
+/* ════════════════════════════════════════════════════════════════
    SECTION 9: Quests
    ════════════════════════════════════════════════════════════════ */
 function Quests({ quests }: { quests: Array<{ id: string; icon: string; title: string; description: string; capsules: number }> }) {
@@ -2110,10 +2234,11 @@ function Rerolls() {
    ════════════════════════════════════════════════════════════════ */
 function Leaderboards() {
     const boards = [
-        { icon: <Trophy size={26} />,  name: "All-Time", color: GOLD,      sub: "Your highest Classic score of all time. Never resets. The number you're trying to beat forever." },
-        { icon: <Calendar size={26} />,name: "Weekly",   color: ORANGE,    sub: "Your best Classic score this week. A fresh race kicks off every Monday at midnight UTC." },
+        { icon: <Trophy size={26} />,  name: "Classic",  color: GOLD,      sub: "Your highest Classic score of all time. Never resets. The number you're trying to beat forever." },
+        { icon: <Zap size={26} />,     name: "Frenzy",   color: ORANGE,    sub: "Your best Pin Drop Frenzy score. Pure 60-second speed runs, ranked all-time. A different race than Classic — combos and TURBO timing matter more than careful planning." },
         { icon: <Star size={26} />,    name: "Daily",    color: "#4A9EFF", sub: "Today's Daily Challenge. One score per player, same board worldwide. Resets at noon ET. The #1 finisher wins the champion bonus." },
         { icon: <Pin size={26} />,     name: "Pins",     color: COSMIC,    sub: "Ranked by collection %. A separate race from score. Updates the moment you pull a new pin." },
+        { icon: <Sparkles size={26} />,name: "Event",    color: PINK,      sub: "Active partnership leaderboards. When an event pin is live, this tab ranks players by how many of that pin they've pulled. Disappears between partnerships." },
     ];
     return (
         <section className="mb-20">
@@ -2121,7 +2246,7 @@ function Leaderboards() {
                 id="leaderboards"
                 tag="Compete"
                 title="Leaderboards"
-                sub="Four leaderboards, each tracking something different. The score boards only count eligible matches, so no practice farming. The Pins board races collection breadth instead of score."
+                sub="Five leaderboards, each tracking something different. Score boards only count eligible matches, so no practice farming. Pins races collection breadth instead of score. Event appears only while a partnership pin is live."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {boards.map(b => (
@@ -2211,8 +2336,8 @@ function Tips() {
           text: "A Bomb next to a Laser detonates both at once. A Cosmic Blast next to anything is usually a game-defining move. If you have two power tiles on the board, your next move should almost always be to put them together." },
         { n: 3, title: "4-matches are never wasted",
           text: "A 4-match always leaves a Bomb behind, and a 5-match leaves a Laser. They sit on the board until you use them. Late game, your stockpile becomes your final-cascade multiplier stack." },
-        { n: 4, title: "Plan the Daily Challenge",
-          text: "Classic gives you ten free games per day, plus up to fifteen more Bonus Games purchasable with $VIBESTR. Daily gives you just one shot. Scan the whole board before your first move. Sketch out your power-tile setups in your head. Plan your last 10 moves. Slower play wins here." },
+        { n: 4, title: "Match the mode to the pace",
+          text: "Classic and Daily reward planning — scan the whole board, sketch out power-tile setups, plan your last 10 moves, and slow down. Frenzy is the opposite — don't overthink, pattern-match fast, and chain matches inside the 5-second TURBO window for the 3x multiplier. Sloppy taps in Frenzy cost you a second each, so accuracy still matters more than speed." },
         { n: 5, title: "Open capsules immediately",
           text: "Every pin you pull ticks up a lifetime tier-find counter for quests like \"Find 200 Commons\" or \"Find 10 Cosmics\". Hoarding sealed capsules just slows your quest progress. There's no upside to waiting." },
         { n: 6, title: "Watch the Quests rail",

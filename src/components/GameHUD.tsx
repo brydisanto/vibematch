@@ -1,8 +1,15 @@
 "use client";
 
-import { GameState } from "@/lib/gameEngine";
+import { GameState, FRENZY_INITIAL_MS } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 import { Info } from "lucide-react";
+
+function formatFrenzyClock(ms: number): string {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 interface GameHUDProps {
     state: GameState;
@@ -92,6 +99,37 @@ function HudCard({
     );
 }
 
+/* ===== TURBO 3x — Frenzy sustained multiplier indicator =====
+ * Sticks around for FRENZY_HEAT_DURATION_MS once triggered (3 quick
+ * matches in a row), multiplying every match score by 3x during that
+ * window. Was 2x + one-shot — bumped to 3x + sustained so rapid
+ * chain-play actually rewards Frenzy players at a Classic-comparable
+ * scale. Internal symbols (frenzyHeatActiveUntil, FRENZY_HEAT_*, etc.)
+ * keep the "heat" name because they're persisted in serialized state
+ * and renaming them ripples across server payloads. */
+function HeatChip({ floating = false }: { floating?: boolean }) {
+    // floating=true: chip is positioned absolutely by its parent (mobile),
+    // so we drop the `mt-1` margin and enforce whitespace-nowrap so it
+    // renders as a clean horizontal pill instead of wrapping to two lines
+    // when the parent has no width constraint.
+    // floating=false: chip sits in the flow as a sibling of the score
+    // (desktop), keeps its `mt-1` separator.
+    return (
+        <div
+            className={`${floating ? "" : "mt-1"} px-2 py-0.5 rounded-full text-[10px] font-display font-black tracking-wider uppercase select-none pointer-events-none whitespace-nowrap hud-heat-pulse`}
+            style={{
+                color: "#0a0015",
+                background: "linear-gradient(135deg, #FFE048 0%, #FF8C00 100%)",
+                border: "1px solid rgba(255,224,72,0.9)",
+                boxShadow: "0 0 14px rgba(255,140,0,0.6), 0 0 4px rgba(255,224,72,0.9)",
+                textShadow: "0 1px 0 rgba(255,224,72,0.6)",
+            }}
+        >
+            TURBO 3x
+        </div>
+    );
+}
+
 /* ===== FINAL MOVE! pulsing indicator ===== */
 function FinalMoveBanner() {
     return (
@@ -108,7 +146,58 @@ function FinalMoveBanner() {
 }
 
 export default function GameHUD({ state, username, hideMetrics = false, hideHighScores = false, isExtraPlay = false, onScoreClick }: GameHUDProps) {
-    const { score, movesLeft, combo, gameMode } = state;
+    const { score, movesLeft, combo, gameMode, frenzyEndsAt, frenzyHeatActiveUntil } = state;
+    const isFrenzy = gameMode === "frenzy";
+
+    // ===== FRENZY TIMER (local-state ticker) =====
+    // 1000ms cadence — mm:ss only changes once per second anyway, and
+    // every re-render of the HUD also repaints the conic-gradient timer
+    // ring (mask composite is expensive on mobile). Re-rendering 1x/sec
+    // is plenty; 4x/sec was burning paint cycles for no visible gain.
+    const [frenzyTickNow, setFrenzyTickNow] = useState(() => Date.now());
+    useEffect(() => {
+        if (!isFrenzy || frenzyEndsAt === null) return;
+        const id = setInterval(() => setFrenzyTickNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [isFrenzy, frenzyEndsAt]);
+
+    const frenzyMsRemaining = isFrenzy
+        ? (frenzyEndsAt === null ? FRENZY_INITIAL_MS : Math.max(0, frenzyEndsAt - frenzyTickNow))
+        : 0;
+    const frenzySecondsRemaining = Math.ceil(frenzyMsRemaining / 1000);
+    const frenzyProgress = isFrenzy ? Math.min(1, frenzyMsRemaining / FRENZY_INITIAL_MS) : 0;
+    let frenzyBorderColor = "#FFE048";
+    let frenzyGlow = "rgba(255,224,72,0.35)";
+    let frenzyTextColor = "text-white";
+    if (frenzySecondsRemaining <= 10) {
+        frenzyBorderColor = "#EF4444";
+        frenzyGlow = "rgba(239,68,68,0.4)";
+        frenzyTextColor = "text-red-400";
+    } else if (frenzySecondsRemaining <= 20) {
+        frenzyBorderColor = "#FF5F1F";
+        frenzyGlow = "rgba(255,95,31,0.35)";
+        frenzyTextColor = "text-[#FF8C00]";
+    } else if (frenzySecondsRemaining <= 30) {
+        frenzyBorderColor = "#FF8C00";
+        frenzyGlow = "rgba(255,140,0,0.35)";
+    }
+
+    // HEAT 3x is sustained until expiry. Schedule a single timeout for when the
+    // arming window closes so the chip disappears at the right moment —
+    // beats polling every 250ms which was forcing constant HUD re-renders
+    // (and via the parent, GameBoard re-renders) on mobile.
+    const [, setHeatTick] = useState(0);
+    useEffect(() => {
+        if (!isFrenzy || frenzyHeatActiveUntil === null) return;
+        const msUntilExpiry = frenzyHeatActiveUntil - Date.now();
+        if (msUntilExpiry <= 0) {
+            setHeatTick(t => t + 1);
+            return;
+        }
+        const id = setTimeout(() => setHeatTick(t => t + 1), msUntilExpiry + 50);
+        return () => clearTimeout(id);
+    }, [isFrenzy, frenzyHeatActiveUntil]);
+    const heatActive = isFrenzy && frenzyHeatActiveUntil !== null && frenzyHeatActiveUntil > Date.now();
 
     // Fetch high scores
     const [personalBest, setPersonalBest] = useState<number>(0);
@@ -224,13 +313,15 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
 
         if (score === displayedScore) return;
 
-        // Mobile shortcut: skip the 750ms rAF tween entirely. Each frame
-        // calls setDisplayedScore, forcing a HUD re-render at 60fps for
-        // ~1s per match. That's ~45 commits per match on the main
-        // thread, competing with cascade animations for frame budget.
-        // The score-fly popups already provide "climbing" feedback, so
-        // snapping the HUD value is visually fine on mobile.
-        if (typeof window !== "undefined" && window.innerWidth < 768) {
+        // Skip the rAF tween entirely under two conditions:
+        //   - Frenzy mode: matches fire every ~400ms and the 750ms tween
+        //     keeps the HUD re-rendering at 60fps for its full duration,
+        //     which on mobile causes subpixel-blur of the gold
+        //     WebkitTextStroke text (reads as a "hazy" score).
+        //   - Mobile: ~45 commits per match on the main thread competing
+        //     with cascade animations for frame budget.
+        // The score-fly popups still provide climbing-feedback animation.
+        if (isFrenzy || (typeof window !== "undefined" && window.innerWidth < 768)) {
             if (tweenRafRef.current) cancelAnimationFrame(tweenRafRef.current);
             tweenStartRef.current = null;
             setDisplayedScore(score);
@@ -338,7 +429,13 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
     }
 
     return (
-        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-hidden">
+        // overflow-visible on mobile so the absolutely-positioned HEAT chip
+        // (which floats just below the SCORE card) isn't clipped by the
+        // wrapper's bottom edge. Desktop keeps overflow-hidden because the
+        // chip is rendered in-flow inside its HudCard there, and the wrapper
+        // contains stacked cards that benefit from the clip during bump
+        // animations.
+        <div className="relative flex flex-col h-full justify-between gap-2.5 sm:gap-3 w-full overflow-visible lg:overflow-hidden">
 
             {/* Feature 3: Personal Best banner — large, central overlay */}
             {showPBBanner && (
@@ -363,16 +460,20 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {/* Mobile metrics row (top HUD on mobile) */}
             {hideHighScores && (
                 <div className="flex gap-1.5 w-full px-1">
-                    {/* Score */}
+                    {/* Score — HeatChip floats below in a relative wrapper,
+                        with optional click-to-open-move-breakdown for
+                        Classic/Daily (gated via onScoreClick prop). Frenzy
+                        gets the heavier shadow + no WebkitTextStroke so the
+                        rapidly-changing score reads crisp at mobile DPR. */}
                     <div
-                        className="flex-1 relative"
+                        className="relative flex-1 flex"
                         onClick={onScoreClick}
                         role={onScoreClick ? "button" : undefined}
                         tabIndex={onScoreClick ? 0 : undefined}
                         aria-label={onScoreClick ? "View move breakdown" : undefined}
                         style={{ cursor: onScoreClick ? "pointer" : undefined }}
                     >
-                        <HudCard className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
+                        <HudCard className="flex-1 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2">
                             <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1 inline-flex items-center gap-1">
                                 SCORE
                                 {onScoreClick && (
@@ -380,40 +481,62 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 )}
                             </div>
                             <div
-                                className={`font-display text-3xl font-black leading-none text-center ${scoreBumping ? "hud-score-bump" : ""}`}
-                                // Mobile-only: no soft yellow halo. The 0 0 15px
-                                // glow was bleeding into the digit edges at this
-                                // size and producing a "fuzzy" look at mobile DPR.
-                                // Just the chunky dark drop, which is what makes
-                                // the score read as an enamel pin to begin with.
-                                style={{ color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15" }}
+                                className={`font-display text-3xl font-black leading-none text-center ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
+                                style={isFrenzy
+                                    ? { color: "#FFE048", textShadow: "0 2px 0 #8b6b15, 0 3px 4px rgba(0,0,0,0.5)" }
+                                    : { color: "#FFE048", WebkitTextStroke: "1px #c9a84c", textShadow: "0 2px 0 #8b6b15" }}
                             >
                                 <span
                                     data-hud-score-target
-                                    className={scoreBumping ? "hud-score-flash" : ""}
+                                    className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
                                     style={{ display: "inline-block" }}
                                 >
                                     {formatNumber(displayedScore)}
                                 </span>
                             </div>
                         </HudCard>
+                        {heatActive && (
+                            <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                                <HeatChip floating />
+                            </div>
+                        )}
                     </div>
-                    {/* Moves */}
+                    {/* Moves / Frenzy Timer */}
                     <div className="relative flex-1">
-                        {movesLeft <= 3 && (
+                        {!isFrenzy && movesLeft <= 3 && (
                             <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full">
-                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">MOVES</div>
-                            <div
-                                className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
-                                style={movesLeft <= 3 ? {
-                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
-                                } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-                            >
-                                {movesLeft}
-                            </div>
-                            {movesLeft === 1 && <FinalMoveBanner />}
+                        {isFrenzy && frenzySecondsRemaining <= 10 && frenzyMsRemaining > 0 && (
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard
+                            borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
+                            glowColor={isFrenzy ? frenzyGlow : movesGlow}
+                            borderProgress={isFrenzy ? undefined : movesLeft / TOTAL_MOVES}
+                            className="flex flex-col items-center justify-center min-h-[64px] sm:min-h-[100px] px-1 sm:p-2 w-full"
+                        >
+                            <div className="text-[#B399D4] text-[9.5px] font-black tracking-[0.15em] font-mundial mb-1">{isFrenzy ? "TIME" : "MOVES"}</div>
+                            {isFrenzy ? (
+                                <div
+                                    data-hud-timer-target
+                                    className={`font-display text-3xl font-black leading-none ${frenzyTextColor}`}
+                                    style={frenzySecondsRemaining <= 10 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+                                >
+                                    {formatFrenzyClock(frenzyMsRemaining)}
+                                </div>
+                            ) : (
+                                <div
+                                    className={`font-display text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                    style={movesLeft <= 3 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+                                >
+                                    {movesLeft}
+                                </div>
+                            )}
+                            {!isFrenzy && movesLeft === 1 && <FinalMoveBanner />}
                         </HudCard>
                     </div>
                     {/* Combo */}
@@ -431,7 +554,11 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
             {/* Desktop-only cards below */}
             {!hideHighScores && (
                 <>
-                    {/* Score Card */}
+                    {/* Score Card — clickable to open move breakdown for
+                        Classic/Daily (gated via onScoreClick prop). Frenzy
+                        gets the heavier shadow + no WebkitTextStroke so the
+                        rapidly-changing score reads crisp. HEAT chip floats
+                        under the card via the card-internal HeatChip slot. */}
                     <div
                         className="flex-1 min-h-0 relative"
                         onClick={onScoreClick}
@@ -448,42 +575,65 @@ export default function GameHUD({ state, username, hideMetrics = false, hideHigh
                                 )}
                             </div>
                             <div
-                                className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${scoreBumping ? "hud-score-bump" : ""}`}
-                                style={{
-                                    color: "#FFE048",
-                                    WebkitTextStroke: "1px #c9a84c",
-                                    textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
-                                }}
+                                className={`font-display text-2xl sm:text-3xl font-black leading-none text-center w-full truncate ${!isFrenzy && scoreBumping ? "hud-score-bump" : ""}`}
+                                style={isFrenzy
+                                    ? { color: "#FFE048", textShadow: "0 3px 0 #8b6b15, 0 5px 8px rgba(0,0,0,0.6)" }
+                                    : {
+                                        color: "#FFE048",
+                                        WebkitTextStroke: "1px #c9a84c",
+                                        textShadow: "0 4px 0 #8b6b15, 0 8px 10px rgba(0,0,0,0.8), 0 0 30px rgba(255, 224, 72, 0.4)",
+                                    }}
                             >
                                 <span
                                     data-hud-score-target
-                                    className={scoreBumping ? "hud-score-flash" : ""}
+                                    className={!isFrenzy && scoreBumping ? "hud-score-flash" : ""}
                                     style={{ display: "inline-block" }}
                                 >
                                     {formatScoreWithCommas(displayedScore)}
                                 </span>
                             </div>
+                            {heatActive && <HeatChip />}
                         </HudCard>
                     </div>
 
-                    {/* Moves Card — border acts as radial indicator */}
+                    {/* Moves / Frenzy Timer — border acts as radial indicator */}
                     <div className="relative flex-1 min-h-0">
-                        {movesLeft <= 3 && (
+                        {!isFrenzy && movesLeft <= 3 && (
                             <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
                         )}
-                        <HudCard borderColor={movesBorderColor} glowColor={movesGlow} borderProgress={movesLeft / TOTAL_MOVES} className="flex-1 min-h-0 py-2 w-full h-full">
+                        {isFrenzy && frenzySecondsRemaining <= 10 && frenzyMsRemaining > 0 && (
+                            <div className="absolute inset-0 rounded-xl pointer-events-none z-10 hud-low-moves-warning" />
+                        )}
+                        <HudCard
+                            borderColor={isFrenzy ? frenzyBorderColor : movesBorderColor}
+                            glowColor={isFrenzy ? frenzyGlow : movesGlow}
+                            borderProgress={isFrenzy ? undefined : movesLeft / TOTAL_MOVES}
+                            className="flex-1 min-h-0 py-2 w-full h-full"
+                        >
                             <div className="text-[#B399D4] text-[10px] sm:text-xs font-black tracking-[0.2em] font-mundial mb-0.5">
-                                MOVES
+                                {isFrenzy ? "TIME" : "MOVES"}
                             </div>
-                            <div
-                                className={`font-display text-3xl sm:text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
-                                style={movesLeft <= 3 ? {
-                                    textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
-                                } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
-                            >
-                                {movesLeft}
-                            </div>
-                            {movesLeft === 1 && <FinalMoveBanner />}
+                            {isFrenzy ? (
+                                <div
+                                    data-hud-timer-target
+                                    className={`font-display text-2xl sm:text-3xl font-black leading-none ${frenzyTextColor}`}
+                                    style={frenzySecondsRemaining <= 10 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                                >
+                                    {formatFrenzyClock(frenzyMsRemaining)}
+                                </div>
+                            ) : (
+                                <div
+                                    className={`font-display text-3xl sm:text-4xl font-black leading-none ${movesLeft <= 3 ? "text-red-400" : movesLeft <= 5 ? "text-[#FF8C00]" : "text-white"} ${movesBumping ? "hud-moves-bump" : ""}`}
+                                    style={movesLeft <= 3 ? {
+                                        textShadow: "0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5), 0 4px 10px rgba(0,0,0,0.5)",
+                                    } : { textShadow: "0 4px 10px rgba(0,0,0,0.5)" }}
+                                >
+                                    {movesLeft}
+                                </div>
+                            )}
+                            {!isFrenzy && movesLeft === 1 && <FinalMoveBanner />}
                         </HudCard>
                     </div>
 

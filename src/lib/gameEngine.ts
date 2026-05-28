@@ -29,9 +29,9 @@ export interface Match {
     isHorizontal: boolean;
 }
 
-export type GameMode = "classic" | "daily";
+export type GameMode = "classic" | "daily" | "frenzy";
 
-export type GameOverReason = "moves_exhausted" | "no_valid_moves" | null;
+export type GameOverReason = "moves_exhausted" | "no_valid_moves" | "time_expired" | null;
 
 /**
  * Minimal, deterministic record of a player action — used by the
@@ -92,6 +92,19 @@ export interface GameState {
     dailySeed?: number;
     gameOverReason: GameOverReason;
     bonusCapsuleAwarded: boolean;
+    // Frenzy-only. All numbers are milliseconds / Unix timestamps.
+    // frenzyStartedAt and frenzyEndsAt stay null until the first valid
+    // swap so board-load latency doesn't steal time. frenzyEndsAt is an
+    // absolute timestamp — the HUD computes "remaining" live as
+    // (frenzyEndsAt - now) so we don't tick state every 250ms and
+    // interrupt mid-cascade tile animations. heatActiveUntil null = no
+    // heat.
+    frenzyEndsAt: number | null;
+    frenzyBonusMsEarned: number;
+    frenzyStartedAt: number | null;
+    frenzyLastMatchAt: number | null;
+    frenzyConsecutiveQuickMatches: number;
+    frenzyHeatActiveUntil: number | null;
     /** Per-turn breakdown for the in-game and post-game move-history
      *  view. Newest entries appended; one entry per resolved turn. */
     moveLog: MoveLogEntry[];
@@ -126,6 +139,44 @@ export function makeGameRng(seed?: number): Rng {
 
 const BOARD_SIZE = 8;
 export const CLASSIC_MOVES = 30;
+
+// ===== FRENZY =====
+// Frenzy is the 60-second speed mode. Time is the only resource. Bigger
+// matches and combo chains award bonus seconds; players never run out of
+// moves. Anti-cheat: server rejects scores submitted faster than
+// FRENZY_MIN_ROUND_MS (allows for the no-input grace before the clock
+// starts and the final cascade resolving).
+export const FRENZY_INITIAL_MS = 60_000;
+export const FRENZY_MAX_MS = 150_000;          // 2:30 cap on snowballing
+export const FRENZY_MIN_ROUND_MS = 8_000;       // server-side anti-cheat floor
+export const FRENZY_HEAT_WINDOW_MS = 5_000;     // window between matches for heat
+export const FRENZY_HEAT_TRIGGER_COUNT = 3;     // quick matches to trigger heat 2x
+export const FRENZY_HEAT_DURATION_MS = 5_000;   // how long the next-match-doubles bonus lasts
+
+/** Returns ms of bonus time for a single match resolution. Inputs come
+ *  from processTurn's TurnResult so the hook can layer this on without
+ *  the engine needing to know about a clock. */
+export function computeFrenzyBonusMs(opts: {
+    largestMatchSize: number;
+    spawnedSpecial: boolean;
+    comboPeak: number;
+}): number {
+    let bonus = 0;
+    if (opts.largestMatchSize >= 5 || opts.spawnedSpecial) bonus += 2_000;
+    else if (opts.largestMatchSize === 4) bonus += 1_000;
+    if (opts.comboPeak >= 6) bonus += 5_000;
+    else if (opts.comboPeak >= 4) bonus += 2_000;
+    return bonus;
+}
+
+/** Score -> capsule mapping. Tuned ladder: 30k/60k/100k for 1/2/3 capsules.
+ *  Cap at 3 keeps the economy bounded even on a god run. */
+export function frenzyCapsulesForScore(score: number): number {
+    if (score >= 100_000) return 3;
+    if (score >= 60_000) return 2;
+    if (score >= 30_000) return 1;
+    return 0;
+}
 
 let cellIdCounter = 0;
 function nextCellId(): string {
@@ -162,6 +213,9 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[], expl
     return {
         board,
         score: 0,
+        // Frenzy ignores movesLeft entirely. Leaving the field at the
+        // classic default keeps existing readers (HUD, anti-cheat) from
+        // having to do null checks.
         movesLeft: CLASSIC_MOVES,
         combo: 0,
         maxCombo: 0,
@@ -178,6 +232,12 @@ export function createInitialState(mode: GameMode, draftedBadges?: Badge[], expl
         dailySeed: seed,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        frenzyEndsAt: null,
+        frenzyBonusMsEarned: 0,
+        frenzyStartedAt: null,
+        frenzyLastMatchAt: null,
+        frenzyConsecutiveQuickMatches: 0,
+        frenzyHeatActiveUntil: null,
         moveLog: [],
         moveSequence: [],
         rng,
@@ -563,6 +623,19 @@ export function applyGravity(
      */
     rng?: Rng
 ): Cell[][] {
+    // Snapshot the badge that WAS at each cell before clearing. Used to
+    // prevent gravity from refilling a just-cleared cell with the same
+    // badge that was sitting there — without this, bombs and lasers
+    // visibly "miss" 1-3 cells per detonation because of random refill
+    // collision (1/6 chance per cell). Captured before the new-board
+    // copy because the matched flag is what tells us which cells need
+    // fresh tiles.
+    const previousBadgeAtCell: (string | undefined)[][] = board.map(row =>
+        row.map(cell => (cell.isMatched ? cell.badge.id : undefined)),
+    );
+    // Use the per-game RNG (or Math.random fallback) so the same seed
+    // produces the same refill sequence across live play and server
+    // replay.
     const r: Rng = rng ?? Math.random;
     const newBoard = board.map((row) => row.map((cell) => ({ ...cell })));
     // Filter the refill pool. Falls back to the full pool if filtering
@@ -593,11 +666,16 @@ export function applyGravity(
                 const drop = row - originalRow; // how many rows this tile fell
                 newBoard[row][col] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             } else {
-                // Generate new tile — drops from above the board.
-                // Uses the per-game RNG (or Math.random fallback) so the
-                // same seed produces the same refill sequence across
-                // live play and server replay.
-                const badge = effectivePool[Math.floor(r() * effectivePool.length)];
+                // Per-cell exclusion: skip the badge that was at this
+                // exact cell before clearing, so the player visually
+                // perceives that the cell did in fact change. Falls
+                // back to the full pool if exclusion leaves nothing.
+                const previousBadgeId = previousBadgeAtCell[row][col];
+                const cellPool = previousBadgeId
+                    ? effectivePool.filter(b => b.id !== previousBadgeId)
+                    : effectivePool;
+                const pickFrom = cellPool.length > 0 ? cellPool : effectivePool;
+                const badge = pickFrom[Math.floor(r() * pickFrom.length)];
                 // New tiles enter from above: distance = their target row + 1
                 // (relative to the top of the visible board)
                 newBoard[row][col] = {

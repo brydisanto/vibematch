@@ -40,10 +40,10 @@ interface LeaderboardModalProps {
     /** Initial tab when the modal opens. Defaults to "classic". Pass
      *  "daily" when opening from the DAILY CHALLENGE rail so the user
      *  lands on the relevant board. */
-    initialTab?: "classic" | "weekly" | "daily" | "pins" | "promo";
+    initialTab?: "classic" | "weekly" | "daily" | "frenzy" | "pins" | "promo";
 }
 
-type TabMode = "classic" | "weekly" | "daily" | "pins" | "promo";
+type TabMode = "classic" | "weekly" | "daily" | "frenzy" | "pins" | "promo";
 
 const formatScore = (value: number, mode: TabMode = "classic") => {
     if (value <= 0) return "\u2014";
@@ -440,7 +440,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
             return;
         }
 
-        // classic / weekly / daily
+        // classic / weekly / daily / frenzy — all served by /api/scores
         const params = new URLSearchParams({ mode: targetMode });
         if (currentUsername) params.set("username", currentUsername);
         const res = await fetch(`/api/scores?${params}`);
@@ -554,12 +554,17 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const activePromos = isPromoActive() ? getActivePromoBadges() : [];
     const promoTabLabel = activePromos[0]?.tabLabel || "Promo";
 
+    // Tab order: Classic, Frenzy, Daily, Pins, Event. Weekly was retired
+    // alongside the Frenzy launch — the cadence overlapped with Daily and
+    // Frenzy without adding a meaningful "what's fresh this week" hook.
+    // Event slot is always rendered; the active promo (if any) supplies
+    // the data, otherwise the tab shows an empty/teaser state.
     const tabs: { key: TabMode; label: string }[] = [
-        { key: "classic", label: "All Time" },
-        { key: "weekly", label: "Weekly" },
+        { key: "classic", label: "Classic" },
+        { key: "frenzy", label: "Frenzy" },
         { key: "daily", label: "Daily" },
         { key: "pins", label: "Pins" },
-        ...(activePromos.length > 0 ? [{ key: "promo" as TabMode, label: promoTabLabel }] : []),
+        { key: "promo", label: "Event" },
     ];
 
     return (

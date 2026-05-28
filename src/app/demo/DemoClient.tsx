@@ -439,6 +439,12 @@ export default function DemoClient() {
         totalCascades: 0,
         gameOverReason: null,
         bonusCapsuleAwarded: false,
+        frenzyEndsAt: null,
+        frenzyBonusMsEarned: 0,
+        frenzyStartedAt: null,
+        frenzyLastMatchAt: null,
+        frenzyConsecutiveQuickMatches: 0,
+        frenzyHeatActiveUntil: null,
         moveLog: [],
         moveSequence: [],
     }), [board, score, combo, badges]);

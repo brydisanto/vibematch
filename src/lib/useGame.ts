@@ -16,6 +16,12 @@ import {
     triggerSpecialTile,
     hasValidMoves,
     findBestHint,
+    computeFrenzyBonusMs,
+    FRENZY_INITIAL_MS,
+    FRENZY_MAX_MS,
+    FRENZY_HEAT_WINDOW_MS,
+    FRENZY_HEAT_TRIGGER_COUNT,
+    FRENZY_HEAT_DURATION_MS,
 } from "./gameEngine";
 import { Badge } from "./badges";
 import {
@@ -33,6 +39,12 @@ import {
     playFinalMoveWarning,
     playGameStartSound,
     playTileLandSound,
+    startFrenzyBGM,
+    stopFrenzyBGM,
+    setFrenzyTempo,
+    playFrenzyTick,
+    playFrenzyFinalTick,
+    playFrenzyPenaltySound,
 } from "./sounds";
 
 export interface ScorePopup {
@@ -41,6 +53,15 @@ export interface ScorePopup {
     x: number;
     y: number;
     combo: number;
+}
+
+/** Flying -1 SECOND bubble used to visualize a Frenzy invalid-swap
+ *  penalty. Pops at the midpoint of the two attempted swap cells,
+ *  then flies to the HUD timer (sibling animation to ScorePopup). */
+export interface TimePenaltyPopup {
+    id: string;
+    x: number; // board col, fractional (0..7)
+    y: number; // board row, fractional (0..7)
 }
 
 // Intensity level for match effects — drives animations + haptics
@@ -80,6 +101,15 @@ export interface UseGameReturn {
     hintMessage: string | null;
     invalidSwapCells: { row: number; col: number }[] | null;
     swapAnim: { pos1: Position; pos2: Position } | null;
+    /** Timestamp of the most recent Frenzy time penalty (invalid swap
+     *  cost the player 1 second of clock). GameBoard subscribes to this
+     *  to render a red flash overlay when it changes. Null = no recent
+     *  penalty. Resets to null ~600ms after firing. */
+    frenzyPenaltyAt: number | null;
+    /** Active "-1 SECOND" bubbles flying from the invalid swap to the
+     *  HUD timer. One pushed per invalid swap; auto-cleared after the
+     *  flight animation. */
+    timePenaltyPopups: TimePenaltyPopup[];
     selectTile: (pos: Position) => void;
     swipeTiles: (from: Position, to: Position) => void;
     /** Resolves once the initial board state has been set so callers can
@@ -111,6 +141,13 @@ export function useGame(): UseGameReturn {
     const [isAnimating, setIsAnimating] = useState(false);
     const [hintCells, setHintCells] = useState<Set<string>>(new Set());
     const [invalidSwapCells, setInvalidSwapCells] = useState<{ row: number; col: number }[] | null>(null);
+    // Timestamp of most recent Frenzy time-penalty. Drives the red flash
+    // overlay in GameBoard. Cleared ~600ms after the penalty so a single
+    // invalid swap doesn't keep flashing indefinitely.
+    const [frenzyPenaltyAt, setFrenzyPenaltyAt] = useState<number | null>(null);
+    // Flying "-1 SECOND" bubbles. One pushed per invalid Frenzy swap;
+    // cleared 1.6s later after the fly-to-timer animation finishes.
+    const [timePenaltyPopups, setTimePenaltyPopups] = useState<TimePenaltyPopup[]>([]);
     const [swapAnim, setSwapAnim] = useState<{ pos1: Position; pos2: Position } | null>(null);
     const [hintMessage, setHintMessage] = useState<string | null>(null);
     const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,6 +217,50 @@ export function useGame(): UseGameReturn {
         }, 8000);
     }, []);
 
+    // Fire a Frenzy time penalty: subtract 1s from the clock, set the
+    // penalty timestamp so GameBoard can render its red flash, play the
+    // descending sting, and emit a flying "-1 SECOND" bubble at the
+    // midpoint of the two attempted swap cells. No-op outside Frenzy or
+    // before the clock arms (the first swap of the game). Capped so the
+    // clock can't go below "about to expire" — a player about to lose
+    // anyway shouldn't get a "free" penalty (the natural game-over
+    // fires immediately).
+    const FRENZY_PENALTY_MS = 1000;
+    const FRENZY_PENALTY_FLASH_MS = 600;
+    const FRENZY_PENALTY_BUBBLE_MS = 1600;
+    const firePenaltyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fireFrenzyPenalty = useCallback((a: Position, b: Position) => {
+        // Call sites gate by mode === "frenzy" already; this helper
+        // assumes Frenzy. The setState updater protects the time
+        // deduction against the edge case where the clock hasn't armed
+        // yet (first valid match arms frenzyEndsAt).
+        setState(prev => {
+            if (!prev || prev.gameMode !== "frenzy") return prev;
+            if (prev.frenzyEndsAt === null) return prev;
+            const newEndsAt = Math.max(Date.now(), prev.frenzyEndsAt - FRENZY_PENALTY_MS);
+            return { ...prev, frenzyEndsAt: newEndsAt };
+        });
+        playFrenzyPenaltySound();
+        setFrenzyPenaltyAt(Date.now());
+        if (firePenaltyTimer.current) clearTimeout(firePenaltyTimer.current);
+        firePenaltyTimer.current = setTimeout(() => setFrenzyPenaltyAt(null), FRENZY_PENALTY_FLASH_MS);
+
+        // Push the flying bubble at the midpoint of the two attempted
+        // swap cells. Emitted unconditionally because the call sites
+        // already gate on mode === "frenzy".
+        popupCounter.current += 1;
+        const id = `tp_${popupCounter.current}`;
+        const popup: TimePenaltyPopup = {
+            id,
+            x: (a.col + b.col) / 2,
+            y: (a.row + b.row) / 2,
+        };
+        setTimePenaltyPopups(prev => [...prev, popup]);
+        setTimeout(() => {
+            setTimePenaltyPopups(prev => prev.filter(p => p.id !== id));
+        }, FRENZY_PENALTY_BUBBLE_MS);
+    }, []);
+
     const preloadBadgeImages = useCallback((badges: Badge[]): Promise<void> => {
         // Tiles render with a plain <img>, not Next's optimizer. So we only
         // need to warm the cache for the raw badge URL — the prior dual-URL
@@ -236,6 +317,8 @@ export function useGame(): UseGameReturn {
         const initialState = createInitialState(mode, undefined, opts?.seed);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
+        // Frenzy gets the urgency BGM treatment — forced Werq, sped up.
+        if (mode === "frenzy") startFrenzyBGM();
     }, [preloadBadgeImages, applyStartState]);
 
     const startGameWithBadges = useCallback(async (mode: GameMode, badges: Badge[], opts?: { seed?: number }) => {
@@ -245,6 +328,7 @@ export function useGame(): UseGameReturn {
         const initialState = createInitialState(mode, badges, opts?.seed);
         await preloadBadgeImages(initialState.gameBadges);
         applyStartState(initialState);
+        if (mode === "frenzy") startFrenzyBGM();
     }, [preloadBadgeImages, applyStartState]);
 
     const resetGame = useCallback(async (opts?: { seed?: number }) => {
@@ -297,6 +381,7 @@ export function useGame(): UseGameReturn {
         costMove: boolean,
         prevMovesLeft: number,
         prevBonusCapsuleAwarded: boolean,
+        scoreMultiplier: number = 1,
         gameMode: GameMode = "classic",
     ): MatchIntensity => {
         const newMovesLeft = costMove ? prevMovesLeft - 1 : prevMovesLeft;
@@ -414,13 +499,14 @@ export function useGame(): UseGameReturn {
         // Clear match effect after animation
         setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 2400 : intensity === "mega" ? 1800 : 1200);
 
-        // Add score popup
+        // Add score popup. scoreMultiplier surfaces Frenzy's heat 2x so
+        // the floating number matches what the score tile actually adds.
         const popupId = `popup_${popupCounter.current++}`;
         setScorePopups((pops) => [
             ...pops,
             {
                 id: popupId,
-                value: result.scoreGained,
+                value: Math.round(result.scoreGained * scoreMultiplier),
                 x: effectPos.col,
                 y: effectPos.row,
                 combo: result.combo,
@@ -449,10 +535,15 @@ export function useGame(): UseGameReturn {
         prev: GameState,
         result: TurnResult,
         costMove: boolean,
+        scoreMultiplier: number = 1,
         moveAction?: MoveAction,
     ): GameState => {
-        const newMovesLeft = costMove ? prev.movesLeft - 1 : prev.movesLeft;
-        const newScore = prev.score + result.scoreGained;
+        const isFrenzy = prev.gameMode === "frenzy";
+        // Frenzy doesn't burn moves — the clock is the budget. Keeping
+        // movesLeft static avoids the moves-exhausted gameover path.
+        const newMovesLeft = isFrenzy ? prev.movesLeft : (costMove ? prev.movesLeft - 1 : prev.movesLeft);
+        const adjustedScoreGained = Math.round(result.scoreGained * scoreMultiplier);
+        const newScore = prev.score + adjustedScoreGained;
         const newMatchCount = prev.matchCount + result.matchesFound.length;
         const newMaxCombo = Math.max(prev.maxCombo, result.combo);
 
@@ -497,10 +588,69 @@ export function useGame(): UseGameReturn {
         const isBonusShape = result.shapeBonus?.type === 'T' || result.shapeBonus?.type === 'cross';
         const bonusCapsuleTriggered = isBonusShape && !prev.bonusCapsuleAwarded;
 
+        // ===== FRENZY UPDATES =====
+        // Bonus time from big matches/combos, heat-streak tracking, and
+        // first-swap timer arming all live here so a single match resolution
+        // updates every Frenzy field atomically. frenzyEndsAt is the
+        // absolute Unix timestamp when the clock should hit zero — bonus
+        // time pushes that forward, capped at start + FRENZY_MAX_MS.
+        let frenzyEndsAt = prev.frenzyEndsAt;
+        let frenzyBonusMsEarned = prev.frenzyBonusMsEarned;
+        let frenzyStartedAt = prev.frenzyStartedAt;
+        let frenzyLastMatchAt = prev.frenzyLastMatchAt;
+        let frenzyConsecutiveQuickMatches = prev.frenzyConsecutiveQuickMatches;
+        let frenzyHeatActiveUntil = prev.frenzyHeatActiveUntil;
+
+        if (isFrenzy && result.matchesFound.length > 0) {
+            const now = Date.now();
+            // Arm the timer on first valid swap so board-load latency
+            // doesn't steal time from the player.
+            if (frenzyStartedAt === null) {
+                frenzyStartedAt = now;
+                frenzyEndsAt = now + FRENZY_INITIAL_MS;
+            }
+
+            const realMatches = result.matchesFound.filter(m => m.positions.length <= 8);
+            const largestMatchSize = realMatches.length > 0
+                ? Math.max(...realMatches.map(m => m.positions.length))
+                : 3;
+            const spawnedSpecial = result.specialTilesCreated.length > 0;
+            const bonusMs = computeFrenzyBonusMs({
+                largestMatchSize,
+                spawnedSpecial,
+                comboPeak: result.combo,
+            });
+            if (bonusMs > 0 && frenzyEndsAt !== null && frenzyStartedAt !== null) {
+                // Push end-time forward, capped at the round's max length.
+                const cap = frenzyStartedAt + FRENZY_MAX_MS;
+                frenzyEndsAt = Math.min(cap, frenzyEndsAt + bonusMs);
+                frenzyBonusMsEarned = frenzyBonusMsEarned + bonusMs;
+            }
+
+            // Heat streak: matches within FRENZY_HEAT_WINDOW_MS of the
+            // previous one stack. Hitting FRENZY_HEAT_TRIGGER_COUNT arms
+            // a sustained 3x multiplier for the next FRENZY_HEAT_DURATION_MS.
+            // Previously the bonus was 2x AND one-shot (consumed on the
+            // next match) — felt rare and small. Now it stays live for the
+            // full window so rapid chain-play actually rewards the player
+            // proportional to their pace.
+            const withinWindow = frenzyLastMatchAt !== null && (now - frenzyLastMatchAt) <= FRENZY_HEAT_WINDOW_MS;
+            frenzyConsecutiveQuickMatches = withinWindow ? frenzyConsecutiveQuickMatches + 1 : 1;
+            // NOTE: removed the `if (scoreMultiplier > 1) frenzyHeatActiveUntil = null`
+            // line — that was the one-shot consumption. Heat now expires
+            // purely by time, not by use.
+            if (frenzyConsecutiveQuickMatches >= FRENZY_HEAT_TRIGGER_COUNT) {
+                frenzyHeatActiveUntil = now + FRENZY_HEAT_DURATION_MS;
+                frenzyConsecutiveQuickMatches = 0;
+            }
+            frenzyLastMatchAt = now;
+        }
+
         // Game-over wind-down + post-cascade cleanup are scheduled here
-        // because they need to fire AFTER the state update applies.
-        const noMovesLeft = newMovesLeft <= 0;
-        const noValidMoves = !noMovesLeft && !hasValidMoves(result.board);
+        // because they need to fire AFTER the state update applies. Frenzy
+        // game-over is driven by the timer effect, not by moves.
+        const noMovesLeft = !isFrenzy && newMovesLeft <= 0;
+        const noValidMoves = !isFrenzy && !noMovesLeft && !hasValidMoves(result.board);
         const gameOver = noMovesLeft || noValidMoves;
 
         if (gameOver) {
@@ -514,14 +664,15 @@ export function useGame(): UseGameReturn {
                 setIsAnimating(false);
             }, 1800);
         } else {
-            // Keep isAnimating=true through the cleanup timer. An earlier
-            // attempt at setTimeout(0) to "open input sooner" actually
-            // made cascades laggier — the queued tap fired while gravity
-            // was still drawing tiles, processTurn wrote a new board mid-
-            // animation, and every dropDistance value snap-changed,
-            // forcing extra reconciliation work + visual jitter. Matching
-            // Frenzy branch's 120ms mobile / 300ms desktop: lets the
-            // cascade-fall animation complete before input reopens.
+            // Cleanup delay = how long until the next queued tap is
+            // allowed to fire. Mobile Classic uses 120ms for snappiness,
+            // but Frenzy players match every 400-500ms; releasing input
+            // at 120ms lets the queued tap fire mid-animation and Framer
+            // Motion restarts gravity from the tile's in-flight position,
+            // reading as a teleport. Use the desktop value (300ms) for
+            // Frenzy and for desktop in general to give gravity time to
+            // finish visually before the next cascade begins.
+            const cleanupMs = isFrenzy ? 300 : (isMobile ? 120 : 300);
             setTimeout(() => {
                 setIsAnimating(false);
                 setState(prev2 => {
@@ -531,7 +682,7 @@ export function useGame(): UseGameReturn {
                     );
                     return { ...prev2, board: cleaned };
                 });
-            }, isMobile ? 120 : 300);
+            }, cleanupMs);
         }
 
         return {
@@ -548,6 +699,12 @@ export function useGame(): UseGameReturn {
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,
             bonusCapsuleAwarded: prev.bonusCapsuleAwarded || bonusCapsuleTriggered,
+            frenzyEndsAt,
+            frenzyBonusMsEarned,
+            frenzyStartedAt,
+            frenzyLastMatchAt,
+            frenzyConsecutiveQuickMatches,
+            frenzyHeatActiveUntil,
             moveLog: moveLogEntry ? [...prev.moveLog, moveLogEntry] : prev.moveLog,
             // Append to the deterministic action log only when a move was
             // actually consumed AND the caller supplied an action (swap or
@@ -571,8 +728,11 @@ export function useGame(): UseGameReturn {
         costMove: boolean,
         moveAction?: MoveAction,
     ): GameState => {
-        triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded, prev.gameMode);
-        return applyResultState(prev, result, costMove, moveAction);
+        const heatMul = (prev.gameMode === "frenzy"
+            && prev.frenzyHeatActiveUntil !== null
+            && prev.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
+        triggerMatchEffects(result, effectPos, costMove, prev.movesLeft, prev.bonusCapsuleAwarded, heatMul, prev.gameMode);
+        return applyResultState(prev, result, costMove, heatMul, moveAction);
     }, [triggerMatchEffects, applyResultState]);
 
     // Input queueing — when the player taps during the isAnimating
@@ -646,12 +806,23 @@ export function useGame(): UseGameReturn {
             const result = processTurn(state.board, state.selectedTile, pos, state.gameBadges, state.comboCarry, state.rng);
 
             if (!result) {
-                // Invalid swap — no match. Animate bounce then deselect
+                // Invalid swap — no match. Animate bounce then deselect.
+                // Frenzy adds a 1-second time penalty + red flash + sting
+                // sound on top so random/sloppy tapping has a real cost.
+                // No-op outside Frenzy.
                 playInvalidSwapSound();
+                if (state.gameMode === "frenzy") {
+                    fireFrenzyPenalty(state.selectedTile, pos);
+                }
                 resetHintTimer(state.board);
                 setInvalidSwapCells([state.selectedTile, pos]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
-                setState({ ...state, selectedTile: null });
+                // Functional update is critical here: fireFrenzyPenalty
+                // queues a functional setState that decrements frenzyEndsAt.
+                // A non-functional `setState({ ...state, ... })` would spread
+                // the stale captured `state` and silently overwrite the
+                // penalty time deduction.
+                setState(prev => prev ? { ...prev, selectedTile: null } : prev);
                 return;
             }
 
@@ -666,17 +837,22 @@ export function useGame(): UseGameReturn {
             setIsAnimating(true);
             setTimeout(() => {
                 setSwapAnim(null);
-                // Hit-stop pipeline: fire match effects (sounds, flash,
-                // particles) immediately, then defer the actual board
-                // state update by hit-stop ms on mega/ultra so the player
-                // sees the matched tiles flash IN PLACE before the cascade.
-                const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded, state.gameMode) : "normal";
+                // Heat 3x is a one-shot per arming, so we lock the
+                // multiplier here against the swap-time snapshot. Hit-stop
+                // pipeline: fire match effects (sounds, flash, particles)
+                // immediately, then defer the actual board state update by
+                // hit-stop ms on mega/ultra so the player sees the matched
+                // tiles flash IN PLACE before the cascade.
+                const heatMul = (state?.gameMode === "frenzy"
+                    && state.frenzyHeatActiveUntil !== null
+                    && state.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
+                const intensity = state ? triggerMatchEffects(result, pos, true, state.movesLeft, state.bonusCapsuleAwarded, heatMul, state.gameMode) : "normal";
                 const hitStop = getHitStopMs(intensity);
-                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swapAction) : prev);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, heatMul, swapAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },
-        [state, isAnimating, applyResult, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
+        [state, isAnimating, applyResult, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile, fireFrenzyPenalty]
     );
 
     const swipeTiles = useCallback(
@@ -696,7 +872,11 @@ export function useGame(): UseGameReturn {
             const result = processTurn(state.board, from, to, state.gameBadges, state.comboCarry, state.rng);
 
             if (!result) {
+                // Frenzy time-penalty + sting; no-op outside Frenzy.
                 playInvalidSwapSound();
+                if (state.gameMode === "frenzy") {
+                    fireFrenzyPenalty(from, to);
+                }
                 resetHintTimer(state.board);
                 setInvalidSwapCells([from, to]);
                 setTimeout(() => setInvalidSwapCells(null), 400);
@@ -712,14 +892,130 @@ export function useGame(): UseGameReturn {
             setIsAnimating(true);
             setTimeout(() => {
                 setSwapAnim(null);
-                const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded, state.gameMode) : "normal";
+                const heatMul = (state?.gameMode === "frenzy"
+                    && state.frenzyHeatActiveUntil !== null
+                    && state.frenzyHeatActiveUntil > Date.now()) ? 3 : 1;
+                const intensity = state ? triggerMatchEffects(result, to, true, state.movesLeft, state.bonusCapsuleAwarded, heatMul, state.gameMode) : "normal";
                 const hitStop = getHitStopMs(intensity);
-                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, swipeAction) : prev);
+                const apply = () => setState(prev => prev ? applyResultState(prev, result, true, heatMul, swipeAction) : prev);
                 if (hitStop > 0) setTimeout(apply, hitStop); else apply();
             }, isMobile ? 280 : 240);
         },
-        [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile]
+        [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile, fireFrenzyPenalty]
     );
+
+    // ===== FRENZY VISIBILITY FORFEIT =====
+    // Backgrounding the tab mid-Frenzy ends the round immediately. The
+    // "no pause" rule from the design is enforced here: hiding the tab
+    // can't be used to stop the clock. Sets frenzyEndsAt to now so the
+    // expiry timeout fires immediately on the next paint.
+    useEffect(() => {
+        if (!state) return;
+        if (state.gameMode !== "frenzy") return;
+        if (state.gamePhase !== "playing") return;
+        if (state.frenzyStartedAt === null) return;
+
+        const onHidden = () => {
+            if (document.visibilityState !== "hidden") return;
+            setState(prev => {
+                if (!prev) return prev;
+                if (prev.gameMode !== "frenzy") return prev;
+                if (prev.gamePhase !== "playing") return prev;
+                return {
+                    ...prev,
+                    frenzyEndsAt: Date.now(),
+                    gamePhase: "gameover",
+                    gameOverReason: "time_expired",
+                };
+            });
+        };
+        document.addEventListener("visibilitychange", onHidden);
+        return () => document.removeEventListener("visibilitychange", onHidden);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt]);
+
+    // ===== FRENZY EXPIRY =====
+    // Schedules a SINGLE setTimeout for when frenzyEndsAt arrives. Reschedules
+    // if the player earns bonus time (frenzyEndsAt moves forward). No
+    // per-frame setState — the parent never re-renders just because the
+    // clock advances. Mid-cascade animations run to completion uninterrupted.
+    useEffect(() => {
+        if (!state) return;
+        if (state.gameMode !== "frenzy") return;
+        if (state.gamePhase !== "playing") return;
+        if (state.frenzyEndsAt === null) return;
+
+        const msUntilExpiry = state.frenzyEndsAt - Date.now();
+        if (msUntilExpiry <= 0) {
+            playGameOverSound();
+            setState(prev => prev ? {
+                ...prev,
+                gamePhase: "gameover",
+                gameOverReason: "time_expired",
+            } : prev);
+            return;
+        }
+
+        const id = setTimeout(() => {
+            playGameOverSound();
+            setState(prev => prev ? {
+                ...prev,
+                gamePhase: "gameover",
+                gameOverReason: "time_expired",
+            } : prev);
+        }, msUntilExpiry);
+
+        return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyEndsAt]);
+
+    // ===== FRENZY AUDIO + URGENCY TICKS =====
+    // Runs its own interval but never touches React state, so it can't
+    // force re-renders. Reads frenzyEndsAt + Date.now() to know remaining
+    // ms; only pokes bgmAudio.playbackRate when crossing a tempo band
+    // boundary, and only plays a tick beep when crossing a whole-second
+    // boundary in the last 10s. Audio rate changes are coarse (3 bands)
+    // so mobile Safari doesn't stutter from constant time-stretching.
+    const lastFrenzyRateBandRef = useRef<number | null>(null);
+    const lastFrenzyTickSecondRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (!state) return;
+        if (state.gameMode !== "frenzy") return;
+        if (state.gamePhase !== "playing") return;
+        if (state.frenzyEndsAt === null) return;
+
+        const endsAt = state.frenzyEndsAt;
+        const id = setInterval(() => {
+            const ms = endsAt - Date.now();
+
+            // 3 discrete bands: > 30s = original, 30-15s = fast, < 15s = hectic.
+            const band = ms > 30_000 ? 0 : ms > 15_000 ? 1 : 2;
+            if (band !== lastFrenzyRateBandRef.current) {
+                lastFrenzyRateBandRef.current = band;
+                setFrenzyTempo(ms);
+            }
+
+            if (ms > 0 && ms <= 10_000) {
+                const sec = Math.ceil(ms / 1000);
+                if (sec !== lastFrenzyTickSecondRef.current) {
+                    lastFrenzyTickSecondRef.current = sec;
+                    if (sec <= 3) playFrenzyFinalTick();
+                    else playFrenzyTick();
+                }
+            }
+        }, 500);
+        return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state?.gameMode, state?.gamePhase, state?.frenzyEndsAt]);
+
+    // Stop the Frenzy BGM treatment (rate + track restore) when the
+    // round ends, no matter what triggered the end (time out, visibility
+    // hide, manual abort). Mirrored on mode change away from frenzy.
+    useEffect(() => {
+        if (state?.gameMode === "frenzy" && state.gamePhase === "gameover") {
+            stopFrenzyBGM();
+        }
+    }, [state?.gameMode, state?.gamePhase]);
 
     // Replay queued input when the animating window clears. Only one
     // queued action exists at a time (selectTile / swipeTiles each
@@ -757,6 +1053,8 @@ export function useGame(): UseGameReturn {
         hintMessage,
         invalidSwapCells,
         swapAnim,
+        frenzyPenaltyAt,
+        timePenaltyPopups,
         selectTile,
         swipeTiles,
         startGame,

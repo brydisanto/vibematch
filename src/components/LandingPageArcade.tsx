@@ -41,6 +41,7 @@ import {
     COSMIC_DEEP,
     ORANGE,
     ORANGE_DEEP,
+    ORANGE_LIGHT,
     PINK,
     RED as TOKEN_RED,
 } from "@/lib/arcade-tokens";
@@ -1094,87 +1095,171 @@ export default function LandingPageArcade({
                                 />
                             </div>
 
-                        {/* Classic cabinet — sole center CTA. Daily
-                            Challenge lives in the right rail. */}
-                        <div className="w-full flex flex-col items-center">
-                            <div className="max-w-[380px] mx-auto w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => onStartGame("classic", username, avatarUrl)}
-                                    className="block w-full text-left outline-none cursor-pointer"
+                        {/* Game-mode cabinets — Classic + Pin Frenzy
+                            side-by-side. Both share the vertical cabinet
+                            layout (circle stat -> mode label -> Pin Drop
+                            wordmark -> tagline -> PLAY) so they read as
+                            siblings. Classic stays gold, Frenzy is orange
+                            for heat/speed. Daily Challenge lives in the
+                            right rail. */}
+                        <div className="w-full max-w-[780px] mx-auto flex flex-row items-stretch gap-3">
+                            <button
+                                type="button"
+                                onClick={() => onStartGame("classic", username, avatarUrl)}
+                                className="flex-1 min-w-0 block text-left outline-none cursor-pointer"
+                            >
+                                <div
+                                    className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DIM} 40%, ${GOLD_DEEP} 100%)`,
+                                        boxShadow: `0 6px 0 ${GOLD_DEEP}, 0 12px 22px rgba(0,0,0,0.55), 0 0 40px ${GOLD}15`,
+                                    }}
                                 >
                                     <div
-                                        className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
-                                        style={{
-                                            background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_DIM} 40%, ${GOLD_DEEP} 100%)`,
-                                            boxShadow: `0 6px 0 ${GOLD_DEEP}, 0 12px 22px rgba(0,0,0,0.55), 0 0 40px ${GOLD}15`,
-                                        }}
+                                        className="rounded-[14px] relative p-5 h-full flex flex-col items-center text-center overflow-hidden"
+                                        style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
                                     >
                                         <div
-                                            className="rounded-[14px] relative p-5 h-full flex flex-col items-center text-center overflow-hidden"
-                                            style={{ background: "linear-gradient(180deg, #2A1A0A 0%, #120802 100%)" }}
+                                            className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+                                            style={{ background: `linear-gradient(180deg, ${GOLD}16, transparent)` }}
+                                        />
+                                        <div
+                                            className="relative mb-3 rounded-full flex flex-col items-center justify-center overflow-hidden"
+                                            style={{
+                                                width: 90,
+                                                height: 90,
+                                                background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
+                                                boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 25px ${GOLD}55`,
+                                                border: "3px solid #2A1A0A",
+                                            }}
                                         >
-                                            <div
-                                                className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
-                                                style={{ background: `linear-gradient(180deg, ${GOLD}16, transparent)` }}
-                                            />
-                                            <div
-                                                className="relative mb-3 rounded-full flex flex-col items-center justify-center overflow-hidden"
+                                            <span
+                                                className="mt-[4px] font-display font-black leading-none"
                                                 style={{
-                                                    width: 90,
-                                                    height: 90,
-                                                    background: `radial-gradient(circle at 35% 30%, #FFF4B0, ${GOLD} 55%, ${GOLD_DEEP})`,
-                                                    boxShadow: `inset 0 -5px 9px ${GOLD_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 25px ${GOLD}55`,
-                                                    border: "3px solid #2A1A0A",
+                                                    color: "#1A0633",
+                                                    fontSize: 38,
+                                                    textShadow: "0 2px 0 rgba(255,255,255,0.25)",
                                                 }}
                                             >
-                                                <span
-                                                    className="mt-[4px] font-display font-black leading-none"
-                                                    style={{
-                                                        color: "#1A0633",
-                                                        fontSize: 38,
-                                                        textShadow: "0 2px 0 rgba(255,255,255,0.25)",
-                                                    }}
-                                                >
-                                                    30
-                                                </span>
-                                                <span className="mt-[1px] text-[9px] font-bold tracking-wider" style={{ color: "#1A0633" }}>
-                                                    MOVES
-                                                </span>
-                                            </div>
-                                            <h2
-                                                className="font-display font-black uppercase leading-none text-[22px]"
-                                                style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                                30
+                                            </span>
+                                            <span className="mt-[1px] text-[9px] font-bold tracking-wider" style={{ color: "#1A0633" }}>
+                                                MOVES
+                                            </span>
+                                        </div>
+                                        <h2
+                                            className="font-display font-black uppercase leading-none text-[22px]"
+                                            style={{ color: GOLD, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                        >
+                                            Classic
+                                        </h2>
+                                        <h3
+                                            className="font-display font-black uppercase leading-none text-[32px] mt-1"
+                                            style={{ color: GOLD }}
+                                        >
+                                            Pin Drop
+                                        </h3>
+                                        <p className="text-white/55 text-[12px] mt-2">
+                                            Match pins and score as high as you can.
+                                        </p>
+                                        <div className="mt-4">
+                                            <ChunkyButton
+                                                color={GOLD}
+                                                deep={GOLD_DEEP}
+                                                style={{
+                                                    padding: "11px 30px",
+                                                    fontSize: 13,
+                                                    fontWeight: 900,
+                                                    letterSpacing: "0.18em",
+                                                }}
                                             >
-                                                Classic
-                                            </h2>
-                                            <h3
-                                                className="font-display font-black uppercase leading-none text-[32px] mt-1"
-                                                style={{ color: GOLD }}
-                                            >
-                                                Pin Drop
-                                            </h3>
-                                            <p className="text-white/55 text-[12px] mt-2">
-                                                Match pins and score as high as you can.
-                                            </p>
-                                            <div className="mt-4">
-                                                <ChunkyButton
-                                                    color={GOLD}
-                                                    deep={GOLD_DEEP}
-                                                    style={{
-                                                        padding: "11px 30px",
-                                                        fontSize: 13,
-                                                        fontWeight: 900,
-                                                        letterSpacing: "0.18em",
-                                                    }}
-                                                >
-                                                    PLAY
-                                                </ChunkyButton>
-                                            </div>
+                                                PLAY
+                                            </ChunkyButton>
                                         </div>
                                     </div>
-                                </button>
-                            </div>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => onStartGame("frenzy", username, avatarUrl)}
+                                className="flex-1 min-w-0 block text-left outline-none cursor-pointer"
+                            >
+                                <div
+                                    className="relative rounded-2xl p-[3px] h-full transition-all duration-200 ease-out hover:-translate-y-[3px] hover:brightness-[1.08] active:translate-y-[1px] active:brightness-[0.95]"
+                                    style={{
+                                        background: `linear-gradient(180deg, ${ORANGE} 0%, #C2410C 60%, ${ORANGE_DEEP} 100%)`,
+                                        boxShadow: `0 6px 0 ${ORANGE_DEEP}, 0 12px 22px rgba(0,0,0,0.55), 0 0 40px ${ORANGE}15`,
+                                    }}
+                                >
+                                    <div
+                                        className="rounded-[14px] relative p-5 h-full flex flex-col items-center text-center overflow-hidden"
+                                        style={{ background: "linear-gradient(180deg, #2A0A0A 0%, #120303 100%)" }}
+                                    >
+                                        <div
+                                            className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+                                            style={{ background: `linear-gradient(180deg, ${ORANGE}16, transparent)` }}
+                                        />
+                                        <div
+                                            className="relative mb-3 rounded-full flex flex-col items-center justify-center overflow-hidden"
+                                            style={{
+                                                width: 90,
+                                                height: 90,
+                                                background: `radial-gradient(circle at 35% 30%, #FFD8A6, ${ORANGE} 55%, ${ORANGE_DEEP})`,
+                                                boxShadow: `inset 0 -5px 9px ${ORANGE_DEEP}, 0 4px 10px rgba(0,0,0,0.6), 0 0 25px ${ORANGE}55`,
+                                                border: "3px solid #2A0A0A",
+                                            }}
+                                        >
+                                            <span
+                                                className="mt-[4px] font-display font-black leading-none"
+                                                style={{
+                                                    color: "#2A0A0A",
+                                                    fontSize: 34,
+                                                    textShadow: "0 2px 0 rgba(255,255,255,0.25)",
+                                                }}
+                                            >
+                                                60
+                                            </span>
+                                            <span className="mt-[1px] text-[9px] font-bold tracking-wider" style={{ color: "#2A0A0A" }}>
+                                                SECONDS
+                                            </span>
+                                        </div>
+                                        <h2
+                                            className="font-display font-black uppercase leading-none text-[22px]"
+                                            style={{ color: ORANGE_LIGHT, textShadow: "0 2px 0 rgba(0,0,0,0.5)" }}
+                                        >
+                                            Pin Drop
+                                        </h2>
+                                        <h3
+                                            className="font-display font-black uppercase leading-none text-[32px] mt-1"
+                                            style={{ color: ORANGE_LIGHT }}
+                                        >
+                                            Frenzy
+                                        </h3>
+                                        <p className="text-white/55 text-[12px] mt-2">
+                                            Max chaos. Match pins as fast as you can.
+                                        </p>
+                                        <div className="mt-4">
+                                            <ChunkyButton
+                                                color={ORANGE}
+                                                deep={ORANGE_DEEP}
+                                                style={{
+                                                    padding: "11px 30px",
+                                                    fontSize: 13,
+                                                    fontWeight: 900,
+                                                    letterSpacing: "0.18em",
+                                                }}
+                                            >
+                                                GO
+                                            </ChunkyButton>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Spacer to keep Prize Games strip below in flow */}
+                        <div className="w-full flex flex-col items-center">
 
                             {/* Prize Games strip */}
                             <div className="max-w-[640px] mx-auto w-full mt-4">
