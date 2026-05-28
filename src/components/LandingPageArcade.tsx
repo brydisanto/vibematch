@@ -1586,7 +1586,7 @@ export default function LandingPageArcade({
                                         {pinRank !== null ? `#${pinRank}` : "—"}
                                     </div>
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${COSMIC}cc` }}>
-                                        PIN RANK
+                                        PIN<br />RANK
                                     </div>
                                 </button>
                                 <button
