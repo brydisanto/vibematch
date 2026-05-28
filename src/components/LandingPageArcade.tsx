@@ -230,10 +230,24 @@ export default function LandingPageArcade({
     userProfile,
 }: LandingPageArcadeProps) {
     const [isProfileOpen, setProfileOpen] = useState(false);
+    // The first profile click triggers __pdEnsureWallet, which flips
+    // walletReady in AppClient and re-wraps the tree in <WalletProvider>.
+    // That re-wrap remounts this landing component, throwing away any
+    // local setState we just called. Stash a window flag before the
+    // wallet trigger so the new mount can pick it up below.
     const openProfile = () => {
-        (window as unknown as { __pdEnsureWallet?: () => void }).__pdEnsureWallet?.();
+        const win = window as unknown as { __pdEnsureWallet?: () => void; __pdPendingProfileOpen?: boolean };
+        win.__pdPendingProfileOpen = true;
+        win.__pdEnsureWallet?.();
         setProfileOpen(true);
     };
+    useEffect(() => {
+        const win = window as unknown as { __pdPendingProfileOpen?: boolean };
+        if (win.__pdPendingProfileOpen) {
+            win.__pdPendingProfileOpen = false;
+            setProfileOpen(true);
+        }
+    }, []);
     const [isTierInfoOpen, setTierInfoOpen] = useState(false);
     // Leaderboard modal open-state doubles as its initial tab, so the
     // Leaders nav button can open on "classic" while the DAILY CHALLENGE
