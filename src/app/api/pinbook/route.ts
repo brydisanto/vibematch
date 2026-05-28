@@ -13,7 +13,7 @@ import {
     findPromoBadge,
     promoLeaderboardKey,
 } from '@/lib/promo-badges';
-import { frenzyCapsulesForScore } from '@/lib/gameEngine';
+import { frenzyCapsulesForScore, classicCapsulesForScore } from '@/lib/gameEngine';
 import { logAuditEvent } from '@/lib/audit-log';
 import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
 
@@ -761,7 +761,7 @@ export async function POST(req: Request) {
             }
             const capsuleCount = gameMode === 'frenzy'
                 ? frenzyCapsulesForScore(score)
-                : (score >= 50000 ? 3 : score >= 30000 ? 2 : 1);
+                : classicCapsulesForScore(score);
 
             if (gameMode === 'classic' || gameMode === 'frenzy') {
                 // Classic + Frenzy: require a valid single-use match token from trackGame

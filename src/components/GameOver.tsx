@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { GameState, frenzyCapsulesForScore } from "@/lib/gameEngine";
+import { GameState, frenzyCapsulesForScore, classicCapsulesForScore } from "@/lib/gameEngine";
 import { useEffect, useState, useRef } from "react";
 import { RotateCcw, Home, Target, Flame, Zap, ScrollText } from "lucide-react";
 import { TIER_COLORS, BadgeTier, TIER_DISPLAY_NAMES } from "@/lib/badges";
@@ -650,7 +650,7 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
     // frenzyCapsulesForScore — see gameEngine.ts.
     const capsuleCount = gameMode === "frenzy"
         ? frenzyCapsulesForScore(score)
-        : (score >= 50000 ? 3 : score >= 30000 ? 2 : score >= 15000 ? 1 : 0);
+        : classicCapsulesForScore(score);
     const shareScoreFloor = gameMode === "frenzy" ? 30000 : 15000;
     const canShare = score >= shareScoreFloor && !!userProfile?.username;
 
