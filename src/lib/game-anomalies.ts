@@ -40,67 +40,101 @@ export interface AnomalyFlag {
 // Floor anything that requires rule-bending math (e.g. score/match ratios
 // far above what power-tile detonations can mathematically produce) at
 // the "impossible" tier — those almost certainly indicate a forged log.
-const THRESHOLDS = {
-    // Score thresholds bumped ~60% alongside the scoring system change
-    // (base scores +50%, combo multiplier 0.75x → 1.0x). Without this
-    // bump, legitimate high-skill runs under the new scoring curve would
-    // start flagging as "very high score".
-    score: 480_000,
-    combo: 25,
-    cascades: 100,
-    bombs: 35,
-    matches: 800,
-    vibestreaks: 25,
-    cosmicBlasts: 20,
-    scorePerMatch: 1300,
-    // Impossibility checks (if triggered, almost certainly forged)
-    scoreImpossible: 800_000,
-    scorePerMatchImpossible: 4800,
+//
+// Per-mode tables because Frenzy plays radically differently than Classic:
+//   - 60s round + bonus time refunds → 1-2 minutes of continuous matching
+//   - TURBO 3x sustained multiplier window pushes legitimate score/match
+//     into the 1500-3000 range that Classic players never see
+//   - Cap of 30 moves doesn't apply; "matches" alone can hit 150-200
+const THRESHOLDS_BY_MODE = {
+    classic: {
+        // Score thresholds bumped ~60% alongside the scoring system change
+        // (base scores +50%, combo multiplier 0.75x → 1.0x).
+        score: 480_000,
+        combo: 25,
+        cascades: 100,
+        bombs: 35,
+        matches: 800,
+        vibestreaks: 25,
+        cosmicBlasts: 20,
+        scorePerMatch: 1300,
+        // Impossibility checks (if triggered, almost certainly forged)
+        scoreImpossible: 800_000,
+        scorePerMatchImpossible: 4800,
+    },
+    frenzy: {
+        // Frenzy ceiling is meaningfully lower than Classic — a god-tier
+        // 120s round with sustained TURBO peaks around 250-300K. Above
+        // 500K is mathematically implausible.
+        score: 300_000,
+        combo: 25,
+        cascades: 80,
+        bombs: 25,
+        matches: 400,
+        vibestreaks: 20,
+        cosmicBlasts: 15,
+        // TURBO 3x baselines legitimate score/match into 1500-3000.
+        // Bot signal lives well above that.
+        scorePerMatch: 3500,
+        scoreImpossible: 500_000,
+        scorePerMatchImpossible: 8000,
+    },
 } as const;
+
+function thresholdsFor(mode: string) {
+    // Daily inherits classic thresholds — same 30-move budget, same
+    // scoring curve. Anything not classic/daily/frenzy also defaults
+    // to classic for safety.
+    if (mode === 'frenzy') return THRESHOLDS_BY_MODE.frenzy;
+    return THRESHOLDS_BY_MODE.classic;
+}
 
 export function detectAnomalies(game: GameLogEntry): AnomalyFlag[] {
     const flags: AnomalyFlag[] = [];
+    const T = thresholdsFor(game.gameMode);
 
     // HIGH — almost certainly forged
-    if (game.score >= THRESHOLDS.scoreImpossible) {
+    if (game.score >= T.scoreImpossible) {
         flags.push({ id: 'score-impossible', label: 'Impossible score', severity: 'critical' });
     }
-    if (game.matchCount > 0 && game.score / game.matchCount >= THRESHOLDS.scorePerMatchImpossible) {
+    if (game.matchCount > 0 && game.score / game.matchCount >= T.scorePerMatchImpossible) {
         flags.push({ id: 'score-per-match-impossible', label: 'Score/match ratio impossible', severity: 'critical' });
     }
 
     // MEDIUM — very unusual, worth reviewing
-    if (game.score >= THRESHOLDS.score && game.score < THRESHOLDS.scoreImpossible) {
+    if (game.score >= T.score && game.score < T.scoreImpossible) {
         flags.push({ id: 'score-high', label: 'Very high score', severity: 'high' });
     }
-    if (game.maxCombo >= THRESHOLDS.combo) {
-        flags.push({ id: 'combo-high', label: `Combo > ${THRESHOLDS.combo}`, severity: 'high' });
+    if (game.maxCombo >= T.combo) {
+        flags.push({ id: 'combo-high', label: `Combo > ${T.combo}`, severity: 'high' });
     }
-    if (game.totalCascades >= THRESHOLDS.cascades) {
-        flags.push({ id: 'cascades-high', label: `Cascades > ${THRESHOLDS.cascades}`, severity: 'medium' });
+    if (game.totalCascades >= T.cascades) {
+        flags.push({ id: 'cascades-high', label: `Cascades > ${T.cascades}`, severity: 'medium' });
     }
-    if (game.bombsCreated >= THRESHOLDS.bombs) {
-        flags.push({ id: 'bombs-high', label: `Bombs > ${THRESHOLDS.bombs}`, severity: 'medium' });
+    if (game.bombsCreated >= T.bombs) {
+        flags.push({ id: 'bombs-high', label: `Bombs > ${T.bombs}`, severity: 'medium' });
     }
-    if (game.matchCount >= THRESHOLDS.matches) {
-        flags.push({ id: 'matches-high', label: `Matches > ${THRESHOLDS.matches}`, severity: 'medium' });
+    if (game.matchCount >= T.matches) {
+        flags.push({ id: 'matches-high', label: `Matches > ${T.matches}`, severity: 'medium' });
     }
-    if (game.cosmicBlastsCreated >= THRESHOLDS.cosmicBlasts) {
-        flags.push({ id: 'cosmic-high', label: `Cosmic blasts > ${THRESHOLDS.cosmicBlasts}`, severity: 'medium' });
+    if (game.cosmicBlastsCreated >= T.cosmicBlasts) {
+        flags.push({ id: 'cosmic-high', label: `Cosmic blasts > ${T.cosmicBlasts}`, severity: 'medium' });
     }
-    if (game.vibestreaksCreated >= THRESHOLDS.vibestreaks) {
-        flags.push({ id: 'vibestreaks-high', label: `Vibestreaks > ${THRESHOLDS.vibestreaks}`, severity: 'medium' });
+    if (game.vibestreaksCreated >= T.vibestreaks) {
+        flags.push({ id: 'vibestreaks-high', label: `Vibestreaks > ${T.vibestreaks}`, severity: 'medium' });
     }
 
     // LOW — suspicious but could be legitimate
     if (game.matchCount > 0 &&
-        game.score / game.matchCount >= THRESHOLDS.scorePerMatch &&
-        game.score / game.matchCount < THRESHOLDS.scorePerMatchImpossible) {
+        game.score / game.matchCount >= T.scorePerMatch &&
+        game.score / game.matchCount < T.scorePerMatchImpossible) {
         flags.push({ id: 'score-per-match-high', label: 'High score/match ratio', severity: 'low' });
     }
 
-    // Validation flag — classic-mode games that weren't tied to a server match token
-    if (game.gameMode === 'classic' && game.validatedMatch === false) {
+    // Validation flag — classic + frenzy games that weren't tied to a
+    // server match token. Daily uses the daily_played marker instead so
+    // it's exempt.
+    if ((game.gameMode === 'classic' || game.gameMode === 'frenzy') && game.validatedMatch === false) {
         flags.push({ id: 'no-match-token', label: 'No match token', severity: 'low' });
     }
 
