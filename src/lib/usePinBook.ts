@@ -507,11 +507,12 @@ export function usePinBook() {
     const collectReveal = useCallback(async () => {
         if (!pendingReveal) return;
         try {
-            const res = await fetch("/api/pinbook", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "collect", badgeId: pendingReveal.badge.id }),
-            });
+            // Retry the collect call so a transient blip doesn't lose the
+            // pull. The 5-minute pending TTL gives us a wide recovery
+            // window, and the server-side stranded-pending sweep on
+            // pinbook GET catches anything that still slips through.
+            const res = await retryablePinbookPost({ action: "collect", badgeId: pendingReveal.badge.id });
+            if (!res) { console.error("pinbook collect network failure after retries"); return; }
             if (!res.ok) { console.error("pinbook collect failed:", res.status); return; }
             const data = await res.json();
             if (data.collected) {

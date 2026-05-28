@@ -174,6 +174,62 @@ async function withUserLock<T>(username: string, fn: () => Promise<T>): Promise<
     }
 }
 
+/**
+ * Recover a stranded non-promo capsule pending for this user. Mirrors the
+ * promo recovery in /api/promo/leaderboard but for canonical pins.
+ *
+ * The intended flow is open → reveal animation → collect. If the collect
+ * call fails (network drop after the reveal started, browser closed
+ * mid-animation, etc.) the pending sits in KV with the rolled badge
+ * already determined, but the user's pinbook never gains the pin. With
+ * the 5-minute pending TTL plus client-side retries this should be rare,
+ * but when it happens it strands a paid-for capsule. This sweep credits
+ * the rolled badge to the user's pinbook on their next pinbook GET if
+ * the pending is at least RECOVERY_AGE_MS old (so we don't race a
+ * legitimate in-flight collect).
+ */
+const PINBOOK_PENDING_RECOVERY_AGE_MS = 30_000;
+async function recoverStrandedPinbookPending(
+    username: string,
+    data: PinBookData,
+): Promise<{ recovered: boolean; data: PinBookData }> {
+    try {
+        const pendingKey = `pinbook:${username}:pending`;
+        const pending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number; isPromo?: boolean } | null;
+        if (!pending) return { recovered: false, data };
+        // Promo pendings have their own recovery in /api/promo/leaderboard.
+        if (pending.isPromo) return { recovered: false, data };
+        if (Date.now() - (pending.openedAt ?? 0) < PINBOOK_PENDING_RECOVERY_AGE_MS) {
+            return { recovered: false, data };
+        }
+        const badgeDef = BADGES.find(b => b.id === pending.badgeId);
+        if (!badgeDef || badgeDef.tier !== pending.tier) return { recovered: false, data };
+
+        // Credit the badge identically to the collect handler so the
+        // recovered pin matches what the user would have gotten.
+        const nowIso = new Date().toISOString();
+        const existing = data.pins[pending.badgeId];
+        if (existing) {
+            existing.count += 1;
+            existing.lastPulled = nowIso;
+        } else {
+            data.pins[pending.badgeId] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+        }
+        const tierFound = ensureTotalFoundByTier(data);
+        tierFound[badgeDef.tier] = (tierFound[badgeDef.tier] || 0) + 1;
+
+        await kv.set(`pinbook:${username}`, data);
+        await kv.del(pendingKey);
+        // Bump the daily-activity counters too so admin charts stay in sync.
+        await bumpDailyCounter(username, "pinsFound", 1);
+        if (!existing) await bumpDailyCounter(username, "newPinsFound", 1);
+        return { recovered: true, data };
+    } catch (e) {
+        console.error('Pinbook pending recovery error:', e);
+        return { recovered: false, data };
+    }
+}
+
 // GET — fetch pin book for logged-in user
 export async function GET() {
     try {
@@ -184,10 +240,19 @@ export async function GET() {
 
         const username = (session.username as string).toLowerCase();
         const key = `pinbook:${username}`;
-        const [data, profile] = await Promise.all([
+        let [data, profile] = await Promise.all([
             kv.get(key) as Promise<PinBookData | null>,
             kv.get(`user:${username}`) as Promise<{ username?: string; avatarUrl?: string } | null>,
         ]);
+
+        // Sweep any stranded non-promo pending before serving the pinbook
+        // so the returned response includes the recovered pull. Only runs
+        // when there's an existing pinbook (new users have nothing to
+        // recover). No-ops when no pending exists or pending is too fresh.
+        if (data) {
+            const swept = await recoverStrandedPinbookPending(username, data);
+            data = swept.data;
+        }
 
         // Self-heal: refresh this user's leaderboard entry from their actual pinbook data.
         // This fixes stale entries caused by race conditions in the shared leaderboard key.
