@@ -694,7 +694,13 @@ export function useGame(): UseGameReturn {
             comboCarry: result.comboCarry,
             maxCombo: newMaxCombo,
             selectedTile: null,
-            gamePhase: "playing",
+            // If gameover has already been set (e.g., the Frenzy timer
+            // expired while this cascade was still settling), DO NOT snap
+            // gamePhase back to "playing". Otherwise the gamePhase
+            // bounce gameover → playing → gameover fires the end-flow
+            // useEffect twice and logs two games (the second
+            // earnCapsule trips "Capsule already claimed for this match").
+            gamePhase: prev.gamePhase === "gameover" ? "gameover" : "playing",
             gameOverReason: prev.gameOverReason,
             matchCount: newMatchCount,
             totalCascades: prev.totalCascades + result.cascadeCount,

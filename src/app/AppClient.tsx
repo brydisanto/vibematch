@@ -128,6 +128,11 @@ export default function AppClient() {
   // "abandoned previous match" guard wrongly burns the new match's prize
   // eligibility, causing 15K+ runs to yield zero capsules.
   const gameEndPromiseRef = useRef<Promise<void> | null>(null);
+  // Defense in depth against the Frenzy gamePhase bounce: even if a
+  // gameover → playing → gameover transition slips through, only run
+  // the end-flow (log + earnCapsule + achievements) once per matchId.
+  // Cleared in handleStartGame so the next match's matchId can re-trigger.
+  const lastProcessedGameOverMatchIdRef = useRef<string | null>(null);
 
   // Per-game session stats for achievements (not in GameState)
   const gameSessionStats = useRef({
@@ -285,6 +290,16 @@ export default function AppClient() {
   // checking is conditionally skipped further down instead.
   useEffect(() => {
     if (game.state?.gamePhase !== "gameover" || !userProfile?.username) return;
+    // Dedupe by matchId. The Frenzy timer can fire gameover twice
+    // when a late-cascade adds bonus time (gamePhase bounces gameover
+    // → playing → gameover). Without this guard, logGame writes a
+    // second feed entry and earnCapsule rejects with "Capsule already
+    // claimed for this match".
+    const currentMatchId = pinBook.getActiveMatchId();
+    if (currentMatchId && lastProcessedGameOverMatchIdRef.current === currentMatchId) {
+      return;
+    }
+    if (currentMatchId) lastProcessedGameOverMatchIdRef.current = currentMatchId;
     const mode = game.state.gameMode || 'classic';
     const gs = game.state;
     const stats = gameSessionStats.current;
@@ -567,6 +582,9 @@ export default function AppClient() {
     if (gameEndPromiseRef.current) {
       await gameEndPromiseRef.current.catch(() => {});
     }
+    // Reset the gameover-dedupe guard so the new match's matchId can
+    // re-trigger the end-flow useEffect.
+    lastProcessedGameOverMatchIdRef.current = null;
 
     // Issue match token at game START. For daily, the server atomically sets
     // the daily_played marker here — if it's already set (e.g. user refreshed
