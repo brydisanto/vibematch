@@ -1594,17 +1594,17 @@ export default function LandingPageArcade({
                                     onClick={() => setLeaderboardTab("classic")}
                                     className="rounded-lg px-2 py-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:-translate-y-[1px] hover:brightness-[1.12]"
                                     style={{
-                                        background: `linear-gradient(180deg, ${PINK}1A, ${PINK}08)`,
-                                        border: `1px solid ${PINK}44`,
+                                        background: `linear-gradient(180deg, ${GOLD}1A, ${GOLD}08)`,
+                                        border: `1px solid ${GOLD}44`,
                                     }}
                                 >
                                     <div
                                         className="font-display font-black text-[14px] tabular-nums leading-none"
-                                        style={{ color: PINK }}
+                                        style={{ color: GOLD }}
                                     >
                                         {scoreRank !== null ? `#${scoreRank}` : "—"}
                                     </div>
-                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${PINK}cc` }}>
+                                    <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${GOLD}cc` }}>
                                         CLASSIC RANK
                                     </div>
                                 </button>
@@ -1648,7 +1648,7 @@ export default function LandingPageArcade({
                                         {streak}
                                     </div>
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${ORANGE}cc` }}>
-                                        STREAK
+                                        # DAY STREAK
                                     </div>
                                 </div>
                                 <div
@@ -1669,7 +1669,7 @@ export default function LandingPageArcade({
                                             : "—"}
                                     </div>
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${GOLD}cc` }}>
-                                        BEST CLASSIC
+                                        BEST SCORE
                                     </div>
                                 </div>
                                 <div
@@ -1690,7 +1690,7 @@ export default function LandingPageArcade({
                                             : "—"}
                                     </div>
                                     <div className="font-display text-[8px] tracking-[0.15em] mt-1 text-center leading-tight" style={{ color: `${TOKEN_RED}cc` }}>
-                                        BEST FRENZY
+                                        BEST SCORE
                                     </div>
                                 </div>
                             </div>
