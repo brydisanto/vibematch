@@ -456,6 +456,82 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         capsules: 5,
         order: 20.7,
     },
+    // ── Frenzy score ladder ─────────────────────────────────────────
+    // Mode-gated to "frenzy" only — separate from the Classic ladder
+    // because the scoring math is different (TURBO 3x + bonus time
+    // stacking) and the curve runs higher.
+    {
+        id: "frenzy_100k",
+        category: "mastery",
+        icon: "🚀",
+        title: "Off the Line",
+        description: "Score 100,000+ in a single Frenzy game",
+        capsules: 1,
+        order: 20.71,
+    },
+    {
+        id: "frenzy_200k",
+        category: "mastery",
+        icon: "⚡",
+        title: "Pace Setter",
+        description: "Score 200,000+ in a single Frenzy game",
+        capsules: 2,
+        order: 20.72,
+    },
+    {
+        id: "frenzy_300k",
+        category: "mastery",
+        icon: "🔥",
+        title: "In the Zone",
+        description: "Score 300,000+ in a single Frenzy game",
+        capsules: 3,
+        order: 20.73,
+    },
+    {
+        id: "frenzy_400k",
+        category: "mastery",
+        icon: "💨",
+        title: "Pure Velocity",
+        description: "Score 400,000+ in a single Frenzy game",
+        capsules: 4,
+        order: 20.74,
+    },
+    {
+        id: "frenzy_500k",
+        category: "mastery",
+        icon: "💰",
+        title: "Half a Mil",
+        description: "Score 500,000+ in a single Frenzy game",
+        capsules: 5,
+        order: 20.75,
+    },
+    {
+        id: "frenzy_690k",
+        category: "mastery",
+        icon: "🤙",
+        title: "Nice Pace",
+        description: "Score 690,000+ in a single Frenzy game",
+        capsules: 7,
+        order: 20.76,
+    },
+    {
+        id: "frenzy_750k",
+        category: "mastery",
+        icon: "🌀",
+        title: "Sustained Burn",
+        description: "Score 750,000+ in a single Frenzy game",
+        capsules: 8,
+        order: 20.77,
+    },
+    {
+        id: "frenzy_1m",
+        category: "mastery",
+        icon: "💎",
+        title: "Seven Figures",
+        description: "Score 1,000,000+ in a single Frenzy game",
+        capsules: 10,
+        order: 20.78,
+    },
     {
         id: "streak_7",
         category: "mastery",
@@ -909,6 +985,17 @@ export function checkAchievements(
     check("score_100k", isClassic && stats.score >= 100000);
     check("score_150k", isClassic && stats.score >= 150000);
     check("score_200k", isClassic && stats.score >= 200000);
+    // Frenzy score ladder — gated to frenzy mode so Classic + Daily
+    // runs never trigger these.
+    const isFrenzy = stats.gameMode === "frenzy";
+    check("frenzy_100k", isFrenzy && stats.score >= 100000);
+    check("frenzy_200k", isFrenzy && stats.score >= 200000);
+    check("frenzy_300k", isFrenzy && stats.score >= 300000);
+    check("frenzy_400k", isFrenzy && stats.score >= 400000);
+    check("frenzy_500k", isFrenzy && stats.score >= 500000);
+    check("frenzy_690k", isFrenzy && stats.score >= 690000);
+    check("frenzy_750k", isFrenzy && stats.score >= 750000);
+    check("frenzy_1m", isFrenzy && stats.score >= 1000000);
     check("streak_7", context.streak >= 7);
     check("streak_30", context.streak >= 30);
     const lCount = stats.shapesLanded.find(s => s.type === "L")?.count ?? 0;
