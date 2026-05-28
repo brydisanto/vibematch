@@ -36,7 +36,7 @@ const CARD_BORDER = "rgba(255,255,255,0.08)";
 // Same any_gvc ("Citizen of Vibetown") badge used as the DAILY PLAYS
 // icon, so the brand stays consistent across every place an avatar
 // can be missing.
-const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
+const DEFAULT_AVATAR = "/avatars/default.jpg";
 
 type PageParams = { username: string };
 
@@ -482,16 +482,21 @@ function ProfileAvatar({ avatarUrl, username }: { avatarUrl: string | null; user
     // badge's own white border ring + gold rim stay fully visible.
     if (!avatarUrl) {
         return (
-            <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
+            <div
+                className="relative shrink-0 rounded-full overflow-hidden"
+                style={{
+                    width: 116,
+                    height: 116,
+                    border: `2px solid ${GOLD}55`,
+                    boxShadow: `0 3px 6px rgba(0,0,0,0.6), 0 0 18px ${GOLD}33`,
+                }}
+            >
                 <Image
                     src={DEFAULT_AVATAR}
                     alt=""
                     fill
                     sizes="116px"
-                    style={{
-                        objectFit: "contain",
-                        filter: `drop-shadow(0 3px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 18px ${GOLD}55)`,
-                    }}
+                    className="object-cover"
                 />
             </div>
         );

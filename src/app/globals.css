@@ -268,6 +268,23 @@ body {
   animation: glowPulse 1.5s ease-in-out infinite;
 }
 
+/* Sparkle twinkle — small star that fades + scales in and out, used on
+   the EVENT LIVE pill in the desktop header. Designed for staggered
+   instances; combine with animation-delay on each instance.
+   Wider peak window (35%-65%) so the twinkle is easy to catch even on
+   tiny SVGs. animation-fill-mode: both is critical so the inline initial
+   styles are overridden during the animation cycle. */
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35%, 65% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ===== BOARD GLOW — COMBO REACTIVE (GPU composited via pseudo-element opacity) ===== */
 @keyframes board-glow-pulse {
   0%, 100% { opacity: 0.4; }

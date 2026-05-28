@@ -23,12 +23,14 @@ import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
+import { isPromoActive, getActivePromoBadges } from "@/lib/promo-badges";
 import { buildPlayerContext } from "@/lib/playerContext";
 import { getEasternDailyKey, getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import TierInfoModal from "./TierInfoModal";
+import EventDrawer from "./EventDrawer";
 import { ChunkyButton, FloatingBadges } from "./arcade";
 import {
     GOLD,
@@ -122,11 +124,17 @@ interface DailyStats {
     yourRank: number | null;
 }
 
-// Small circular avatar used on global feed rows. Falls back to the
-// Default any_gvc pin (matches the DAILY PLAYS icon) when the user
-// has no uploaded avatar. Handles data: URLs (next/image refuses
-// these in optimized mode) by routing them to a plain <img>.
+// Default avatar used in two distinct ways across this file:
+//  - DEFAULT_BADGE: the shaka pin (any_gvc) — used decoratively on the
+//    PLAYERS VIBING stack and the right-rail profile block. Stays as
+//    the gold-rimmed badge there because that surface is design-led.
+//  - DEFAULT_FEED_AVATAR: the GVC blank-white citizen — used on the
+//    global feed (FeedAvatar) for users without an uploaded avatar.
+//    Reads as "GVC member, hasn't customized yet" instead of "decoration".
+//    Falls back to a plain <img> for data: URLs since next/image refuses
+//    those in optimized mode.
 const DEFAULT_AVATAR = "/badges/any_gvc_1759173799963.webp";
+const DEFAULT_FEED_AVATAR = "/avatars/default.jpg";
 
 // Tight single-letter mode chip used on global feed rows. Replaces the
 // wider CLASSIC / DAILY text pill so usernames have predictable room
@@ -156,23 +164,26 @@ function ModeChip({ mode }: { mode: string }) {
 function FeedAvatar({ avatarUrl, username }: { avatarUrl: string | null; username: string }) {
     const isData = !!avatarUrl && avatarUrl.startsWith("data:");
 
-    // Default-badge path renders EXACTLY like the DAILY PLAYS icon —
-    // the any_gvc pin at full size with a soft gold drop shadow,
-    // NO clipping container + NO bordered ring around it. That keeps
-    // the badge's own white border + gold rim fully visible (the
-    // clipped/contained avatar treatment was eating both).
+    // Default-avatar path: GVC blank-white citizen rendered inside the
+    // same circular clipped chip as uploaded avatars. The blank-white
+    // figure needs a circular crop (not full-image display) to read
+    // as "user avatar" rather than "decorative badge".
     if (!avatarUrl) {
         return (
-            <span className="relative shrink-0 inline-block w-6 h-6" aria-hidden>
+            <span
+                className="relative shrink-0 inline-block w-6 h-6 rounded-full overflow-hidden"
+                style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,224,72,0.55)",
+                }}
+                aria-hidden
+            >
                 <Image
-                    src={DEFAULT_AVATAR}
+                    src={DEFAULT_FEED_AVATAR}
                     alt=""
                     fill
                     sizes="24px"
-                    style={{
-                        objectFit: "contain",
-                        filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 5px ${GOLD}66)`,
-                    }}
+                    className="object-cover"
                 />
             </span>
         );
@@ -228,7 +239,14 @@ export default function LandingPageArcade({
     // Leaders nav button can open on "classic" while the DAILY CHALLENGE
     // VIEW LEADERS CTA jumps straight to "daily" and the SCORE/PIN rank
     // tiles route to their respective boards.
-    const [leaderboardTab, setLeaderboardTab] = useState<"classic" | "daily" | "pins" | null>(null);
+    const [leaderboardTab, setLeaderboardTab] = useState<"classic" | "daily" | "pins" | "promo" | null>(null);
+    const [eventDrawerOpen, setEventDrawerOpen] = useState(false);
+    // Active partner event (OpenSea Aye Aye Captain at launch). When the
+    // NEXT_PUBLIC_PROMO_ACTIVE flag is on, the top marquee surfaces a
+    // clickable EVENT LIVE chip that opens a dedicated EventDrawer with
+    // hero copy, stats, and the collector leaderboard. Falls back to
+    // null cleanly when nothing's running.
+    const activePromo = isPromoActive() ? getActivePromoBadges()[0] ?? null : null;
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [totalPlayers, setTotalPlayers] = useState<number>(0);
@@ -900,7 +918,7 @@ export default function LandingPageArcade({
                                 borderBottom: `1px solid ${GOLD}22`,
                             }}
                         >
-                            <div className="flex items-center justify-between">
+                            <div className="relative flex items-center justify-between">
                                 {/* Avatar stack + live-ish player count. The
                                     stack is capped at 5 faces so the overlap
                                     pattern stays legible; a subtle pulsing
@@ -942,11 +960,11 @@ export default function LandingPageArcade({
                                                         )
                                                     ) : (
                                                         <Image
-                                                            src={DEFAULT_AVATAR}
+                                                            src={DEFAULT_FEED_AVATAR}
                                                             alt=""
                                                             fill
                                                             sizes="22px"
-                                                            className="object-contain p-[1px]"
+                                                            className="object-cover"
                                                         />
                                                     )}
                                                 </div>
@@ -960,10 +978,81 @@ export default function LandingPageArcade({
                                         </span>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-3 text-[11px] font-display">
-                                    <span className="text-white/45 tracking-[0.3em]">DAILY RESET</span>
-                                    <span className="tabular-nums" style={{ color: GOLD }}>{countdown}</span>
-                                </div>
+                                {/* DAILY RESET sits on the right of the marquee
+                                    when there's no event. When an event is
+                                    active the pill takes that slot and the
+                                    countdown lives in the right-rail DAILY
+                                    CHALLENGE box. */}
+                                {!activePromo && (
+                                    <div className="flex items-center gap-3 text-[11px] font-display">
+                                        <span className="text-white/45 tracking-[0.3em]">DAILY RESET</span>
+                                        <span className="tabular-nums" style={{ color: GOLD }}>{countdown}</span>
+                                    </div>
+                                )}
+                                {/* Right-anchored active-event chip. Only rendered
+                                    while NEXT_PUBLIC_PROMO_ACTIVE is on. Opens
+                                    the EventDrawer. */}
+                                {activePromo && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setEventDrawerOpen(true)}
+                                        className="relative group inline-flex items-center gap-2 rounded-full px-3 py-[5px] overflow-hidden transition-all hover:brightness-125 cursor-pointer"
+                                        style={{
+                                            background: `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
+                                            border: `1px solid ${GOLD}66`,
+                                            boxShadow: `0 0 12px ${GOLD}22`,
+                                        }}
+                                        aria-label={`Open ${activePromo.partnerName} event drawer`}
+                                    >
+                                        {/* Subtle sparkles — 3 four-point stars scattered
+                                            inside the pill that twinkle on a stagger.
+                                            All positioned absolutely against the now-
+                                            `relative` button (previously they were
+                                            escaping to the marquee wrapper and painting
+                                            across the entire header bar). Each star is
+                                            a tiny SVG using the GVC sparkle-twinkle
+                                            keyframe (opacity + scale) defined in
+                                            globals.css. */}
+                                        {[
+                                            { top: "18%", left: "12%", size: 14, delay: "0s" },
+                                            { top: "60%", left: "40%", size: 11, delay: "0.9s" },
+                                            { top: "22%", left: "68%", size: 13, delay: "1.8s" },
+                                            { top: "55%", left: "88%", size: 10, delay: "0.45s" },
+                                        ].map((s, i) => (
+                                            <svg
+                                                key={i}
+                                                aria-hidden
+                                                className="pointer-events-none absolute"
+                                                viewBox="0 0 24 24"
+                                                style={{
+                                                    top: s.top,
+                                                    left: s.left,
+                                                    width: s.size,
+                                                    height: s.size,
+                                                    animation: `sparkle-twinkle 2.7s ease-in-out ${s.delay} infinite both`,
+                                                    filter: `drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px ${GOLD})`,
+                                                }}
+                                            >
+                                                <path
+                                                    d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
+                                                    fill="#ffffff"
+                                                />
+                                            </svg>
+                                        ))}
+                                        <span className="relative font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>EVENT LIVE</span>
+                                        <span className="relative h-3 w-px" style={{ background: `${GOLD}44` }} />
+                                        <span className="relative w-4 h-4 shrink-0">
+                                            <Image src={activePromo.image} alt="" fill sizes="16px" className="object-contain" />
+                                        </span>
+                                        <span className="relative font-display text-[10px] tracking-[0.25em] text-white/85 uppercase whitespace-nowrap">
+                                            {activePromo.partnerName}
+                                            <span className="hidden 2xl:inline"> · {activePromo.name}</span>
+                                        </span>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative text-white/55 transition-transform group-hover:translate-x-0.5">
+                                            <path d="M9 18l6-6-6-6" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1302,24 +1391,17 @@ export default function LandingPageArcade({
                                                 )}
                                             </div>
                                         ) : (
-                                            // Default badge — render exactly like the
-                                            // DAILY PLAYS icon: full any_gvc pin with
-                                            // its own border ring intact + soft gold
-                                            // drop shadow. No outer conic ring or
-                                            // clipping container so the design reads
-                                            // as the badge itself.
-                                            <div className="absolute" style={{ inset: 4 }}>
-                                                <Image
-                                                    src={DEFAULT_AVATAR}
-                                                    alt=""
-                                                    fill
-                                                    sizes="84px"
-                                                    style={{
-                                                        objectFit: "contain",
-                                                        filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.6)) drop-shadow(0 0 12px ${GOLD}66)`,
-                                                    }}
-                                                />
-                                            </div>
+                                            // GVC blank-yellow citizen — circular
+                                            // clipped to match the uploaded-avatar
+                                            // treatment so the placeholder reads as
+                                            // "user avatar, not customized yet".
+                                            <Image
+                                                src={DEFAULT_FEED_AVATAR}
+                                                alt=""
+                                                fill
+                                                sizes="84px"
+                                                className="object-cover"
+                                            />
                                         )}
                                     </div>
 
@@ -1462,14 +1544,14 @@ export default function LandingPageArcade({
                         {/* DAILY CHALLENGE — right-rail box with your
                             best + "beat %", plus an ENTER CHALLENGE CTA
                             that flips to COME BACK TOMORROW once played.
-                            Timer intentionally omitted per latest
-                            feedback; the top-bar marquee still surfaces
-                            the daily-reset countdown. */}
+                            RESETS IN sub-line surfaces the daily-reset
+                            countdown when an event is active (it's the
+                            only place the timer lives in that case). */}
                         <div
                             className="px-5 pt-4 pb-4 border-b border-white/5"
                             style={{ background: `linear-gradient(180deg, ${COSMIC}14 0%, transparent 100%)` }}
                         >
-                            <div className="flex items-center gap-2 mb-2.5">
+                            <div className="flex items-center gap-2 mb-0.5">
                                 <div className="font-display text-[10px] tracking-[0.3em]" style={{ color: COSMIC }}>
                                     DAILY CHALLENGE
                                 </div>
@@ -1542,6 +1624,16 @@ export default function LandingPageArcade({
                                     </div>
                                 </div>
                             </div>
+                            {/* Reset countdown sub-line — only when an event is
+                                active. On non-event days the timer lives in
+                                the top marquee where the EVENT pill would
+                                otherwise sit. */}
+                            {activePromo && (
+                                <div className="flex items-center gap-1.5 mb-2.5 text-[11px] font-display">
+                                    <span className="text-white/50">Resets In</span>
+                                    <span className="tabular-nums" style={{ color: GOLD }}>{countdown}</span>
+                                </div>
+                            )}
 
                             {/* Card wrapper is a <div> not a <button> —
                                 the ChunkyButtons inside are the real
@@ -1879,6 +1971,25 @@ export default function LandingPageArcade({
                 currentTierId={tier.id}
                 pinsCollected={pinsCollected}
             />
+            {eventDrawerOpen && activePromo && (
+                <EventDrawer
+                    onClose={() => setEventDrawerOpen(false)}
+                    currentUsername={username}
+                    currentAvatarUrl={avatarUrl}
+                    promo={{
+                        id: activePromo.id,
+                        name: activePromo.name,
+                        partnerName: activePromo.partnerName,
+                        tabLabel: activePromo.tabLabel,
+                        image: activePromo.image,
+                        description: activePromo.description,
+                        eventWindow: activePromo.eventWindow,
+                        prizeNote: activePromo.prizeNote,
+                        accentColor: activePromo.accentColor,
+                        endsAt: activePromo.endsAt,
+                    }}
+                />
+            )}
         </>
     );
 }

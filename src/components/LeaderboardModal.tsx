@@ -158,15 +158,15 @@ function Avatar({ entry, size = 40, className = "" }: { entry: LeaderboardEntry;
                     <Image src={src} alt={entry.username} width={size} height={size} className="object-cover w-full h-full" />
                 )
             ) : (
-                // Fallback: any_gvc pin (same default avatar used in
-                // the global feed + profile page) instead of the old
-                // username-initials placeholder.
+                // Fallback: GVC blank-white citizen — signals "GVC member,
+                // hasn't customized yet" without leaning on the same shaka
+                // pin used as decoration elsewhere.
                 <Image
-                    src="/badges/any_gvc_1759173799963.webp"
+                    src="/avatars/default.jpg"
                     alt=""
                     width={size}
                     height={size}
-                    className="object-contain w-full h-full p-[2px]"
+                    className="object-cover w-full h-full"
                 />
             )}
         </div>

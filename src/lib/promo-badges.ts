@@ -28,6 +28,27 @@ export interface PromoBadge extends Badge {
     partnerName: string;
     /** Short tab label on the LeaderboardModal (keep it under ~8 chars). */
     tabLabel: string;
+    /**
+     * Long-form event description for the EventDrawer hero. Optional —
+     * the drawer falls back to a generic line if missing.
+     */
+    description?: string;
+    /** Optional event window label, e.g. "Through May 31" or "Launch Event 2026". */
+    eventWindow?: string;
+    /** Optional prize note shown in the drawer header, e.g. "Top 10 win 1 ETH". */
+    prizeNote?: string;
+    /**
+     * Tint applied to the EventDrawer hero glow + accent borders.
+     * Defaults to gold; partners with distinct colors should override.
+     */
+    accentColor?: string;
+    /**
+     * Event end timestamp (ISO 8601 string). When set, the EventDrawer
+     * renders a live countdown to this moment and hides itself when
+     * the time passes. Use Z-suffixed UTC for clarity — convert from
+     * Eastern at definition time (June 8 noon EDT = 16:00 UTC).
+     */
+    endsAt?: string;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -42,6 +63,11 @@ export const PROMO_BADGES: PromoBadge[] = [
         isPromo: true,
         partnerName: "OpenSea",
         tabLabel: "Event",
+        description: "OpenSea co-designed a custom pin with us as sponsors of the Vibeathon. Look for them in capsules and collect as many as possible. #1 on the leaderboard wins a special surprise.",
+        eventWindow: "Launch Event · 2026",
+        accentColor: "#4A9EFF",
+        // June 8 2026, 12:00 PM Eastern. June is on EDT (UTC-4), so 16:00 UTC.
+        endsAt: "2026-06-08T16:00:00Z",
     },
 ];
 
