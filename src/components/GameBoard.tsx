@@ -1027,26 +1027,15 @@ function GameBoardImpl({
 
     useEffect(() => {
         if (matchEffect) {
-            // Frenzy: matches arrive every ~400-500ms, so the 2800ms
-            // Classic lifetime kept position-anchored effects
-            // (TileMatchFlash, TileRingBurst, PowerTileCreationMoment)
-            // visible long after gravity refilled the cell — players
-            // saw rings/flashes sitting on tiles they didn't match.
-            // Short-lived queue + cap of 1 keeps effects tightly
-            // coupled to the cell content during the cascade window
-            // and unmounts before the next match resolves.
-            const isFrenzy = gameMode === "frenzy";
-            const queueCap = isFrenzy ? 1 : 2;
-            const expireMs = isFrenzy ? 700 : 2800;
             setEffectsQueue(prev => {
                 const next = [...prev, matchEffect];
-                return next.length > queueCap ? next.slice(-queueCap) : next;
+                return next.length > 2 ? next.slice(-2) : next;
             });
             setTimeout(() => {
                 setEffectsQueue(prev => prev.filter(e => e.timestamp !== matchEffect.timestamp));
-            }, expireMs);
+            }, 2800);
         }
-    }, [matchEffect, gameMode]);
+    }, [matchEffect]);
 
     // Board shake for mega+ matches
     const shakeClass = matchEffect?.intensity === "ultra"
@@ -1215,11 +1204,18 @@ function GameBoardImpl({
                     {/* Particle burst */}
                     <MatchParticles effect={effect} />
 
-                    {/* Per-tile ring burst */}
-                    {shouldShowEffect('TileRingBurst') && <TileRingBurst effect={effect} />}
+                    {/* Per-tile ring burst — skipped in Frenzy. The ring
+                        is anchored to (row, col) for 2.8s, but Frenzy
+                        cascades refill the cell within ~400ms, so the
+                        ring kept hanging on the wrong tile. Non-position
+                        effects below (shockwave, screen flash, particles)
+                        still convey the hit. */}
+                    {gameMode !== "frenzy" && shouldShowEffect('TileRingBurst') && <TileRingBurst effect={effect} />}
 
-                    {/* Feature 1: Tile Match Flash */}
-                    {shouldShowEffect('TileMatchFlash') && <TileMatchFlash effect={effect} cellSize={cellSize} gridOffset={gridOffset} />}
+                    {/* Tile Match Flash — same misalignment story in
+                        Frenzy as the ring above; skipped for the same
+                        reason. */}
+                    {gameMode !== "frenzy" && shouldShowEffect('TileMatchFlash') && <TileMatchFlash effect={effect} cellSize={cellSize} gridOffset={gridOffset} />}
 
                     {/* Shockwave ring */}
                     <ShockwaveRing effect={effect} />
