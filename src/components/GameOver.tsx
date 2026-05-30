@@ -1111,8 +1111,9 @@ export default function GameOver({ state, userProfile, onPlayAgain, onGoHome, on
                                 </button>
                             )}
 
-                            {/* Rematch button — Classic only */}
-                            {gameMode === "classic" && (
+                            {/* Rematch button — Classic + Frenzy. Daily is
+                                one-shot per day so REMATCH isn't valid there. */}
+                            {gameMode !== "daily" && (
                                 <button
                                     onClick={onPlayAgain}
                                     className="flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-[#FFE048] hover:bg-white/[0.1] hover:border-[#FFE048]/50 hover:text-[#FFD000] font-mundial font-semibold text-[13px] sm:text-sm transition-all duration-75 active:scale-[0.97] group relative overflow-hidden"
