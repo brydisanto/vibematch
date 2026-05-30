@@ -330,10 +330,53 @@ export async function POST(req: Request) {
                                     computed: replay.finalScore,
                                     delta: scoreDelta,
                                     movesConsumed: replay.movesConsumed,
+                                    matchId,
                                     mode: 'classic',
                                 },
                             });
                             if (REPLAY_ENFORCEMENT === 'reject') {
+                                // Persist a 90-day rejection snapshot so we can
+                                // re-run the replay long after the source
+                                // `replay:` (2h TTL) and `matchstats:` (2h)
+                                // records expire. Stores everything needed
+                                // to reconstitute the game and judge whether
+                                // it was a false positive.
+                                try {
+                                    const snapshot = {
+                                        ts: Date.now(),
+                                        username,
+                                        matchId,
+                                        mode: 'classic' as const,
+                                        seed,
+                                        draftedBadgeIds: matchToken?.draftedBadgeIds ?? null,
+                                        submitted: score,
+                                        computed: replay.finalScore,
+                                        delta: scoreDelta,
+                                        movesConsumed: replay.movesConsumed,
+                                        matchCount: replay.matchCount,
+                                        maxCombo: replay.maxCombo,
+                                        totalCascades: replay.totalCascades,
+                                        bombsCreated: replay.bombsCreated,
+                                        moveSequence: moves,
+                                    };
+                                    // Single global zset of all rejections so
+                                    // an admin can scroll the recent list
+                                    // without scanning per-user audit lists.
+                                    // Score = ts so newest-first via zrange rev.
+                                    await kv.zadd('score_rejections', {
+                                        score: snapshot.ts,
+                                        member: JSON.stringify(snapshot),
+                                    });
+                                    // Per-user copy keyed by ts_matchId so an
+                                    // admin can pull a specific player's
+                                    // rejection history directly. 90d TTL
+                                    // matches the audit-log retention.
+                                    const rejKey = `score_rejection:${username.toLowerCase()}:${snapshot.ts}:${matchId}`;
+                                    await kv.set(rejKey, JSON.stringify(snapshot), { ex: 90 * 24 * 60 * 60 });
+                                } catch (snapErr) {
+                                    // Snapshot failure must never block the rejection itself.
+                                    console.warn('[Scores] rejection snapshot write failed', snapErr);
+                                }
                                 return NextResponse.json(
                                     { error: 'Score does not match server replay' },
                                     { status: 400 },
