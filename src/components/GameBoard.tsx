@@ -1027,15 +1027,28 @@ function GameBoardImpl({
 
     useEffect(() => {
         if (matchEffect) {
+            // Frenzy lives 1200ms vs Classic 2800ms. Each queued effect
+            // mounts ~7 sub-components running framer-motion + CSS
+            // animations on rAF; in Frenzy two effects are almost
+            // always live, so the longer lifetime kept ~14 animations
+            // ticking continuously and competed with the cascade
+            // pipeline for frame budget. 1200ms is past the cascade
+            // settle window (~700ms) so the visual flash + shockwave
+            // still complete before unmount. Queue cap stays at 2 so
+            // we don't introduce churn from forced unmounts mid-anim
+            // (which is what made the earlier cap=1 attempt feel
+            // laggy from React reconciliation on every match).
+            const isFrenzy = gameMode === "frenzy";
+            const expireMs = isFrenzy ? 1200 : 2800;
             setEffectsQueue(prev => {
                 const next = [...prev, matchEffect];
                 return next.length > 2 ? next.slice(-2) : next;
             });
             setTimeout(() => {
                 setEffectsQueue(prev => prev.filter(e => e.timestamp !== matchEffect.timestamp));
-            }, 2800);
+            }, expireMs);
         }
-    }, [matchEffect]);
+    }, [matchEffect, gameMode]);
 
     // Board shake for mega+ matches
     const shakeClass = matchEffect?.intensity === "ultra"
