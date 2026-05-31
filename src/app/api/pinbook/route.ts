@@ -112,7 +112,10 @@ async function incrementClassicPlays(username: string, mode: 'classic' | 'frenzy
         date: existing.date,
         bonusPrizeGames: existing.bonusPrizeGames || 0,
     };
-    await kv.set(key, updated, { ex: 86400 * 2 });
+    // 95-day TTL so the admin daily-activity chart can see the full
+    // 90-day window. The cap-enforcement check only ever reads today's
+    // tracker so a longer retention has no functional cost.
+    await kv.set(key, updated, { ex: 86400 * 95 });
     return updated;
 }
 

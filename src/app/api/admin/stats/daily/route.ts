@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getEasternDailyKey } from "@/lib/daily-window";
+import { classicCapsulesForScore, frenzyCapsulesForScore } from "@/lib/gameEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -83,24 +84,76 @@ export async function GET(req: Request) {
             return b;
         };
 
+        // Daily trackers have a 95-day TTL since 2026-05-31 (was 2d), so
+        // recent days have a fresh tracker per (user, date) for the cap
+        // enforcement path. We still read them when present because the
+        // capsulesEarned counter is incremented at the exact moment a
+        // capsule is awarded — more accurate than the gamelog-derived
+        // approximation below.
+        const trackerHits = new Set<string>(); // `<user>:<date>` pairs that came from a tracker
         for (const key of dailyKeys) {
-            // Pattern: pinbook:<user>:daily:<date>
             const parts = key.split(":");
             if (parts.length < 4 || parts[2] !== "daily") continue;
             const username = parts[1];
-            const date = parts.slice(3).join(":"); // defensive in case date has colons (it shouldn't)
+            const date = parts.slice(3).join(":");
             const data = (await kv.get(key)) as Record<string, unknown> | null;
             if (!data) continue;
             const b = ensure(date);
             b.users.add(username);
-            // The on-disk classicPlays counter is the combined classic+frenzy
-            // total used for cap enforcement. The chart shows them split, so
-            // subtract the frenzy subset off the classicPlays bucket here.
             const combined = Number(data.classicPlays) || 0;
             const frenzy = Number(data.frenzyPlays) || 0;
             b.classicPlays += Math.max(0, combined - frenzy);
             b.frenzyPlays += frenzy;
             b.capsulesEarned += Number(data.capsulesEarned) || 0;
+            trackerHits.add(`${username}:${date}`);
+        }
+
+        // --- Backfill from gamelog for days the tracker has expired ---
+        // gamelog:<user> zsets have no TTL so they keep the full history.
+        // For any (user, date) pair without a fresh tracker we derive
+        // classicPlays / frenzyPlays / DAU directly from the gamelog
+        // entries, and approximate capsulesEarned by running the same
+        // capsule ladder the server uses. Approximation caveats:
+        //   - daily cap (first 10 games + bonuses) is ignored — bonus-
+        //     game history isn't available retroactively, so this can
+        //     slightly over-count capsules earned on days where players
+        //     played past the cap. Fine for trend lines.
+        //   - Daily Challenge doubles capsules; we double here too.
+        const gamelogKeys = await scanKeys("gamelog:*");
+        for (const key of gamelogKeys) {
+            const username = key.split(":")[1];
+            if (!username) continue;
+            const entries = (await kv.zrange(key, 0, -1)) as string[];
+            for (const raw of entries) {
+                try {
+                    const e = typeof raw === "string" ? JSON.parse(raw) : raw;
+                    const ts = Number(e?.timestamp);
+                    if (!Number.isFinite(ts) || ts <= 0) continue;
+                    const date = getEasternDailyKey(new Date(ts));
+                    const mode = String(e?.gameMode || "classic");
+                    const score = Number(e?.score) || 0;
+                    const b = ensure(date);
+                    b.users.add(username);
+                    // Only fill plays/capsules from gamelog when there's
+                    // no fresh tracker for this (user, date). Tracker
+                    // counters are authoritative when present.
+                    if (!trackerHits.has(`${username}:${date}`)) {
+                        if (mode === "frenzy") {
+                            b.frenzyPlays += 1;
+                            b.capsulesEarned += frenzyCapsulesForScore(score);
+                        } else if (mode === "classic") {
+                            b.classicPlays += 1;
+                            b.capsulesEarned += classicCapsulesForScore(score);
+                        } else if (mode === "daily") {
+                            // Daily doesn't count toward classic/frenzy plays
+                            // but does award double capsules.
+                            b.capsulesEarned += classicCapsulesForScore(score) * 2;
+                        }
+                    }
+                } catch {
+                    continue;
+                }
+            }
         }
 
         // --- Aggregate registrations (new users per day) ---

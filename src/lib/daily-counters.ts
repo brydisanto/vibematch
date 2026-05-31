@@ -37,7 +37,12 @@ export async function bumpDailyCounter(
             : { classicPlays: 0, date: today, bonusPrizeGames: 0 };
         const current = Number(base[field]) || 0;
         const next = { ...base, [field]: current + amount };
-        await kv.set(key, next, { ex: 86400 * 2 });
+        // 95-day TTL — matches the audit-log retention and lets the
+        // admin daily-activity chart show the full 90-day window
+        // without losing historical counters. (Previous 2-day TTL was
+        // sized for the cap-enforcement use case and silently dropped
+        // chart data older than two days.)
+        await kv.set(key, next, { ex: 86400 * 95 });
     } catch (e) {
         console.error(`[bumpDailyCounter] failed for ${username} ${field} +${amount}:`, e);
     }

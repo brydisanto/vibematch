@@ -269,7 +269,9 @@ export default function DailyStatsChart() {
             )}
 
             <p className="text-[10px] text-white/30 mt-3">
-                Capsules + games counters started tracking 2026-05-21. Earlier days show 0 across those columns regardless of actual activity.
+                Capsules + games counters started tracking 2026-05-21. Days where the live daily-tracker has expired
+                (older than 2 days before 2026-05-31, when the TTL was bumped to 95 days) are backfilled from the
+                gamelog, which can slightly over-count capsules on days where players played past the daily cap.
             </p>
         </div>
     );
