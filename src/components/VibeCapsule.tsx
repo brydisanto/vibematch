@@ -1320,10 +1320,15 @@ export default function VibeCapsule({
                                         <LightBeam active={showLightBeam} tier={tier} />
                                         <CenterBloom active={showBloom} color={colors.glow} />
 
-                                        {/* Tap hint */}
+                                        {/* Tap hint — tighter to the capsule than before
+                                            (was -bottom-14). On large monitors the
+                                            wider gap drifted the prompt into empty
+                                            space below the orb and read as "way too
+                                            low" since the eye was locked on the
+                                            capsule itself. */}
                                         {(phase === "appear" || phase === "anticipate") && (
                                             <motion.div
-                                                className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40 text-xs font-mundial tracking-widest uppercase"
+                                                className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40 text-xs font-mundial tracking-widest uppercase"
                                                 initial={{ opacity: 0, y: 5 }}
                                                 animate={{ opacity: [0, 0.6, 0.3, 0.6], y: [5, 0, 2, 0] }}
                                                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}

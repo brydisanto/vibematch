@@ -251,8 +251,16 @@ export default function ProfileModal({ currentUsername, currentAvatarUrl, onSave
                         </div>
                     </div>
 
-                    {/* ── Right Panel: Settings ── */}
-                    <div className="flex-1 p-5 overflow-y-auto flex flex-col">
+                    {/* ── Right Panel: Settings ──
+                        scrollbar-gutter:stable forces a permanent gutter
+                        so the bottom-of-content cutoff signal is always
+                        visible (macOS overlay scrollbars hide unless
+                        actively scrolling, which left users on big
+                        screens thinking content was missing). */}
+                    <div
+                        className="flex-1 p-5 overflow-y-auto flex flex-col profile-settings-scroll"
+                        style={{ scrollbarGutter: "stable" }}
+                    >
                         <h2 className="font-display text-lg font-black text-white mb-4 tracking-wide">Settings</h2>
 
                         {/* Username Input */}
