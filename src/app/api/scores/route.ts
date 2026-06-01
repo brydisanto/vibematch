@@ -155,6 +155,55 @@ export async function POST(req: Request) {
             if (!Number.isFinite(elapsed) || elapsed < FRENZY_MIN_ROUND_MS || elapsed > MAX_FRENZY_ROUND_MS) {
                 return NextResponse.json({ error: 'Implausible round duration' }, { status: 400 });
             }
+            // Matchstats agreement — same shape as Classic. Without this,
+            // a forger could trackGame → POST /api/scores with any score
+            // ≤ 1.5M and never call logGame. Caught dofa (1.2M) and
+            // slayer (1.1M) plus the Permaban/aynomi/wyllt cluster
+            // post-mortem; this closes the path going forward.
+            //
+            // matchstats itself is still client-supplied via logGame, so a
+            // forger who calls BOTH endpoints with consistent lies still
+            // gets through. Replay verification (proper Frenzy heat-3x
+            // reproduction) is the next layer; this matchstats gate is
+            // the cheap immediate fix.
+            if (!matchId || typeof matchId !== 'string') {
+                console.error(`[Scores] Frenzy submission missing matchId. user=${(session.username as string)} score=${score}`);
+                return NextResponse.json({ error: 'matchId required for frenzy mode' }, { status: 400 });
+            }
+            const frenzyStatsKey = `matchstats:${(session.username as string).toLowerCase()}:${matchId}`;
+            let frenzyMatchStats: { score?: number } | null = null;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                frenzyMatchStats = await kv.get(frenzyStatsKey) as { score?: number } | null;
+                if (frenzyMatchStats) break;
+                await new Promise(r => setTimeout(r, 200));
+            }
+            if (!frenzyMatchStats || typeof frenzyMatchStats.score !== 'number') {
+                console.error(`[Scores] No matchstats for frenzy submission. user=${(session.username as string)} matchId=${matchId} score=${score}`);
+                await logAuditEvent({
+                    req,
+                    username: session.username as string,
+                    action: 'score.rejected',
+                    meta: { phase: 'matchstats', outcome: 'missing', mode: 'frenzy', submitted: score, matchId },
+                });
+                return NextResponse.json({ error: 'No verified game state for this matchId' }, { status: 400 });
+            }
+            if (score > frenzyMatchStats.score) {
+                console.error(`[Scores] FORGED frenzy score blocked. user=${(session.username as string)} matchId=${matchId} submitted=${score} verified=${frenzyMatchStats.score}`);
+                await logAuditEvent({
+                    req,
+                    username: session.username as string,
+                    action: 'score.rejected',
+                    meta: {
+                        phase: 'matchstats',
+                        outcome: 'rejected_mismatch',
+                        mode: 'frenzy',
+                        submitted: score,
+                        verified: frenzyMatchStats.score,
+                        matchId,
+                    },
+                });
+                return NextResponse.json({ error: 'Score does not match logged game state' }, { status: 400 });
+            }
         }
 
         const sessionUsername = session.username as string;
