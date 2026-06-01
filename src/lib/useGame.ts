@@ -910,35 +910,18 @@ export function useGame(): UseGameReturn {
         [state, isAnimating, applyResultState, triggerMatchEffects, getHitStopMs, resetHintTimer, isMobile, fireFrenzyPenalty]
     );
 
-    // ===== FRENZY VISIBILITY FORFEIT =====
-    // Backgrounding the tab mid-Frenzy ends the round immediately. The
-    // "no pause" rule from the design is enforced here: hiding the tab
-    // can't be used to stop the clock. Sets frenzyEndsAt to now so the
-    // expiry timeout fires immediately on the next paint.
-    useEffect(() => {
-        if (!state) return;
-        if (state.gameMode !== "frenzy") return;
-        if (state.gamePhase !== "playing") return;
-        if (state.frenzyStartedAt === null) return;
-
-        const onHidden = () => {
-            if (document.visibilityState !== "hidden") return;
-            setState(prev => {
-                if (!prev) return prev;
-                if (prev.gameMode !== "frenzy") return prev;
-                if (prev.gamePhase !== "playing") return prev;
-                return {
-                    ...prev,
-                    frenzyEndsAt: Date.now(),
-                    gamePhase: "gameover",
-                    gameOverReason: "time_expired",
-                };
-            });
-        };
-        document.addEventListener("visibilitychange", onHidden);
-        return () => document.removeEventListener("visibilitychange", onHidden);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state?.gameMode, state?.gamePhase, state?.frenzyStartedAt]);
+    // ===== FRENZY VISIBILITY HANDLING =====
+    // Previously this hook forfeited the round immediately on tab-away
+    // to prevent a "pause-by-backgrounding" exploit. In practice it
+    // punished accidental tab flips (notifications, mobile interruptions,
+    // alt-tab) — players reported coming back to an instant 0:00 game
+    // over. Removed because the exploit it prevented doesn't actually
+    // exist: frenzyEndsAt is an absolute Unix timestamp and the wall
+    // clock keeps ticking during tab-away, so a player who tabs away
+    // loses real time and gains no advantage. If the round expired
+    // while hidden, the expiry effect below applies gameover on the
+    // first paint after tab focus. Net: no exploit surface, friendlier
+    // UX, no special-case code path.
 
     // ===== FRENZY EXPIRY =====
     // Schedules a SINGLE setTimeout for when frenzyEndsAt arrives. Reschedules
