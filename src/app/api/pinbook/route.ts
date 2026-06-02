@@ -642,7 +642,14 @@ export async function POST(req: Request) {
                 const matchKey = `pinbook:${username}:match:${matchId}`;
                 const match = await kv.get(matchKey) as any;
                 if (match && match.username === username) {
-                    validatedMatch = gameMode === 'classic';
+                    // Frenzy was added later and accidentally left out of
+                    // this gate — meant matchstats: was never written for
+                    // Frenzy games. When matchstats verification was added
+                    // to Frenzy /api/scores on 2026-05-31, every legit
+                    // Frenzy submission started getting rejected with
+                    // outcome=missing (reported by Booching: 611K Frenzy
+                    // game didn't replace 343K PB).
+                    validatedMatch = gameMode === 'classic' || gameMode === 'frenzy';
                     await kv.set(matchKey, { ...match, logged: true }, { ex: 60 * 60 * 2 });
                     const activePointerKey = `pinbook:${username}:activeMatch`;
                     const activePointer = await kv.get(activePointerKey);
