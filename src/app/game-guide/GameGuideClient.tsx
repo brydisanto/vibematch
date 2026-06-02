@@ -1379,11 +1379,10 @@ function Capsules() {
                 sub="Hit certain score thresholds in a game and you'll earn Pin Capsules. Each capsule cracks open to reveal a random pin from the 101-pin catalog. The higher your score, the more capsules you'll earn. Tap the capsule below to try one!"
             />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ScoreStep amount="15,000+" caps="+1 Capsule" color={GOLD} intensity={0.30} />
-                <ScoreStep amount="35,000+" caps="+2 Capsules" color={ORANGE} intensity={0.45} />
-                <ScoreStep amount="75,000+" caps="+3 Capsules" color={COSMIC} intensity={0.65} />
-                <ScoreStep amount="200,000+" caps="+4 Capsules" color={COSMIC} intensity={0.85} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <ScoreStep amount="15,000+" caps="+1 Capsule" color={GOLD} intensity={0.35} />
+                <ScoreStep amount="35,000+" caps="+2 Capsules" color={ORANGE} intensity={0.50} />
+                <ScoreStep amount="75,000+" caps="+3 Capsules" color={COSMIC} intensity={0.70} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 items-start">
@@ -1402,8 +1401,7 @@ function Capsules() {
                     <ul className="font-mundial text-[15px] mt-3 pl-5 m-0" style={{ color: "rgba(255,255,255,0.95)" }}>
                         <li className="mb-1">15K+ → <strong style={{ color: GOLD }}>+2 capsules</strong></li>
                         <li className="mb-1">35K+ → <strong style={{ color: GOLD }}>+4 capsules</strong></li>
-                        <li className="mb-1">75K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
-                        <li>200K+ → <strong style={{ color: GOLD }}>+8 capsules</strong></li>
+                        <li>75K+ → <strong style={{ color: GOLD }}>+6 capsules</strong></li>
                     </ul>
                     <p className="font-mundial text-[14px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
                         Stack the Daily Champion prize on top and Daily becomes your biggest capsule day of the week. By far.
@@ -2087,12 +2085,11 @@ function Frenzy() {
                 >
                     SCORE BIG TO WIN
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 max-w-[640px] mx-auto">
+                <div className="grid grid-cols-3 gap-3 mt-6 max-w-[520px] mx-auto">
                     {[
                         { threshold: "30K", capsules: 1 },
                         { threshold: "100K", capsules: 2 },
                         { threshold: "200K", capsules: 3 },
-                        { threshold: "400K", capsules: 4 },
                     ].map(row => (
                         <div
                             key={row.threshold}

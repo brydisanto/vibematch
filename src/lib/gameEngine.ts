@@ -169,13 +169,11 @@ export function computeFrenzyBonusMs(opts: {
     return bonus;
 }
 
-/** Score -> capsule mapping for Frenzy. Tuned against observed score
- *  distribution (median ~80K, p75 ~150K, p99 ~480K) — the previous
- *  30/60/100 ladder put 75% of games at the 3-capsule max which felt
- *  rote. New ladder spreads the rewards across a wider range and adds
- *  a top-end 4-capsule jackpot tier for elite play. */
+/** Score -> capsule mapping for Frenzy. Ladder caps at 3 capsules —
+ *  the prior 4-tier (400K jackpot) was retired after Frenzy launch
+ *  when feedback said the top tier felt like score-padding rather
+ *  than a meaningful reward. */
 export function frenzyCapsulesForScore(score: number): number {
-    if (score >= 400_000) return 4;
     if (score >= 200_000) return 3;
     if (score >= 100_000) return 2;
     if (score >= 30_000) return 1;
@@ -183,10 +181,9 @@ export function frenzyCapsulesForScore(score: number): number {
 }
 
 /** Score -> capsule mapping for Classic + Daily (Daily doubles the
- *  output downstream). Same recalibration goal: spread rewards across
- *  the distribution and gate a top jackpot for ~p99 play. */
+ *  output downstream). Caps at 3 capsules — same retirement of the
+ *  200K jackpot tier as Frenzy. */
 export function classicCapsulesForScore(score: number): number {
-    if (score >= 200_000) return 4;
     if (score >= 75_000) return 3;
     if (score >= 35_000) return 2;
     if (score >= 15_000) return 1;
