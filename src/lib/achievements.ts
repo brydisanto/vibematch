@@ -87,15 +87,12 @@ export const JOURNEY_ACHIEVEMENTS: AchievementDef[] = [
         order: 7,
     },
     {
-        // Cross is genuinely rare — at the time of writing, zero players
-        // on prod had ever landed one. Bumped from 2 to 10 to match the
-        // difficulty.
         id: "first_cross_shape",
         category: "journey",
         icon: "✦",
         title: "Cross That Off",
         description: "Land your first cross shape",
-        capsules: 10,
+        capsules: 3,
         order: 8,
     },
     {
@@ -608,14 +605,12 @@ export const MASTERY_ACHIEVEMENTS: AchievementDef[] = [
         order: 25.5,
     },
     {
-        // Trifecta requires a cross, which is rare on its own. Bumped
-        // from 3 to 15 in the same pass as Cross That Off.
         id: "shape_trifecta",
         category: "mastery",
         icon: "🔮",
         title: "Shape Trifecta",
         description: "Land an L, T, and cross in the same game",
-        capsules: 15,
+        capsules: 5,
         order: 26,
     },
     {
