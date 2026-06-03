@@ -229,7 +229,7 @@ export async function POST(req: Request) {
         let serverVerifiedGameplay = new Set<string>();
         if (matchId || gameMode === 'daily') {
             let matchStats: any = null;
-            if (matchId && gameMode === 'classic') {
+            if (matchId && (gameMode === 'classic' || gameMode === 'frenzy')) {
                 matchStats = await kv.get(`matchstats:${username}:${matchId}`);
             } else if (gameMode === 'daily') {
                 const today = getEasternDailyKey();
