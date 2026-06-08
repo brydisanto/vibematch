@@ -23,7 +23,7 @@ import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
-import { isPromoActive, getActivePromoBadges } from "@/lib/promo-badges";
+import { isPromoActive, getActivePromoBadges, isPromoEnded } from "@/lib/promo-badges";
 import { buildPlayerContext } from "@/lib/playerContext";
 import { getEasternDailyKey, getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
@@ -262,6 +262,10 @@ export default function LandingPageArcade({
     // hero copy, stats, and the collector leaderboard. Falls back to
     // null cleanly when nothing's running.
     const activePromo = isPromoActive() ? getActivePromoBadges()[0] ?? null : null;
+    // Treat the pill as "final results" once endsAt has passed — drops
+    // stop everywhere else automatically, but the leaderboard tab and
+    // drawer remain available so winners can be confirmed.
+    const promoEnded = activePromo ? isPromoEnded(activePromo) : false;
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [frenzyBest, setFrenzyBest] = useState<number>(0);
@@ -1028,22 +1032,20 @@ export default function LandingPageArcade({
                                         onClick={() => setEventDrawerOpen(true)}
                                         className="relative group inline-flex items-center gap-2 rounded-full px-3 py-[5px] overflow-hidden transition-all hover:brightness-125 cursor-pointer"
                                         style={{
-                                            background: `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
-                                            border: `1px solid ${GOLD}66`,
-                                            boxShadow: `0 0 12px ${GOLD}22`,
+                                            background: promoEnded
+                                                ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))"
+                                                : `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
+                                            border: promoEnded
+                                                ? "1px solid rgba(255,255,255,0.16)"
+                                                : `1px solid ${GOLD}66`,
+                                            boxShadow: promoEnded ? "none" : `0 0 12px ${GOLD}22`,
                                         }}
                                         aria-label={`Open ${activePromo.partnerName} event drawer`}
                                     >
-                                        {/* Subtle sparkles — 3 four-point stars scattered
-                                            inside the pill that twinkle on a stagger.
-                                            All positioned absolutely against the now-
-                                            `relative` button (previously they were
-                                            escaping to the marquee wrapper and painting
-                                            across the entire header bar). Each star is
-                                            a tiny SVG using the GVC sparkle-twinkle
-                                            keyframe (opacity + scale) defined in
-                                            globals.css. */}
-                                        {[
+                                        {/* Sparkles ONLY while the event is still running.
+                                            Once it ends, the pill becomes a quiet
+                                            "FINAL RESULTS" entry point with no animation. */}
+                                        {!promoEnded && [
                                             { top: "18%", left: "12%", size: 14, delay: "0s" },
                                             { top: "60%", left: "40%", size: 11, delay: "0.9s" },
                                             { top: "22%", left: "68%", size: 13, delay: "1.8s" },
@@ -1069,10 +1071,25 @@ export default function LandingPageArcade({
                                                 />
                                             </svg>
                                         ))}
-                                        <span className="relative font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>EVENT LIVE</span>
-                                        <span className="relative h-3 w-px" style={{ background: `${GOLD}44` }} />
+                                        <span
+                                            className="relative font-display text-[10px] tracking-[0.3em]"
+                                            style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : GOLD }}
+                                        >
+                                            {promoEnded ? "FINAL RESULTS" : "EVENT LIVE"}
+                                        </span>
+                                        <span
+                                            className="relative h-3 w-px"
+                                            style={{ background: promoEnded ? "rgba(255,255,255,0.18)" : `${GOLD}44` }}
+                                        />
                                         <span className="relative w-4 h-4 shrink-0">
-                                            <Image src={activePromo.image} alt="" fill sizes="16px" className="object-contain" />
+                                            <Image
+                                                src={activePromo.image}
+                                                alt=""
+                                                fill
+                                                sizes="16px"
+                                                className="object-contain"
+                                                style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
+                                            />
                                         </span>
                                         <span className="relative font-display text-[10px] tracking-[0.25em] text-white/85 uppercase whitespace-nowrap">
                                             {activePromo.partnerName}

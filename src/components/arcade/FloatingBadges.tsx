@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PURPLE_BG } from "@/lib/arcade-tokens";
-import { getActivePromoBadges } from "@/lib/promo-badges";
+import { getDroppablePromoBadges } from "@/lib/promo-badges";
 
 // Curated pool from the Claude Design handoff — 34 visually varied badges.
 // We multiply this pool × 8 then shuffle for spawn diversity.
@@ -89,7 +89,7 @@ export default function FloatingBadges({ count = 120, mobileCount = 55, speed = 
         // injecting a single promo here gives it roughly the same on-screen
         // frequency as any other Common-tier pin. Empty array when the
         // promo flag is off — pool is unchanged.
-        const promoImages = getActivePromoBadges().map(p => p.image);
+        const promoImages = getDroppablePromoBadges().map(p => p.image);
         const baseImages = [...BADGE_IMAGES, ...promoImages];
         const pool: string[] = [];
         for (let i = 0; i < 15; i++) pool.push(...baseImages);

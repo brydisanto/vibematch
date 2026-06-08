@@ -783,8 +783,8 @@ function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getActivePromoBadges } = require("./promo-badges") as { getActivePromoBadges: () => Badge[] };
-    return [...BADGES.filter(b => !b.collectOnly), ...getActivePromoBadges()];
+    const { getDroppablePromoBadges } = require("./promo-badges") as { getDroppablePromoBadges: () => Badge[] };
+    return [...BADGES.filter(b => !b.collectOnly), ...getDroppablePromoBadges()];
 }
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation

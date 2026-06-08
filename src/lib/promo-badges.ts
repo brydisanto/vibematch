@@ -96,20 +96,37 @@ export function isPromoActive(): boolean {
     return process.env.NEXT_PUBLIC_PROMO_ACTIVE === "true";
 }
 
-/** Active promos (empty when the flag is off). */
+/** Active promos (empty when the flag is off). Includes ended promos so
+ *  the leaderboard tab + drawer can remain visible after the cutoff. */
 export function getActivePromoBadges(): PromoBadge[] {
     return isPromoActive() ? PROMO_BADGES : [];
 }
 
+/** True once the promo's endsAt has passed. Promos without endsAt
+ *  never expire. */
+export function isPromoEnded(promo: PromoBadge): boolean {
+    if (!promo.endsAt) return false;
+    return Date.now() >= new Date(promo.endsAt).getTime();
+}
+
+/** Promos still actively dropping — env flag on AND not past endsAt.
+ *  Used by capsule pre-roll, game-board pool, and floating-background
+ *  visuals so a promo stops appearing the moment it ends, without
+ *  needing the env flag flipped. */
+export function getDroppablePromoBadges(): PromoBadge[] {
+    return getActivePromoBadges().filter(p => !isPromoEnded(p));
+}
+
 /**
- * Pick a random active promo when the pre-roll hits. Returns null if no
- * promos are active. With a single active promo this is deterministic,
- * but the function shape supports multi-partner promos later.
+ * Pick a random droppable promo when the pre-roll hits. Returns null
+ * if no promos are still dropping. With a single active promo this is
+ * deterministic, but the function shape supports multi-partner promos
+ * later.
  */
 export function pickActivePromoBadge(): PromoBadge | null {
-    const active = getActivePromoBadges();
-    if (active.length === 0) return null;
-    return active[Math.floor(Math.random() * active.length)];
+    const droppable = getDroppablePromoBadges();
+    if (droppable.length === 0) return null;
+    return droppable[Math.floor(Math.random() * droppable.length)];
 }
 
 /** Lookup by id. Server validates pending reveals against this. */
