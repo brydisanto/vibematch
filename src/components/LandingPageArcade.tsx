@@ -264,8 +264,24 @@ export default function LandingPageArcade({
     const activePromo = isPromoActive() ? getActivePromoBadges()[0] ?? null : null;
     // Treat the pill as "final results" once endsAt has passed — drops
     // stop everywhere else automatically, but the leaderboard tab and
-    // drawer remain available so winners can be confirmed.
-    const promoEnded = activePromo ? isPromoEnded(activePromo) : false;
+    // drawer remain available so winners can be confirmed. Reactive so
+    // an already-open tab flips the moment the cutoff hits, without
+    // needing a page refresh.
+    const [promoEnded, setPromoEnded] = useState<boolean>(() =>
+        activePromo ? isPromoEnded(activePromo) : false,
+    );
+    useEffect(() => {
+        if (!activePromo?.endsAt) return;
+        const endMs = new Date(activePromo.endsAt).getTime();
+        const remaining = endMs - Date.now();
+        if (remaining <= 0) {
+            setPromoEnded(true);
+            return;
+        }
+        setPromoEnded(false);
+        const t = setTimeout(() => setPromoEnded(true), remaining);
+        return () => clearTimeout(t);
+    }, [activePromo?.endsAt]);
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [frenzyBest, setFrenzyBest] = useState<number>(0);
