@@ -230,6 +230,26 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
 
     const accent = promo.accentColor || GOLD;
 
+    // Reactive "is the event over" — flips the hero pill from EVENT LIVE
+    // to FINAL RESULTS the moment endsAt passes, without a refresh. Same
+    // pattern as the header pill in LandingPageArcade.
+    const [ended, setEnded] = useState<boolean>(() => {
+        if (!promo.endsAt) return false;
+        return Date.now() >= new Date(promo.endsAt).getTime();
+    });
+    useEffect(() => {
+        if (!promo.endsAt) return;
+        const endMs = new Date(promo.endsAt).getTime();
+        const remaining = endMs - Date.now();
+        if (remaining <= 0) {
+            setEnded(true);
+            return;
+        }
+        setEnded(false);
+        const t = setTimeout(() => setEnded(true), remaining);
+        return () => clearTimeout(t);
+    }, [promo.endsAt]);
+
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
@@ -324,13 +344,26 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         >
                             <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 mb-4"
                                 style={{
-                                    background: `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
-                                    border: `1px solid ${GOLD}66`,
+                                    background: ended
+                                        ? "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))"
+                                        : `linear-gradient(180deg, ${GOLD}1f, ${GOLD_DEEP}14)`,
+                                    border: ended
+                                        ? "1px solid rgba(255,255,255,0.18)"
+                                        : `1px solid ${GOLD}66`,
                                 }}
                             >
-                                <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 8px ${accent}` }} />
-                                <span className="font-display text-[10px] tracking-[0.3em]" style={{ color: GOLD }}>
-                                    EVENT LIVE
+                                <span
+                                    className="h-1.5 w-1.5 rounded-full"
+                                    style={{
+                                        background: ended ? "rgba(255,255,255,0.35)" : accent,
+                                        boxShadow: ended ? "none" : `0 0 8px ${accent}`,
+                                    }}
+                                />
+                                <span
+                                    className="font-display text-[10px] tracking-[0.3em]"
+                                    style={{ color: ended ? "rgba(255,255,255,0.65)" : GOLD }}
+                                >
+                                    {ended ? "FINAL RESULTS" : "EVENT LIVE"}
                                 </span>
                                 {promo.eventWindow && (
                                     <>
