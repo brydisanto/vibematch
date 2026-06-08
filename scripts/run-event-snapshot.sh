@@ -26,15 +26,19 @@ LOG_FILE="$LOG_DIR/$LABEL.$TS.log"
     # Reveal the snapshots folder in Finder so Bryan can grab the CSVs.
     /usr/bin/open "$REPO_DIR/snapshots/"
 
-    # Self-clean: unload + delete the plist so it doesn't fire again.
+    # Self-clean: delete the plist FIRST so a future calendar match
+    # won't re-fire it, THEN bootout. `bootout` immediately kills this
+    # script — if rm runs after bootout, it never executes and the
+    # plist stays on disk. Order matters.
     if [[ -n "$LABEL" ]]; then
         PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
         if [[ -f "$PLIST" ]]; then
-            echo "==== cleaning up $PLIST ===="
-            /bin/launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null \
-                || /bin/launchctl unload "$PLIST" 2>/dev/null \
-                || true
+            echo "==== removing $PLIST ===="
             rm -f "$PLIST"
         fi
+        echo "==== unloading agent $LABEL ===="
+        /bin/launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null \
+            || /bin/launchctl remove "$LABEL" 2>/dev/null \
+            || true
     fi
 } >> "$LOG_FILE" 2>&1
