@@ -176,9 +176,84 @@ interface RowProps {
     isUser: boolean;
     accent: string;
     currentAvatarUrl?: string;
+    /** When true and rank === 1, render a "WINNER" treatment — larger
+     *  row, stronger gold ring, crown glyph. Set on rows in finished
+     *  events so the #1 collector is unambiguous. */
+    isWinner?: boolean;
 }
-const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl }: RowProps) {
+const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl, isWinner }: RowProps) {
     const medal = MEDAL[entry.rank];
+
+    if (isWinner) {
+        // Elevated winner row: ~50% taller, stronger gold gradient bg,
+        // gold ring around avatar, "WINNER" tag, larger rank + count.
+        // Sits visually above the rest of the medal rows; clearly the
+        // capstone of the leaderboard for an ended event.
+        return (
+            <Link
+                href={`/u/${encodeURIComponent(entry.username)}`}
+                prefetch={false}
+                className="flex items-center gap-3 py-3.5 px-3 rounded-xl transition-colors relative overflow-hidden"
+                style={{
+                    background: "linear-gradient(135deg, rgba(255,215,0,0.18) 0%, rgba(255,180,0,0.08) 60%, rgba(255,215,0,0.04) 100%)",
+                    border: "1.5px solid rgba(255,215,0,0.55)",
+                    boxShadow: "0 0 24px rgba(255,215,0,0.25), inset 0 0 18px rgba(255,215,0,0.08)",
+                }}
+            >
+                {/* Crown glyph in the rank slot instead of "1". */}
+                <div className="flex-shrink-0 w-7 flex items-center justify-center" aria-label="Winner">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="#FFD700"
+                        style={{ filter: "drop-shadow(0 0 6px rgba(255,215,0,0.7))" }}
+                        aria-hidden
+                    >
+                        <path d="M3 7l4 3 5-6 5 6 4-3-2 11H5L3 7zm2 13h14v2H5v-2z" />
+                    </svg>
+                </div>
+                <div
+                    className="rounded-full overflow-hidden flex-shrink-0"
+                    style={{
+                        padding: 2,
+                        background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                        boxShadow: "0 0 12px rgba(255,215,0,0.45)",
+                    }}
+                >
+                    <Avatar
+                        username={entry.username}
+                        hintUrl={isUser ? currentAvatarUrl : undefined}
+                        size={44}
+                    />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <span
+                            className="inline-block font-display font-black text-[9px] tracking-[0.28em] rounded-full px-2 py-0.5"
+                            style={{
+                                background: "rgba(255,215,0,0.18)",
+                                color: "#FFD700",
+                                border: "1px solid rgba(255,215,0,0.45)",
+                            }}
+                        >
+                            WINNER
+                        </span>
+                    </div>
+                    <div className={`font-display font-black text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
+                        {isUser ? "You" : entry.username}
+                    </div>
+                </div>
+                <div
+                    className="font-display font-black text-lg tabular-nums"
+                    style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
+                >
+                    {entry.count.toLocaleString()}
+                </div>
+            </Link>
+        );
+    }
+
     return (
         <Link
             href={`/u/${encodeURIComponent(entry.username)}`}
@@ -446,6 +521,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
                                             accent={accent}
                                             currentAvatarUrl={currentAvatarUrl}
+                                            isWinner={ended && entry.rank === 1}
                                         />
                                     ))}
                                 </div>

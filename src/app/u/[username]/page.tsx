@@ -22,6 +22,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ProfileStarfield from "./ProfileStarfield";
 import ProfileShowcaseTabs from "./ProfileShowcaseTabs";
+import EventTrophyButton from "./EventTrophyButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -727,9 +728,13 @@ function TrophyShell({
 
 function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["events"][number] }) {
     const accent = getEventAccent(event.id);
+    // Wrap in EventTrophyButton — tapping any event trophy now opens
+    // the matching EventDrawer with the finalized leaderboard. Falls
+    // back to a non-interactive shell when the event's PromoBadge
+    // definition has been retired.
     return (
-        <TrophyShell accent={accent}>
-            <div className="relative w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] mb-3">
+        <EventTrophyButton eventId={event.id} accent={accent}>
+            <div className="relative w-[88px] h-[88px] sm:w-[100px] sm:h-[100px] mb-3 mx-auto">
                 <Image
                     src={event.image}
                     alt={event.name}
@@ -739,7 +744,7 @@ function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["even
                     unoptimized
                 />
             </div>
-            <div className="font-display font-black text-sm sm:text-base text-white leading-tight line-clamp-2 min-h-[2.4em] flex items-center">
+            <div className="font-display font-black text-sm sm:text-base text-white leading-tight line-clamp-2 min-h-[2.4em] flex items-center justify-center">
                 {event.name}
             </div>
             <div className="font-mundial text-[9px] tracking-[0.22em] uppercase text-white/45 mt-1">
@@ -755,7 +760,7 @@ function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["even
                     <TrophyStat value={`#${event.rank}`} label="RANK" color={ORANGE} />
                 )}
             </div>
-        </TrophyShell>
+        </EventTrophyButton>
     );
 }
 
