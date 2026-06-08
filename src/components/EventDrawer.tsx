@@ -186,9 +186,10 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
 
     if (isWinner) {
         // Elevated winner row: ~50% taller, stronger gold gradient bg,
-        // gold ring around avatar, "WINNER" tag, larger rank + count.
-        // Sits visually above the rest of the medal rows; clearly the
-        // capstone of the leaderboard for an ended event.
+        // gold ring around avatar, crown glyph in the rank slot,
+        // and a scatter of twinkling gold sparkles around the row.
+        // Sits visually above the rest of the medal rows; the capstone
+        // of the leaderboard for an ended event.
         return (
             <Link
                 href={`/u/${encodeURIComponent(entry.username)}`}
@@ -200,8 +201,41 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     boxShadow: "0 0 24px rgba(255,215,0,0.25), inset 0 0 18px rgba(255,215,0,0.08)",
                 }}
             >
+                {/* Twinkling sparkles scattered around the banner. Same
+                    keyframe (sparkle-twinkle) used by the header EVENT
+                    LIVE pill so the visual language is consistent across
+                    the app. Positions hand-tuned to avoid the avatar +
+                    username + count read regions. */}
+                {[
+                    { top: "18%", left: "30%", size: 10, delay: "0s" },
+                    { top: "62%", left: "22%", size: 8, delay: "0.7s" },
+                    { top: "22%", left: "58%", size: 9, delay: "1.4s" },
+                    { top: "68%", left: "70%", size: 11, delay: "0.35s" },
+                    { top: "30%", left: "92%", size: 8, delay: "1.05s" },
+                    { top: "78%", left: "47%", size: 7, delay: "1.75s" },
+                ].map((s, i) => (
+                    <svg
+                        key={i}
+                        aria-hidden
+                        className="pointer-events-none absolute"
+                        viewBox="0 0 24 24"
+                        style={{
+                            top: s.top,
+                            left: s.left,
+                            width: s.size,
+                            height: s.size,
+                            animation: `sparkle-twinkle 2.7s ease-in-out ${s.delay} infinite both`,
+                            filter: "drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #FFD700)",
+                        }}
+                    >
+                        <path
+                            d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
+                            fill="#ffffff"
+                        />
+                    </svg>
+                ))}
                 {/* Crown glyph in the rank slot instead of "1". */}
-                <div className="flex-shrink-0 w-7 flex items-center justify-center" aria-label="Winner">
+                <div className="flex-shrink-0 w-7 flex items-center justify-center relative" aria-label="Winner">
                     <svg
                         width="20"
                         height="20"
@@ -214,7 +248,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     </svg>
                 </div>
                 <div
-                    className="rounded-full overflow-hidden flex-shrink-0"
+                    className="rounded-full overflow-hidden flex-shrink-0 relative"
                     style={{
                         padding: 2,
                         background: "linear-gradient(135deg, #FFD700, #FFA500)",
@@ -227,25 +261,13 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                         size={44}
                     />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                        <span
-                            className="inline-block font-display font-black text-[9px] tracking-[0.28em] rounded-full px-2 py-0.5"
-                            style={{
-                                background: "rgba(255,215,0,0.18)",
-                                color: "#FFD700",
-                                border: "1px solid rgba(255,215,0,0.45)",
-                            }}
-                        >
-                            WINNER
-                        </span>
-                    </div>
+                <div className="flex-1 min-w-0 relative">
                     <div className={`font-display font-black text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
                         {isUser ? "You" : entry.username}
                     </div>
                 </div>
                 <div
-                    className="font-display font-black text-lg tabular-nums"
+                    className="font-display font-black text-lg tabular-nums relative"
                     style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
                 >
                     {entry.count.toLocaleString()}
