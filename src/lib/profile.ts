@@ -69,9 +69,7 @@ export interface ProfileResponse {
     rank: {
         /** All-time Classic rank (1-indexed, null if unranked). */
         score: number | null;
-        /** All-time Frenzy rank (1-indexed). Null while Frenzy is
-         *  pre-launch — frenzy_leaderboard zset is empty so zrevrank
-         *  returns null. Backfills automatically when Frenzy ships. */
+        /** All-time Frenzy rank (1-indexed, null if unranked). */
         frenzy: number | null;
         pins: number | null;
     };
@@ -85,8 +83,8 @@ export interface ProfileResponse {
         /** Personal best Classic score, all-time. Null until first
          *  classic submission. */
         allTime: number | null;
-        /** Personal best Frenzy score, all-time. Null while Frenzy is
-         *  pre-launch — same zset-empty story as rank.frenzy. */
+        /** Personal best Frenzy score, all-time. Null until first
+         *  frenzy submission. */
         frenzy: number | null;
         /** Personal best Daily Challenge score for today only. Kept
          *  on the data layer for any future consumer; the public
@@ -156,15 +154,6 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     // Score rank reads from the canonical-cased entry; pin rank uses
     // lowercase since the pinbook leaderboard zset keys members that
     // way (see /api/pinbook/leaderboard updateLeaderboardEntry).
-    //
-    // Frenzy lookups are gated behind NEXT_PUBLIC_FRENZY_ACTIVE so
-    // the profile never surfaces frenzy data before Frenzy ships
-    // (mirrors the NEXT_PUBLIC_PROMO_ACTIVE flag in
-    // lib/promo-badges.ts). Test scores written to frenzy_leaderboard
-    // from preview builds would otherwise leak onto prod profiles
-    // since KV is shared across deployments. Flip the env var to
-    // "true" in Vercel + redeploy at launch.
-    const frenzyActive = process.env.NEXT_PUBLIC_FRENZY_ACTIVE === "true";
     const [
         allTimeScore,
         allTimeRank,
@@ -177,12 +166,8 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
         kv.zrevrank("classic_leaderboard", canonicalUsername) as Promise<number | null>,
         kv.zscore(`daily_leaderboard:${today}`, canonicalUsername) as Promise<number | null>,
         kv.zrevrank("pinbook:lb:rank", username) as Promise<number | null>,
-        frenzyActive
-            ? (kv.zscore("frenzy_leaderboard", canonicalUsername) as Promise<number | null>)
-            : Promise.resolve(null),
-        frenzyActive
-            ? (kv.zrevrank("frenzy_leaderboard", canonicalUsername) as Promise<number | null>)
-            : Promise.resolve(null),
+        kv.zscore("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
+        kv.zrevrank("frenzy_leaderboard", canonicalUsername) as Promise<number | null>,
     ]);
 
     const pinbook = pinbookRaw as
