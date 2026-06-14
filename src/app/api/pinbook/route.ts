@@ -969,7 +969,7 @@ export async function POST(req: Request) {
                 badgeId: badge.id,
                 openedAt: Date.now(),
                 isPromo: isPromoPull,
-            }, { ex: 60 * 5 }); // 5 minute window to collect
+            }, { ex: 60 * 60 * 24 }); // 24-hour window so phone-down stranding gets swept on next pinbook GET
 
             // Decrement capsule count
             data.capsules -= 1;
