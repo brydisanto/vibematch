@@ -16,6 +16,52 @@ const VIBESTR_PER_REROLL = 200;
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
 
+// localStorage key for stranded-reroll recovery. Scoped per wallet so a
+// connect-disconnect-reconnect dance can't replay the wrong user's plan.
+// Joker's reroll went on-chain but writeContractAsync never resolved on
+// his mobile Safari + WalletConnect session, so the client never POSTed
+// the txHash. That's the canonical failure this guards against — page
+// reload, app switch, or dropped wallet promise all leave a paid tx
+// uncredited unless we can find it again from disk.
+const PENDING_REROLL_PREFIX = 'pindrop:reroll_pending:';
+const PENDING_REROLL_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7; // 7-day TTL
+function pendingRerollKey(wallet: string | undefined): string | null {
+    if (!wallet || typeof window === 'undefined') return null;
+    return `${PENDING_REROLL_PREFIX}${wallet.toLowerCase()}`;
+}
+interface PendingReroll {
+    burns: Record<string, number>;
+    walletAddress: string;
+    startedAt: number;
+    txHash?: string;
+}
+function readPendingReroll(wallet: string | undefined): PendingReroll | null {
+    const key = pendingRerollKey(wallet);
+    if (!key) return null;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as PendingReroll;
+        if (Date.now() - parsed.startedAt > PENDING_REROLL_MAX_AGE_MS) {
+            localStorage.removeItem(key);
+            return null;
+        }
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+function writePendingReroll(wallet: string | undefined, entry: PendingReroll): void {
+    const key = pendingRerollKey(wallet);
+    if (!key) return;
+    try { localStorage.setItem(key, JSON.stringify(entry)); } catch {}
+}
+function clearPendingReroll(wallet: string | undefined): void {
+    const key = pendingRerollKey(wallet);
+    if (!key) return;
+    try { localStorage.removeItem(key); } catch {}
+}
+
 const BURN_COST: Record<string, number> = {
     blue: 5,
     silver: 4,
@@ -66,6 +112,16 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const [livePins, setLivePins] = useState<Record<string, { count: number; firstEarned: string }>>(pins);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Stranded-reroll recovery state. Populated on modal open if
+    // localStorage has a pending entry for this wallet that never
+    // completed. With a txHash we silently resume polling; without one
+    // we show a banner asking the user to paste it. The bottom-of-modal
+    // "Recover a paid tx" link lets users recover from cleared storage
+    // / different device too.
+    const [recovery, setRecovery] = useState<PendingReroll | null>(null);
+    const [showManualRecover, setShowManualRecover] = useState(false);
+    const [manualTxHash, setManualTxHash] = useState('');
+
     useEffect(() => { addressRef.current = address; }, [address]);
     useEffect(() => { burnsRef.current = burns; }, [burns]);
 
@@ -89,6 +145,50 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     // Keep livePins in sync if the prop changes while the modal is closed —
     // matters for the initial open after a long-running session.
     useEffect(() => { if (!isOpen) setLivePins(pins); }, [pins, isOpen]);
+
+    // On modal open with a connected wallet, check localStorage for a
+    // stranded reroll. If we have a txHash already, silently re-enter
+    // the polling loop — the server is idempotent, so a duplicate POST
+    // either credits the user (if not yet processed) or returns 409
+    // (already credited). Either path lands them on the success screen.
+    useEffect(() => {
+        if (!isOpen || !address) return;
+        const pending = readPendingReroll(address);
+        if (!pending) return;
+        setRecovery(pending);
+        if (pending.txHash) {
+            // Restore the burns into the UI so the summary copy matches,
+            // then resume tracking. Polling will null out localStorage on
+            // success or 409.
+            setBurns(pending.burns as Record<BadgeTier, number>);
+            startPolling(pending.txHash, pending.burns as Record<BadgeTier, number>);
+        }
+        // No txHash → user finished the wallet signature on a different
+        // surface, the page reloaded, etc. Show the banner so they can
+        // paste it manually (or dismiss if they actually cancelled).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, address]);
+
+    const resumeWithHash = (hash: string) => {
+        if (!address) return;
+        const burnsToUse = recovery?.burns ?? burns;
+        writePendingReroll(address, {
+            burns: burnsToUse as Record<string, number>,
+            walletAddress: address,
+            startedAt: recovery?.startedAt ?? Date.now(),
+            txHash: hash,
+        });
+        setBurns(burnsToUse as Record<BadgeTier, number>);
+        setShowManualRecover(false);
+        setManualTxHash('');
+        startPolling(hash, burnsToUse as Record<BadgeTier, number>);
+    };
+
+    const dismissRecovery = () => {
+        if (!address) return;
+        clearPendingReroll(address);
+        setRecovery(null);
+    };
 
     const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
 
@@ -158,6 +258,20 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                 const data = await res.json();
 
                 if (data.success) {
+                    clearPendingReroll(wallet);
+                    pollingRef.current = false;
+                    setVerifying(false);
+                    setSuccess(true);
+                    onSuccess();
+                    return;
+                }
+
+                // 409 = already processed (recovery path hit a tx the
+                // server already credited). Treat as success so the user
+                // sees the same complete-state UI; the pinbook reload
+                // surfaces the capsules they already got.
+                if (res.status === 409) {
+                    clearPendingReroll(wallet);
                     pollingRef.current = false;
                     setVerifying(false);
                     setSuccess(true);
@@ -166,7 +280,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                 }
 
                 // Retry on: not found (404), awaiting confirmation (425), server error (5xx)
-                // Don't retry on: 400 (bad request), 409 (already processed)
+                // Don't retry on: 400 (bad request)
                 if (res.status === 404 || res.status === 425 || res.status >= 500) {
                     timerRef.current = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
                     return;
@@ -225,6 +339,17 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
 
         console.log('[Reroll] Starting with burns:', capturedBurns, 'totalVibestr:', totalVibestr);
 
+        // Persist the burn plan to localStorage BEFORE handing control to
+        // the wallet. If writeContractAsync never resolves (mobile Safari
+        // backgrounding the tab mid-confirm, WalletConnect dropping the
+        // callback, etc.) the tx still settles on-chain — this entry is
+        // what lets us recover on next mount or via manual paste.
+        writePendingReroll(address, {
+            burns: capturedBurns,
+            walletAddress: address,
+            startedAt: Date.now(),
+        });
+
         try {
             const hash = await writeContractAsync({
                 address: VIBESTR_ADDRESS,
@@ -232,14 +357,30 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                 functionName: 'transfer',
                 args: [TREASURY_ADDRESS, parseEther(String(totalVibestr))],
             });
+            // Persist the hash the moment we have it, before polling starts.
+            // If the network call below blows up, the next mount can resume.
+            writePendingReroll(address, {
+                burns: capturedBurns,
+                walletAddress: address,
+                startedAt: Date.now(),
+                txHash: hash,
+            });
             startPolling(hash, capturedBurns);
         } catch (err: any) {
             const raw = err?.shortMessage || err?.message || String(err);
             if (raw.includes('rejected') || raw.includes('User denied')) {
+                // User cancelled in the wallet sheet — no tx was broadcast,
+                // safe to drop the localStorage entry so we don't prompt for
+                // recovery later on a tx that doesn't exist.
+                clearPendingReroll(address);
                 setError('Transaction was rejected.');
             } else if (raw.includes('insufficient') || raw.includes('exceeds the balance')) {
+                clearPendingReroll(address);
                 setError('Not enough VIBESTR in your wallet.');
             } else {
+                // Anything else (network drop, provider error) — leave the
+                // pending entry alone. The user may have broadcast a tx the
+                // wallet can't confirm on its end; let recovery catch it.
                 setError(`Transaction failed: ${raw.slice(0, 100)}`);
             }
         }
@@ -319,6 +460,42 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                             ) : (
                                 <>
                                     <h2 className="font-display text-2xl font-black text-[#FF8C42] mb-1 uppercase">Pin Reroll</h2>
+                                    {/* Recovery banner — appears when localStorage has a
+                                        stranded reroll for this wallet with no resolved
+                                        txHash. User pastes the hash + we replay the
+                                        original burn plan against the server. */}
+                                    {recovery && !recovery.txHash && !verifying && (
+                                        <div className="rounded-xl p-3 mb-4" style={{ background: 'rgba(255,140,66,0.08)', border: '1px solid rgba(255,140,66,0.4)' }}>
+                                            <div className="font-display text-xs font-black uppercase tracking-wider text-[#FF8C42] mb-1">Recover your reroll</div>
+                                            <p className="text-white/70 text-[11px] font-mundial mb-2 leading-snug">
+                                                Looks like you started a reroll that didn't finish. If your wallet broadcast the transaction, paste the hash to credit your capsules.
+                                            </p>
+                                            <input
+                                                type="text"
+                                                value={manualTxHash}
+                                                onChange={e => setManualTxHash(e.target.value.trim())}
+                                                placeholder="0x... transaction hash"
+                                                className="w-full px-2.5 py-2 rounded-md bg-black/40 border border-white/10 text-white text-[11px] font-mono mb-2 outline-none focus:border-[#FF8C42]/60"
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => resumeWithHash(manualTxHash)}
+                                                    disabled={!/^0x[0-9a-fA-F]{64}$/.test(manualTxHash)}
+                                                    className="flex-1 px-3 py-2 rounded-md font-display font-black text-[10px] tracking-wider uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    style={{ background: '#FF8C42', color: '#1A0633' }}
+                                                >
+                                                    Verify
+                                                </button>
+                                                <button
+                                                    onClick={dismissRecovery}
+                                                    className="px-3 py-2 rounded-md font-display font-black text-[10px] tracking-wider uppercase text-white/50 hover:text-white"
+                                                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                                                >
+                                                    Dismiss
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-start justify-between gap-3 mb-4">
                                         <p className="text-white/50 text-xs font-mundial flex-1 min-w-0">
                                             Burn duplicate pins + {VIBESTR_PER_REROLL} $VIBESTR for a new random capsule.
@@ -449,6 +626,54 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                         </button>
                                     )}
 
+                                    {/* Always-visible recovery escape hatch — covers users
+                                        whose localStorage was cleared, who paid on a
+                                        different device, or who closed the modal before
+                                        the recovery banner could fire. Reuses the current
+                                        burn selection so the server can match the txHash
+                                        against an explicit burn plan. */}
+                                    {isConnected && !verifying && !recovery && (
+                                        <div className="mt-3">
+                                            {showManualRecover ? (
+                                                <div className="rounded-xl p-3" style={{ background: 'rgba(255,140,66,0.06)', border: '1px solid rgba(255,140,66,0.3)' }}>
+                                                    <p className="text-white/70 text-[11px] font-mundial mb-2 leading-snug">
+                                                        Pick the same burns you submitted, paste your tx hash, and we'll credit your capsules. Wrong burns will be queued for a refund.
+                                                    </p>
+                                                    <input
+                                                        type="text"
+                                                        value={manualTxHash}
+                                                        onChange={e => setManualTxHash(e.target.value.trim())}
+                                                        placeholder="0x... transaction hash"
+                                                        className="w-full px-2.5 py-2 rounded-md bg-black/40 border border-white/10 text-white text-[11px] font-mono mb-2 outline-none focus:border-[#FF8C42]/60"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => resumeWithHash(manualTxHash)}
+                                                            disabled={!/^0x[0-9a-fA-F]{64}$/.test(manualTxHash) || totalCapsules === 0}
+                                                            className="flex-1 px-3 py-2 rounded-md font-display font-black text-[10px] tracking-wider uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+                                                            style={{ background: '#FF8C42', color: '#1A0633' }}
+                                                        >
+                                                            Verify
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setShowManualRecover(false); setManualTxHash(''); }}
+                                                            className="px-3 py-2 rounded-md font-display font-black text-[10px] tracking-wider uppercase text-white/50 hover:text-white"
+                                                            style={{ background: 'rgba(255,255,255,0.05)' }}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setShowManualRecover(true)}
+                                                    className="w-full text-center text-white/35 hover:text-white/60 text-[11px] font-mundial underline underline-offset-2 transition-colors"
+                                                >
+                                                    Already paid? Recover your tx
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                     <p className="text-white/25 text-[10px] font-mundial text-center mt-3">
                                         Duplicates only burned. You always keep at least 1 of each pin.
                                     </p>
