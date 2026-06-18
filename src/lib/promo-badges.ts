@@ -93,6 +93,12 @@ export interface PromoEventSet {
     accentColor?: string;
     /** UTC cutoff after which drops stop and the leaderboard finalizes. */
     endsAt?: string;
+    /** UTC moment the event opens. When set, only capsules earned at or
+     *  after this timestamp are eligible to roll set pins — pre-event
+     *  hoarded capsules can be opened freely but won't yield event pins.
+     *  Undefined disables the lockout (scaffold / testing mode: every
+     *  capsule is eligible). */
+    startsAt?: string;
     /** Short tab label on the LeaderboardModal (keep under ~8 chars). */
     tabLabel: string;
     /** Optional hero image for the drawer + header pill (large square or
@@ -100,6 +106,18 @@ export interface PromoEventSet {
      *  highest-points pin from the set, but a dedicated character /
      *  partner asset usually reads better than reusing a pin tile. */
     heroImage?: string;
+    /** Bonus points awarded per FULL set completed (one of every pin in
+     *  the set). Stacks multiplicatively: 3 of each pin = 3 full sets =
+     *  3 × setBonusPoints in bonus on top of per-pin points. Defaults to
+     *  0 (no bonus) so single-pin events and lottery-style sets opt in
+     *  explicitly. */
+    setBonusPoints?: number;
+    /** Hard cap on the per-user leaderboard score. Once reached, the
+     *  zset entry stops climbing — any further collects are still
+     *  credited to per-pin counters but don't move the leaderboard
+     *  score. Use when the event ends in a raffle of all "maxed"
+     *  collectors rather than a strict ranking. Omit for uncapped. */
+    scoreCap?: number;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -128,7 +146,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     // are first-pass; tune from playtests.
     {
         id: "craigs_bubble_gum_blast_common",
-        name: "Bubble Gum Common",
+        name: "Bubble Gum",
         image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -141,40 +159,40 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
     {
         id: "craigs_bubble_gum_blast_rare",
-        name: "Bubble Gum Rare",
+        name: "Pink Bubble Gum",
         image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
         tabLabel: "Set",
         eventSetId: "craigs_bubble_gum_blast",
-        points: 3,
+        points: 2,
         dropWeight: 20,
         rarityLabel: "Rare",
     },
     {
         id: "craigs_bubble_gum_blast_epic",
-        name: "Bubble Gum Epic",
+        name: "Big Bubble Gum",
         image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
         tabLabel: "Set",
         eventSetId: "craigs_bubble_gum_blast",
-        points: 8,
+        points: 5,
         dropWeight: 8,
         rarityLabel: "Epic",
     },
     {
         id: "craigs_bubble_gum_blast_legendary",
-        name: "Bubble Gum Legendary",
+        name: "Giga Bubble Gum",
         image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
         tabLabel: "Set",
         eventSetId: "craigs_bubble_gum_blast",
-        points: 25,
+        points: 10,
         dropWeight: 2,
         rarityLabel: "Legendary",
     },
@@ -191,7 +209,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         id: "craigs_bubble_gum_blast",
         name: "Craig's Bubble Gum Blast",
         // No partnerName — this is an in-house Pin Drop event.
-        description: "Craig's chewing through capsules. Pull one of four Bubble Gum pins, each worth different points by rarity. Stack points to climb the leaderboard. Top collectors win prizes.",
+        description: "Craig's chewing through capsules. Collect Bubble Gum pins to score points; complete a full set of 4 for a bonus. Cap at 100 — all finishers go in the prize raffle.",
         eventWindow: "Pin Drop Original · 2026",
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
@@ -200,6 +218,14 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         endsAt: undefined,
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.jpg",
+        // +25 per full set collected (one of every pin). Stacks: 3 of
+        // each = 75 bonus. Combined with per-pin points + the 100 cap,
+        // exactly 3 full sets gets you to the max (54 pin pts + 75 set
+        // bonus = 129 → capped at 100).
+        setBonusPoints: 25,
+        // Hard cap. Reaching 100 pts qualifies for the prize raffle;
+        // everyone at 100 is treated equally for the draw.
+        scoreCap: 100,
     },
 ];
 
@@ -304,6 +330,50 @@ export function eventSetPointsKey(setId: string): string {
     return `event_set:${setId}:points`;
 }
 
+/**
+ * Compute a user's total event-set score from their per-pin owned
+ * counts. Pure function — no KV reads — so the server can reuse it
+ * inline at collect time and the test harness can verify scoring
+ * math without a fixture.
+ *
+ *   total = Σ(owned × points)  +  fullSets × setBonusPoints
+ *   fullSets = min(owned of every pin in the set)
+ *   capped at set.scoreCap (if defined)
+ *
+ * Returns 0 when the set definition or the per-pin map is empty.
+ */
+export interface EventSetScoreBreakdown {
+    pinScore: number;
+    fullSets: number;
+    setBonus: number;
+    rawTotal: number;
+    cappedTotal: number;
+    cap: number | null;
+}
+export function computeEventSetScore(
+    setId: string,
+    perPinOwned: Record<string, number>,
+): EventSetScoreBreakdown {
+    const set = findPromoEventSet(setId);
+    const pins = getEventSetPins(setId);
+    if (!set || pins.length === 0) {
+        return { pinScore: 0, fullSets: 0, setBonus: 0, rawTotal: 0, cappedTotal: 0, cap: null };
+    }
+    let pinScore = 0;
+    let minOwned = Infinity;
+    for (const pin of pins) {
+        const owned = Math.max(0, Number(perPinOwned[pin.id] ?? 0));
+        pinScore += owned * (pin.points ?? 1);
+        if (owned < minOwned) minOwned = owned;
+    }
+    const fullSets = minOwned === Infinity ? 0 : minOwned;
+    const setBonus = fullSets * (set.setBonusPoints ?? 0);
+    const rawTotal = pinScore + setBonus;
+    const cap = set.scoreCap ?? null;
+    const cappedTotal = cap !== null ? Math.min(rawTotal, cap) : rawTotal;
+    return { pinScore, fullSets, setBonus, rawTotal, cappedTotal, cap };
+}
+
 /** Lookup a set-level metadata record by id. */
 export function findPromoEventSet(setId: string): PromoEventSet | undefined {
     return PROMO_EVENT_SETS.find(s => s.id === setId);
@@ -314,6 +384,40 @@ export function findPromoEventSet(setId: string): PromoEventSet | undefined {
  *  them — typically Common → Legendary). */
 export function getEventSetPins(setId: string): PromoBadge[] {
     return PROMO_BADGES.filter(p => p.eventSetId === setId);
+}
+
+/**
+ * Eligibility context for the current event's capsule lockout. Returns
+ * the event key + startsAt only when an event with an explicit startsAt
+ * is the primary active event. Used by capsule earn/open/reroll paths
+ * to gate event-pin drops to capsules earned during the event window.
+ *
+ * Returns null when:
+ *   - the promo feature is off
+ *   - there's no active event
+ *   - the active event has no startsAt (scaffold / testing mode → all
+ *     capsules are eligible by default; lockout disabled)
+ */
+export function getEventEligibilityContext(): { eventKey: string; startsAt: string } | null {
+    if (!isPromoActive()) return null;
+    const primary = getPrimaryActiveEvent();
+    if (!primary) return null;
+    if (primary.kind === "set") {
+        if (!primary.set.startsAt) return null;
+        return { eventKey: primary.set.id, startsAt: primary.set.startsAt };
+    }
+    return null;
+}
+
+/** True iff the lockout window is open (event has a startsAt and we're
+ *  past it). When false, callers should NOT increment the eligibility
+ *  counter — we're either in scaffold mode (no startsAt) or pre-event.
+ *  Returns the eligibility context when active, null otherwise. */
+export function activeEligibilityWindow(): { eventKey: string } | null {
+    const ctx = getEventEligibilityContext();
+    if (!ctx) return null;
+    if (Date.now() < new Date(ctx.startsAt).getTime()) return null;
+    return { eventKey: ctx.eventKey };
 }
 
 /** Resolve the event the EventDrawer + header pill should currently

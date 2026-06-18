@@ -13,6 +13,9 @@ import {
     findPromoBadge,
     promoLeaderboardKey,
     eventSetPointsKey,
+    activeEligibilityWindow,
+    computeEventSetScore,
+    getEventSetPins,
 } from '@/lib/promo-badges';
 import { frenzyCapsulesForScore, classicCapsulesForScore } from '@/lib/gameEngine';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -66,6 +69,16 @@ export interface PinBookData {
      *  Drives the Eventide quest. Retroactive credit is granted via
      *  the promo zsets when computing PlayerContext. */
     hasCollectedEventPin?: boolean;
+    /** Per-event capsule eligibility counter for the pre-event lockout.
+     *  Keyed by event id (PromoEventSet.id for sets, PromoBadge.id for
+     *  standalone — though only set events use the lockout today).
+     *  Incremented when a capsule is earned during the event's
+     *  startsAt → endsAt window via game play or reroll. Decremented
+     *  on each open; the open uses promo pre-roll only while the
+     *  counter is positive. Old capsules earned before startsAt stay
+     *  openable but can't drop event pins. Absent entries default to
+     *  0 (legacy / never-eligible). */
+    eligibleByEvent?: Record<string, number>;
 }
 
 interface DailyTracker {
@@ -802,6 +815,14 @@ export async function POST(req: Request) {
                 await kv.set(matchKey, { ...match, earnedCapsule: true }, { ex: 60 * 60 * 2 });
                 data.capsules += capsuleCount;
                 data.totalEarned += capsuleCount;
+                // Event-eligibility: tag this capsule with the active
+                // event so a pre-event hoarder can't bank capsules and
+                // burn them for event pins after launch.
+                const elig = activeEligibilityWindow();
+                if (elig) {
+                    if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                    data.eligibleByEvent[elig.eventKey] = (data.eligibleByEvent[elig.eventKey] || 0) + capsuleCount;
+                }
             } else if (gameMode === 'daily') {
                 // Daily: require that the daily_played marker exists for today
                 const today = getEasternDailyKey();
@@ -818,6 +839,11 @@ export async function POST(req: Request) {
                 }
                 data.capsules += capsuleCount * 2;
                 data.totalEarned += capsuleCount * 2;
+                const elig = activeEligibilityWindow();
+                if (elig) {
+                    if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                    data.eligibleByEvent[elig.eventKey] = (data.eligibleByEvent[elig.eventKey] || 0) + (capsuleCount * 2);
+                }
             } else {
                 return NextResponse.json({ error: 'Invalid game mode' }, { status: 400 });
             }
@@ -853,6 +879,11 @@ export async function POST(req: Request) {
                 await kv.set(matchKey, { ...match, earnedBonus: true }, { ex: 60 * 60 * 2 });
                 data.capsules += 1;
                 data.totalEarned += 1;
+                const elig = activeEligibilityWindow();
+                if (elig) {
+                    if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                    data.eligibleByEvent[elig.eventKey] = (data.eligibleByEvent[elig.eventKey] || 0) + 1;
+                }
             } else if (gameMode === 'daily') {
                 const today = getEasternDailyKey();
                 const playedKey = `daily_played:${username}:${today}`;
@@ -867,6 +898,11 @@ export async function POST(req: Request) {
                 }
                 data.capsules += 2;
                 data.totalEarned += 2;
+                const elig = activeEligibilityWindow();
+                if (elig) {
+                    if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                    data.eligibleByEvent[elig.eventKey] = (data.eligibleByEvent[elig.eventKey] || 0) + 2;
+                }
             } else {
                 return NextResponse.json({ error: 'Invalid game mode' }, { status: 400 });
             }
@@ -895,9 +931,20 @@ export async function POST(req: Request) {
                     const stalePromo = findPromoBadge(existingPending.badgeId);
                     if (stalePromo && stalePromo.tier === existingPending.tier) {
                         await kv.zincrby(promoLeaderboardKey(stalePromo.id), 1, username);
-                        // Also credit event-set points if this pin belongs to a set.
+                        // Recompute the set score from current state so
+                        // a stale-pending recovery lands on the same
+                        // canonical capped total as a live collect.
                         if (stalePromo.eventSetId) {
-                            await kv.zincrby(eventSetPointsKey(stalePromo.eventSetId), stalePromo.points ?? 1, username);
+                            const pins = getEventSetPins(stalePromo.eventSetId);
+                            const counts = await Promise.all(
+                                pins.map(p => kv.zscore(promoLeaderboardKey(p.id), username))
+                            );
+                            const perPinOwned: Record<string, number> = {};
+                            pins.forEach((p, i) => {
+                                perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
+                            });
+                            const { cappedTotal } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
+                            await kv.zadd(eventSetPointsKey(stalePromo.eventSetId), { score: cappedTotal, member: username });
                         }
                     }
                 } else {
@@ -920,14 +967,33 @@ export async function POST(req: Request) {
 
             // Promo pre-roll — independent of the normal tier roll. When
             // this hits we award an active promo pin instead of running
-            // the tier roll, so Common-pool economics are untouched. Gated
-            // on the global active flag; if the partnership ends, this
-            // branch becomes a no-op and capsules behave exactly as they
-            // did before promos existed.
+            // the tier roll, so Common-pool economics are untouched.
+            //
+            // Two gates:
+            //   1. Global active flag (NEXT_PUBLIC_PROMO_ACTIVE).
+            //   2. Event eligibility: if the active event has a startsAt
+            //      and this user has eligibleByEvent[<eventKey>] > 0, we
+            //      decrement and roll. Capsules earned before the event
+            //      started have 0 eligibility, so they can't drop event
+            //      pins even though they're still openable. Events
+            //      without startsAt (scaffold mode) skip this gate.
             let tier: BadgeTier;
             let badge: Badge;
             let isPromoPull = false;
-            const activePromo = isPromoActive() && Math.random() < PROMO_DROP_RATE
+            let canRollPromo = isPromoActive();
+            if (canRollPromo) {
+                const elig = activeEligibilityWindow();
+                if (elig) {
+                    const remaining = data.eligibleByEvent?.[elig.eventKey] ?? 0;
+                    if (remaining > 0) {
+                        if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                        data.eligibleByEvent[elig.eventKey] = remaining - 1;
+                    } else {
+                        canRollPromo = false;
+                    }
+                }
+            }
+            const activePromo = canRollPromo && Math.random() < PROMO_DROP_RATE
                 ? pickActivePromoBadge()
                 : null;
             if (activePromo) {
@@ -1041,12 +1107,24 @@ export async function POST(req: Request) {
                 // it tracks per-pin collection only (the leaderboard
                 // lives in event_set:<setId>:points below).
                 const newCount = await kv.zincrby(promoLeaderboardKey(promoDef.id), 1, username);
-                // Set-event leaderboard: credit the pin's points value
-                // to event_set:<setId>:points. Standalone events skip
-                // this — their pin counter IS the leaderboard.
+                // Set-event leaderboard: compute the user's full score
+                // from per-pin counts (NOT zincrby on the points zset)
+                // because the scoring includes a set-completion bonus
+                // and a hard cap that depend on the full state. The
+                // resulting zadd writes the canonical capped total, so
+                // late corrections / future schema tweaks self-heal on
+                // the next collect.
                 if (promoDef.eventSetId) {
-                    const points = promoDef.points ?? 1;
-                    await kv.zincrby(eventSetPointsKey(promoDef.eventSetId), points, username);
+                    const pins = getEventSetPins(promoDef.eventSetId);
+                    const counts = await Promise.all(
+                        pins.map(p => kv.zscore(promoLeaderboardKey(p.id), username))
+                    );
+                    const perPinOwned: Record<string, number> = {};
+                    pins.forEach((p, i) => {
+                        perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
+                    });
+                    const { cappedTotal } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
+                    await kv.zadd(eventSetPointsKey(promoDef.eventSetId), { score: cappedTotal, member: username });
                 }
                 // Eventide quest flag — flip once; cheap idempotent write
                 // since we hold the user lock for this whole branch.

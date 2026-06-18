@@ -146,6 +146,8 @@ export async function GET(req: Request) {
                         eventWindow: setDef.eventWindow,
                         prizeNote: setDef.prizeNote,
                         endsAt: setDef.endsAt,
+                        setBonusPoints: setDef.setBonusPoints ?? null,
+                        scoreCap: setDef.scoreCap ?? null,
                         pins: pins.map(p => ({
                             id: p.id,
                             name: p.name,

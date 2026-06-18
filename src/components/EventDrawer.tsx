@@ -52,6 +52,11 @@ interface EventSetPin {
     owned: number;
 }
 
+interface EventSetMeta {
+    setBonusPoints: number | null;
+    scoreCap: number | null;
+}
+
 function formatRemaining(targetMs: number): { d: number; h: number; m: number; s: number; done: boolean } {
     const diff = targetMs - Date.now();
     if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, done: true };
@@ -367,6 +372,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     // event keeps reading as a leaderboard-first experience.
     const [view, setView] = useState<"leaderboard" | "set">("leaderboard");
     const [setPins, setSetPins] = useState<EventSetPin[]>([]);
+    const [setMeta, setSetMeta] = useState<EventSetMeta>({ setBonusPoints: null, scoreCap: null });
     const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
 
     useEffect(() => {
@@ -386,6 +392,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
                 if (d.eventSet?.pins) setSetPins(d.eventSet.pins);
+                if (d.eventSet) {
+                    setSetMeta({
+                        setBonusPoints: d.eventSet.setBonusPoints ?? null,
+                        scoreCap: d.eventSet.scoreCap ?? null,
+                    });
+                }
                 if (d.scoreLabel === "points") setScoreLabel("points");
                 setLoading(false);
             })
@@ -555,10 +567,27 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 <div className="flex-1 rounded-xl px-3 py-2.5 text-center"
                                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                     <div className="font-display text-[9px] tracking-[0.3em] text-white/45 mb-0.5">
-                                        {scoreLabel === "points" ? "YOUR POINTS" : "YOUR PINS"}
+                                        {(() => {
+                                            const userScore = userEntry?.count ?? 0;
+                                            const maxed = setMeta.scoreCap !== null && userScore >= setMeta.scoreCap;
+                                            if (maxed) return "MAXED";
+                                            return scoreLabel === "points" ? "YOUR POINTS" : "YOUR PINS";
+                                        })()}
                                     </div>
-                                    <div className="font-display text-xl font-black text-white">
+                                    <div
+                                        className="font-display text-xl font-black"
+                                        style={{
+                                            color: setMeta.scoreCap !== null && (userEntry?.count ?? 0) >= setMeta.scoreCap
+                                                ? accent
+                                                : "#fff",
+                                        }}
+                                    >
                                         {userEntry ? userEntry.count.toLocaleString() : "0"}
+                                        {setMeta.scoreCap !== null && (
+                                            <span className="font-display text-sm font-black text-white/35">
+                                                {" "}/ {setMeta.scoreCap}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -650,7 +679,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 )}
                             </div>
                         ) : (
-                            <SetView pins={setPins} accent={accent} />
+                            <SetView
+                                pins={setPins}
+                                accent={accent}
+                                setBonusPoints={setMeta.setBonusPoints}
+                                scoreCap={setMeta.scoreCap}
+                            />
                         )}
                     </div>
                 </div>
@@ -664,7 +698,17 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
 // cards: image, name, rarity label, point value, and the signed-in
 // user's owned count. Provides the "what's left to collect?" answer
 // the leaderboard alone can't.
-function SetView({ pins, accent }: { pins: EventSetPin[]; accent: string }) {
+function SetView({
+    pins,
+    accent,
+    setBonusPoints,
+    scoreCap,
+}: {
+    pins: EventSetPin[];
+    accent: string;
+    setBonusPoints: number | null;
+    scoreCap: number | null;
+}) {
     if (pins.length === 0) {
         return (
             <div className="px-5 pt-6 pb-12 text-center font-mundial text-sm text-white/40">
@@ -674,6 +718,34 @@ function SetView({ pins, accent }: { pins: EventSetPin[]; accent: string }) {
     }
     return (
         <div className="px-5 pt-4 pb-6">
+            {/* Bonus + cap explainer. Hidden when neither is configured
+                so single-pin sets and uncapped events render unchanged. */}
+            {(setBonusPoints !== null || scoreCap !== null) && (
+                <div
+                    className="rounded-xl px-4 py-3 mb-4 flex flex-wrap gap-x-5 gap-y-1.5 justify-center text-center"
+                    style={{
+                        background: `linear-gradient(135deg, ${accent}14, ${accent}06)`,
+                        border: `1px solid ${accent}33`,
+                    }}
+                >
+                    {setBonusPoints !== null && setBonusPoints > 0 && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">FULL SET</span>
+                            <span className="font-display font-black text-[13px]" style={{ color: accent }}>
+                                +{setBonusPoints} pts
+                            </span>
+                        </div>
+                    )}
+                    {scoreCap !== null && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">CAPS AT</span>
+                            <span className="font-display font-black text-[13px]" style={{ color: accent }}>
+                                {scoreCap} pts
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {pins.map(pin => (
                     <div
