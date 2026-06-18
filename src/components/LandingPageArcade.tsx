@@ -275,7 +275,7 @@ export default function LandingPageArcade({
             return {
                 id: p.id,
                 name: p.name,
-                partnerName: p.partnerName,
+                partnerName: p.partnerName ?? "",
                 tabLabel: p.tabLabel,
                 image: p.image,
                 description: p.description,
@@ -287,16 +287,16 @@ export default function LandingPageArcade({
             };
         }
         // Set event — derive PromoInfo-shaped display from the set
-        // metadata + a representative pin image (the highest-points
-        // pin reads as the "hero" of the set).
+        // metadata. Prefer the set's dedicated heroImage; fall back to
+        // the highest-points pin if no hero asset is supplied.
         const set = primary.set;
         const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
         return {
             id: set.id,
             name: set.name,
-            partnerName: set.partnerName,
+            partnerName: set.partnerName ?? "",
             tabLabel: set.tabLabel,
-            image: heroPin?.image ?? "",
+            image: set.heroImage ?? heroPin?.image ?? "",
             description: set.description,
             eventWindow: set.eventWindow,
             prizeNote: set.prizeNote,
@@ -1100,7 +1100,7 @@ export default function LandingPageArcade({
                                                 : `1px solid ${GOLD}66`,
                                             boxShadow: promoEnded ? "none" : `0 0 12px ${GOLD}22`,
                                         }}
-                                        aria-label={`Open ${activePromo.partnerName} event drawer`}
+                                        aria-label={`Open ${activePromo.partnerName || activePromo.name} event drawer`}
                                     >
                                         {/* Sparkles ONLY while the event is still running.
                                             Once it ends, the pill becomes a quiet
@@ -1152,8 +1152,13 @@ export default function LandingPageArcade({
                                             />
                                         </span>
                                         <span className="relative font-display text-[10px] tracking-[0.25em] text-white/85 uppercase whitespace-nowrap">
-                                            {activePromo.partnerName}
-                                            <span className="hidden 2xl:inline"> · {activePromo.name}</span>
+                                            {/* Pin Drop in-house events have no partnerName,
+                                                so we show the event name as the primary label
+                                                and skip the partner · name bullet entirely. */}
+                                            {activePromo.partnerName || activePromo.name}
+                                            {activePromo.partnerName && (
+                                                <span className="hidden 2xl:inline"> · {activePromo.name}</span>
+                                            )}
                                         </span>
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative text-white/55 transition-transform group-hover:translate-x-0.5">
                                             <path d="M9 18l6-6-6-6" />

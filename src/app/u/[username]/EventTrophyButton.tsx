@@ -50,7 +50,7 @@ export default function EventTrophyButton({ eventId, accent, children }: EventTr
                     border: `1.5px solid ${accent}40`,
                     boxShadow: `0 0 14px ${accent}33, 0 0 28px ${accent}18`,
                 }}
-                aria-label={`Open ${promo.partnerName} event leaderboard`}
+                aria-label={`Open ${promo.partnerName || promo.name} event leaderboard`}
             >
                 {children}
             </button>

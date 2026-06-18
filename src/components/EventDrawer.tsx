@@ -26,7 +26,8 @@ interface EventEntry {
 interface PromoInfo {
     id: string;
     name: string;
-    partnerName: string;
+    /** Optional — Pin Drop's in-house events have no partner. */
+    partnerName?: string;
     tabLabel: string;
     image: string;
     description?: string;
@@ -502,20 +503,28 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                             </div>
 
                             <div className="relative w-28 h-28 mb-4">
-                                <div className="absolute inset-0 rounded-full" style={{ filter: `drop-shadow(0 6px 20px ${accent}55)` }}>
+                                <div
+                                    className="absolute inset-0 rounded-full overflow-hidden"
+                                    style={{
+                                        filter: `drop-shadow(0 6px 20px ${accent}55)`,
+                                        border: `2px solid ${accent}66`,
+                                    }}
+                                >
                                     <Image
                                         src={promo.image}
                                         alt={promo.name}
                                         fill
                                         sizes="112px"
-                                        className="object-contain"
+                                        className="object-cover"
                                     />
                                 </div>
                             </div>
 
-                            <div className="font-mundial text-[11px] tracking-[0.28em] uppercase text-white/45 mb-1">
-                                {promo.partnerName}
-                            </div>
+                            {promo.partnerName && (
+                                <div className="font-mundial text-[11px] tracking-[0.28em] uppercase text-white/45 mb-1">
+                                    {promo.partnerName}
+                                </div>
+                            )}
                             <h2 className="font-display font-black text-white text-3xl sm:text-4xl tracking-tight text-center mb-3 leading-[1.05]">
                                 {promo.name}
                             </h2>

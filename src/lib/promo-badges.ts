@@ -24,8 +24,11 @@ import type { Badge, BadgeTier } from "./badges";
  */
 export interface PromoBadge extends Badge {
     isPromo: true;
-    /** Partner display name, shown on the leaderboard tab + reveal copy. */
-    partnerName: string;
+    /** Partner display name, shown on the leaderboard tab + reveal copy.
+     *  Optional for Pin Drop's own in-house events that don't have a
+     *  branded partner. When absent, the partner-name line above the
+     *  event title is hidden. */
+    partnerName?: string;
     /** Short tab label on the LeaderboardModal (keep it under ~8 chars). */
     tabLabel: string;
     /**
@@ -78,7 +81,8 @@ export interface PromoBadge extends Badge {
 export interface PromoEventSet {
     id: string;
     name: string;
-    partnerName: string;
+    /** Partner display name (optional for in-house Pin Drop events). */
+    partnerName?: string;
     /** Long-form copy shown in the EventDrawer hero. */
     description?: string;
     /** Event window label (e.g. "Through Jun 28 · 2026"). */
@@ -91,6 +95,11 @@ export interface PromoEventSet {
     endsAt?: string;
     /** Short tab label on the LeaderboardModal (keep under ~8 chars). */
     tabLabel: string;
+    /** Optional hero image for the drawer + header pill (large square or
+     *  portrait works best). When absent the drawer falls back to the
+     *  highest-points pin from the set, but a dedicated character /
+     *  partner asset usually reads better than reusing a pin tile. */
+    heroImage?: string;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -111,63 +120,60 @@ export const PROMO_BADGES: PromoBadge[] = [
         // June 8 2026, 12:00 PM Eastern. June is on EDT (UTC-4), so 16:00 UTC.
         endsAt: "2026-06-08T16:00:00Z",
     },
-    // ── Sample event set (PLACEHOLDER) ──────────────────────────────
-    // 4 pins sharing eventSetId "promo_set_sample". Drop weights and
-    // point values are illustrative — tune at brief time. Images
-    // referenced under public/badges/promo/set/ — drop assets there
-    // before flipping the env flag.
+    // ── Craig's Bubble Gum Blast (PLACEHOLDER pin art) ──────────────
+    // Pin Drop's first in-house event set. 4 pins of escalating rarity
+    // sharing eventSetId "craigs_bubble_gum_blast". All four currently
+    // reuse the same gvcday placeholder art — swap each entry's image
+    // for the final art before launch. Drop weights and point values
+    // are first-pass; tune from playtests.
     {
-        id: "promo_set_sample_common",
-        name: "Sample Common",
-        image: "/badges/promo/set/sample_common.svg",
+        id: "craigs_bubble_gum_blast_common",
+        name: "Bubble Gum Common",
+        image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
-        partnerName: "Sample Partner",
         tabLabel: "Set",
-        eventSetId: "promo_set_sample",
+        eventSetId: "craigs_bubble_gum_blast",
         points: 1,
         dropWeight: 70,
         rarityLabel: "Common",
     },
     {
-        id: "promo_set_sample_rare",
-        name: "Sample Rare",
-        image: "/badges/promo/set/sample_rare.svg",
+        id: "craigs_bubble_gum_blast_rare",
+        name: "Bubble Gum Rare",
+        image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
-        partnerName: "Sample Partner",
         tabLabel: "Set",
-        eventSetId: "promo_set_sample",
+        eventSetId: "craigs_bubble_gum_blast",
         points: 3,
         dropWeight: 20,
         rarityLabel: "Rare",
     },
     {
-        id: "promo_set_sample_epic",
-        name: "Sample Epic",
-        image: "/badges/promo/set/sample_epic.svg",
+        id: "craigs_bubble_gum_blast_epic",
+        name: "Bubble Gum Epic",
+        image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
-        partnerName: "Sample Partner",
         tabLabel: "Set",
-        eventSetId: "promo_set_sample",
+        eventSetId: "craigs_bubble_gum_blast",
         points: 8,
         dropWeight: 8,
         rarityLabel: "Epic",
     },
     {
-        id: "promo_set_sample_legendary",
-        name: "Sample Legendary",
-        image: "/badges/promo/set/sample_legendary.svg",
+        id: "craigs_bubble_gum_blast_legendary",
+        name: "Bubble Gum Legendary",
+        image: "/badges/promo/set/gvcday.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
-        partnerName: "Sample Partner",
         tabLabel: "Set",
-        eventSetId: "promo_set_sample",
+        eventSetId: "craigs_bubble_gum_blast",
         points: 25,
         dropWeight: 2,
         rarityLabel: "Legendary",
@@ -182,15 +188,18 @@ export const PROMO_BADGES: PromoBadge[] = [
  */
 export const PROMO_EVENT_SETS: PromoEventSet[] = [
     {
-        id: "promo_set_sample",
-        name: "Sample Event",
-        partnerName: "Sample Partner",
-        description: "Placeholder copy for the next special event. Collect all 4 pins of varying rarity. Each pull earns points; total points decide the leaderboard. Top collectors win prizes.",
-        eventWindow: "Sample Event · 2026",
-        accentColor: "#FFAA55",
+        id: "craigs_bubble_gum_blast",
+        name: "Craig's Bubble Gum Blast",
+        // No partnerName — this is an in-house Pin Drop event.
+        description: "Craig's chewing through capsules. Pull one of four Bubble Gum pins, each worth different points by rarity. Stack points to climb the leaderboard. Top collectors win prizes.",
+        eventWindow: "Pin Drop Original · 2026",
+        // Pink/purple accent. Tweak the hex to taste; this hue reads as
+        // both ("magenta") and pairs well with the existing GVC palette.
+        accentColor: "#D26AFF",
         // Update before launch. Format same as PromoBadge.endsAt above.
         endsAt: undefined,
         tabLabel: "Set",
+        heroImage: "/badges/promo/set/craig_vibington.jpg",
     },
 ];
 
