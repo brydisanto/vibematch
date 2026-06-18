@@ -599,7 +599,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         {/* Content */}
                         {view === "leaderboard" ? (
                             <div className="px-5 pb-3 pt-3">
-                                <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
+                                {/* TOP COLLECTORS header is redundant with the
+                                    "Leaderboard" tab label on set events. Keep
+                                    it for single-pin events where there's no
+                                    tab strip above to do that job. */}
+                                {!promo.eventSetId && (
+                                    <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
+                                )}
                                 {loading ? (
                                     <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
                                 ) : entries.length === 0 ? (
@@ -668,7 +674,6 @@ function SetView({ pins, accent }: { pins: EventSetPin[]; accent: string }) {
     }
     return (
         <div className="px-5 pt-4 pb-6">
-            <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">THE SET</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {pins.map(pin => (
                     <div
