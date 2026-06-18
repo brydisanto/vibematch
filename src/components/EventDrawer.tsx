@@ -368,9 +368,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => clearTimeout(t);
     }, [promo.endsAt]);
 
-    // Set events get a second "Set" tab. Default to leaderboard so the
-    // event keeps reading as a leaderboard-first experience.
-    const [view, setView] = useState<"leaderboard" | "set">("leaderboard");
+    // Set events open on the "Set" tab — players see the collection
+    // surface (their progress + the pins to chase) before the
+    // leaderboard. Reads as a personal "what's left" first, public
+    // ranking second.
+    const [view, setView] = useState<"leaderboard" | "set">("set");
     const [setPins, setSetPins] = useState<EventSetPin[]>([]);
     const [setMeta, setSetMeta] = useState<EventSetMeta>({ setBonusPoints: null, scoreCap: null });
     const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
@@ -602,17 +604,6 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                             <div className="px-5 pt-2 pb-2 flex justify-center gap-6 border-b border-white/[0.04]">
                                 <button
                                     type="button"
-                                    onClick={() => setView("leaderboard")}
-                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
-                                    style={{
-                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.5)",
-                                        borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
-                                    }}
-                                >
-                                    Leaderboard
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => setView("set")}
                                     className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
                                     style={{
@@ -621,6 +612,17 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     }}
                                 >
                                     The Set
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView("leaderboard")}
+                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                    style={{
+                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.5)",
+                                        borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
+                                    }}
+                                >
+                                    Leaderboard
                                 </button>
                             </div>
                         )}
