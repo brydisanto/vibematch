@@ -7,6 +7,9 @@ import {
     PROMO_BADGES,
     promoLeaderboardKey,
     findPromoBadge,
+    eventSetPointsKey,
+    findPromoEventSet,
+    getEventSetPins,
 } from '@/lib/promo-badges';
 
 /**
@@ -71,6 +74,96 @@ export async function GET(req: Request) {
 
         const url = new URL(req.url);
         const queryId = url.searchParams.get('id');
+        // ?set=<eventSetId> reads from the points-scored event-set
+        // leaderboard. ?id=<promoId> reads from the per-pin counter
+        // (which doubles as the leaderboard for standalone events).
+        const querySetId = url.searchParams.get('set');
+
+        // Set-event mode: source key is event_set:<setId>:points,
+        // metadata comes from PROMO_EVENT_SETS + the set's pins.
+        if (querySetId) {
+            const setDef = findPromoEventSet(querySetId);
+            const pins = getEventSetPins(querySetId);
+            if (!setDef || pins.length === 0) {
+                return NextResponse.json(
+                    { promo: null, leaderboard: [], userEntry: null, totalPlayers: 0, active: isPromoActive() },
+                    { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
+                );
+            }
+            const key = eventSetPointsKey(querySetId);
+            if (currentUsername) {
+                await recoverStrandedPromoPending(currentUsername);
+            }
+            const [topRaw, totalPlayersRaw, userScoreRaw, userAscRankRaw] = await Promise.all([
+                kv.zrange(key, 0, 49, { rev: true, withScores: true }) as Promise<Array<string | number>>,
+                kv.zcard(key),
+                currentUsername ? kv.zscore(key, currentUsername) : Promise.resolve(null),
+                currentUsername ? kv.zrank(key, currentUsername) : Promise.resolve(null),
+            ]);
+            const leaderboard: { username: string; count: number; rank: number }[] = [];
+            for (let i = 0; i < topRaw.length; i += 2) {
+                leaderboard.push({
+                    username: String(topRaw[i]),
+                    count: Number(topRaw[i + 1]),
+                    rank: (i / 2) + 1,
+                });
+            }
+            const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : 0;
+            let userEntry: { username: string; count: number; rank: number } | null = null;
+            if (currentUsername) {
+                const inTop = leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
+                if (inTop) {
+                    userEntry = inTop;
+                } else if (userScoreRaw !== null && userScoreRaw !== undefined) {
+                    const ascRank = typeof userAscRankRaw === 'number' ? userAscRankRaw : null;
+                    userEntry = {
+                        username: currentUsername,
+                        count: Number(userScoreRaw),
+                        rank: ascRank !== null ? totalPlayers - ascRank : totalPlayers,
+                    };
+                }
+            }
+            // Per-pin owned counts for the signed-in user — drives the
+            // "Set" tab in the drawer.
+            const ownedPerPin: Record<string, number> = {};
+            if (currentUsername) {
+                const scores = await Promise.all(pins.map(p => kv.zscore(promoLeaderboardKey(p.id), currentUsername)));
+                pins.forEach((p, i) => {
+                    ownedPerPin[p.id] = typeof scores[i] === 'number' ? Number(scores[i]) : 0;
+                });
+            } else {
+                pins.forEach(p => { ownedPerPin[p.id] = 0; });
+            }
+            return NextResponse.json(
+                {
+                    eventSet: {
+                        id: setDef.id,
+                        name: setDef.name,
+                        partnerName: setDef.partnerName,
+                        tabLabel: setDef.tabLabel,
+                        accentColor: setDef.accentColor,
+                        description: setDef.description,
+                        eventWindow: setDef.eventWindow,
+                        prizeNote: setDef.prizeNote,
+                        endsAt: setDef.endsAt,
+                        pins: pins.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            image: p.image,
+                            rarityLabel: p.rarityLabel ?? null,
+                            points: p.points ?? 1,
+                            owned: ownedPerPin[p.id] ?? 0,
+                        })),
+                    },
+                    scoreLabel: 'points',
+                    leaderboard,
+                    userEntry,
+                    totalPlayers,
+                    active: isPromoActive(),
+                },
+                { headers: { 'Cache-Control': 'private, max-age=20, stale-while-revalidate=60' } }
+            );
+        }
 
         // Pick the target promo:
         //   - explicit ?id= wins (lets us read historical leaderboards)

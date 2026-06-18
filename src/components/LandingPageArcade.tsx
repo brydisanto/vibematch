@@ -23,7 +23,7 @@ import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
-import { isPromoActive, getActivePromoBadges, isPromoEnded } from "@/lib/promo-badges";
+import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import { buildPlayerContext } from "@/lib/playerContext";
 import { getEasternDailyKey, getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
@@ -261,15 +261,59 @@ export default function LandingPageArcade({
     // clickable EVENT LIVE chip that opens a dedicated EventDrawer with
     // hero copy, stats, and the collector leaderboard. Falls back to
     // null cleanly when nothing's running.
-    const activePromo = isPromoActive() ? getActivePromoBadges()[0] ?? null : null;
+    // Resolved primary event for the pill + drawer. Sets win over
+    // standalone promos; within standalone, droppable wins over ended.
+    // The returned activePromo is a unified shape with the fields the
+    // pill JSX already reads (image, name, partnerName, endsAt) plus
+    // the eventSetId the drawer needs to switch into set mode.
+    const activePromo = (() => {
+        if (!isPromoActive()) return null;
+        const primary = getPrimaryActiveEvent();
+        if (!primary) return null;
+        if (primary.kind === "standalone") {
+            const p = primary.promo;
+            return {
+                id: p.id,
+                name: p.name,
+                partnerName: p.partnerName,
+                tabLabel: p.tabLabel,
+                image: p.image,
+                description: p.description,
+                eventWindow: p.eventWindow,
+                prizeNote: p.prizeNote,
+                accentColor: p.accentColor,
+                endsAt: p.endsAt,
+                eventSetId: undefined as string | undefined,
+            };
+        }
+        // Set event — derive PromoInfo-shaped display from the set
+        // metadata + a representative pin image (the highest-points
+        // pin reads as the "hero" of the set).
+        const set = primary.set;
+        const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+        return {
+            id: set.id,
+            name: set.name,
+            partnerName: set.partnerName,
+            tabLabel: set.tabLabel,
+            image: heroPin?.image ?? "",
+            description: set.description,
+            eventWindow: set.eventWindow,
+            prizeNote: set.prizeNote,
+            accentColor: set.accentColor,
+            endsAt: set.endsAt,
+            eventSetId: set.id,
+        };
+    })();
     // Treat the pill as "final results" once endsAt has passed — drops
     // stop everywhere else automatically, but the leaderboard tab and
     // drawer remain available so winners can be confirmed. Reactive so
     // an already-open tab flips the moment the cutoff hits, without
     // needing a page refresh.
-    const [promoEnded, setPromoEnded] = useState<boolean>(() =>
-        activePromo ? isPromoEnded(activePromo) : false,
-    );
+    const [promoEnded, setPromoEnded] = useState<boolean>(() => {
+        if (!activePromo?.endsAt) return false;
+        return Date.now() >= new Date(activePromo.endsAt).getTime();
+    });
     useEffect(() => {
         if (!activePromo?.endsAt) return;
         const endMs = new Date(activePromo.endsAt).getTime();
@@ -2177,6 +2221,7 @@ export default function LandingPageArcade({
                         prizeNote: activePromo.prizeNote,
                         accentColor: activePromo.accentColor,
                         endsAt: activePromo.endsAt,
+                        eventSetId: activePromo.eventSetId,
                     }}
                 />
             )}

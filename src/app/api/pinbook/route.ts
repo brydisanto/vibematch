@@ -12,6 +12,7 @@ import {
     pickActivePromoBadge,
     findPromoBadge,
     promoLeaderboardKey,
+    eventSetPointsKey,
 } from '@/lib/promo-badges';
 import { frenzyCapsulesForScore, classicCapsulesForScore } from '@/lib/gameEngine';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -894,6 +895,10 @@ export async function POST(req: Request) {
                     const stalePromo = findPromoBadge(existingPending.badgeId);
                     if (stalePromo && stalePromo.tier === existingPending.tier) {
                         await kv.zincrby(promoLeaderboardKey(stalePromo.id), 1, username);
+                        // Also credit event-set points if this pin belongs to a set.
+                        if (stalePromo.eventSetId) {
+                            await kv.zincrby(eventSetPointsKey(stalePromo.eventSetId), stalePromo.points ?? 1, username);
+                        }
                     }
                 } else {
                     const staleBadge = BADGES.find(b => b.id === existingPending.badgeId);
@@ -1031,8 +1036,18 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Invalid promo badge' }, { status: 400 });
                 }
                 await kv.del(pendingKey);
-                // ZINCRBY by 1 — counter doubles as leaderboard score.
+                // Per-pin counter: ZINCRBY by 1. For standalone events
+                // this zset doubles as the leaderboard; for set events
+                // it tracks per-pin collection only (the leaderboard
+                // lives in event_set:<setId>:points below).
                 const newCount = await kv.zincrby(promoLeaderboardKey(promoDef.id), 1, username);
+                // Set-event leaderboard: credit the pin's points value
+                // to event_set:<setId>:points. Standalone events skip
+                // this — their pin counter IS the leaderboard.
+                if (promoDef.eventSetId) {
+                    const points = promoDef.points ?? 1;
+                    await kv.zincrby(eventSetPointsKey(promoDef.eventSetId), points, username);
+                }
                 // Eventide quest flag — flip once; cheap idempotent write
                 // since we hold the user lock for this whole branch.
                 if (!data.hasCollectedEventPin) {

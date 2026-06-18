@@ -68,6 +68,7 @@ export default function EventTrophyButton({ eventId, accent, children }: EventTr
                         prizeNote: promo.prizeNote,
                         accentColor: promo.accentColor,
                         endsAt: promo.endsAt,
+                        eventSetId: promo.eventSetId,
                     }}
                 />
             )}

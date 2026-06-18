@@ -34,6 +34,21 @@ interface PromoInfo {
     prizeNote?: string;
     accentColor?: string;
     endsAt?: string;
+    /** When set, the drawer treats this as a multi-pin event: leaderboard
+     *  reads from event_set:<id>:points, a second "Set" tab is shown with
+     *  the 4 pins, and per-row counts render as point totals rather than
+     *  pin counts. Without it, behaves identically to the original
+     *  single-pin OpenSea-style drawer. */
+    eventSetId?: string;
+}
+
+interface EventSetPin {
+    id: string;
+    name: string;
+    image: string;
+    rarityLabel: string | null;
+    points: number;
+    owned: number;
 }
 
 function formatRemaining(targetMs: number): { d: number; h: number; m: number; s: number; done: boolean } {
@@ -347,16 +362,30 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => clearTimeout(t);
     }, [promo.endsAt]);
 
+    // Set events get a second "Set" tab. Default to leaderboard so the
+    // event keeps reading as a leaderboard-first experience.
+    const [view, setView] = useState<"leaderboard" | "set">("leaderboard");
+    const [setPins, setSetPins] = useState<EventSetPin[]>([]);
+    const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
+
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
-        fetch(`/api/promo/leaderboard`)
+        // Set events go through ?set=<id> which sources the points
+        // leaderboard and returns per-pin owned counts. Standalone
+        // events keep the original endpoint shape.
+        const url = promo.eventSetId
+            ? `/api/promo/leaderboard?set=${encodeURIComponent(promo.eventSetId)}`
+            : `/api/promo/leaderboard`;
+        fetch(url)
             .then(r => (r.ok ? r.json() : null))
             .then(d => {
                 if (cancelled || !d) return;
                 setEntries(d.leaderboard || []);
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
+                if (d.eventSet?.pins) setSetPins(d.eventSet.pins);
+                if (d.scoreLabel === "points") setScoreLabel("points");
                 setLoading(false);
             })
             .catch(() => {
@@ -365,7 +394,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [promo.eventSetId]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -516,7 +545,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 </div>
                                 <div className="flex-1 rounded-xl px-3 py-2.5 text-center"
                                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                    <div className="font-display text-[9px] tracking-[0.3em] text-white/45 mb-0.5">YOUR PINS</div>
+                                    <div className="font-display text-[9px] tracking-[0.3em] text-white/45 mb-0.5">
+                                        {scoreLabel === "points" ? "YOUR POINTS" : "YOUR PINS"}
+                                    </div>
                                     <div className="font-display text-xl font-black text-white">
                                         {userEntry ? userEntry.count.toLocaleString() : "0"}
                                     </div>
@@ -524,55 +555,155 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                             </div>
                         </div>
 
-                        {/* Leaderboard */}
-                        <div className="px-5 pb-3">
-                            <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
-                            {loading ? (
-                                <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
-                            ) : entries.length === 0 ? (
-                                <div className="py-12 text-center">
-                                    <div className="font-mundial text-sm text-white/50">No collectors yet.</div>
-                                    <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
-                                </div>
-                            ) : (
-                                <div className="space-y-1.5">
-                                    {entries.map(entry => (
-                                        <LeaderboardRow
-                                            key={entry.username}
-                                            entry={entry}
-                                            isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
-                                            accent={accent}
-                                            currentAvatarUrl={currentAvatarUrl}
-                                            isWinner={ended && entry.rank === 1}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                        {/* Tab strip — only rendered for set events. Single-pin
+                            events skip straight to the leaderboard view since
+                            there's no "set" to show. */}
+                        {promo.eventSetId && (
+                            <div className="px-5 pt-1 pb-2 flex gap-2 border-b border-white/[0.04]">
+                                <button
+                                    type="button"
+                                    onClick={() => setView("leaderboard")}
+                                    className="px-3 py-2 font-display font-black text-[10px] tracking-[0.25em] uppercase transition-colors"
+                                    style={{
+                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.45)",
+                                        borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
+                                    }}
+                                >
+                                    Leaderboard
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView("set")}
+                                    className="px-3 py-2 font-display font-black text-[10px] tracking-[0.25em] uppercase transition-colors"
+                                    style={{
+                                        color: view === "set" ? accent : "rgba(255,255,255,0.45)",
+                                        borderBottom: view === "set" ? `2px solid ${accent}` : "2px solid transparent",
+                                    }}
+                                >
+                                    The Set
+                                </button>
+                            </div>
+                        )}
 
-                            {/* User pinned row when not in top 50 */}
-                            {userRow && (
-                                <div className="mt-3 pt-3 border-t border-white/5">
-                                    <Link
-                                        href={`/u/${encodeURIComponent(userRow.username)}`}
-                                        className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
-                                    >
-                                        <div className="flex-shrink-0 w-7 text-center font-display font-black text-sm text-white/60">
-                                            {userRow.rank}
-                                        </div>
-                                        <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-display font-black text-sm text-[#B366FF]">You</div>
-                                        </div>
-                                        <div className="font-display font-black text-sm" style={{ color: accent }}>
-                                            {userRow.count.toLocaleString()}
-                                        </div>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        {/* Content */}
+                        {view === "leaderboard" ? (
+                            <div className="px-5 pb-3 pt-3">
+                                <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
+                                {loading ? (
+                                    <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
+                                ) : entries.length === 0 ? (
+                                    <div className="py-12 text-center">
+                                        <div className="font-mundial text-sm text-white/50">No collectors yet.</div>
+                                        <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {entries.map(entry => (
+                                            <LeaderboardRow
+                                                key={entry.username}
+                                                entry={entry}
+                                                isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                accent={accent}
+                                                currentAvatarUrl={currentAvatarUrl}
+                                                isWinner={ended && entry.rank === 1}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* User pinned row when not in top 50 */}
+                                {userRow && (
+                                    <div className="mt-3 pt-3 border-t border-white/5">
+                                        <Link
+                                            href={`/u/${encodeURIComponent(userRow.username)}`}
+                                            className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
+                                        >
+                                            <div className="flex-shrink-0 w-7 text-center font-display font-black text-sm text-white/60">
+                                                {userRow.rank}
+                                            </div>
+                                            <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-display font-black text-sm text-[#B366FF]">You</div>
+                                            </div>
+                                            <div className="font-display font-black text-sm" style={{ color: accent }}>
+                                                {userRow.count.toLocaleString()}
+                                            </div>
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <SetView pins={setPins} accent={accent} />
+                        )}
                     </div>
                 </div>
             </motion.div>
         </AnimatePresence>
+    );
+}
+
+// ── Set view ─────────────────────────────────────────────────────────
+// Tab 2 of the drawer for multi-pin events. Renders the 4 set pins as
+// cards: image, name, rarity label, point value, and the signed-in
+// user's owned count. Provides the "what's left to collect?" answer
+// the leaderboard alone can't.
+function SetView({ pins, accent }: { pins: EventSetPin[]; accent: string }) {
+    if (pins.length === 0) {
+        return (
+            <div className="px-5 pt-6 pb-12 text-center font-mundial text-sm text-white/40">
+                Loading set…
+            </div>
+        );
+    }
+    return (
+        <div className="px-5 pt-4 pb-6">
+            <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">THE SET</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {pins.map(pin => (
+                    <div
+                        key={pin.id}
+                        className="rounded-xl p-3 flex flex-col items-center text-center transition-transform"
+                        style={{
+                            background: `linear-gradient(135deg, ${accent}14, ${accent}05)`,
+                            border: `1px solid ${accent}33`,
+                            boxShadow: pin.owned > 0 ? `0 0 14px ${accent}26` : "none",
+                            opacity: pin.owned > 0 ? 1 : 0.7,
+                        }}
+                    >
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-2">
+                            <Image
+                                src={pin.image}
+                                alt={pin.name}
+                                fill
+                                sizes="80px"
+                                className="object-contain"
+                                style={pin.owned === 0 ? { filter: "grayscale(70%) brightness(0.7)" } : undefined}
+                                unoptimized
+                            />
+                        </div>
+                        <div className="font-display font-black text-[11px] sm:text-[12px] text-white leading-tight mb-1 line-clamp-2">
+                            {pin.name}
+                        </div>
+                        {pin.rarityLabel && (
+                            <div className="font-display text-[9px] tracking-[0.2em] uppercase mb-1.5" style={{ color: accent }}>
+                                {pin.rarityLabel}
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between w-full mt-auto pt-2 border-t border-white/5">
+                            <span className="font-mundial text-[9px] tracking-[0.15em] uppercase text-white/40">PTS</span>
+                            <span className="font-display font-black text-[12px] tabular-nums" style={{ color: accent }}>
+                                {pin.points}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between w-full">
+                            <span className="font-mundial text-[9px] tracking-[0.15em] uppercase text-white/40">OWNED</span>
+                            <span className="font-display font-black text-[12px] tabular-nums text-white">
+                                ×{pin.owned}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }
