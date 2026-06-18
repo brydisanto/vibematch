@@ -119,7 +119,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "promo_set_sample_common",
         name: "Sample Common",
-        image: "/badges/promo/set/sample_common.webp",
+        image: "/badges/promo/set/sample_common.svg",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -133,7 +133,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "promo_set_sample_rare",
         name: "Sample Rare",
-        image: "/badges/promo/set/sample_rare.webp",
+        image: "/badges/promo/set/sample_rare.svg",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -147,7 +147,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "promo_set_sample_epic",
         name: "Sample Epic",
-        image: "/badges/promo/set/sample_epic.webp",
+        image: "/badges/promo/set/sample_epic.svg",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -161,7 +161,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "promo_set_sample_legendary",
         name: "Sample Legendary",
-        image: "/badges/promo/set/sample_legendary.webp",
+        image: "/badges/promo/set/sample_legendary.svg",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
