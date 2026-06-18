@@ -557,15 +557,17 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
 
                         {/* Tab strip — only rendered for set events. Single-pin
                             events skip straight to the leaderboard view since
-                            there's no "set" to show. */}
+                            there's no "set" to show. Centered with larger tap
+                            targets so the two tabs feel balanced under the
+                            hero rather than left-anchored. */}
                         {promo.eventSetId && (
-                            <div className="px-5 pt-1 pb-2 flex gap-2 border-b border-white/[0.04]">
+                            <div className="px-5 pt-2 pb-2 flex justify-center gap-6 border-b border-white/[0.04]">
                                 <button
                                     type="button"
                                     onClick={() => setView("leaderboard")}
-                                    className="px-3 py-2 font-display font-black text-[10px] tracking-[0.25em] uppercase transition-colors"
+                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
                                     style={{
-                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.45)",
+                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.5)",
                                         borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
                                     }}
                                 >
@@ -574,9 +576,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 <button
                                     type="button"
                                     onClick={() => setView("set")}
-                                    className="px-3 py-2 font-display font-black text-[10px] tracking-[0.25em] uppercase transition-colors"
+                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
                                     style={{
-                                        color: view === "set" ? accent : "rgba(255,255,255,0.45)",
+                                        color: view === "set" ? accent : "rgba(255,255,255,0.5)",
                                         borderBottom: view === "set" ? `2px solid ${accent}` : "2px solid transparent",
                                     }}
                                 >
