@@ -209,12 +209,15 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         id: "craigs_bubble_gum_blast",
         name: "Craig's Bubble Gum Blast",
         // No partnerName — this is an in-house Pin Drop event.
-        description: "Help Craig prepare for the first Gumbustion. Collect different Bubble Gum pins to score points; complete a full set of all 4 to land a bonus. Points cap at 100, all finishers enter the prize raffle.",
+        description: "Help Craig prepare for the first Gumbustion. Collect different Bubble Gum pins to score points; complete a full set of all 4 to land a bonus. Points cap at 100, everyone that maxes out joins the prize raffle.",
         eventWindow: "Pin Drop Original · 2026",
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
         accentColor: "#D26AFF",
-        // Update before launch. Format same as PromoBadge.endsAt above.
+        // July 7 2026, 12:00 PM Eastern. EDT (UTC-4) in July → 16:00 UTC.
+        startsAt: "2026-07-07T16:00:00Z",
+        // endsAt left undefined for the preview pass; set to the cutoff
+        // before launch.
         endsAt: undefined,
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.jpg",

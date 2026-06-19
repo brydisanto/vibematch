@@ -282,6 +282,7 @@ export default function LandingPageArcade({
                 eventWindow: p.eventWindow,
                 prizeNote: p.prizeNote,
                 accentColor: p.accentColor,
+                startsAt: undefined as string | undefined,
                 endsAt: p.endsAt,
                 eventSetId: undefined as string | undefined,
             };
@@ -301,6 +302,7 @@ export default function LandingPageArcade({
             eventWindow: set.eventWindow,
             prizeNote: set.prizeNote,
             accentColor: set.accentColor,
+            startsAt: set.startsAt,
             endsAt: set.endsAt,
             eventSetId: set.id,
         };
@@ -2225,6 +2227,7 @@ export default function LandingPageArcade({
                         eventWindow: activePromo.eventWindow,
                         prizeNote: activePromo.prizeNote,
                         accentColor: activePromo.accentColor,
+                        startsAt: activePromo.startsAt,
                         endsAt: activePromo.endsAt,
                         eventSetId: activePromo.eventSetId,
                     }}

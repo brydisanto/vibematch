@@ -34,6 +34,10 @@ interface PromoInfo {
     eventWindow?: string;
     prizeNote?: string;
     accentColor?: string;
+    /** When set + in the future, the drawer renders a "STARTS IN"
+     *  countdown instead of "ENDS IN". Once startsAt passes, the
+     *  countdown switches to the endsAt target. */
+    startsAt?: string;
     endsAt?: string;
     /** When set, the drawer treats this as a multi-pin event: leaderboard
      *  reads from event_set:<id>:points, a second "Set" tab is shown with
@@ -67,22 +71,90 @@ function formatRemaining(targetMs: number): { d: number; h: number; m: number; s
     return { d, h, m, s, done: false };
 }
 
+/** "JUL 7 · 12 PM ET" — date + time in America/New_York, capitalized
+ *  to match the existing display weight. */
+function formatEasternLabel(iso: string): string {
+    try {
+        const date = new Date(iso);
+        const dateStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            month: "short",
+            day: "numeric",
+        }).format(date).toUpperCase();
+        const timeStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        }).format(date).replace(/(AM|PM)$/, m => " " + m).toUpperCase();
+        const compactTime = timeStr.replace(/:00\s/, " ");
+        return `${dateStr} · ${compactTime.trim()} ET`;
+    } catch {
+        return "";
+    }
+}
+
 /**
  * Self-contained countdown subtree. Owns its own setInterval state so the
  * per-second tick re-renders ONLY this component, not the parent drawer.
  * Previously the parent useCountdown hook re-rendered the entire drawer
  * (including all 50 leaderboard rows + avatar fetches) every second,
  * which caused noticeable lag.
+ *
+ * Three phases:
+ *   1. PRE-EVENT  (now < startsAt) → "EVENT BEGINS IN" + countdown to startsAt
+ *   2. ACTIVE     (startsAt ≤ now < endsAt) → "ENDS <date>" + countdown to endsAt
+ *   3. ENDED      (now ≥ endsAt) → "EVENT ENDED" static label
+ *
+ * Auto-transitions across phases by tracking now per tick rather than
+ * pinning to a single target.
  */
-const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; accent: string }) {
-    const targetMs = new Date(endsAt).getTime();
-    const [tick, setTick] = useState(() => formatRemaining(targetMs));
-    useEffect(() => {
-        const iv = setInterval(() => setTick(formatRemaining(targetMs)), 1000);
-        return () => clearInterval(iv);
-    }, [targetMs]);
+const Countdown = memo(function Countdown({
+    startsAt,
+    endsAt,
+    accent,
+}: { startsAt?: string; endsAt?: string; accent: string }) {
+    const startMs = startsAt ? new Date(startsAt).getTime() : null;
+    const endMs = endsAt ? new Date(endsAt).getTime() : null;
 
-    if (tick.done) {
+    const computePhase = () => {
+        const now = Date.now();
+        if (startMs !== null && now < startMs) {
+            return {
+                phase: "pre" as const,
+                target: startMs,
+                heading: "EVENT BEGINS IN",
+                subLabel: startsAt ? formatEasternLabel(startsAt) : "",
+            };
+        }
+        if (endMs !== null && now >= endMs) {
+            return {
+                phase: "ended" as const,
+                target: 0,
+                heading: "EVENT ENDED",
+                subLabel: "",
+            };
+        }
+        if (endMs !== null) {
+            return {
+                phase: "active" as const,
+                target: endMs,
+                heading: "",
+                subLabel: endsAt ? `ENDS ${formatEasternLabel(endsAt)}` : "",
+            };
+        }
+        return null;
+    };
+
+    const [state, setState] = useState(computePhase);
+    useEffect(() => {
+        const iv = setInterval(() => setState(computePhase()), 1000);
+        return () => clearInterval(iv);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startMs, endMs]);
+
+    if (!state) return null;
+    if (state.phase === "ended") {
         return (
             <div className="font-display text-[10px] tracking-[0.32em] text-white/55 mb-4">
                 EVENT ENDED
@@ -90,6 +162,7 @@ const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; 
         );
     }
 
+    const tick = formatRemaining(state.target);
     const units = [
         { value: tick.d, label: "DAYS" },
         { value: tick.h, label: "HRS" },
@@ -100,8 +173,13 @@ const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; 
     return (
         <div className="flex flex-col items-center mb-4">
             <div className="font-display text-[10px] tracking-[0.32em] text-white/45 mb-1.5">
-                ENDS JUN 8 · 12 PM ET
+                {state.phase === "pre" ? state.heading : state.subLabel}
             </div>
+            {state.phase === "pre" && state.subLabel && (
+                <div className="font-mundial text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2">
+                    {state.subLabel}
+                </div>
+            )}
             <div className="flex items-end gap-2 sm:gap-3 tabular-nums">
                 {units.map((unit, i) => (
                     <div key={unit.label} className="flex items-end gap-2 sm:gap-3">
@@ -445,7 +523,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 transition={{ type: "spring", damping: 32, stiffness: 320 }}
             >
                 <div
-                    className="relative max-h-[92vh] overflow-hidden rounded-t-3xl border-t border-x"
+                    className="relative max-h-[96vh] overflow-hidden rounded-t-3xl border-t border-x"
                     style={{
                         background: "linear-gradient(180deg, #0e0820 0%, #0a0418 100%)",
                         borderColor: `${accent}55`,
@@ -475,7 +553,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                     </button>
 
                     {/* Scrollable body */}
-                    <div className="overflow-y-auto max-h-[calc(92vh-12px)] pb-8">
+                    <div className="overflow-y-auto max-h-[calc(96vh-12px)] pb-8">
                         {/* Hero */}
                         <div
                             className="relative flex flex-col items-center px-6 pt-6 pb-7"
@@ -548,7 +626,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 </p>
                             )}
 
-                            {promo.endsAt && <Countdown endsAt={promo.endsAt} accent={accent} />}
+                            {(promo.startsAt || promo.endsAt) && (
+                                <Countdown
+                                    startsAt={promo.startsAt}
+                                    endsAt={promo.endsAt}
+                                    accent={accent}
+                                />
+                            )}
 
                             {/* Stat row */}
                             <div className="flex gap-2 w-full max-w-md">
