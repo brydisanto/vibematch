@@ -209,7 +209,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         id: "craigs_bubble_gum_blast",
         name: "Craig's Bubble Gum Blast",
         // No partnerName — this is an in-house Pin Drop event.
-        description: "Craig's chewing through capsules. Collect Bubble Gum pins to score points; complete a full set of 4 for a bonus. Cap at 100 — all finishers go in the prize raffle.",
+        description: "Help Craig prepare for the first Gumbustion. Collect different Bubble Gum pins to score points; complete a full set of all 4 to land a bonus. Points cap at 100, all finishers enter the prize raffle.",
         eventWindow: "Pin Drop Original · 2026",
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
@@ -217,7 +217,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Update before launch. Format same as PromoBadge.endsAt above.
         endsAt: undefined,
         tabLabel: "Set",
-        heroImage: "/badges/promo/set/craig_vibington.jpg",
+        heroImage: "/badges/promo/set/gvcday.webp",
         // +25 per full set collected (one of every pin). Stacks: 3 of
         // each = 75 bonus. Combined with per-pin points + the 100 cap,
         // exactly 3 full sets gets you to the max (54 pin pts + 75 set
