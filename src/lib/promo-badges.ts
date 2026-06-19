@@ -217,7 +217,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Update before launch. Format same as PromoBadge.endsAt above.
         endsAt: undefined,
         tabLabel: "Set",
-        heroImage: "/badges/promo/set/gvcday.webp",
+        heroImage: "/badges/promo/set/craig_vibington.jpg",
         // +25 per full set collected (one of every pin). Stacks: 3 of
         // each = 75 bonus. Combined with per-pin points + the 100 cap,
         // exactly 3 full sets gets you to the max (54 pin pts + 75 set

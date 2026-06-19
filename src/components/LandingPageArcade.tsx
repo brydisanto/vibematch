@@ -1141,13 +1141,13 @@ export default function LandingPageArcade({
                                             className="relative h-3 w-px"
                                             style={{ background: promoEnded ? "rgba(255,255,255,0.18)" : `${GOLD}44` }}
                                         />
-                                        <span className="relative w-4 h-4 shrink-0">
+                                        <span className="relative w-4 h-4 shrink-0 rounded-full overflow-hidden">
                                             <Image
                                                 src={activePromo.image}
                                                 alt=""
                                                 fill
                                                 sizes="16px"
-                                                className="object-contain"
+                                                className="object-cover"
                                                 style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
                                             />
                                         </span>
