@@ -68,12 +68,28 @@ function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
 function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
     return rail === "vibestr" ? entry.vibestrUsdMills : entry.usdMills;
 }
-function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
-    if (wei === BigInt(0)) return "0";
+function formatTokenAmount(
+    wei: bigint,
+    decimals: number,
+    maxFrac = 4,
+    minFrac = 0,
+    exactDecimals?: number,
+): string {
+    // exactDecimals = always show exactly N decimal places using
+    // standard half-up rounding (e.g. ETH at 5 decimals: 0.000159 →
+    // "0.00016"). The wei → number conversion is safe for amounts
+    // under ~$1B at any reasonable token price.
+    if (exactDecimals !== undefined) {
+        return Number(formatUnits(wei, decimals)).toFixed(exactDecimals);
+    }
+    if (wei === BigInt(0)) return minFrac > 0 ? `0.${"0".repeat(minFrac)}` : "0";
     const s = formatUnits(wei, decimals);
-    if (!s.includes(".")) return s;
+    if (!s.includes(".")) {
+        return minFrac > 0 ? `${s}.${"0".repeat(minFrac)}` : s;
+    }
     const [whole, frac] = s.split(".");
-    const trimmed = frac.replace(/0+$/, "").slice(0, maxFrac);
+    let trimmed = frac.replace(/0+$/, "").slice(0, maxFrac);
+    if (trimmed.length < minFrac) trimmed = trimmed.padEnd(minFrac, "0");
     return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
 }
 function formatUsdFromMills(mills: number): string {
@@ -187,7 +203,9 @@ export default function PrizeShopDrawer({
     const selectedRequiredWei = selectedEntry ? railWei(selectedEntry, paymentRail) : BigInt(0);
     const railDecimals = TOKEN_DECIMALS[paymentRail];
     const selectedTokenDisplay = selectedEntry
-        ? formatTokenAmount(selectedRequiredWei, railDecimals, paymentRail === "eth" ? 6 : 2)
+        ? paymentRail === "eth"
+            ? formatTokenAmount(selectedRequiredWei, railDecimals, 5, 0, 5)
+            : formatTokenAmount(selectedRequiredWei, railDecimals, 2, paymentRail === "usdc" ? 2 : 0)
         : "—";
 
     const startPolling = (hash: string) => {
@@ -502,7 +520,9 @@ function PurchaseState({
                     const entry = pricing?.packages[PACKAGE_IDS[p.size]] ?? null;
                     const totalWei = entry ? railWei(entry, paymentRail) : BigInt(0);
                     const totalDisplay = entry
-                        ? formatTokenAmount(totalWei, railDecimals, paymentRail === "eth" ? 6 : 2)
+                        ? paymentRail === "eth"
+                        ? formatTokenAmount(totalWei, railDecimals, 5, 0, 5)
+                        : formatTokenAmount(totalWei, railDecimals, 2, paymentRail === "usdc" ? 2 : 0)
                         : "—";
                     const usdMills = entry ? railUsdMills(entry, paymentRail) : 0;
                     return (
@@ -654,8 +674,8 @@ function PurchaseState({
             <ChunkyButton
                 onClick={onBuy}
                 disabled={cannotAfford || isProcessing}
-                className="w-full mt-5 font-display uppercase tracking-[0.12em]"
-                style={{ padding: "14px 18px", fontSize: 14, fontWeight: 900 }}
+                className="w-full mt-5 font-display uppercase tracking-[0.14em]"
+                style={{ padding: "14px 18px", fontSize: 15, fontWeight: 600 }}
             >
                 {isProcessing ? (
                     <span className="flex items-center justify-center gap-2">

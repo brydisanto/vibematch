@@ -50,12 +50,24 @@ function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
 function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
     return rail === 'vibestr' ? entry.vibestrUsdMills : entry.usdMills;
 }
-function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
-    if (wei === BigInt(0)) return '0';
+function formatTokenAmount(
+    wei: bigint,
+    decimals: number,
+    maxFrac = 4,
+    minFrac = 0,
+    exactDecimals?: number,
+): string {
+    if (exactDecimals !== undefined) {
+        return Number(formatUnits(wei, decimals)).toFixed(exactDecimals);
+    }
+    if (wei === BigInt(0)) return minFrac > 0 ? `0.${'0'.repeat(minFrac)}` : '0';
     const s = formatUnits(wei, decimals);
-    if (!s.includes('.')) return s;
+    if (!s.includes('.')) {
+        return minFrac > 0 ? `${s}.${'0'.repeat(minFrac)}` : s;
+    }
     const [whole, frac] = s.split('.');
-    const trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    let trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    if (trimmed.length < minFrac) trimmed = trimmed.padEnd(minFrac, '0');
     return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
 }
 function formatUsdFromMills(mills: number): string {
@@ -127,7 +139,9 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
     const selectedUsdMills = selectedEntry ? railUsdMills(selectedEntry, paymentRail) : 0;
     const railDecimals = TOKEN_DECIMALS[paymentRail];
     const selectedTokenDisplay = selectedEntry
-        ? formatTokenAmount(selectedRequiredWei, railDecimals, paymentRail === 'eth' ? 6 : 2)
+        ? paymentRail === 'eth'
+        ? formatTokenAmount(selectedRequiredWei, railDecimals, 5, 0, 5)
+        : formatTokenAmount(selectedRequiredWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0)
         : '—';
     const cannotAfford = selectedSize > remaining;
 
@@ -390,10 +404,14 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                             const totalWei = entry ? railWei(entry, paymentRail) : BigInt(0);
                                             const perGameWei = entry ? totalWei / BigInt(size) : BigInt(0);
                                             const totalDisplay = entry
-                                                ? formatTokenAmount(totalWei, railDecimals, paymentRail === 'eth' ? 6 : 2)
+                                                ? (paymentRail === 'eth'
+                                                    ? formatTokenAmount(totalWei, railDecimals, 5, 0, 5)
+                                                    : formatTokenAmount(totalWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0))
                                                 : '—';
                                             const perGameDisplay = entry
-                                                ? formatTokenAmount(perGameWei, railDecimals, paymentRail === 'eth' ? 6 : 2)
+                                                ? (paymentRail === 'eth'
+                                                    ? formatTokenAmount(perGameWei, railDecimals, 5, 0, 5)
+                                                    : formatTokenAmount(perGameWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0))
                                                 : '—';
                                             const usdMills = entry ? railUsdMills(entry, paymentRail) : 0;
                                             const discount = PACKAGE_DISCOUNTS[size];

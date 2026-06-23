@@ -39,12 +39,24 @@ function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
 function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
     return rail === 'vibestr' ? entry.vibestrUsdMills : entry.usdMills;
 }
-function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
-    if (wei === BigInt(0)) return '0';
+function formatTokenAmount(
+    wei: bigint,
+    decimals: number,
+    maxFrac = 4,
+    minFrac = 0,
+    exactDecimals?: number,
+): string {
+    if (exactDecimals !== undefined) {
+        return Number(formatUnits(wei, decimals)).toFixed(exactDecimals);
+    }
+    if (wei === BigInt(0)) return minFrac > 0 ? `0.${'0'.repeat(minFrac)}` : '0';
     const s = formatUnits(wei, decimals);
-    if (!s.includes('.')) return s;
+    if (!s.includes('.')) {
+        return minFrac > 0 ? `${s}.${'0'.repeat(minFrac)}` : s;
+    }
     const [whole, frac] = s.split('.');
-    const trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    let trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    if (trimmed.length < minFrac) trimmed = trimmed.padEnd(minFrac, '0');
     return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
 }
 function formatUsdFromMills(mills: number): string {
@@ -289,7 +301,9 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const railLabel: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
     const railDecimals = TOKEN_DECIMALS[paymentRail];
     const totalTokenDisplay = rerollEntry
-        ? formatTokenAmount(totalRerollWei, railDecimals, paymentRail === 'eth' ? 6 : 2)
+        ? (paymentRail === 'eth'
+            ? formatTokenAmount(totalRerollWei, railDecimals, 5, 0, 5)
+            : formatTokenAmount(totalRerollWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0))
         : '—';
     // Mirror server's MAX_REROLLS_PER_TX. Kept here so the UI can block
     // signing for over-cap rerolls instead of letting the user sign a tx
