@@ -15,13 +15,20 @@
  */
 
 import { NextResponse } from 'next/server';
-import { parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
+import { formatUnits, decodeEventLog, parseAbi } from 'viem';
 import { getMainnetClient } from '@/lib/eth-rpc';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '../route';
 import { logAuditEvent } from '@/lib/audit-log';
 import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
+import {
+    getRequiredWei,
+    USDC_TOKEN_ADDRESS,
+    VIBESTR_TOKEN_ADDRESS,
+    type PaymentRail,
+    type PricingPackageId,
+} from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -54,15 +61,21 @@ if (TREASURY_MISCONFIGURED) {
 // testnet-cheap txs accidentally verified via a misbehaving RPC in fallback).
 const EXPECTED_CHAIN_ID = BigInt(1);
 
-const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
-const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
+const VIBESTR_ADDRESS = VIBESTR_TOKEN_ADDRESS.toLowerCase();
+const USDC_ADDRESS = USDC_TOKEN_ADDRESS.toLowerCase();
 
-// Price per package (in VIBESTR). Server-side source of truth — client
-// PACKAGES arrays in BuyPrizeGamesModal and PrizeShopDrawer mirror these.
-const PACKAGE_PRICES: Record<number, string> = {
-    1: '150',   // 150 VIBESTR per game (single)
-    5: '600',   // 120 VIBESTR per game (20% off)
-    10: '1000', // 100 VIBESTR per game (33% off, best value)
+// Maps a UI packageSize (1 / 5 / 10) to the canonical pricing-table id.
+const PACKAGE_ID_BY_SIZE: Record<number, PricingPackageId> = {
+    1: 'prize-games-1',
+    5: 'prize-games-5',
+    10: 'prize-games-10',
+};
+
+// Token decimals — VIBESTR/USDC are immutable mainnet contracts.
+const TOKEN_DECIMALS: Record<PaymentRail, number> = {
+    vibestr: 18,
+    usdc: 6,
+    eth: 18,
 };
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
@@ -80,7 +93,7 @@ async function getTokenDecimals(): Promise<number> {
     if (cachedDecimals !== null) return cachedDecimals;
     try {
         const result = await client.readContract({
-            address: VIBESTR_ADDRESS_RAW as `0x${string}`,
+            address: VIBESTR_TOKEN_ADDRESS as `0x${string}`,
             abi: erc20DecimalsAbi,
             functionName: 'decimals',
         });
@@ -130,6 +143,9 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { txHash, walletAddress, packageSize } = body;
+        const paymentRail: PaymentRail = (
+            body.paymentRail === 'usdc' || body.paymentRail === 'eth' ? body.paymentRail : 'vibestr'
+        );
 
         // Strict format validation — reject before hitting any RPC
         if (!txHash || typeof txHash !== 'string' || !TX_HASH_REGEX.test(txHash)) {
@@ -138,7 +154,8 @@ export async function POST(request: Request) {
         if (!walletAddress || typeof walletAddress !== 'string' || !WALLET_REGEX.test(walletAddress)) {
             return NextResponse.json({ error: 'Invalid wallet address format' }, { status: 400 });
         }
-        if (!PACKAGE_PRICES[packageSize]) {
+        const packageId = PACKAGE_ID_BY_SIZE[packageSize];
+        if (!packageId) {
             return NextResponse.json({ error: 'Invalid packageSize. Must be 1, 5, or 10.' }, { status: 400 });
         }
 
@@ -156,14 +173,15 @@ export async function POST(request: Request) {
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
         const normalizedTxHash = txHash.toLowerCase();
-        // Fetch token decimals (cached after first call) — refuse payments if unavailable
-        let decimals: number;
-        try {
-            decimals = await getTokenDecimals();
-        } catch (e) {
-            return NextResponse.json({ error: 'Payment temporarily unavailable' }, { status: 503 });
+
+        // Read the canonical wei amount for this (package, rail) from the
+        // pricing snapshot. Falls back to FALLBACK_PRICING from
+        // src/lib/pricing.ts if KV hasn't been seeded yet.
+        const requiredAmount = await getRequiredWei(packageId, paymentRail, 1);
+        const decimals = TOKEN_DECIMALS[paymentRail];
+        if (requiredAmount <= BigInt(0)) {
+            return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 });
         }
-        const requiredAmount = parseUnits(PACKAGE_PRICES[packageSize], decimals);
 
         // --- Replay protection: atomic NX set (reserves the tx hash) ---
         // No TTL — replay markers are permanent. Cheap storage vs economic loss.
@@ -238,35 +256,45 @@ export async function POST(request: Request) {
             return await fail(400, 'Transaction is on the wrong chain');
         }
 
-        // Parse event logs for valid Transfer
+        // Verifier — different shape per rail:
+        //   - VIBESTR / USDC: decode the ERC-20 Transfer event log.
+        //   - ETH: read tx.value directly (native transfer).
         let validTransferFound = false;
         let actualAmount = BigInt(0);
 
-        for (const log of receipt.logs) {
-            if (log.address.toLowerCase() !== VIBESTR_ADDRESS) continue;
-            try {
-                const decoded = decodeEventLog({
-                    abi: erc20TransferAbi,
-                    data: log.data,
-                    topics: log.topics,
-                });
-                if (decoded.eventName === 'Transfer') {
-                    const fromAddr = (decoded.args.from as string).toLowerCase();
-                    const toAddr = (decoded.args.to as string).toLowerCase();
-                    const amount = decoded.args.value as bigint;
-                    if (fromAddr === normalizedWallet && toAddr === TREASURY_ADDRESS) {
-                        validTransferFound = true;
-                        actualAmount = amount;
-                        break;
+        if (paymentRail === 'eth') {
+            if (tx.to && tx.to.toLowerCase() === TREASURY_ADDRESS) {
+                validTransferFound = true;
+                actualAmount = BigInt(tx.value);
+            }
+        } else {
+            const tokenAddress = paymentRail === 'usdc' ? USDC_ADDRESS : VIBESTR_ADDRESS;
+            for (const log of receipt.logs) {
+                if (log.address.toLowerCase() !== tokenAddress) continue;
+                try {
+                    const decoded = decodeEventLog({
+                        abi: erc20TransferAbi,
+                        data: log.data,
+                        topics: log.topics,
+                    });
+                    if (decoded.eventName === 'Transfer') {
+                        const fromAddr = (decoded.args.from as string).toLowerCase();
+                        const toAddr = (decoded.args.to as string).toLowerCase();
+                        const amount = decoded.args.value as bigint;
+                        if (fromAddr === normalizedWallet && toAddr === TREASURY_ADDRESS) {
+                            validTransferFound = true;
+                            actualAmount = amount;
+                            break;
+                        }
                     }
+                } catch {
+                    continue;
                 }
-            } catch {
-                continue;
             }
         }
 
         if (!validTransferFound) {
-            // No VIBESTR landed in treasury — safe to release the reservation.
+            // No payment landed in treasury — safe to release the reservation.
             return await fail(400, 'Payment verification failed');
         }
 
@@ -311,7 +339,7 @@ export async function POST(request: Request) {
         };
 
         if (actualAmount < requiredAmount) {
-            const reason = `Underpaid: expected ${PACKAGE_PRICES[packageSize]}, got ${formatUnits(actualAmount, decimals)}`;
+            const reason = `Underpaid (${paymentRail}): expected ${formatUnits(requiredAmount, decimals)}, got ${formatUnits(actualAmount, decimals)}`;
             console.error(`[Purchase] POST-PAYMENT FAILURE — underpayment. user=${username} tx=${normalizedTxHash} ${reason}`);
             await queueRefund(reason);
             return NextResponse.json({

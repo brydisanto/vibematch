@@ -12,7 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { parseUnits, formatUnits, decodeEventLog, parseAbi } from 'viem';
+import { formatUnits, decodeEventLog, parseAbi } from 'viem';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
 import { bumpDailyCounter } from '@/lib/daily-counters';
@@ -21,16 +21,18 @@ import { computeUserEntry, updateLeaderboardEntry } from '../leaderboard/route';
 import { getMainnetClient } from '@/lib/eth-rpc';
 import { logAuditEvent } from '@/lib/audit-log';
 import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
+import {
+    getRequiredWei,
+    USDC_TOKEN_ADDRESS,
+    VIBESTR_TOKEN_ADDRESS,
+    type PaymentRail,
+} from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 
 const TREASURY_ADDRESS = (process.env.TREASURY_ADDRESS_VERIFIER || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '').toLowerCase();
-const VIBESTR_ADDRESS_RAW = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
-const VIBESTR_ADDRESS = VIBESTR_ADDRESS_RAW.toLowerCase();
-
-// VIBESTR cost per reroll (fixed fee regardless of tier burned). Scales
-// linearly with the number of capsules being rerolled in the same tx.
-const VIBESTR_PER_REROLL = 200;
+const VIBESTR_ADDRESS = VIBESTR_TOKEN_ADDRESS.toLowerCase();
+const USDC_ADDRESS = USDC_TOKEN_ADDRESS.toLowerCase();
 // Per-tx safety cap. Was 20 → bumped to 50 after Onward hit "Invalid burn
 // quantities" on a 27-capsule reroll. The cap is a fat-finger guard, not
 // an economic limit, so giving it generous headroom is fine.
@@ -46,24 +48,19 @@ const BURN_COST: Record<string, number> = {
 };
 
 const erc20TransferAbi = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
-const erc20DecimalsAbi = parseAbi(['function decimals() view returns (uint8)']);
 
 const client = getMainnetClient();
 
 const TX_HASH_REGEX = /^0x[0-9a-fA-F]{64}$/;
 const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
-let cachedDecimals: number | null = null;
-async function getTokenDecimals(): Promise<number> {
-    if (cachedDecimals !== null) return cachedDecimals;
-    const result = await client.readContract({
-        address: VIBESTR_ADDRESS_RAW as `0x${string}`,
-        abi: erc20DecimalsAbi,
-        functionName: 'decimals',
-    });
-    cachedDecimals = Number(result);
-    return cachedDecimals;
-}
+// Decimals are now hardcoded by token — VIBESTR/USDC are immutable
+// mainnet contracts. Saves an RPC round-trip per reroll.
+const TOKEN_DECIMALS: Record<'vibestr' | 'usdc' | 'eth', number> = {
+    vibestr: 18,
+    usdc: 6,
+    eth: 18,
+};
 
 interface PinBookData {
     pins: Record<string, { count: number; firstEarned: string }>;
@@ -105,6 +102,9 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { txHash, walletAddress, burns } = body;
+        const paymentRail: PaymentRail = (
+            body.paymentRail === 'usdc' || body.paymentRail === 'eth' ? body.paymentRail : 'vibestr'
+        );
         // burns: Record<BadgeTier, number> — e.g. { blue: 2, silver: 1 } means
         // 2 capsules from Common (burns 10 pins) + 1 capsule from Rare (burns 4 pins)
 
@@ -150,16 +150,20 @@ export async function POST(request: Request) {
         const username = (session.username as string).toLowerCase();
         const normalizedWallet = walletAddress.toLowerCase();
         const normalizedTxHash = txHash.toLowerCase();
-        const totalVibestrCost = String(VIBESTR_PER_REROLL * totalCapsules);
 
-        // Get token decimals
-        let decimals: number;
-        try {
-            decimals = await getTokenDecimals();
-        } catch {
-            return NextResponse.json({ error: 'Payment temporarily unavailable' }, { status: 503 });
+        // Read the canonical wei amount for this (package, rail) from the
+        // pricing snapshot. Multiplied by totalCapsules since the reroll
+        // package is per-capsule. Falls back to FALLBACK_PRICING from
+        // src/lib/pricing.ts if KV hasn't been seeded yet.
+        const requiredAmount = await getRequiredWei(
+            'reroll-per-capsule',
+            paymentRail,
+            totalCapsules,
+        );
+        const decimals = TOKEN_DECIMALS[paymentRail];
+        if (requiredAmount <= BigInt(0)) {
+            return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 });
         }
-        const requiredAmount = parseUnits(totalVibestrCost, decimals);
 
         // Replay protection
         const txKey = `tx:${normalizedTxHash}:processed`;
@@ -216,27 +220,38 @@ export async function POST(request: Request) {
             return await fail(400, 'Sender mismatch');
         }
 
-        // Parse Transfer event
+        // Verifier — different shape per rail:
+        //   - VIBESTR / USDC: decode the ERC-20 Transfer log emitted by
+        //     the token contract, check from/to/value.
+        //   - ETH: read the native transfer fields directly off the tx.
         let validTransfer = false;
         let actualAmount = BigInt(0);
-        for (const log of receipt.logs) {
-            if (log.address.toLowerCase() !== VIBESTR_ADDRESS) continue;
-            try {
-                const decoded = decodeEventLog({ abi: erc20TransferAbi, data: log.data, topics: log.topics });
-                if (decoded.eventName === 'Transfer') {
-                    const from = (decoded.args.from as string).toLowerCase();
-                    const to = (decoded.args.to as string).toLowerCase();
-                    if (from === normalizedWallet && to === TREASURY_ADDRESS) {
-                        validTransfer = true;
-                        actualAmount = decoded.args.value as bigint;
-                        break;
+        if (paymentRail === 'eth') {
+            if (tx.to && tx.to.toLowerCase() === TREASURY_ADDRESS) {
+                validTransfer = true;
+                actualAmount = BigInt(tx.value);
+            }
+        } else {
+            const tokenAddress = paymentRail === 'usdc' ? USDC_ADDRESS : VIBESTR_ADDRESS;
+            for (const log of receipt.logs) {
+                if (log.address.toLowerCase() !== tokenAddress) continue;
+                try {
+                    const decoded = decodeEventLog({ abi: erc20TransferAbi, data: log.data, topics: log.topics });
+                    if (decoded.eventName === 'Transfer') {
+                        const from = (decoded.args.from as string).toLowerCase();
+                        const to = (decoded.args.to as string).toLowerCase();
+                        if (from === normalizedWallet && to === TREASURY_ADDRESS) {
+                            validTransfer = true;
+                            actualAmount = decoded.args.value as bigint;
+                            break;
+                        }
                     }
-                }
-            } catch { continue; }
+                } catch { continue; }
+            }
         }
 
         if (!validTransfer || actualAmount < requiredAmount) {
-            console.error(`[Reroll] Payment verification failed. validTransfer=${validTransfer} actualAmount=${actualAmount} requiredAmount=${requiredAmount} tx=${normalizedTxHash}`);
+            console.error(`[Reroll] Payment verification failed. rail=${paymentRail} validTransfer=${validTransfer} actualAmount=${actualAmount} requiredAmount=${requiredAmount} tx=${normalizedTxHash}`);
             return await fail(400, 'Payment verification failed');
         }
 

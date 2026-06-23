@@ -1,20 +1,55 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useWriteContract } from 'wagmi';
-import { parseEther, parseAbi } from 'viem';
+import { useAccount, useWriteContract, useSendTransaction } from 'wagmi';
+import { parseAbi, formatUnits } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { BADGES, TIER_COLORS, TIER_DISPLAY_NAMES, type BadgeTier } from '@/lib/badges';
 
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS as `0x${string}`;
+// Token addresses + decimals — mirror src/lib/pricing.ts.
 const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+const TOKEN_DECIMALS = { vibestr: 18, usdc: 6, eth: 18 } as const;
 const erc20Abi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
-// Mirror of VIBESTR_PER_REROLL in src/app/api/pinbook/reroll/route.ts.
-const VIBESTR_PER_REROLL = 200;
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
+
+type PaymentRail = 'vibestr' | 'usdc' | 'eth';
+interface PricingPackageEntry {
+    usdMills: number;
+    vibestrUsdMills: number;
+    vibestrWei: string;
+    usdcWei: string;
+    ethWei: string;
+}
+interface PricingSnapshot {
+    updatedAt: number;
+    ethUsdMills: number;
+    vibestrUsdMills: number;
+    packages: Record<string, PricingPackageEntry>;
+}
+
+function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
+    const raw = rail === 'vibestr' ? entry.vibestrWei : rail === 'usdc' ? entry.usdcWei : entry.ethWei;
+    try { return BigInt(raw); } catch { return BigInt(0); }
+}
+function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
+    return rail === 'vibestr' ? entry.vibestrUsdMills : entry.usdMills;
+}
+function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
+    if (wei === BigInt(0)) return '0';
+    const s = formatUnits(wei, decimals);
+    if (!s.includes('.')) return s;
+    const [whole, frac] = s.split('.');
+    const trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
+}
+function formatUsdFromMills(mills: number): string {
+    return `$${(mills / 1000).toFixed(mills % 100 === 0 ? 2 : 2)}`;
+}
 
 // localStorage key for stranded-reroll recovery. Scoped per wallet so a
 // connect-disconnect-reconnect dance can't replay the wrong user's plan.
@@ -34,6 +69,10 @@ interface PendingReroll {
     walletAddress: string;
     startedAt: number;
     txHash?: string;
+    /** Tracks which token was used so a recovery flow knows how to
+     *  verify the tx. Older entries (pre dynamic-pricing) default to
+     *  'vibestr'. */
+    paymentRail?: 'vibestr' | 'usdc' | 'eth';
 }
 function readPendingReroll(wallet: string | undefined): PendingReroll | null {
     const key = pendingRerollKey(wallet);
@@ -122,6 +161,16 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const [showManualRecover, setShowManualRecover] = useState(false);
     const [manualTxHash, setManualTxHash] = useState('');
 
+    // Dynamic pricing snapshot + selected payment rail. Snapshot is
+    // fetched from /api/pricing/current on modal open; falls back to
+    // the in-bundle FALLBACK_PRICING (shipped from src/lib/pricing.ts)
+    // if the request fails. paymentRail flips which token is used for
+    // the on-chain transfer + which wei amount the server verifies.
+    const [paymentRail, setPaymentRail] = useState<PaymentRail>('vibestr');
+    const [pricing, setPricing] = useState<PricingSnapshot | null>(null);
+    const paymentRailRef = useRef(paymentRail);
+    useEffect(() => { paymentRailRef.current = paymentRail; }, [paymentRail]);
+
     useEffect(() => { addressRef.current = address; }, [address]);
     useEffect(() => { burnsRef.current = burns; }, [burns]);
 
@@ -142,6 +191,22 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         return () => { cancelled = true; };
     }, [isOpen]);
 
+    // Fetch the active pricing snapshot when the modal opens. Server's
+    // /api/pricing/current is edge-cached 30s so reopening rapidly
+    // doesn't thrash KV.
+    useEffect(() => {
+        if (!isOpen) return;
+        let cancelled = false;
+        fetch('/api/pricing/current')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (cancelled || !data) return;
+                setPricing(data as PricingSnapshot);
+            })
+            .catch(() => { /* leave null — UI handles loading state */ });
+        return () => { cancelled = true; };
+    }, [isOpen]);
+
     // Keep livePins in sync if the prop changes while the modal is closed —
     // matters for the initial open after a long-running session.
     useEffect(() => { if (!isOpen) setLivePins(pins); }, [pins, isOpen]);
@@ -156,12 +221,17 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         const pending = readPendingReroll(address);
         if (!pending) return;
         setRecovery(pending);
+        if (pending.paymentRail) setPaymentRail(pending.paymentRail);
         if (pending.txHash) {
             // Restore the burns into the UI so the summary copy matches,
             // then resume tracking. Polling will null out localStorage on
             // success or 409.
             setBurns(pending.burns as Record<BadgeTier, number>);
-            startPolling(pending.txHash, pending.burns as Record<BadgeTier, number>);
+            startPolling(
+                pending.txHash,
+                pending.burns as Record<BadgeTier, number>,
+                pending.paymentRail ?? 'vibestr',
+            );
         }
         // No txHash → user finished the wallet signature on a different
         // surface, the page reloaded, etc. Show the banner so they can
@@ -172,16 +242,18 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
     const resumeWithHash = (hash: string) => {
         if (!address) return;
         const burnsToUse = recovery?.burns ?? burns;
+        const railToUse: PaymentRail = recovery?.paymentRail ?? paymentRail;
         writePendingReroll(address, {
             burns: burnsToUse as Record<string, number>,
             walletAddress: address,
             startedAt: recovery?.startedAt ?? Date.now(),
             txHash: hash,
+            paymentRail: railToUse,
         });
         setBurns(burnsToUse as Record<BadgeTier, number>);
         setShowManualRecover(false);
         setManualTxHash('');
-        startPolling(hash, burnsToUse as Record<BadgeTier, number>);
+        startPolling(hash, burnsToUse as Record<BadgeTier, number>, railToUse);
     };
 
     const dismissRecovery = () => {
@@ -190,17 +262,33 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         setRecovery(null);
     };
 
-    const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
+    const { writeContractAsync, isPending: isWriting, reset: resetTx } = useWriteContract();
+    const { sendTransactionAsync, isPending: isSendingEth } = useSendTransaction();
+    const isSending = isWriting || isSendingEth;
 
     // Computed values across all tiers — driven by livePins.
     const totalCapsules = Object.values(burns).reduce((s, v) => s + v, 0);
-    const totalVibestr = VIBESTR_PER_REROLL * totalCapsules;
+    // Resolve the per-capsule pricing entry from the snapshot. When the
+    // snapshot hasn't loaded yet we display 0 amounts and disable the
+    // confirm button — better than a flash of stale numbers.
+    const rerollEntry = pricing?.packages['reroll-per-capsule'] ?? null;
+    const totalRerollWei = rerollEntry
+        ? railWei(rerollEntry, paymentRail) * BigInt(totalCapsules)
+        : BigInt(0);
+    const totalUsdMills = rerollEntry
+        ? railUsdMills(rerollEntry, paymentRail) * totalCapsules
+        : 0;
+    const railLabel: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
+    const railDecimals = TOKEN_DECIMALS[paymentRail];
+    const totalTokenDisplay = rerollEntry
+        ? formatTokenAmount(totalRerollWei, railDecimals, paymentRail === 'eth' ? 6 : 2)
+        : '—';
     // Mirror server's MAX_REROLLS_PER_TX. Kept here so the UI can block
     // signing for over-cap rerolls instead of letting the user sign a tx
     // that the server will reject (which used to mean lost VIBESTR).
     const MAX_REROLLS_PER_TX = 50;
     const overCap = totalCapsules > MAX_REROLLS_PER_TX;
-    const canBurn = totalCapsules > 0 && !overCap && TIER_ORDER.every(tier => {
+    const canBurn = totalCapsules > 0 && !overCap && !!rerollEntry && TIER_ORDER.every(tier => {
         const qty = burns[tier];
         if (qty <= 0) return true;
         return getBurnableDuplicates(livePins, tier) >= BURN_COST[tier] * qty;
@@ -227,7 +315,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
         setBurns(next);
     };
 
-    const startPolling = (hash: string, capturedBurns: Record<BadgeTier, number>) => {
+    const startPolling = (hash: string, capturedBurns: Record<BadgeTier, number>, capturedRail: PaymentRail = 'vibestr') => {
         setVerifying(true);
         pollingRef.current = true;
 
@@ -253,6 +341,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                         txHash: hash,
                         walletAddress: wallet,
                         burns: capturedBurns,
+                        paymentRail: capturedRail,
                     }),
                 });
                 const data = await res.json();
@@ -337,26 +426,47 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
             // will still validate, just without our pre-flight protection.
         }
 
-        console.log('[Reroll] Starting with burns:', capturedBurns, 'totalVibestr:', totalVibestr);
+        // Snapshot must be loaded — we read the canonical wei amount
+        // from it. Bail with a clear error if the user managed to click
+        // before pricing fetched.
+        if (!rerollEntry || totalRerollWei <= BigInt(0)) {
+            setError('Pricing not loaded yet. Please try again.');
+            return;
+        }
 
-        // Persist the burn plan to localStorage BEFORE handing control to
-        // the wallet. If writeContractAsync never resolves (mobile Safari
-        // backgrounding the tab mid-confirm, WalletConnect dropping the
-        // callback, etc.) the tx still settles on-chain — this entry is
-        // what lets us recover on next mount or via manual paste.
+        const capturedRail = paymentRail;
+        const capturedRequiredWei = totalRerollWei;
+        console.log('[Reroll] Starting:', { burns: capturedBurns, rail: capturedRail, requiredWei: capturedRequiredWei.toString() });
+
+        // Persist the burn plan + rail to localStorage BEFORE handing
+        // control to the wallet. If writeContractAsync never resolves
+        // (mobile Safari backgrounding the tab mid-confirm, WalletConnect
+        // dropping the callback, etc.) the tx still settles on-chain —
+        // this entry is what lets us recover on next mount or via manual
+        // paste.
         writePendingReroll(address, {
             burns: capturedBurns,
             walletAddress: address,
             startedAt: Date.now(),
+            paymentRail: capturedRail,
         });
 
         try {
-            const hash = await writeContractAsync({
-                address: VIBESTR_ADDRESS,
-                abi: erc20Abi,
-                functionName: 'transfer',
-                args: [TREASURY_ADDRESS, parseEther(String(totalVibestr))],
-            });
+            let hash: `0x${string}`;
+            if (capturedRail === 'eth') {
+                hash = await sendTransactionAsync({
+                    to: TREASURY_ADDRESS,
+                    value: capturedRequiredWei,
+                });
+            } else {
+                const tokenAddress = capturedRail === 'usdc' ? (USDC_ADDRESS as `0x${string}`) : (VIBESTR_ADDRESS as `0x${string}`);
+                hash = await writeContractAsync({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: 'transfer',
+                    args: [TREASURY_ADDRESS, capturedRequiredWei],
+                });
+            }
             // Persist the hash the moment we have it, before polling starts.
             // If the network call below blows up, the next mount can resume.
             writePendingReroll(address, {
@@ -364,23 +474,18 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                 walletAddress: address,
                 startedAt: Date.now(),
                 txHash: hash,
+                paymentRail: capturedRail,
             });
-            startPolling(hash, capturedBurns);
+            startPolling(hash, capturedBurns, capturedRail);
         } catch (err: any) {
             const raw = err?.shortMessage || err?.message || String(err);
             if (raw.includes('rejected') || raw.includes('User denied')) {
-                // User cancelled in the wallet sheet — no tx was broadcast,
-                // safe to drop the localStorage entry so we don't prompt for
-                // recovery later on a tx that doesn't exist.
                 clearPendingReroll(address);
                 setError('Transaction was rejected.');
             } else if (raw.includes('insufficient') || raw.includes('exceeds the balance')) {
                 clearPendingReroll(address);
-                setError('Not enough VIBESTR in your wallet.');
+                setError(`Not enough ${railLabel[capturedRail]} in your wallet.`);
             } else {
-                // Anything else (network drop, provider error) — leave the
-                // pending entry alone. The user may have broadcast a tx the
-                // wallet can't confirm on its end; let recovery catch it.
                 setError(`Transaction failed: ${raw.slice(0, 100)}`);
             }
         }
@@ -498,7 +603,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                     )}
                                     <div className="flex items-start justify-between gap-3 mb-4">
                                         <p className="text-white/50 text-xs font-mundial flex-1 min-w-0">
-                                            Burn duplicate pins + {VIBESTR_PER_REROLL} $VIBESTR for a new random capsule.
+                                            Burn duplicate pins + a small payment for a new random capsule.
                                         </p>
                                         <button
                                             type="button"
@@ -559,6 +664,54 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                         })}
                                     </div>
 
+                                    {/* Payment-rail toggle. Three pill buttons; the
+                                        selected one is filled with the orange accent,
+                                        unselected are subtle. VIBESTR is the default
+                                        and carries a "save 10%" tag so users notice
+                                        the discount. */}
+                                    {isConnected && (
+                                        <div className="mb-3">
+                                            <div className="flex items-center justify-between mb-1.5 px-1">
+                                                <span className="font-display text-[10px] tracking-[0.2em] uppercase text-white/45">Pay with</span>
+                                                {pricing && (
+                                                    <span className="font-mundial text-[10px] text-white/30">Updated {new Date(pricing.updatedAt * 1000).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-1.5">
+                                                {(['vibestr', 'usdc', 'eth'] as PaymentRail[]).map(rail => {
+                                                    const selected = paymentRail === rail;
+                                                    const labels: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
+                                                    return (
+                                                        <button
+                                                            key={rail}
+                                                            type="button"
+                                                            onClick={() => setPaymentRail(rail)}
+                                                            disabled={isProcessing}
+                                                            className={`relative py-2 rounded-lg font-display font-black text-[11px] tracking-[0.15em] uppercase transition-all disabled:opacity-40 ${
+                                                                selected
+                                                                    ? 'bg-[#FF8C42] text-black shadow-md'
+                                                                    : 'bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80 border border-white/[0.08]'
+                                                            }`}
+                                                        >
+                                                            {labels[rail]}
+                                                            {rail === 'vibestr' && (
+                                                                <span
+                                                                    className="absolute -top-1.5 -right-1.5 font-display text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                                                                    style={{
+                                                                        background: selected ? '#1A0633' : '#FF8C42',
+                                                                        color: selected ? '#FF8C42' : '#1A0633',
+                                                                    }}
+                                                                >
+                                                                    -10%
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Cost summary */}
                                     {totalCapsules > 0 && (() => {
                                         const totalPinsBurned = TIER_ORDER.reduce((s, t) => s + BURN_COST[t] * burns[t], 0);
@@ -573,7 +726,12 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                 </div>
                                                 <div className="flex justify-between items-center text-sm mt-1">
                                                     <span className="text-white/40 font-mundial">Cost</span>
-                                                    <span className="font-bold text-[#FFE048]">{totalVibestr} $VIBESTR</span>
+                                                    <span className="text-right">
+                                                        <span className="font-bold text-[#FFE048]">{totalTokenDisplay} {railLabel[paymentRail]}</span>
+                                                        {totalUsdMills > 0 && (
+                                                            <span className="block font-mundial text-[10px] text-white/35 mt-0.5">~{formatUsdFromMills(totalUsdMills)}</span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 <div className="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-sm">
                                                     <span className="text-white/40 font-mundial">You Get</span>
@@ -622,7 +780,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                     />
                                                     {statusText}
                                                 </span>
-                                            ) : overCap ? `Max ${MAX_REROLLS_PER_TX} per reroll — please reduce` : totalCapsules > 1 ? `Reroll ${totalCapsules}x for ${totalVibestr} $VIBESTR` : `Reroll for ${totalVibestr} $VIBESTR`}
+                                            ) : overCap ? `Max ${MAX_REROLLS_PER_TX} per reroll — please reduce` : totalCapsules > 1 ? `Reroll ${totalCapsules}x for ${totalTokenDisplay} ${railLabel[paymentRail]}` : `Reroll for ${totalTokenDisplay} ${railLabel[paymentRail]}`}
                                         </button>
                                     )}
 
