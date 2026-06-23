@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useWriteContract } from "wagmi";
-import { parseEther, parseAbi } from "viem";
+import { useAccount, useWriteContract, useSendTransaction } from "wagmi";
+import { parseAbi, formatUnits } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
     GOLD, GOLD_DIM, GOLD_DEEP,
@@ -15,6 +15,8 @@ import PrizeCoin from "./PrizeCoin";
 
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS as `0x${string}`;
 const VIBESTR_ADDRESS = "0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196";
+const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const TOKEN_DECIMALS = { vibestr: 18, usdc: 6, eth: 18 } as const;
 const erc20Abi = parseAbi(["function transfer(address to, uint256 amount) returns (bool)"]);
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
@@ -22,21 +24,61 @@ const POLL_INTERVAL_MS = 1500;
 const MAX_BONUS_PER_DAY = 15;
 
 type PackSize = 1 | 5 | 10;
+type PaymentRail = "vibestr" | "usdc" | "eth";
 
 interface Pack {
     size: PackSize;
     label: string;
-    price: string;
-    per: string;
     discount?: string;
     featured?: boolean;
 }
 
+// Layout-only metadata; prices come from the live pricing snapshot.
 const PACKS: Pack[] = [
-    { size: 1, label: "Single", price: "150", per: "150" },
-    { size: 5, label: "Stack", price: "600", per: "120", discount: "20% OFF" },
-    { size: 10, label: "Mega Pack", price: "1000", per: "100", discount: "BEST VALUE, 33% OFF", featured: true },
+    { size: 1, label: "Single" },
+    { size: 5, label: "Stack", discount: "20% OFF" },
+    { size: 10, label: "Mega Pack", discount: "BEST VALUE, 33% OFF", featured: true },
 ];
+
+const PACKAGE_IDS: Record<PackSize, string> = {
+    1: "prize-games-1",
+    5: "prize-games-5",
+    10: "prize-games-10",
+};
+const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: "$VIBESTR", usdc: "USDC", eth: "ETH" };
+
+interface PricingPackageEntry {
+    usdMills: number;
+    vibestrUsdMills: number;
+    vibestrWei: string;
+    usdcWei: string;
+    ethWei: string;
+}
+interface PricingSnapshot {
+    updatedAt: number;
+    ethUsdMills: number;
+    vibestrUsdMills: number;
+    packages: Record<string, PricingPackageEntry>;
+}
+
+function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
+    const raw = rail === "vibestr" ? entry.vibestrWei : rail === "usdc" ? entry.usdcWei : entry.ethWei;
+    try { return BigInt(raw); } catch { return BigInt(0); }
+}
+function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
+    return rail === "vibestr" ? entry.vibestrUsdMills : entry.usdMills;
+}
+function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
+    if (wei === BigInt(0)) return "0";
+    const s = formatUnits(wei, decimals);
+    if (!s.includes(".")) return s;
+    const [whole, frac] = s.split(".");
+    const trimmed = frac.replace(/0+$/, "").slice(0, maxFrac);
+    return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
+}
+function formatUsdFromMills(mills: number): string {
+    return `$${(mills / 1000).toFixed(2)}`;
+}
 
 interface PrizeShopDrawerProps {
     isOpen: boolean;
@@ -62,9 +104,13 @@ export default function PrizeShopDrawer({
     onSuccess,
 }: PrizeShopDrawerProps) {
     const { address, isConnected } = useAccount();
-    const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
+    const { writeContractAsync, isPending: isWriting, reset: resetTx } = useWriteContract();
+    const { sendTransactionAsync, isPending: isSendingEth } = useSendTransaction();
+    const isSending = isWriting || isSendingEth;
 
     const [selected, setSelected] = useState<PackSize>(5);
+    const [paymentRail, setPaymentRail] = useState<PaymentRail>("vibestr");
+    const [pricing, setPricing] = useState<PricingSnapshot | null>(null);
     const [verifying, setVerifying] = useState(false);
     const [statusText, setStatusText] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -75,10 +121,12 @@ export default function PrizeShopDrawer({
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const addressRef = useRef(address);
     const selectedRef = useRef<PackSize>(selected);
+    const paymentRailRef = useRef<PaymentRail>(paymentRail);
     const onSuccessRef = useRef(onSuccess);
 
     useEffect(() => { addressRef.current = address; }, [address]);
     useEffect(() => { selectedRef.current = selected; }, [selected]);
+    useEffect(() => { paymentRailRef.current = paymentRail; }, [paymentRail]);
     useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
 
     // Reset drawer state whenever it reopens.
@@ -89,7 +137,22 @@ export default function PrizeShopDrawer({
             setVerifying(false);
             setStatusText("");
             setSelected(5);
+            setPaymentRail("vibestr");
         }
+    }, [isOpen]);
+
+    // Fetch the active pricing snapshot when the drawer opens.
+    useEffect(() => {
+        if (!isOpen) return;
+        let cancelled = false;
+        fetch("/api/pricing/current")
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (cancelled || !data) return;
+                setPricing(data as PricingSnapshot);
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
     }, [isOpen]);
 
     // Best-effort cleanup if the component unmounts mid-poll.
@@ -103,6 +166,12 @@ export default function PrizeShopDrawer({
     const remaining = MAX_BONUS_PER_DAY - currentBonus;
     const selectedPack = PACKS.find(p => p.size === selected)!;
     const cannotAfford = selectedPack.size > remaining;
+    const selectedEntry = pricing?.packages[PACKAGE_IDS[selected]] ?? null;
+    const selectedRequiredWei = selectedEntry ? railWei(selectedEntry, paymentRail) : BigInt(0);
+    const railDecimals = TOKEN_DECIMALS[paymentRail];
+    const selectedTokenDisplay = selectedEntry
+        ? formatTokenAmount(selectedRequiredWei, railDecimals, paymentRail === "eth" ? 6 : 2)
+        : "—";
 
     const startPolling = (hash: string) => {
         setVerifying(true);
@@ -128,6 +197,7 @@ export default function PrizeShopDrawer({
                         txHash: hash,
                         walletAddress: addressRef.current,
                         packageSize: selectedRef.current,
+                        paymentRail: paymentRailRef.current,
                     }),
                     signal: controller.signal,
                 });
@@ -169,22 +239,38 @@ export default function PrizeShopDrawer({
             setError("Config error: treasury address not set. Please contact support.");
             return;
         }
+        if (!selectedEntry || selectedRequiredWei <= BigInt(0)) {
+            setError("Pricing not loaded yet. Please try again.");
+            return;
+        }
+
+        const capturedRail = paymentRail;
+        const capturedRequiredWei = selectedRequiredWei;
 
         try {
-            const hash = await writeContractAsync({
-                address: VIBESTR_ADDRESS,
-                abi: erc20Abi,
-                functionName: "transfer",
-                args: [TREASURY_ADDRESS, parseEther(selectedPack.price)],
-            });
+            let hash: `0x${string}`;
+            if (capturedRail === "eth") {
+                hash = await sendTransactionAsync({
+                    to: TREASURY_ADDRESS,
+                    value: capturedRequiredWei,
+                });
+            } else {
+                const tokenAddress = capturedRail === "usdc" ? (USDC_ADDRESS as `0x${string}`) : (VIBESTR_ADDRESS as `0x${string}`);
+                hash = await writeContractAsync({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: "transfer",
+                    args: [TREASURY_ADDRESS, capturedRequiredWei],
+                });
+            }
             startPolling(hash);
         } catch (err: unknown) {
-            console.error("[PrizeShopDrawer] writeContractAsync failed:", err);
+            console.error("[PrizeShopDrawer] tx submit failed:", err);
             const raw = err instanceof Error ? (err as Error & { shortMessage?: string }).shortMessage || err.message : String(err);
             if (raw.includes("rejected") || raw.includes("User denied") || raw.includes("User rejected")) {
                 setError("Transaction was rejected.");
             } else if (raw.includes("insufficient funds") || raw.includes("exceeds the balance")) {
-                setError("Not enough VIBESTR in your wallet.");
+                setError(`Not enough ${RAIL_LABELS[capturedRail]} in your wallet.`);
             } else if (raw.includes("chain") || raw.includes("network")) {
                 setError("Please switch your wallet to Ethereum mainnet.");
             } else {
@@ -261,6 +347,10 @@ export default function PrizeShopDrawer({
                                         isProcessing={isProcessing}
                                         onBuy={handleBuy}
                                         onClose={handleClose}
+                                        paymentRail={paymentRail}
+                                        setPaymentRail={setPaymentRail}
+                                        pricing={pricing}
+                                        selectedTokenDisplay={selectedTokenDisplay}
                                     />
                                 )}
                             </div>
@@ -306,12 +396,18 @@ interface PurchaseStateProps {
     isProcessing: boolean;
     onBuy: () => void;
     onClose: () => void;
+    paymentRail: PaymentRail;
+    setPaymentRail: (r: PaymentRail) => void;
+    pricing: PricingSnapshot | null;
+    selectedTokenDisplay: string;
 }
 
 function PurchaseState({
     selected, setSelected, remaining, currentBonus, cannotAfford,
     selectedPack, error, statusText, isProcessing, onBuy, onClose,
+    paymentRail, setPaymentRail, pricing, selectedTokenDisplay,
 }: PurchaseStateProps) {
+    const railDecimals = TOKEN_DECIMALS[paymentRail];
     return (
         <>
             <div className="flex items-end justify-between mb-1">
@@ -336,10 +432,60 @@ function PurchaseState({
                 </button>
             </div>
 
+            {/* Payment-rail toggle. Same shape as the other purchase
+                surfaces — VIBESTR pill carries the -10% holder discount tag. */}
+            <div className="mt-4">
+                <div className="flex items-center justify-between mb-1.5 px-1">
+                    <span className="font-display text-[10px] tracking-[0.2em] uppercase text-white/45">Pay with</span>
+                    {pricing && (
+                        <span className="font-mundial text-[10px] text-white/30">Updated {new Date(pricing.updatedAt * 1000).toLocaleDateString()}</span>
+                    )}
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                    {(["vibestr", "usdc", "eth"] as PaymentRail[]).map(rail => {
+                        const sel = paymentRail === rail;
+                        return (
+                            <button
+                                key={rail}
+                                type="button"
+                                onClick={() => setPaymentRail(rail)}
+                                disabled={isProcessing}
+                                className="relative py-2 rounded-lg font-display font-black text-[11px] tracking-[0.15em] uppercase transition-all disabled:opacity-40"
+                                style={{
+                                    background: sel ? GOLD : "rgba(255,255,255,0.04)",
+                                    color: sel ? "#1A0633" : "rgba(255,255,255,0.55)",
+                                    border: sel ? "none" : "1px solid rgba(255,255,255,0.08)",
+                                    boxShadow: sel ? `0 4px 12px ${GOLD}33` : "none",
+                                }}
+                            >
+                                {RAIL_LABELS[rail]}
+                                {rail === "vibestr" && (
+                                    <span
+                                        className="absolute -top-1.5 -right-1.5 font-display text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                                        style={{
+                                            background: sel ? "#1A0633" : GOLD,
+                                            color: sel ? GOLD : "#1A0633",
+                                        }}
+                                    >
+                                        -10%
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             <div className="mt-4 flex flex-col gap-2.5">
                 {PACKS.map(p => {
                     const isSel = selected === p.size;
                     const packDisabled = p.size > remaining;
+                    const entry = pricing?.packages[PACKAGE_IDS[p.size]] ?? null;
+                    const totalWei = entry ? railWei(entry, paymentRail) : BigInt(0);
+                    const totalDisplay = entry
+                        ? formatTokenAmount(totalWei, railDecimals, paymentRail === "eth" ? 6 : 2)
+                        : "—";
+                    const usdMills = entry ? railUsdMills(entry, paymentRail) : 0;
                     return (
                         <button
                             key={p.size}
@@ -433,13 +579,18 @@ function PurchaseState({
                                 <div className="text-right shrink-0">
                                     <div
                                         className="font-display font-black leading-none"
-                                        style={{ color: p.featured ? COSMIC : GOLD, fontSize: 22 }}
+                                        style={{ color: p.featured ? COSMIC : GOLD, fontSize: 20 }}
                                     >
-                                        {p.price}
+                                        {totalDisplay}
                                     </div>
                                     <div className="text-white/40 text-[9px] font-mundial tracking-widest">
-                                        $VIBESTR
+                                        {RAIL_LABELS[paymentRail]}
                                     </div>
+                                    {usdMills > 0 && (
+                                        <div className="text-white/30 text-[9px] font-mundial mt-0.5">
+                                            ~{formatUsdFromMills(usdMills)}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isSel && (
@@ -494,7 +645,7 @@ function PurchaseState({
                         Confirming…
                     </span>
                 ) : (
-                    `Buy for ${selectedPack.price} $VIBESTR`
+                    `Buy for ${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`
                 )}
             </ChunkyButton>
 
