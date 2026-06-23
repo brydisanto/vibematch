@@ -82,7 +82,7 @@ export const ETH_DECIMALS = 18;
  * on every refresh.
  */
 const ETH_USD_FALLBACK_MILLS = 3_000_000;     // $3,000/ETH (in mills)
-const VIBESTR_USD_FALLBACK_MILLS = 40;        // $0.04/VIBESTR (in mills)
+const VIBESTR_USD_FALLBACK_MILLS = 4;         // $0.004/VIBESTR (~75 VIBESTR per $0.30 reroll)
 const USDC_USD_MILLS = 1000;                   // $1.00 exactly
 
 export function weiForUsd(usdMills: number, tokenUsdMills: number, decimals: number): string {
