@@ -353,19 +353,21 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                             type="button"
                                                             onClick={() => setPaymentRail(rail)}
                                                             disabled={isProcessing}
-                                                            className={`relative py-2 rounded-lg font-display font-black text-[11px] tracking-[0.15em] uppercase transition-all disabled:opacity-40 ${
+                                                            className={`relative py-2 rounded-lg font-display text-[12px] tracking-[0.15em] uppercase transition-all disabled:opacity-40 ${
                                                                 selected
                                                                     ? 'bg-[#FFE048] text-black shadow-md'
                                                                     : 'bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80 border border-white/[0.08]'
                                                             }`}
+                                                            style={{ fontWeight: 600 }}
                                                         >
                                                             {RAIL_LABELS[rail]}
                                                             {rail === 'vibestr' && (
                                                                 <span
-                                                                    className="absolute -top-1.5 -right-1.5 font-display text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                                                                    className="absolute -top-1.5 -right-1.5 font-display text-[9px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
                                                                     style={{
                                                                         background: selected ? '#1A0633' : '#FFE048',
                                                                         color: selected ? '#FFE048' : '#1A0633',
+                                                                        fontWeight: 600,
                                                                     }}
                                                                 >
                                                                     -10%
@@ -494,7 +496,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                     {statusText}
                                                 </span>
                                             ) : cannotAfford ? 'Exceeds daily limit' :
-                                                `Buy for ${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`}
+                                                `Buy for ${paymentRail === 'usdc' ? '$' : ''}${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`}
                                         </button>
                                     )}
 

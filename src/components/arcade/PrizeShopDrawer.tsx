@@ -479,10 +479,11 @@ function PurchaseState({
                                 {RAIL_LABELS[rail]}
                                 {rail === "vibestr" && (
                                     <span
-                                        className="absolute -top-1.5 -right-1.5 font-display text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                                        className="absolute -top-1.5 -right-1.5 font-display text-[9px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
                                         style={{
                                             background: sel ? "#1A0633" : GOLD,
                                             color: sel ? GOLD : "#1A0633",
+                                            fontWeight: 600,
                                         }}
                                     >
                                         -10%
@@ -669,7 +670,7 @@ function PurchaseState({
                         Confirming…
                     </span>
                 ) : (
-                    `Buy for ${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`
+                    `Buy for ${paymentRail === "usdc" ? "$" : ""}${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`
                 )}
             </ChunkyButton>
 
