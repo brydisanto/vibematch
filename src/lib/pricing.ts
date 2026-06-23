@@ -94,14 +94,28 @@ export function weiForUsd(usdMills: number, tokenUsdMills: number, decimals: num
     return wei.toString();
 }
 
+/** Round a wei amount UP to the nearest whole token (multiples of
+ *  10^decimals). Applied to VIBESTR amounts so the player-facing
+ *  number never has a decimal like "62.5 VIBESTR" — always a clean
+ *  whole. Rounding up ensures the USD anchor is always >= the
+ *  target, never under-priced. */
+function ceilToWholeToken(wei: bigint, decimals: number): bigint {
+    const scale = BigInt(10) ** BigInt(decimals);
+    const rem = wei % scale;
+    if (rem === BigInt(0)) return wei;
+    return wei - rem + scale;
+}
+
 function buildFallbackPackage(
     usdMills: number,
     vibestrUsdMills: number,
 ): PricingPackageEntry {
+    const rawVibestrWei = BigInt(weiForUsd(vibestrUsdMills, VIBESTR_USD_FALLBACK_MILLS, VIBESTR_DECIMALS));
+    const ceiledVibestrWei = ceilToWholeToken(rawVibestrWei, VIBESTR_DECIMALS);
     return {
         usdMills,
         vibestrUsdMills,
-        vibestrWei: weiForUsd(vibestrUsdMills, VIBESTR_USD_FALLBACK_MILLS, VIBESTR_DECIMALS),
+        vibestrWei: ceiledVibestrWei.toString(),
         usdcWei: weiForUsd(usdMills, USDC_USD_MILLS, USDC_DECIMALS),
         ethWei: weiForUsd(usdMills, ETH_USD_FALLBACK_MILLS, ETH_DECIMALS),
     };

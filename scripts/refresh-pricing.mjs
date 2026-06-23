@@ -102,6 +102,12 @@ function weiForUsd(usdMills, tokenUsdMills, decimals) {
     const wei = (BigInt(usdMills) * scale) / BigInt(tokenUsdMills);
     return wei.toString();
 }
+function ceilToWholeToken(wei, decimals) {
+    const scale = BigInt(10) ** BigInt(decimals);
+    const rem = wei % scale;
+    if (rem === BigInt(0)) return wei;
+    return wei - rem + scale;
+}
 
 const VIBESTR_DECIMALS = 18;
 const USDC_DECIMALS = 6;
@@ -123,10 +129,16 @@ async function buildSnapshot() {
     ]);
     const packages = {};
     for (const [id, anchors] of Object.entries(PACKAGES)) {
+        // VIBESTR amounts always round UP to the nearest whole token
+        // so the player-facing number reads cleanly (e.g. "63 VIBESTR"
+        // instead of "62.5"). Rounding up keeps the USD value above
+        // the anchor — never under-charges.
+        const rawVibestrWei = BigInt(weiForUsd(anchors.vibestrUsdMills, vibestrUsdMills, VIBESTR_DECIMALS));
+        const vibestrWei = ceilToWholeToken(rawVibestrWei, VIBESTR_DECIMALS).toString();
         packages[id] = {
             usdMills: anchors.usdMills,
             vibestrUsdMills: anchors.vibestrUsdMills,
-            vibestrWei: weiForUsd(anchors.vibestrUsdMills, vibestrUsdMills, VIBESTR_DECIMALS),
+            vibestrWei,
             usdcWei:    weiForUsd(anchors.usdMills,         USDC_USD_MILLS,   USDC_DECIMALS),
             ethWei:     weiForUsd(anchors.usdMills,         ethUsdMills,      ETH_DECIMALS),
         };

@@ -436,11 +436,12 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                         </div>
                                                         <div className="text-right">
                                                             <div className="text-[#FFE048] font-display text-xl font-black">
+                                                                {paymentRail === "usdc" && "$"}
                                                                 <TokenAmount value={totalDisplay} />
                                                             </div>
                                                             <div className="text-white/40 text-[10px] font-mundial tracking-wider">
                                                                 {RAIL_LABELS[paymentRail]}
-                                                                {usdMills > 0 && (
+                                                                {usdMills > 0 && paymentRail !== "usdc" && (
                                                                     <span className="text-white/30"> · ~{formatUsdFromMills(usdMills)}</span>
                                                                 )}
                                                             </div>

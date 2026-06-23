@@ -598,12 +598,13 @@ function PurchaseState({
                                         className="font-display font-black leading-none"
                                         style={{ color: p.featured ? COSMIC : GOLD, fontSize: 20 }}
                                     >
+                                        {paymentRail === "usdc" && "$"}
                                         <TokenAmount value={totalDisplay} />
                                     </div>
                                     <div className="text-white/40 text-[9px] font-mundial tracking-widest">
                                         {RAIL_LABELS[paymentRail]}
                                     </div>
-                                    {usdMills > 0 && (
+                                    {usdMills > 0 && paymentRail !== "usdc" && (
                                         <div className="text-white/30 text-[9px] font-mundial mt-0.5">
                                             ~{formatUsdFromMills(usdMills)}
                                         </div>

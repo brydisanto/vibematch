@@ -735,8 +735,11 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                 <div className="flex justify-between items-center text-sm mt-1">
                                                     <span className="text-white/40 font-mundial">Cost</span>
                                                     <span className="text-right">
-                                                        <span className="font-bold text-[#FFE048]"><TokenAmount value={totalTokenDisplay} /> {railLabel[paymentRail]}</span>
-                                                        {totalUsdMills > 0 && (
+                                                        <span className="font-bold text-[#FFE048]">
+                                                            {paymentRail === "usdc" && "$"}
+                                                            <TokenAmount value={totalTokenDisplay} /> {railLabel[paymentRail]}
+                                                        </span>
+                                                        {totalUsdMills > 0 && paymentRail !== "usdc" && (
                                                             <span className="block font-mundial text-[10px] text-white/35 mt-0.5">~{formatUsdFromMills(totalUsdMills)}</span>
                                                         )}
                                                     </span>
