@@ -737,7 +737,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                     <span className="text-right">
                                                         <span className="font-bold text-[#FFE048]">
                                                             {paymentRail === "usdc" && "$"}
-                                                            <TokenAmount value={totalTokenDisplay} /> {railLabel[paymentRail]}
+                                                            {totalTokenDisplay} {railLabel[paymentRail]}
                                                         </span>
                                                         {totalUsdMills > 0 && paymentRail !== "usdc" && (
                                                             <span className="block font-mundial text-[10px] text-white/35 mt-0.5">~{formatUsdFromMills(totalUsdMills)}</span>

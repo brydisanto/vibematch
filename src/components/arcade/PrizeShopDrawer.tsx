@@ -467,12 +467,13 @@ function PurchaseState({
                                 type="button"
                                 onClick={() => setPaymentRail(rail)}
                                 disabled={isProcessing}
-                                className="relative py-2 rounded-lg font-display font-black text-[11px] tracking-[0.15em] uppercase transition-all disabled:opacity-40"
+                                className="relative py-2 rounded-lg font-display text-[12px] tracking-[0.15em] uppercase transition-all disabled:opacity-40"
                                 style={{
                                     background: sel ? GOLD : "rgba(255,255,255,0.04)",
                                     color: sel ? "#1A0633" : "rgba(255,255,255,0.55)",
                                     border: sel ? "none" : "1px solid rgba(255,255,255,0.08)",
                                     boxShadow: sel ? `0 4px 12px ${GOLD}33` : "none",
+                                    fontWeight: 600,
                                 }}
                             >
                                 {RAIL_LABELS[rail]}
@@ -595,11 +596,16 @@ function PurchaseState({
 
                                 <div className="text-right shrink-0">
                                     <div
-                                        className="font-display font-black leading-none"
-                                        style={{ color: p.featured ? COSMIC : GOLD, fontSize: 20 }}
+                                        className="font-display leading-none tabular-nums"
+                                        style={{
+                                            color: p.featured ? COSMIC : GOLD,
+                                            fontSize: 22,
+                                            letterSpacing: "0.01em",
+                                            fontWeight: 600,
+                                        }}
                                     >
                                         {paymentRail === "usdc" && "$"}
-                                        <TokenAmount value={totalDisplay} />
+                                        {totalDisplay}
                                     </div>
                                     <div className="text-white/40 text-[9px] font-mundial tracking-widest">
                                         {RAIL_LABELS[paymentRail]}
