@@ -80,6 +80,23 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(2)}`;
 }
 
+/** Render a numeric string with the fractional part shrunk so the
+ *  decimal point doesn't visually merge into adjacent digits at heavy
+ *  display weights. "1.1" → "1" + ".1" (smaller). Returns the input
+ *  string unchanged when there's no decimal. */
+function TokenAmount({ value }: { value: string }) {
+    if (!value.includes(".")) return <>{value}</>;
+    const [whole, frac] = value.split(".");
+    return (
+        <>
+            {whole}
+            <span style={{ fontSize: "0.62em", letterSpacing: "0.02em" }}>
+                .{frac}
+            </span>
+        </>
+    );
+}
+
 interface PrizeShopDrawerProps {
     isOpen: boolean;
     onClose: () => void;
@@ -581,7 +598,7 @@ function PurchaseState({
                                         className="font-display font-black leading-none"
                                         style={{ color: p.featured ? COSMIC : GOLD, fontSize: 20 }}
                                     >
-                                        {totalDisplay}
+                                        <TokenAmount value={totalDisplay} />
                                     </div>
                                     <div className="text-white/40 text-[9px] font-mundial tracking-widest">
                                         {RAIL_LABELS[paymentRail]}

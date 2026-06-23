@@ -51,6 +51,14 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(mills % 100 === 0 ? 2 : 2)}`;
 }
 
+/** Decimal-aware big-number renderer — keeps "1.1" from collapsing into
+ *  "11" by shrinking the fractional part so the dot reads clearly. */
+function TokenAmount({ value }: { value: string }) {
+    if (!value.includes(".")) return <>{value}</>;
+    const [whole, frac] = value.split(".");
+    return <>{whole}<span style={{ fontSize: "0.62em", letterSpacing: "0.02em" }}>.{frac}</span></>;
+}
+
 // localStorage key for stranded-reroll recovery. Scoped per wallet so a
 // connect-disconnect-reconnect dance can't replay the wrong user's plan.
 // Joker's reroll went on-chain but writeContractAsync never resolved on
@@ -727,7 +735,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                 <div className="flex justify-between items-center text-sm mt-1">
                                                     <span className="text-white/40 font-mundial">Cost</span>
                                                     <span className="text-right">
-                                                        <span className="font-bold text-[#FFE048]">{totalTokenDisplay} {railLabel[paymentRail]}</span>
+                                                        <span className="font-bold text-[#FFE048]"><TokenAmount value={totalTokenDisplay} /> {railLabel[paymentRail]}</span>
                                                         {totalUsdMills > 0 && (
                                                             <span className="block font-mundial text-[10px] text-white/35 mt-0.5">~{formatUsdFromMills(totalUsdMills)}</span>
                                                         )}

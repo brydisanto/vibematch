@@ -61,6 +61,14 @@ function formatTokenAmount(wei: bigint, decimals: number, maxFrac = 4): string {
 function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(2)}`;
 }
+
+/** Decimal-aware big-number renderer — keeps "1.1" from collapsing into
+ *  "11" by shrinking the fractional part so the dot reads clearly. */
+function TokenAmount({ value }: { value: string }) {
+    if (!value.includes(".")) return <>{value}</>;
+    const [whole, frac] = value.split(".");
+    return <>{whole}<span style={{ fontSize: "0.62em", letterSpacing: "0.02em" }}>.{frac}</span></>;
+}
 const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
 const PACKAGE_SIZES: PackageSize[] = [1, 5, 10];
 
@@ -428,7 +436,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                         </div>
                                                         <div className="text-right">
                                                             <div className="text-[#FFE048] font-display text-xl font-black">
-                                                                {totalDisplay}
+                                                                <TokenAmount value={totalDisplay} />
                                                             </div>
                                                             <div className="text-white/40 text-[10px] font-mundial tracking-wider">
                                                                 {RAIL_LABELS[paymentRail]}
