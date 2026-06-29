@@ -219,11 +219,11 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
         accentColor: "#D26AFF",
-        // PREVIEW ONLY — startsAt commented out so the eligibility
-        // lockout stays off and every capsule can drop event pins for
-        // testing. Restore before launch:
-        //   startsAt: "2026-07-07T16:00:00Z",  // July 7 noon EDT
-        startsAt: undefined,
+        // Monday July 6 2026, 12:00 PM Eastern. EDT is UTC-4 in July
+        // → 16:00 UTC. Drives both the pre-event countdown in the
+        // EventDrawer hero and the capsule-eligibility lockout (no
+        // event pins drop from capsules earned before this moment).
+        startsAt: "2026-07-06T16:00:00Z",
         endsAt: undefined,
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.jpg",
