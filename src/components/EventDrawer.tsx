@@ -642,13 +642,6 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 }}
                             >
                                 <span
-                                    className="h-1.5 w-1.5 rounded-full"
-                                    style={{
-                                        background: ended ? "rgba(255,255,255,0.35)" : accent,
-                                        boxShadow: ended ? "none" : `0 0 8px ${accent}`,
-                                    }}
-                                />
-                                <span
                                     className="font-display text-[10px] tracking-[0.3em]"
                                     style={{ color: ended ? "rgba(255,255,255,0.65)" : GOLD }}
                                 >
