@@ -889,7 +889,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             ×{gigaCount}
                                                         </div>
                                                         <div className="font-mundial text-[9px] tracking-[0.18em] uppercase text-white/40 mt-1">
-                                                            {gigaPin.rarityLabel ?? "Legendary"}
+                                                            Collected
                                                         </div>
                                                     </div>
                                                 </Link>
@@ -1090,7 +1090,7 @@ function SetView({
                         <div className="flex items-center justify-between w-full mt-1">
                             <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">Collected</span>
                             <span className="font-display font-semibold text-[18px] tabular-nums leading-none text-white">
-                                ×{pin.owned}
+                                {pin.owned}
                             </span>
                         </div>
                     </div>
