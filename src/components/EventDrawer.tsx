@@ -769,6 +769,106 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </div>
                                 ) : (
                                     <>
+                                        {/* GIGA CHAD callout — celebrates the player
+                                            with the most pulls of the highest-points
+                                            pin in the set. Distinct prize lane from
+                                            the score-cap raffle, so leaders here can
+                                            differ from the top of the points board.
+                                            Derived from the visible top-50 rows;
+                                            adequate for events that fit in that
+                                            window. */}
+                                        {(() => {
+                                            if (!promo.eventSetId || setPins.length === 0) return null;
+                                            const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                                            if (!gigaPin) return null;
+                                            const leader = [...entries]
+                                                .filter(e => (e.pinCounts?.[gigaPin.id] ?? 0) > 0)
+                                                .sort((a, b) =>
+                                                    (b.pinCounts?.[gigaPin.id] ?? 0) - (a.pinCounts?.[gigaPin.id] ?? 0)
+                                                )[0];
+                                            if (!leader) return null;
+                                            const gigaCount = leader.pinCounts?.[gigaPin.id] ?? 0;
+                                            const isYou = !!currentUsername && leader.username.toLowerCase() === currentUsername.toLowerCase();
+                                            return (
+                                                <Link
+                                                    href={`/u/${encodeURIComponent(leader.username)}`}
+                                                    prefetch={false}
+                                                    className="relative flex items-center gap-3 mb-4 px-3 py-3 rounded-xl overflow-hidden transition-transform hover:-translate-y-[1px]"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${accent}22 0%, ${accent}0a 60%, transparent 100%)`,
+                                                        border: `1.5px solid ${accent}55`,
+                                                        boxShadow: `0 0 20px ${accent}22, inset 0 0 14px ${accent}0a`,
+                                                    }}
+                                                >
+                                                    {/* Sparkles for celebration. Same
+                                                        keyframe used by the winner row. */}
+                                                    {[
+                                                        { top: "22%", left: "12%", size: 9, delay: "0s" },
+                                                        { top: "65%", left: "32%", size: 7, delay: "0.8s" },
+                                                        { top: "18%", left: "58%", size: 8, delay: "1.6s" },
+                                                        { top: "70%", left: "82%", size: 9, delay: "0.4s" },
+                                                    ].map((s, i) => (
+                                                        <svg
+                                                            key={i}
+                                                            aria-hidden
+                                                            className="pointer-events-none absolute"
+                                                            viewBox="0 0 24 24"
+                                                            style={{
+                                                                top: s.top,
+                                                                left: s.left,
+                                                                width: s.size,
+                                                                height: s.size,
+                                                                animation: `sparkle-twinkle 2.7s ease-in-out ${s.delay} infinite both`,
+                                                                filter: `drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px ${accent})`,
+                                                            }}
+                                                        >
+                                                            <path
+                                                                d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
+                                                                fill="#ffffff"
+                                                            />
+                                                        </svg>
+                                                    ))}
+                                                    <div
+                                                        className="relative w-14 h-14 flex-shrink-0 rounded-full overflow-hidden"
+                                                        style={{
+                                                            border: `2px solid ${accent}77`,
+                                                            boxShadow: `0 0 14px ${accent}55`,
+                                                        }}
+                                                    >
+                                                        <Image
+                                                            src={gigaPin.image}
+                                                            alt={gigaPin.name}
+                                                            fill
+                                                            sizes="56px"
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 relative">
+                                                        <div
+                                                            className="font-display text-[10px] tracking-[0.3em] uppercase mb-0.5"
+                                                            style={{ color: accent, fontWeight: 600 }}
+                                                        >
+                                                            Giga Chad
+                                                        </div>
+                                                        <div className={`font-display font-black text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
+                                                            {isYou ? "You" : leader.username}
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative flex flex-col items-end shrink-0">
+                                                        <div
+                                                            className="font-display font-black text-2xl tabular-nums leading-none"
+                                                            style={{ color: accent, textShadow: `0 0 12px ${accent}77` }}
+                                                        >
+                                                            ×{gigaCount}
+                                                        </div>
+                                                        <div className="font-mundial text-[9px] tracking-[0.18em] uppercase text-white/40 mt-1">
+                                                            {gigaPin.rarityLabel ?? "Legendary"}
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })()}
                                         {/* Per-pin count column headers (only on set
                                             events). Renders right-aligned to match the
                                             row data; pin name is abbreviated to its

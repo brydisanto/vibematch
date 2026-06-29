@@ -147,7 +147,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_common",
         name: "Bubble Gum",
-        image: "/badges/promo/set/gvcday.webp",
+        image: "/badges/promo/set/bubble_gum.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -160,7 +160,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_rare",
         name: "Pink Bubble Gum",
-        image: "/badges/promo/set/gvcday.webp",
+        image: "/badges/promo/set/bubble_gum_pink.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -173,7 +173,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_epic",
         name: "Big Bubble Gum",
-        image: "/badges/promo/set/gvcday.webp",
+        image: "/badges/promo/set/bubble_gum_big.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -186,7 +186,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_legendary",
         name: "Giga Bubble Gum",
-        image: "/badges/promo/set/gvcday.webp",
+        image: "/badges/promo/set/bubble_gum_giga.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
