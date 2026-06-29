@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trophy } from "lucide-react";
 import { BADGES } from "@/lib/badges";
-import { isPromoActive, getActivePromoBadges } from "@/lib/promo-badges";
+import { isPromoActive, getActivePromoBadges, getPrimaryActiveEvent } from "@/lib/promo-badges";
 
 interface LeaderboardEntry {
     username: string;
@@ -553,6 +553,37 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     const hasPodium = !isPromoTab && leaderboard.length >= 3;
     const top3 = hasPodium ? leaderboard.slice(0, 3) : [];
     const restOfList = hasPodium ? leaderboard.slice(3) : leaderboard;
+    // Resolve the active event for the promo tab header. Multi-pin set
+    // events (Craig's Bubble Gum Blast) get their own hero image, name,
+    // and shortDescription via PROMO_EVENT_SETS. Standalone events
+    // (OpenSea-style) fall back to their PromoBadge data. The
+    // points-vs-pins score label is decided by whether the resolved
+    // event has a set id.
+    const promoHeader = isPromoTab ? (() => {
+        const primary = getPrimaryActiveEvent();
+        if (!primary) return null;
+        if (primary.kind === "set") {
+            const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+            return {
+                image: primary.set.heroImage ?? heroPin?.image ?? "",
+                name: primary.set.name,
+                shortDescription: primary.set.shortDescription ?? primary.set.description ?? "",
+                accentColor: primary.set.accentColor ?? "#4A9EFF",
+                isSetEvent: true,
+            };
+        }
+        const promo = primary.promo;
+        return {
+            image: promo.image,
+            name: promo.name,
+            shortDescription:
+                promo.description ??
+                `Find the most ${promo.partnerName ?? promo.name} Pins to win something special!`,
+            accentColor: promo.accentColor ?? "#4A9EFF",
+            isSetEvent: false,
+        };
+    })() : null;
+    // Legacy variable kept for the tabLabel resolver below.
     const activePromoForHeader = isPromoTab ? getActivePromoBadges()[0] : undefined;
 
     // Promo tab appears only while the partnership is active. Label is
@@ -693,38 +724,37 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                         Replaces the standard podium for the partnership tab.
                                         Top-3 row tints (gold/silver/bronze) handle ranking
                                         callout in the list itself. */}
-                                    {isPromoTab && activePromoForHeader && (() => {
-                                        const isSetEvent = !!activePromoForHeader.eventSetId;
-                                        const accentColor = activePromoForHeader.accentColor || "#4A9EFF";
-                                        return (
-                                            <div className="flex flex-col items-center pt-2 pb-5 px-6">
-                                                <div
-                                                    className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden"
-                                                    style={{
-                                                        boxShadow: `0 0 32px ${accentColor}80, 0 5px 16px rgba(0,0,0,0.6)`,
-                                                        border: "2px solid rgba(255,255,255,0.2)",
-                                                    }}
-                                                >
-                                                    <Image
-                                                        src={activePromoForHeader.image}
-                                                        alt={activePromoForHeader.name}
-                                                        fill
-                                                        sizes="128px"
-                                                        className="object-cover"
-                                                        unoptimized
-                                                    />
-                                                </div>
-                                                <p
-                                                    className="mt-4 max-w-[340px] text-center font-display text-base sm:text-lg leading-tight text-white"
-                                                    style={{ fontWeight: 600 }}
-                                                >
-                                                    {isSetEvent
-                                                        ? "Stack points to top the leaderboard. Cap is 100 — all finishers enter the raffle."
-                                                        : `Find the most ${activePromoForHeader.partnerName ?? activePromoForHeader.name} Pins to win something special!`}
-                                                </p>
+                                    {isPromoTab && promoHeader && (
+                                        <div className="flex flex-col items-center pt-2 pb-5 px-6">
+                                            <div
+                                                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden"
+                                                style={{
+                                                    boxShadow: `0 0 32px ${promoHeader.accentColor}80, 0 5px 16px rgba(0,0,0,0.6)`,
+                                                    border: `2px solid ${promoHeader.accentColor}55`,
+                                                }}
+                                            >
+                                                <Image
+                                                    src={promoHeader.image}
+                                                    alt={promoHeader.name}
+                                                    fill
+                                                    sizes="128px"
+                                                    className="object-cover"
+                                                    unoptimized
+                                                />
                                             </div>
-                                        );
-                                    })()}
+                                            <h3
+                                                className="mt-4 font-display font-black uppercase text-center text-xl sm:text-2xl text-white tracking-tight"
+                                            >
+                                                {promoHeader.name}
+                                            </h3>
+                                            <p
+                                                className="mt-1.5 max-w-[340px] text-center font-display text-[13px] sm:text-sm leading-snug text-white/70"
+                                                style={{ fontWeight: 600 }}
+                                            >
+                                                {promoHeader.shortDescription}
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {/* Subtle column headers for the promo board. Only
                                         rendered for the promo tab since other boards
@@ -735,7 +765,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                             <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                             <div className="flex-shrink-0" style={{ width: 36 }} />
                                             <div className="flex-1 min-w-0">USERNAME</div>
-                                            <div className="tabular-nums">{activePromoForHeader?.eventSetId ? "POINTS" : "PINS"}</div>
+                                            <div className="tabular-nums">POINTS</div>
                                         </div>
                                     )}
 

@@ -85,6 +85,10 @@ export interface PromoEventSet {
     partnerName?: string;
     /** Long-form copy shown in the EventDrawer hero. */
     description?: string;
+    /** Short, one-line copy for the main LeaderboardModal "Event" tab
+     *  header where the long-form drawer description would feel too
+     *  dense. Falls back to description when omitted. */
+    shortDescription?: string;
     /** Event window label (e.g. "Through Jun 28 · 2026"). */
     eventWindow?: string;
     /** Prize note shown in the drawer header. */
@@ -210,6 +214,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         name: "Craig's Bubble Gum Blast",
         // No partnerName — this is an in-house Pin Drop event.
         description: "Help Craig prepare for the first Gumbustion. Collect different Bubble Gum pins to score points; complete a full set of all 4 to land a bonus. Points cap at 100, everyone that maxes out joins the prize raffle.",
+        shortDescription: "Help Craig find Bubble Gum Pins to win prizes!",
         eventWindow: "Pin Drop Original · 2026",
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
