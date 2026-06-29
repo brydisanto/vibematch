@@ -1050,14 +1050,14 @@ function SetView({
                             </div>
                         )}
                         <div className="flex items-center justify-between w-full mt-auto pt-2 border-t border-white/5">
-                            <span className="font-mundial text-[9px] tracking-[0.15em] uppercase text-white/40">PTS</span>
-                            <span className="font-display font-black text-[12px] tabular-nums" style={{ color: accent }}>
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS</span>
+                            <span className="font-display font-black text-[18px] tabular-nums leading-none" style={{ color: accent }}>
                                 {pin.points}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between w-full">
-                            <span className="font-mundial text-[9px] tracking-[0.15em] uppercase text-white/40">OWNED</span>
-                            <span className="font-display font-black text-[12px] tabular-nums text-white">
+                        <div className="flex items-center justify-between w-full mt-1">
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">OWNED</span>
+                            <span className="font-display font-black text-[18px] tabular-nums leading-none text-white">
                                 ×{pin.owned}
                             </span>
                         </div>
