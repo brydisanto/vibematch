@@ -742,10 +742,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 <button
                                     type="button"
                                     onClick={() => setView("set")}
-                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                    className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
                                     style={{
                                         color: view === "set" ? accent : "rgba(255,255,255,0.5)",
                                         borderBottom: view === "set" ? `2px solid ${accent}` : "2px solid transparent",
+                                        fontWeight: 600,
                                     }}
                                 >
                                     The Set
@@ -753,10 +754,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 <button
                                     type="button"
                                     onClick={() => setView("leaderboard")}
-                                    className="px-3 py-2.5 font-display font-black text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                    className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
                                     style={{
                                         color: view === "leaderboard" ? accent : "rgba(255,255,255,0.5)",
                                         borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
+                                        fontWeight: 600,
                                     }}
                                 >
                                     Leaderboard
