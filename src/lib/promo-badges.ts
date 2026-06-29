@@ -163,7 +163,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
     {
         id: "craigs_bubble_gum_blast_rare",
-        name: "Pink Bubble Gum",
+        name: "Double Bubble Gum",
         image: "/badges/promo/set/bubble_gum_pink.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
