@@ -380,17 +380,16 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     return (
                         <div className="hidden sm:flex items-center relative mr-3">
                             <div
-                                className="w-14 text-center font-display font-semibold tabular-nums"
-                                style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)" }}
+                                className="w-16 text-center font-display font-semibold tabular-nums"
+                                style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
                             >
                                 {totalPins}
                             </div>
                             <div
-                                className="w-14 text-center font-display font-semibold tabular-nums"
+                                className="w-16 text-center font-display font-semibold tabular-nums"
                                 style={{
-                                    fontSize: "18px",
-                                    color: accent,
-                                    textShadow: `0 0 10px ${accent}77`,
+                                    fontSize: "15px",
+                                    color: `${accent}cc`,
                                 }}
                             >
                                 {gigaCount}
@@ -399,8 +398,12 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     );
                 })()}
                 <div
-                    className="flex-shrink-0 w-12 text-right font-display font-semibold text-lg tabular-nums relative"
-                    style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
+                    className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums relative"
+                    style={{
+                        fontSize: "20px",
+                        color: "#FFD700",
+                        textShadow: "0 0 14px rgba(255,215,0,0.55)",
+                    }}
                 >
                     {entry.count.toLocaleString()}
                 </div>
@@ -451,20 +454,19 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 return (
                     <>
                         <div
-                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
                             style={{
-                                fontSize: "16px",
-                                color: totalPins > 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
+                                fontSize: "14px",
+                                color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
                             }}
                         >
                             {totalPins}
                         </div>
                         <div
-                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
                             style={{
-                                fontSize: "18px",
-                                color: gigaCount > 0 ? accent : "rgba(255,255,255,0.25)",
-                                textShadow: gigaCount > 0 ? `0 0 10px ${accent}77` : undefined,
+                                fontSize: "15px",
+                                color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
                             }}
                         >
                             {gigaCount}
@@ -472,7 +474,14 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     </>
                 );
             })()}
-            <div className="flex-shrink-0 w-12 text-right font-display font-semibold text-sm tabular-nums" style={{ color: accent }}>
+            <div
+                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                style={{
+                    fontSize: "18px",
+                    color: accent,
+                    textShadow: `0 0 12px ${accent}88`,
+                }}
+            >
                 {entry.count.toLocaleString()}
             </div>
         </Link>
@@ -904,9 +913,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
                                                 <div className="flex-shrink-0" style={{ width: 36 }} />
                                                 <div className="flex-1 min-w-0">COLLECTOR</div>
-                                                <div className="flex-shrink-0 w-14 text-center" style={{ color: `${accent}cc` }}>PINS</div>
-                                                <div className="flex-shrink-0 w-14 text-center" style={{ color: accent }}>GIGAS</div>
-                                                <div className="flex-shrink-0 w-12 text-right tabular-nums" style={{ color: `${accent}cc` }}>PTS</div>
+                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Total Pins</div>
+                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: `${accent}aa` }}>Giga Gum</div>
+                                                <div className="flex-shrink-0 w-16 text-center tabular-nums" style={{ color: accent }}>Points</div>
                                             </div>
                                         )}
                                         <div className="space-y-1.5">
@@ -946,20 +955,19 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 return (
                                                     <>
                                                         <div
-                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
                                                             style={{
-                                                                fontSize: "16px",
-                                                                color: totalPins > 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
+                                                                fontSize: "14px",
+                                                                color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
                                                             }}
                                                         >
                                                             {totalPins}
                                                         </div>
                                                         <div
-                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
                                                             style={{
-                                                                fontSize: "18px",
-                                                                color: gigaCount > 0 ? accent : "rgba(255,255,255,0.25)",
-                                                                textShadow: gigaCount > 0 ? `0 0 10px ${accent}77` : undefined,
+                                                                fontSize: "15px",
+                                                                color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
                                                             }}
                                                         >
                                                             {gigaCount}
@@ -967,7 +975,14 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                     </>
                                                 );
                                             })()}
-                                            <div className="flex-shrink-0 w-12 text-right font-display font-semibold text-sm tabular-nums" style={{ color: accent }}>
+                                            <div
+                                                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                                                style={{
+                                                    fontSize: "18px",
+                                                    color: accent,
+                                                    textShadow: `0 0 12px ${accent}88`,
+                                                }}
+                                            >
                                                 {userRow.count.toLocaleString()}
                                             </div>
                                         </Link>
@@ -1074,13 +1089,13 @@ function SetView({
                             </div>
                         )}
                         <div className="flex items-center justify-between w-full mt-auto pt-2 border-t border-white/5">
-                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS</span>
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS PER</span>
                             <span className="font-display font-semibold text-[18px] tabular-nums leading-none" style={{ color: accent }}>
                                 {pin.points}
                             </span>
                         </div>
                         <div className="flex items-center justify-between w-full mt-1">
-                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">OWNED</span>
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">Collected</span>
                             <span className="font-display font-semibold text-[18px] tabular-nums leading-none text-white">
                                 ×{pin.owned}
                             </span>
