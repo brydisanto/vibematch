@@ -369,33 +369,37 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     />
                 </div>
                 <div className="flex-1 min-w-0 relative">
-                    <div className={`font-display font-black text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
+                    <div className={`font-display font-semibold text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
                         {isUser ? "You" : entry.username}
                     </div>
                 </div>
-                {setPins && setPins.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-2.5 relative mr-3">
-                        {setPins.map((pin, i) => {
-                            const isLegendary = i === setPins.length - 1;
-                            return (
-                                <span
-                                    key={pin.id}
-                                    className="font-display font-black tabular-nums text-center"
-                                    style={{
-                                        width: isLegendary ? 32 : 28,
-                                        fontSize: isLegendary ? "16px" : "14px",
-                                        color: isLegendary ? accent : "rgba(255,255,255,0.9)",
-                                        textShadow: isLegendary ? `0 0 10px ${accent}77` : undefined,
-                                    }}
-                                >
-                                    {entry.pinCounts?.[pin.id] ?? 0}
-                                </span>
-                            );
-                        })}
-                    </div>
-                )}
+                {setPins && setPins.length > 0 && (() => {
+                    const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                    const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
+                    const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                    return (
+                        <div className="hidden sm:flex items-center relative mr-3">
+                            <div
+                                className="w-14 text-center font-display font-semibold tabular-nums"
+                                style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)" }}
+                            >
+                                {totalPins}
+                            </div>
+                            <div
+                                className="w-14 text-center font-display font-semibold tabular-nums"
+                                style={{
+                                    fontSize: "18px",
+                                    color: accent,
+                                    textShadow: `0 0 10px ${accent}77`,
+                                }}
+                            >
+                                {gigaCount}
+                            </div>
+                        </div>
+                    );
+                })()}
                 <div
-                    className="font-display font-black text-lg tabular-nums relative"
+                    className="flex-shrink-0 w-12 text-right font-display font-semibold text-lg tabular-nums relative"
                     style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
                 >
                     {entry.count.toLocaleString()}
@@ -422,7 +426,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
             } : undefined}
         >
             <div
-                className="flex-shrink-0 w-7 text-center font-display font-black text-sm"
+                className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm"
                 style={{
                     color: medal ? medal.rankColor : undefined,
                     textShadow: medal ? `0 0 10px ${medal.rankColor}55` : undefined,
@@ -436,35 +440,39 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 size={36}
             />
             <div className="flex-1 min-w-0">
-                <div className={`font-display font-black text-sm truncate ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
+                <div className={`font-display font-semibold text-sm truncate ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
                     {isUser ? "You" : entry.username}
                 </div>
             </div>
-            {setPins && setPins.length > 0 && (
-                <div className="flex items-center gap-2.5 mr-3">
-                    {setPins.map((pin, i) => {
-                        const count = entry.pinCounts?.[pin.id] ?? 0;
-                        const isLegendary = i === setPins.length - 1;
-                        const dim = count === 0;
-                        const baseColor = isLegendary ? accent : "rgba(255,255,255,0.9)";
-                        return (
-                            <span
-                                key={pin.id}
-                                className="font-display font-black tabular-nums text-center"
-                                style={{
-                                    width: isLegendary ? 32 : 28,
-                                    fontSize: isLegendary ? "16px" : "14px",
-                                    color: dim ? "rgba(255,255,255,0.25)" : baseColor,
-                                    textShadow: !dim && isLegendary ? `0 0 10px ${accent}77` : undefined,
-                                }}
-                            >
-                                {count}
-                            </span>
-                        );
-                    })}
-                </div>
-            )}
-            <div className="font-display font-black text-sm tabular-nums" style={{ color: accent }}>
+            {setPins && setPins.length > 0 && (() => {
+                const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
+                const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                return (
+                    <>
+                        <div
+                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            style={{
+                                fontSize: "16px",
+                                color: totalPins > 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
+                            }}
+                        >
+                            {totalPins}
+                        </div>
+                        <div
+                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            style={{
+                                fontSize: "18px",
+                                color: gigaCount > 0 ? accent : "rgba(255,255,255,0.25)",
+                                textShadow: gigaCount > 0 ? `0 0 10px ${accent}77` : undefined,
+                            }}
+                        >
+                            {gigaCount}
+                        </div>
+                    </>
+                );
+            })()}
+            <div className="flex-shrink-0 w-12 text-right font-display font-semibold text-sm tabular-nums" style={{ color: accent }}>
                 {entry.count.toLocaleString()}
             </div>
         </Link>
@@ -774,7 +782,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     it for single-pin events where there's no
                                     tab strip above to do that job. */}
                                 {!promo.eventSetId && (
-                                    <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
+                                    <h3 className="font-display font-semibold text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
                                 )}
                                 {loading ? (
                                     <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
@@ -867,13 +875,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         >
                                                             Giga Chad
                                                         </div>
-                                                        <div className={`font-display font-black text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
+                                                        <div className={`font-display font-semibold text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
                                                             {isYou ? "You" : leader.username}
                                                         </div>
                                                     </div>
                                                     <div className="relative flex flex-col items-end shrink-0">
                                                         <div
-                                                            className="font-display font-black text-2xl tabular-nums leading-none"
+                                                            className="font-display font-semibold text-2xl tabular-nums leading-none"
                                                             style={{ color: accent, textShadow: `0 0 12px ${accent}77` }}
                                                         >
                                                             ×{gigaCount}
@@ -896,39 +904,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
                                                 <div className="flex-shrink-0" style={{ width: 36 }} />
                                                 <div className="flex-1 min-w-0">COLLECTOR</div>
-                                                <div className="flex items-center gap-2.5 mr-3">
-                                                    {setPins.map(pin => {
-                                                        const isLegendary = pin === setPins[setPins.length - 1];
-                                                        return (
-                                                            <div
-                                                                key={pin.id}
-                                                                title={pin.name}
-                                                                className="flex items-center justify-center"
-                                                                style={{ width: isLegendary ? 32 : 28 }}
-                                                            >
-                                                                <div
-                                                                    className="relative rounded-full overflow-hidden"
-                                                                    style={{
-                                                                        width: isLegendary ? 26 : 22,
-                                                                        height: isLegendary ? 26 : 22,
-                                                                        border: isLegendary ? `1.5px solid ${accent}` : `1px solid ${accent}55`,
-                                                                        boxShadow: isLegendary ? `0 0 8px ${accent}88` : "none",
-                                                                    }}
-                                                                >
-                                                                    <Image
-                                                                        src={pin.image}
-                                                                        alt={pin.name}
-                                                                        fill
-                                                                        sizes="32px"
-                                                                        className="object-cover"
-                                                                        unoptimized
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                                <div className="tabular-nums" style={{ color: `${accent}cc` }}>PTS</div>
+                                                <div className="flex-shrink-0 w-14 text-center" style={{ color: `${accent}cc` }}>PINS</div>
+                                                <div className="flex-shrink-0 w-14 text-center" style={{ color: accent }}>GIGAS</div>
+                                                <div className="flex-shrink-0 w-12 text-right tabular-nums" style={{ color: `${accent}cc` }}>PTS</div>
                                             </div>
                                         )}
                                         <div className="space-y-1.5">
@@ -954,38 +932,42 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             href={`/u/${encodeURIComponent(userRow.username)}`}
                                             className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
                                         >
-                                            <div className="flex-shrink-0 w-7 text-center font-display font-black text-sm text-white/60">
+                                            <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/60">
                                                 {userRow.rank}
                                             </div>
                                             <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-display font-black text-sm text-[#B366FF]">You</div>
+                                                <div className="font-display font-semibold text-sm text-[#B366FF]">You</div>
                                             </div>
-                                            {promo.eventSetId && setPins.length > 0 && (
-                                                <div className="flex items-center gap-2.5 mr-3">
-                                                    {setPins.map((pin, i) => {
-                                                        const count = userRow.pinCounts?.[pin.id] ?? 0;
-                                                        const isLegendary = i === setPins.length - 1;
-                                                        const dim = count === 0;
-                                                        const baseColor = isLegendary ? accent : "rgba(255,255,255,0.9)";
-                                                        return (
-                                                            <span
-                                                                key={pin.id}
-                                                                className="font-display font-black tabular-nums text-center"
-                                                                style={{
-                                                                    width: isLegendary ? 32 : 28,
-                                                                    fontSize: isLegendary ? "16px" : "14px",
-                                                                    color: dim ? "rgba(255,255,255,0.25)" : baseColor,
-                                                                    textShadow: !dim && isLegendary ? `0 0 10px ${accent}77` : undefined,
-                                                                }}
-                                                            >
-                                                                {count}
-                                                            </span>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                            <div className="font-display font-black text-sm tabular-nums" style={{ color: accent }}>
+                                            {promo.eventSetId && setPins.length > 0 && (() => {
+                                                const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                                                const totalPins = setPins.reduce((sum, p) => sum + (userRow.pinCounts?.[p.id] ?? 0), 0);
+                                                const gigaCount = userRow.pinCounts?.[gigaPin.id] ?? 0;
+                                                return (
+                                                    <>
+                                                        <div
+                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            style={{
+                                                                fontSize: "16px",
+                                                                color: totalPins > 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
+                                                            }}
+                                                        >
+                                                            {totalPins}
+                                                        </div>
+                                                        <div
+                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            style={{
+                                                                fontSize: "18px",
+                                                                color: gigaCount > 0 ? accent : "rgba(255,255,255,0.25)",
+                                                                textShadow: gigaCount > 0 ? `0 0 10px ${accent}77` : undefined,
+                                                            }}
+                                                        >
+                                                            {gigaCount}
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                            <div className="flex-shrink-0 w-12 text-right font-display font-semibold text-sm tabular-nums" style={{ color: accent }}>
                                                 {userRow.count.toLocaleString()}
                                             </div>
                                         </Link>
@@ -1045,7 +1027,7 @@ function SetView({
                     {setBonusPoints !== null && setBonusPoints > 0 && (
                         <div className="flex items-center gap-2">
                             <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">FULL SET</span>
-                            <span className="font-display font-black text-[13px]" style={{ color: accent }}>
+                            <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
                                 +{setBonusPoints} pts
                             </span>
                         </div>
@@ -1053,7 +1035,7 @@ function SetView({
                     {scoreCap !== null && (
                         <div className="flex items-center gap-2">
                             <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">CAPS AT</span>
-                            <span className="font-display font-black text-[13px]" style={{ color: accent }}>
+                            <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
                                 {scoreCap} pts
                             </span>
                         </div>
@@ -1083,7 +1065,7 @@ function SetView({
                                 unoptimized
                             />
                         </div>
-                        <div className="font-display font-black text-[11px] sm:text-[12px] text-white leading-tight mb-1 line-clamp-2">
+                        <div className="font-display font-semibold text-[11px] sm:text-[12px] text-white leading-tight mb-1 line-clamp-2">
                             {pin.name}
                         </div>
                         {pin.rarityLabel && (
@@ -1093,13 +1075,13 @@ function SetView({
                         )}
                         <div className="flex items-center justify-between w-full mt-auto pt-2 border-t border-white/5">
                             <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS</span>
-                            <span className="font-display font-black text-[18px] tabular-nums leading-none" style={{ color: accent }}>
+                            <span className="font-display font-semibold text-[18px] tabular-nums leading-none" style={{ color: accent }}>
                                 {pin.points}
                             </span>
                         </div>
                         <div className="flex items-center justify-between w-full mt-1">
                             <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">OWNED</span>
-                            <span className="font-display font-black text-[18px] tabular-nums leading-none text-white">
+                            <span className="font-display font-semibold text-[18px] tabular-nums leading-none text-white">
                                 ×{pin.owned}
                             </span>
                         </div>

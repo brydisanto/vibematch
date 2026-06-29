@@ -329,10 +329,19 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
     // --- Two-phase fetch: scores first (fast), then avatars (lazy) ---
     const fetchForMode = useCallback(async (targetMode: TabMode) => {
         // Promo tab reads from the dedicated /api/promo/leaderboard
-        // endpoint. Score = pull count, no podium nuances beyond what
-        // the standard list gives us.
+        // endpoint. For multi-pin set events (Craig's Bubble Gum
+        // Blast and on) we route through ?set= which returns the
+        // points-scored ranking; for legacy single-pin events
+        // (OpenSea-style) the unparameterized endpoint returns the
+        // pull-count ranking. The active set id is derived from the
+        // first active promo's eventSetId.
         if (targetMode === "promo") {
-            const res = await fetch(`/api/promo/leaderboard`);
+            const activePromos = getActivePromoBadges();
+            const activeSetId = activePromos.find(p => p.eventSetId)?.eventSetId ?? null;
+            const url = activeSetId
+                ? `/api/promo/leaderboard?set=${encodeURIComponent(activeSetId)}`
+                : `/api/promo/leaderboard`;
+            const res = await fetch(url);
             if (!res.ok) return;
             const data = await res.json();
             const rawList: Array<{ username: string; count: number; rank: number }> = data.leaderboard || [];
@@ -684,27 +693,49 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                         Replaces the standard podium for the partnership tab.
                                         Top-3 row tints (gold/silver/bronze) handle ranking
                                         callout in the list itself. */}
-                                    {isPromoTab && activePromoForHeader && (
-                                        <div className="flex flex-col items-center pt-2 pb-5 px-6">
-                                            <div
-                                                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden"
-                                                style={{
-                                                    boxShadow: "0 0 32px rgba(74,158,255,0.5), 0 5px 16px rgba(0,0,0,0.6)",
-                                                    border: "2px solid rgba(255,255,255,0.2)",
-                                                }}
-                                            >
-                                                <Image
-                                                    src={activePromoForHeader.image}
-                                                    alt={activePromoForHeader.name}
-                                                    fill
-                                                    sizes="128px"
-                                                    className="object-cover"
-                                                    unoptimized
-                                                />
+                                    {isPromoTab && activePromoForHeader && (() => {
+                                        const isSetEvent = !!activePromoForHeader.eventSetId;
+                                        const accentColor = activePromoForHeader.accentColor || "#4A9EFF";
+                                        return (
+                                            <div className="flex flex-col items-center pt-2 pb-5 px-6">
+                                                <div
+                                                    className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden"
+                                                    style={{
+                                                        boxShadow: `0 0 32px ${accentColor}80, 0 5px 16px rgba(0,0,0,0.6)`,
+                                                        border: "2px solid rgba(255,255,255,0.2)",
+                                                    }}
+                                                >
+                                                    <Image
+                                                        src={activePromoForHeader.image}
+                                                        alt={activePromoForHeader.name}
+                                                        fill
+                                                        sizes="128px"
+                                                        className="object-cover"
+                                                        unoptimized
+                                                    />
+                                                </div>
+                                                <p
+                                                    className="mt-4 max-w-[340px] text-center font-display text-base sm:text-lg leading-tight text-white"
+                                                    style={{ fontWeight: 600 }}
+                                                >
+                                                    {isSetEvent
+                                                        ? "Stack points to top the leaderboard. Cap is 100 — all finishers enter the raffle."
+                                                        : `Find the most ${activePromoForHeader.partnerName ?? activePromoForHeader.name} Pins to win something special!`}
+                                                </p>
                                             </div>
-                                            <p className="mt-4 max-w-[340px] text-center font-display font-bold text-base sm:text-lg leading-tight text-white">
-                                                Find the most OpenSea Pins to win something special!
-                                            </p>
+                                        );
+                                    })()}
+
+                                    {/* Subtle column headers for the promo board. Only
+                                        rendered for the promo tab since other boards
+                                        already lean on the podium for orientation. */}
+                                    {isPromoTab && restOfList.length > 0 && (
+                                        <div className="flex items-center gap-3 px-5 pb-2 text-[9px] tracking-[0.22em] uppercase font-display text-white/35"
+                                            style={{ fontWeight: 600 }}>
+                                            <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                            <div className="flex-shrink-0" style={{ width: 36 }} />
+                                            <div className="flex-1 min-w-0">USERNAME</div>
+                                            <div className="tabular-nums">{activePromoForHeader?.eventSetId ? "POINTS" : "PINS"}</div>
                                         </div>
                                     )}
 
