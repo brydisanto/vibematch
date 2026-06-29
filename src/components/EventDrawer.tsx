@@ -374,16 +374,24 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     </div>
                 </div>
                 {setPins && setPins.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-1.5 relative mr-2">
-                        {setPins.map(pin => (
-                            <span
-                                key={pin.id}
-                                className="font-display font-black text-[12px] tabular-nums w-6 text-center"
-                                style={{ color: "rgba(255,255,255,0.9)" }}
-                            >
-                                {entry.pinCounts?.[pin.id] ?? 0}
-                            </span>
-                        ))}
+                    <div className="hidden sm:flex items-center gap-2.5 relative mr-3">
+                        {setPins.map((pin, i) => {
+                            const isLegendary = i === setPins.length - 1;
+                            return (
+                                <span
+                                    key={pin.id}
+                                    className="font-display font-black tabular-nums text-center"
+                                    style={{
+                                        width: isLegendary ? 32 : 28,
+                                        fontSize: isLegendary ? "16px" : "14px",
+                                        color: isLegendary ? accent : "rgba(255,255,255,0.9)",
+                                        textShadow: isLegendary ? `0 0 10px ${accent}77` : undefined,
+                                    }}
+                                >
+                                    {entry.pinCounts?.[pin.id] ?? 0}
+                                </span>
+                            );
+                        })}
                     </div>
                 )}
                 <div
@@ -433,15 +441,21 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 </div>
             </div>
             {setPins && setPins.length > 0 && (
-                <div className="flex items-center gap-1 mr-2">
-                    {setPins.map(pin => {
+                <div className="flex items-center gap-2.5 mr-3">
+                    {setPins.map((pin, i) => {
                         const count = entry.pinCounts?.[pin.id] ?? 0;
+                        const isLegendary = i === setPins.length - 1;
+                        const dim = count === 0;
+                        const baseColor = isLegendary ? accent : "rgba(255,255,255,0.9)";
                         return (
                             <span
                                 key={pin.id}
-                                className="font-display font-black text-[11px] tabular-nums w-6 text-center"
+                                className="font-display font-black tabular-nums text-center"
                                 style={{
-                                    color: count > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)",
+                                    width: isLegendary ? 32 : 28,
+                                    fontSize: isLegendary ? "16px" : "14px",
+                                    color: dim ? "rgba(255,255,255,0.25)" : baseColor,
+                                    textShadow: !dim && isLegendary ? `0 0 10px ${accent}77` : undefined,
                                 }}
                             >
                                 {count}
@@ -877,20 +891,40 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             Set tab if anyone needs the legend. */}
                                         {promo.eventSetId && setPins.length > 0 && (
                                             <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05] text-[9px] tracking-[0.2em] uppercase font-display text-white/40">
-                                                <div className="flex-shrink-0 w-7" />
+                                                <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
                                                 <div className="flex-shrink-0" style={{ width: 36 }} />
                                                 <div className="flex-1 min-w-0">COLLECTOR</div>
-                                                <div className="flex items-center gap-1 mr-2">
-                                                    {setPins.map(pin => (
-                                                        <span
-                                                            key={pin.id}
-                                                            title={pin.name}
-                                                            className="w-6 text-center"
-                                                            style={{ color: `${accent}cc` }}
-                                                        >
-                                                            {(pin.rarityLabel ?? "?").charAt(0)}
-                                                        </span>
-                                                    ))}
+                                                <div className="flex items-center gap-2.5 mr-3">
+                                                    {setPins.map(pin => {
+                                                        const isLegendary = pin === setPins[setPins.length - 1];
+                                                        return (
+                                                            <div
+                                                                key={pin.id}
+                                                                title={pin.name}
+                                                                className="flex items-center justify-center"
+                                                                style={{ width: isLegendary ? 32 : 28 }}
+                                                            >
+                                                                <div
+                                                                    className="relative rounded-full overflow-hidden"
+                                                                    style={{
+                                                                        width: isLegendary ? 26 : 22,
+                                                                        height: isLegendary ? 26 : 22,
+                                                                        border: isLegendary ? `1.5px solid ${accent}` : `1px solid ${accent}55`,
+                                                                        boxShadow: isLegendary ? `0 0 8px ${accent}88` : "none",
+                                                                    }}
+                                                                >
+                                                                    <Image
+                                                                        src={pin.image}
+                                                                        alt={pin.name}
+                                                                        fill
+                                                                        sizes="32px"
+                                                                        className="object-cover"
+                                                                        unoptimized
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <div className="tabular-nums" style={{ color: `${accent}cc` }}>PTS</div>
                                             </div>
@@ -926,15 +960,21 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="font-display font-black text-sm text-[#B366FF]">You</div>
                                             </div>
                                             {promo.eventSetId && setPins.length > 0 && (
-                                                <div className="flex items-center gap-1 mr-2">
-                                                    {setPins.map(pin => {
+                                                <div className="flex items-center gap-2.5 mr-3">
+                                                    {setPins.map((pin, i) => {
                                                         const count = userRow.pinCounts?.[pin.id] ?? 0;
+                                                        const isLegendary = i === setPins.length - 1;
+                                                        const dim = count === 0;
+                                                        const baseColor = isLegendary ? accent : "rgba(255,255,255,0.9)";
                                                         return (
                                                             <span
                                                                 key={pin.id}
-                                                                className="font-display font-black text-[11px] tabular-nums w-6 text-center"
+                                                                className="font-display font-black tabular-nums text-center"
                                                                 style={{
-                                                                    color: count > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)",
+                                                                    width: isLegendary ? 32 : 28,
+                                                                    fontSize: isLegendary ? "16px" : "14px",
+                                                                    color: dim ? "rgba(255,255,255,0.25)" : baseColor,
+                                                                    textShadow: !dim && isLegendary ? `0 0 10px ${accent}77` : undefined,
                                                                 }}
                                                             >
                                                                 {count}
