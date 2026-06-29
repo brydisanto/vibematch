@@ -21,6 +21,10 @@ interface EventEntry {
     count: number;
     rank: number;
     avatarUrl?: string;
+    /** Per-pin owned counts keyed by pin id. Populated for set events
+     *  so the leaderboard can render per-pin breakdown columns
+     *  alongside the total score. Absent on standalone events. */
+    pinCounts?: Record<string, number>;
 }
 
 interface PromoInfo {
@@ -279,8 +283,12 @@ interface RowProps {
      *  row, stronger gold ring, crown glyph. Set on rows in finished
      *  events so the #1 collector is unambiguous. */
     isWinner?: boolean;
+    /** Pins in render order (Common → Legendary). When present, the
+     *  row renders 4 compact count columns before the total score
+     *  showing how many of each pin the player owns. */
+    setPins?: EventSetPin[];
 }
-const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl, isWinner }: RowProps) {
+const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl, isWinner, setPins }: RowProps) {
     const medal = MEDAL[entry.rank];
 
     if (isWinner) {
@@ -365,6 +373,19 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                         {isUser ? "You" : entry.username}
                     </div>
                 </div>
+                {setPins && setPins.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 relative mr-2">
+                        {setPins.map(pin => (
+                            <span
+                                key={pin.id}
+                                className="font-display font-black text-[12px] tabular-nums w-6 text-center"
+                                style={{ color: "rgba(255,255,255,0.9)" }}
+                            >
+                                {entry.pinCounts?.[pin.id] ?? 0}
+                            </span>
+                        ))}
+                    </div>
+                )}
                 <div
                     className="font-display font-black text-lg tabular-nums relative"
                     style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
@@ -411,7 +432,25 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     {isUser ? "You" : entry.username}
                 </div>
             </div>
-            <div className="font-display font-black text-sm" style={{ color: accent }}>
+            {setPins && setPins.length > 0 && (
+                <div className="flex items-center gap-1 mr-2">
+                    {setPins.map(pin => {
+                        const count = entry.pinCounts?.[pin.id] ?? 0;
+                        return (
+                            <span
+                                key={pin.id}
+                                className="font-display font-black text-[11px] tabular-nums w-6 text-center"
+                                style={{
+                                    color: count > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)",
+                                }}
+                            >
+                                {count}
+                            </span>
+                        );
+                    })}
+                </div>
+            )}
+            <div className="font-display font-black text-sm tabular-nums" style={{ color: accent }}>
                 {entry.count.toLocaleString()}
             </div>
         </Link>
@@ -729,18 +768,47 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-1.5">
-                                        {entries.map(entry => (
-                                            <LeaderboardRow
-                                                key={entry.username}
-                                                entry={entry}
-                                                isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
-                                                accent={accent}
-                                                currentAvatarUrl={currentAvatarUrl}
-                                                isWinner={ended && entry.rank === 1}
-                                            />
-                                        ))}
-                                    </div>
+                                    <>
+                                        {/* Per-pin count column headers (only on set
+                                            events). Renders right-aligned to match the
+                                            row data; pin name is abbreviated to its
+                                            rarity letter so 4 columns fit even on
+                                            mobile. The full pin name lives in the
+                                            Set tab if anyone needs the legend. */}
+                                        {promo.eventSetId && setPins.length > 0 && (
+                                            <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05] text-[9px] tracking-[0.2em] uppercase font-display text-white/40">
+                                                <div className="flex-shrink-0 w-7" />
+                                                <div className="flex-shrink-0" style={{ width: 36 }} />
+                                                <div className="flex-1 min-w-0">COLLECTOR</div>
+                                                <div className="flex items-center gap-1 mr-2">
+                                                    {setPins.map(pin => (
+                                                        <span
+                                                            key={pin.id}
+                                                            title={pin.name}
+                                                            className="w-6 text-center"
+                                                            style={{ color: `${accent}cc` }}
+                                                        >
+                                                            {(pin.rarityLabel ?? "?").charAt(0)}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <div className="tabular-nums" style={{ color: `${accent}cc` }}>PTS</div>
+                                            </div>
+                                        )}
+                                        <div className="space-y-1.5">
+                                            {entries.map(entry => (
+                                                <LeaderboardRow
+                                                    key={entry.username}
+                                                    entry={entry}
+                                                    isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                    accent={accent}
+                                                    currentAvatarUrl={currentAvatarUrl}
+                                                    isWinner={ended && entry.rank === 1}
+                                                    setPins={promo.eventSetId ? setPins : undefined}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
                                 )}
 
                                 {/* User pinned row when not in top 50 */}
@@ -757,7 +825,25 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-display font-black text-sm text-[#B366FF]">You</div>
                                             </div>
-                                            <div className="font-display font-black text-sm" style={{ color: accent }}>
+                                            {promo.eventSetId && setPins.length > 0 && (
+                                                <div className="flex items-center gap-1 mr-2">
+                                                    {setPins.map(pin => {
+                                                        const count = userRow.pinCounts?.[pin.id] ?? 0;
+                                                        return (
+                                                            <span
+                                                                key={pin.id}
+                                                                className="font-display font-black text-[11px] tabular-nums w-6 text-center"
+                                                                style={{
+                                                                    color: count > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)",
+                                                                }}
+                                                            >
+                                                                {count}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            <div className="font-display font-black text-sm tabular-nums" style={{ color: accent }}>
                                                 {userRow.count.toLocaleString()}
                                             </div>
                                         </Link>

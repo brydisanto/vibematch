@@ -100,29 +100,37 @@ export async function GET(req: Request) {
                 currentUsername ? kv.zscore(key, currentUsername) : Promise.resolve(null),
                 currentUsername ? kv.zrank(key, currentUsername) : Promise.resolve(null),
             ]);
-            const leaderboard: { username: string; count: number; rank: number }[] = [];
+            const leaderboard: { username: string; count: number; rank: number; pinCounts: Record<string, number> }[] = [];
             for (let i = 0; i < topRaw.length; i += 2) {
                 leaderboard.push({
                     username: String(topRaw[i]),
                     count: Number(topRaw[i + 1]),
                     rank: (i / 2) + 1,
+                    pinCounts: {}, // filled in below
+                });
+            }
+            // Enrich each leaderboard row with per-pin counts. One
+            // zscore per (pin × user) — 4 pins × 50 users = 200 reads,
+            // batched via Promise.all so it's a single RTT.
+            if (leaderboard.length > 0) {
+                const pinPromises: Promise<number | null>[] = [];
+                const pinIndex: { entryIdx: number; pinId: string }[] = [];
+                leaderboard.forEach((entry, entryIdx) => {
+                    pins.forEach(pin => {
+                        pinIndex.push({ entryIdx, pinId: pin.id });
+                        pinPromises.push(
+                            kv.zscore(promoLeaderboardKey(pin.id), entry.username) as Promise<number | null>
+                        );
+                    });
+                });
+                const allCounts = await Promise.all(pinPromises);
+                pinIndex.forEach((ref, i) => {
+                    const v = allCounts[i];
+                    leaderboard[ref.entryIdx].pinCounts[ref.pinId] = typeof v === 'number' ? Number(v) : 0;
                 });
             }
             const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : 0;
-            let userEntry: { username: string; count: number; rank: number } | null = null;
-            if (currentUsername) {
-                const inTop = leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
-                if (inTop) {
-                    userEntry = inTop;
-                } else if (userScoreRaw !== null && userScoreRaw !== undefined) {
-                    const ascRank = typeof userAscRankRaw === 'number' ? userAscRankRaw : null;
-                    userEntry = {
-                        username: currentUsername,
-                        count: Number(userScoreRaw),
-                        rank: ascRank !== null ? totalPlayers - ascRank : totalPlayers,
-                    };
-                }
-            }
+            let userEntry: { username: string; count: number; rank: number; pinCounts: Record<string, number> } | null = null;
             // Per-pin owned counts for the signed-in user — drives the
             // "Set" tab in the drawer.
             const ownedPerPin: Record<string, number> = {};
@@ -133,6 +141,22 @@ export async function GET(req: Request) {
                 });
             } else {
                 pins.forEach(p => { ownedPerPin[p.id] = 0; });
+            }
+            if (currentUsername) {
+                const inTop = leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
+                if (inTop) {
+                    userEntry = inTop;
+                } else if (userScoreRaw !== null && userScoreRaw !== undefined) {
+                    const ascRank = typeof userAscRankRaw === 'number' ? userAscRankRaw : null;
+                    userEntry = {
+                        username: currentUsername,
+                        count: Number(userScoreRaw),
+                        rank: ascRank !== null ? totalPlayers - ascRank : totalPlayers,
+                        // Reuse the per-pin owned counts we already fetched
+                        // for the Set tab.
+                        pinCounts: { ...ownedPerPin },
+                    };
+                }
             }
             return NextResponse.json(
                 {
