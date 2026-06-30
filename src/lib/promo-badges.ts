@@ -224,7 +224,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // EventDrawer hero and the capsule-eligibility lockout (no
         // event pins drop from capsules earned before this moment).
         startsAt: "2026-07-06T16:00:00Z",
-        endsAt: undefined,
+        // Monday July 13 2026, 12:00 PM Eastern — exactly one week of
+        // collecting. Drives the "ENDS …" countdown once the event is
+        // live, then flips the drawer to FINAL RESULTS at cutoff.
+        endsAt: "2026-07-13T16:00:00Z",
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.jpg",
         // +25 per full set collected (one of every pin). Stacks: 3 of
