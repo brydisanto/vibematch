@@ -243,13 +243,14 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
 
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
- * this hits, we skip the tier roll entirely and award the promo. 3%
- * puts the promo just below a typical Common pin (~4% individually) so
- * it feels like a real partnership presence in the haul without
- * dominating it. Tunable from 0.005 (rare) → 0.05 (very frequent)
- * without touching anything else.
+ * this hits, we skip the tier roll entirely and award the promo. Bumped
+ * from 3% → 8% for Craig's Bubble Gum Blast so a 1-week event window
+ * feels chase-y rather than sparse: an engaged player opening ~50
+ * capsules in the week now expects ~4 event pulls instead of ~1-2.
+ * Giga Bubble Gum stays genuinely rare (dropWeight 2 / 100 within the
+ * set → 0.16% per capsule) so the side-prize lane retains its bite.
  */
-export const PROMO_DROP_RATE = 0.03;
+export const PROMO_DROP_RATE = 0.08;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
