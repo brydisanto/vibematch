@@ -215,7 +215,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // No partnerName — this is an in-house Pin Drop event.
         description: "Help Craig prepare for the first Gumbustion. Collect different Bubble Gum pins to score points; complete a full set of all 4 to land a bonus. Points cap at 100, everyone that maxes out joins the prize raffle.",
         shortDescription: "Help Craig find Bubble Gum Pins to win prizes!",
-        eventWindow: "Pin Drop Original · 2026",
+        eventWindow: "Pin Drop Original",
         // Pink/purple accent. Tweak the hex to taste; this hue reads as
         // both ("magenta") and pairs well with the existing GVC palette.
         accentColor: "#D26AFF",
