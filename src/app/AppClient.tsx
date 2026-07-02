@@ -15,7 +15,6 @@ import InstructionsModal from "@/components/InstructionsModal";
 import MoveLogModal from "@/components/MoveLogModal";
 import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
-import BubbleGumBackground from "@/components/BubbleGumBackground";
 import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
@@ -727,15 +726,7 @@ export default function AppClient() {
   const inner = (
     <main className="min-h-screen bg-[#050505] relative">
 
-      {view === "playing" && (() => {
-        // Swap the default flame ambience for the Bubble Gum cityscape
-        // while a set event (Craig's Bubble Gum Blast) is running.
-        // Falls back to FlameBackground the moment the event ends /
-        // no set is active, so unrelated future promos keep their
-        // native aesthetic.
-        const useBubbleGum = isPromoActive() && getPrimaryActiveEvent()?.kind === "set";
-        return useBubbleGum ? <BubbleGumBackground /> : <FlameBackground />;
-      })()}
+      {view === "playing" && <FlameBackground />}
       <AnimatePresence mode="wait">
         {view === "landing" ? (
           <motion.div
@@ -794,8 +785,16 @@ export default function AppClient() {
             className="h-screen flex flex-col overflow-hidden relative"
           >
             <div className="absolute inset-0 z-0 bg-[#0a0015]">
+              {/* Swap the default cityscape for the Bubble Gum backdrop
+                  while a multi-pin set event is active (Craig's Bubble
+                  Gum Blast). Falls back to the standard art the moment
+                  the event ends. */}
               <Image
-                src="/vibematchbg2.jpg"
+                src={
+                  isPromoActive() && getPrimaryActiveEvent()?.kind === "set"
+                    ? "/backgrounds/game-bg-bubble-gum.png"
+                    : "/vibematchbg2.jpg"
+                }
                 alt="Background"
                 fill
                 className="object-cover object-center"
