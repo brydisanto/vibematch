@@ -15,6 +15,8 @@ import InstructionsModal from "@/components/InstructionsModal";
 import MoveLogModal from "@/components/MoveLogModal";
 import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
+import BubbleGumBackground from "@/components/BubbleGumBackground";
+import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
@@ -725,7 +727,15 @@ export default function AppClient() {
   const inner = (
     <main className="min-h-screen bg-[#050505] relative">
 
-      {view === "playing" && <FlameBackground />}
+      {view === "playing" && (() => {
+        // Swap the default flame ambience for the Bubble Gum cityscape
+        // while a set event (Craig's Bubble Gum Blast) is running.
+        // Falls back to FlameBackground the moment the event ends /
+        // no set is active, so unrelated future promos keep their
+        // native aesthetic.
+        const useBubbleGum = isPromoActive() && getPrimaryActiveEvent()?.kind === "set";
+        return useBubbleGum ? <BubbleGumBackground /> : <FlameBackground />;
+      })()}
       <AnimatePresence mode="wait">
         {view === "landing" ? (
           <motion.div
