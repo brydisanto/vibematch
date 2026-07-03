@@ -792,7 +792,7 @@ export default function AppClient() {
               <Image
                 src={
                   isPromoActive() && getPrimaryActiveEvent()?.kind === "set"
-                    ? "/backgrounds/game-bg-bubble-gum.png"
+                    ? "/backgrounds/game-bg-bubble-gum.webp"
                     : "/vibematchbg2.jpg"
                 }
                 alt="Background"
