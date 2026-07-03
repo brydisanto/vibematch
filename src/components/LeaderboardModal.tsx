@@ -700,7 +700,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                 unoptimized
                                             />
                                         </div>
-                                        <h3 className="mt-5 font-display font-black uppercase tracking-wide text-base sm:text-lg text-white text-center">
+                                        <h3 className="mt-5 font-display font-black tracking-tight text-lg sm:text-xl text-white text-center">
                                             {promoHeader.name}
                                         </h3>
                                         <p className="mt-2 max-w-[260px] text-center font-mundial text-sm leading-snug text-white/70">
@@ -748,7 +748,7 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                                 />
                                             </div>
                                             <h3
-                                                className="mt-4 font-display font-black uppercase text-center text-xl sm:text-2xl text-white tracking-tight"
+                                                className="mt-4 font-display font-black text-center text-xl sm:text-2xl text-white tracking-tight"
                                             >
                                                 {promoHeader.name}
                                             </h3>
