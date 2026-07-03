@@ -944,6 +944,7 @@ export default function AppClient() {
                     frenzyPenaltyAt={game.frenzyPenaltyAt}
                     timePenaltyPopups={game.timePenaltyPopups}
                     onPointerTrust={game.recordEventTrust}
+                    bubbleGumFrame={isPromoActive() && getPrimaryActiveEvent()?.kind === "set"}
                   />
                 </div>
               </div>
