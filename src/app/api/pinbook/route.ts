@@ -14,6 +14,7 @@ import {
     promoLeaderboardKey,
     eventSetPointsKey,
     activeEligibilityWindow,
+    getEventEligibilityContext,
     computeEventSetScore,
     getEventSetPins,
 } from '@/lib/promo-badges';
@@ -982,14 +983,24 @@ export async function POST(req: Request) {
             let isPromoPull = false;
             let canRollPromo = isPromoActive();
             if (canRollPromo) {
-                const elig = activeEligibilityWindow();
-                if (elig) {
-                    const remaining = data.eligibleByEvent?.[elig.eventKey] ?? 0;
-                    if (remaining > 0) {
-                        if (!data.eligibleByEvent) data.eligibleByEvent = {};
-                        data.eligibleByEvent[elig.eventKey] = remaining - 1;
-                    } else {
+                // Event with a startsAt: block promo drops entirely
+                // pre-event so no one accumulates before the window
+                // opens. Once startsAt passes, enforce the per-user
+                // eligibleByEvent counter — capsules earned before
+                // startsAt carry 0 eligibility, so they can't drop
+                // event pins even though they're still openable.
+                const ctx = getEventEligibilityContext();
+                if (ctx) {
+                    if (Date.now() < new Date(ctx.startsAt).getTime()) {
                         canRollPromo = false;
+                    } else {
+                        const remaining = data.eligibleByEvent?.[ctx.eventKey] ?? 0;
+                        if (remaining > 0) {
+                            if (!data.eligibleByEvent) data.eligibleByEvent = {};
+                            data.eligibleByEvent[ctx.eventKey] = remaining - 1;
+                        } else {
+                            canRollPromo = false;
+                        }
                     }
                 }
             }
