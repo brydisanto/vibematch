@@ -328,6 +328,24 @@ export default function LandingPageArcade({
         const t = setTimeout(() => setPromoEnded(true), remaining);
         return () => clearTimeout(t);
     }, [activePromo?.endsAt]);
+    // Mirror of promoEnded but for startsAt — flips the chip from
+    // COMING SOON to EVENT LIVE the moment the window opens.
+    const [promoStarted, setPromoStarted] = useState<boolean>(() => {
+        if (!activePromo?.startsAt) return true;
+        return Date.now() >= new Date(activePromo.startsAt).getTime();
+    });
+    useEffect(() => {
+        if (!activePromo?.startsAt) return;
+        const startMs = new Date(activePromo.startsAt).getTime();
+        const remaining = startMs - Date.now();
+        if (remaining <= 0) {
+            setPromoStarted(true);
+            return;
+        }
+        setPromoStarted(false);
+        const t = setTimeout(() => setPromoStarted(true), remaining);
+        return () => clearTimeout(t);
+    }, [activePromo?.startsAt]);
     const [streak, setStreak] = useState(0);
     const [personalBest, setPersonalBest] = useState<number>(0);
     const [frenzyBest, setFrenzyBest] = useState<number>(0);
@@ -1137,7 +1155,7 @@ export default function LandingPageArcade({
                                             className="relative font-display text-[10px] tracking-[0.3em]"
                                             style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : GOLD }}
                                         >
-                                            {promoEnded ? "FINAL RESULTS" : "EVENT LIVE"}
+                                            {promoEnded ? "FINAL RESULTS" : !promoStarted ? "COMING SOON" : "EVENT LIVE"}
                                         </span>
                                         <span
                                             className="relative h-3 w-px"

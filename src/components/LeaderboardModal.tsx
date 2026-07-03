@@ -583,9 +583,6 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
             isSetEvent: false,
         };
     })() : null;
-    // Legacy variable kept for the tabLabel resolver below.
-    const activePromoForHeader = isPromoTab ? getActivePromoBadges()[0] : undefined;
-
     // Promo tab appears only while the partnership is active. Label is
     // the partner's display name (e.g. "OpenSea"); falls back to a
     // generic "Promo" if for some reason the active list is empty
@@ -679,35 +676,43 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
                                     ))}
                                 </motion.div>
                             ) : leaderboard.length === 0 ? (
-                                isPromoTab && activePromoForHeader ? (
-                                    // Promo tab gets a branded empty state. Pin art
-                                    // + tagline still show up so the partnership is
+                                isPromoTab && promoHeader ? (
+                                    // Promo tab gets a branded empty state. Hero art
+                                    // + name + tagline still show up so the event is
                                     // visible from minute zero, even before anyone
-                                    // has pulled the pin.
+                                    // has pulled a pin — including pre-launch, where
+                                    // the copy reads "EVENT BEGINS SOON".
                                     <motion.div key={`${mode}-empty-promo`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                         className="flex flex-col items-center pt-4 pb-8 px-6">
                                         <div
                                             className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-full overflow-hidden"
                                             style={{
-                                                boxShadow: "0 0 36px rgba(74,158,255,0.55), 0 6px 20px rgba(0,0,0,0.6)",
+                                                boxShadow: `0 0 36px ${promoHeader.accentColor}88, 0 6px 20px rgba(0,0,0,0.6)`,
                                                 border: "2px solid rgba(255,255,255,0.2)",
                                             }}
                                         >
                                             <Image
-                                                src={activePromoForHeader.image}
-                                                alt={activePromoForHeader.name}
+                                                src={promoHeader.image}
+                                                alt={promoHeader.name}
                                                 fill
                                                 sizes="160px"
                                                 className="object-cover"
                                                 unoptimized
                                             />
                                         </div>
-                                        <p className="mt-5 max-w-[240px] text-center font-display font-bold text-sm sm:text-base leading-tight text-white">
-                                            Find the most OpenSea Pins to win something special!
+                                        <h3 className="mt-5 font-display font-black uppercase tracking-wide text-base sm:text-lg text-white text-center">
+                                            {promoHeader.name}
+                                        </h3>
+                                        <p className="mt-2 max-w-[260px] text-center font-mundial text-sm leading-snug text-white/70">
+                                            {promoHeader.shortDescription}
                                         </p>
                                         <div className="mt-6 text-center">
-                                            <p className="font-bold uppercase tracking-widest text-sm text-white/40">No collectors yet</p>
-                                            <p className="text-xs mt-2 text-white/20">Be the first to pull an Aye Aye, Captain!</p>
+                                            <p
+                                                className="font-bold uppercase tracking-widest text-sm"
+                                                style={{ color: promoHeader.accentColor }}
+                                            >
+                                                Event Begins Soon
+                                            </p>
                                         </div>
                                     </motion.div>
                                 ) : (

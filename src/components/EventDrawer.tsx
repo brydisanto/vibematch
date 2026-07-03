@@ -127,7 +127,7 @@ const Countdown = memo(function Countdown({
             return {
                 phase: "pre" as const,
                 target: startMs,
-                heading: "EVENT BEGINS IN",
+                heading: "EVENT BEGINS",
                 subLabel: startsAt ? formatEasternLabel(startsAt) : "",
             };
         }
@@ -516,6 +516,25 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => clearTimeout(t);
     }, [promo.endsAt]);
 
+    // Reactive "has the event started" — flips the hero pill from COMING
+    // SOON to EVENT LIVE the moment startsAt passes, without a refresh.
+    const [started, setStarted] = useState<boolean>(() => {
+        if (!promo.startsAt) return true;
+        return Date.now() >= new Date(promo.startsAt).getTime();
+    });
+    useEffect(() => {
+        if (!promo.startsAt) return;
+        const startMs = new Date(promo.startsAt).getTime();
+        const remaining = startMs - Date.now();
+        if (remaining <= 0) {
+            setStarted(true);
+            return;
+        }
+        setStarted(false);
+        const t = setTimeout(() => setStarted(true), remaining);
+        return () => clearTimeout(t);
+    }, [promo.startsAt]);
+
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
@@ -645,7 +664,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     className="font-display text-[10px] tracking-[0.3em]"
                                     style={{ color: ended ? "rgba(255,255,255,0.65)" : GOLD }}
                                 >
-                                    {ended ? "FINAL RESULTS" : "EVENT LIVE"}
+                                    {ended ? "FINAL RESULTS" : !started ? "COMING SOON" : "EVENT LIVE"}
                                 </span>
                                 {promo.eventWindow && (
                                     <>
