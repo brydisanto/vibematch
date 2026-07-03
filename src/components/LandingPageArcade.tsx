@@ -23,7 +23,7 @@ import { LogOut, Crown } from "lucide-react";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getTierByCount } from "@/lib/tiers";
 import { ALL_ACHIEVEMENTS, getQuestProgressList, type QuestProgress } from "@/lib/achievements";
-import { isPromoActive, getActivePromoBadges, isPromoEnded } from "@/lib/promo-badges";
+import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import { buildPlayerContext } from "@/lib/playerContext";
 import { getEasternDailyKey, getNextNoonEastern } from "@/lib/daily-window";
 import { GameMode } from "@/lib/gameEngine";
@@ -261,15 +261,61 @@ export default function LandingPageArcade({
     // clickable EVENT LIVE chip that opens a dedicated EventDrawer with
     // hero copy, stats, and the collector leaderboard. Falls back to
     // null cleanly when nothing's running.
-    const activePromo = isPromoActive() ? getActivePromoBadges()[0] ?? null : null;
+    // Resolved primary event for the pill + drawer. Sets win over
+    // standalone promos; within standalone, droppable wins over ended.
+    // The returned activePromo is a unified shape with the fields the
+    // pill JSX already reads (image, name, partnerName, endsAt) plus
+    // the eventSetId the drawer needs to switch into set mode.
+    const activePromo = (() => {
+        if (!isPromoActive()) return null;
+        const primary = getPrimaryActiveEvent();
+        if (!primary) return null;
+        if (primary.kind === "standalone") {
+            const p = primary.promo;
+            return {
+                id: p.id,
+                name: p.name,
+                partnerName: p.partnerName ?? "",
+                tabLabel: p.tabLabel,
+                image: p.image,
+                description: p.description,
+                eventWindow: p.eventWindow,
+                prizeNote: p.prizeNote,
+                accentColor: p.accentColor,
+                startsAt: undefined as string | undefined,
+                endsAt: p.endsAt,
+                eventSetId: undefined as string | undefined,
+            };
+        }
+        // Set event — derive PromoInfo-shaped display from the set
+        // metadata. Prefer the set's dedicated heroImage; fall back to
+        // the highest-points pin if no hero asset is supplied.
+        const set = primary.set;
+        const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+        return {
+            id: set.id,
+            name: set.name,
+            partnerName: set.partnerName ?? "",
+            tabLabel: set.tabLabel,
+            image: set.heroImage ?? heroPin?.image ?? "",
+            description: set.description,
+            eventWindow: set.eventWindow,
+            prizeNote: set.prizeNote,
+            accentColor: set.accentColor,
+            startsAt: set.startsAt,
+            endsAt: set.endsAt,
+            eventSetId: set.id,
+        };
+    })();
     // Treat the pill as "final results" once endsAt has passed — drops
     // stop everywhere else automatically, but the leaderboard tab and
     // drawer remain available so winners can be confirmed. Reactive so
     // an already-open tab flips the moment the cutoff hits, without
     // needing a page refresh.
-    const [promoEnded, setPromoEnded] = useState<boolean>(() =>
-        activePromo ? isPromoEnded(activePromo) : false,
-    );
+    const [promoEnded, setPromoEnded] = useState<boolean>(() => {
+        if (!activePromo?.endsAt) return false;
+        return Date.now() >= new Date(activePromo.endsAt).getTime();
+    });
     useEffect(() => {
         if (!activePromo?.endsAt) return;
         const endMs = new Date(activePromo.endsAt).getTime();
@@ -1056,7 +1102,7 @@ export default function LandingPageArcade({
                                                 : `1px solid ${GOLD}66`,
                                             boxShadow: promoEnded ? "none" : `0 0 12px ${GOLD}22`,
                                         }}
-                                        aria-label={`Open ${activePromo.partnerName} event drawer`}
+                                        aria-label={`Open ${activePromo.partnerName || activePromo.name} event drawer`}
                                     >
                                         {/* Sparkles ONLY while the event is still running.
                                             Once it ends, the pill becomes a quiet
@@ -1097,19 +1143,24 @@ export default function LandingPageArcade({
                                             className="relative h-3 w-px"
                                             style={{ background: promoEnded ? "rgba(255,255,255,0.18)" : `${GOLD}44` }}
                                         />
-                                        <span className="relative w-4 h-4 shrink-0">
+                                        <span className="relative w-4 h-4 shrink-0 rounded-full overflow-hidden">
                                             <Image
                                                 src={activePromo.image}
                                                 alt=""
                                                 fill
                                                 sizes="16px"
-                                                className="object-contain"
+                                                className="object-cover"
                                                 style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
                                             />
                                         </span>
                                         <span className="relative font-display text-[10px] tracking-[0.25em] text-white/85 uppercase whitespace-nowrap">
-                                            {activePromo.partnerName}
-                                            <span className="hidden 2xl:inline"> · {activePromo.name}</span>
+                                            {/* Pin Drop in-house events have no partnerName,
+                                                so we show the event name as the primary label
+                                                and skip the partner · name bullet entirely. */}
+                                            {activePromo.partnerName || activePromo.name}
+                                            {activePromo.partnerName && (
+                                                <span className="hidden 2xl:inline"> · {activePromo.name}</span>
+                                            )}
                                         </span>
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative text-white/55 transition-transform group-hover:translate-x-0.5">
                                             <path d="M9 18l6-6-6-6" />
@@ -2176,7 +2227,9 @@ export default function LandingPageArcade({
                         eventWindow: activePromo.eventWindow,
                         prizeNote: activePromo.prizeNote,
                         accentColor: activePromo.accentColor,
+                        startsAt: activePromo.startsAt,
                         endsAt: activePromo.endsAt,
+                        eventSetId: activePromo.eventSetId,
                     }}
                 />
             )}

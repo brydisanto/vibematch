@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#7AA0BD"/>
+      <stop offset="100%" stop-color="#3E5870"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="88" fill="url(#g)" stroke="#A0BCD4" stroke-width="4"/>
+  <text x="100" y="92" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">SAMPLE</text>
+  <text x="100" y="124" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="900" font-size="28" fill="#fff" letter-spacing="3">COMMON</text>
+  <text x="100" y="158" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="rgba(255,255,255,0.7)" letter-spacing="2">PLACEHOLDER</text>
+</svg>

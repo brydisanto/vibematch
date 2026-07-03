@@ -21,19 +21,48 @@ interface EventEntry {
     count: number;
     rank: number;
     avatarUrl?: string;
+    /** Per-pin owned counts keyed by pin id. Populated for set events
+     *  so the leaderboard can render per-pin breakdown columns
+     *  alongside the total score. Absent on standalone events. */
+    pinCounts?: Record<string, number>;
 }
 
 interface PromoInfo {
     id: string;
     name: string;
-    partnerName: string;
+    /** Optional — Pin Drop's in-house events have no partner. */
+    partnerName?: string;
     tabLabel: string;
     image: string;
     description?: string;
     eventWindow?: string;
     prizeNote?: string;
     accentColor?: string;
+    /** When set + in the future, the drawer renders a "STARTS IN"
+     *  countdown instead of "ENDS IN". Once startsAt passes, the
+     *  countdown switches to the endsAt target. */
+    startsAt?: string;
     endsAt?: string;
+    /** When set, the drawer treats this as a multi-pin event: leaderboard
+     *  reads from event_set:<id>:points, a second "Set" tab is shown with
+     *  the 4 pins, and per-row counts render as point totals rather than
+     *  pin counts. Without it, behaves identically to the original
+     *  single-pin OpenSea-style drawer. */
+    eventSetId?: string;
+}
+
+interface EventSetPin {
+    id: string;
+    name: string;
+    image: string;
+    rarityLabel: string | null;
+    points: number;
+    owned: number;
+}
+
+interface EventSetMeta {
+    setBonusPoints: number | null;
+    scoreCap: number | null;
 }
 
 function formatRemaining(targetMs: number): { d: number; h: number; m: number; s: number; done: boolean } {
@@ -46,22 +75,90 @@ function formatRemaining(targetMs: number): { d: number; h: number; m: number; s
     return { d, h, m, s, done: false };
 }
 
+/** "JUL 7 · 12 PM ET" — date + time in America/New_York, capitalized
+ *  to match the existing display weight. */
+function formatEasternLabel(iso: string): string {
+    try {
+        const date = new Date(iso);
+        const dateStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            month: "short",
+            day: "numeric",
+        }).format(date).toUpperCase();
+        const timeStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        }).format(date).replace(/(AM|PM)$/, m => " " + m).toUpperCase();
+        const compactTime = timeStr.replace(/:00\s/, " ");
+        return `${dateStr} · ${compactTime.trim()} ET`;
+    } catch {
+        return "";
+    }
+}
+
 /**
  * Self-contained countdown subtree. Owns its own setInterval state so the
  * per-second tick re-renders ONLY this component, not the parent drawer.
  * Previously the parent useCountdown hook re-rendered the entire drawer
  * (including all 50 leaderboard rows + avatar fetches) every second,
  * which caused noticeable lag.
+ *
+ * Three phases:
+ *   1. PRE-EVENT  (now < startsAt) → "EVENT BEGINS IN" + countdown to startsAt
+ *   2. ACTIVE     (startsAt ≤ now < endsAt) → "ENDS <date>" + countdown to endsAt
+ *   3. ENDED      (now ≥ endsAt) → "EVENT ENDED" static label
+ *
+ * Auto-transitions across phases by tracking now per tick rather than
+ * pinning to a single target.
  */
-const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; accent: string }) {
-    const targetMs = new Date(endsAt).getTime();
-    const [tick, setTick] = useState(() => formatRemaining(targetMs));
-    useEffect(() => {
-        const iv = setInterval(() => setTick(formatRemaining(targetMs)), 1000);
-        return () => clearInterval(iv);
-    }, [targetMs]);
+const Countdown = memo(function Countdown({
+    startsAt,
+    endsAt,
+    accent,
+}: { startsAt?: string; endsAt?: string; accent: string }) {
+    const startMs = startsAt ? new Date(startsAt).getTime() : null;
+    const endMs = endsAt ? new Date(endsAt).getTime() : null;
 
-    if (tick.done) {
+    const computePhase = () => {
+        const now = Date.now();
+        if (startMs !== null && now < startMs) {
+            return {
+                phase: "pre" as const,
+                target: startMs,
+                heading: "EVENT BEGINS IN",
+                subLabel: startsAt ? formatEasternLabel(startsAt) : "",
+            };
+        }
+        if (endMs !== null && now >= endMs) {
+            return {
+                phase: "ended" as const,
+                target: 0,
+                heading: "EVENT ENDED",
+                subLabel: "",
+            };
+        }
+        if (endMs !== null) {
+            return {
+                phase: "active" as const,
+                target: endMs,
+                heading: "",
+                subLabel: endsAt ? `ENDS ${formatEasternLabel(endsAt)}` : "",
+            };
+        }
+        return null;
+    };
+
+    const [state, setState] = useState(computePhase);
+    useEffect(() => {
+        const iv = setInterval(() => setState(computePhase()), 1000);
+        return () => clearInterval(iv);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startMs, endMs]);
+
+    if (!state) return null;
+    if (state.phase === "ended") {
         return (
             <div className="font-display text-[10px] tracking-[0.32em] text-white/55 mb-4">
                 EVENT ENDED
@@ -69,6 +166,7 @@ const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; 
         );
     }
 
+    const tick = formatRemaining(state.target);
     const units = [
         { value: tick.d, label: "DAYS" },
         { value: tick.h, label: "HRS" },
@@ -79,8 +177,13 @@ const Countdown = memo(function Countdown({ endsAt, accent }: { endsAt: string; 
     return (
         <div className="flex flex-col items-center mb-4">
             <div className="font-display text-[10px] tracking-[0.32em] text-white/45 mb-1.5">
-                ENDS JUN 8 · 12 PM ET
+                {state.phase === "pre" ? state.heading : state.subLabel}
             </div>
+            {state.phase === "pre" && state.subLabel && (
+                <div className="font-mundial text-[10px] tracking-[0.2em] uppercase text-white/35 mb-2">
+                    {state.subLabel}
+                </div>
+            )}
             <div className="flex items-end gap-2 sm:gap-3 tabular-nums">
                 {units.map((unit, i) => (
                     <div key={unit.label} className="flex items-end gap-2 sm:gap-3">
@@ -180,8 +283,12 @@ interface RowProps {
      *  row, stronger gold ring, crown glyph. Set on rows in finished
      *  events so the #1 collector is unambiguous. */
     isWinner?: boolean;
+    /** Pins in render order (Common → Legendary). When present, the
+     *  row renders 4 compact count columns before the total score
+     *  showing how many of each pin the player owns. */
+    setPins?: EventSetPin[];
 }
-const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl, isWinner }: RowProps) {
+const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, currentAvatarUrl, isWinner, setPins }: RowProps) {
     const medal = MEDAL[entry.rank];
 
     if (isWinner) {
@@ -262,13 +369,41 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     />
                 </div>
                 <div className="flex-1 min-w-0 relative">
-                    <div className={`font-display font-black text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
+                    <div className={`font-display font-semibold text-base truncate ${isUser ? "text-[#B366FF]" : "text-white"}`}>
                         {isUser ? "You" : entry.username}
                     </div>
                 </div>
+                {setPins && setPins.length > 0 && (() => {
+                    const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                    const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
+                    const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                    return (
+                        <div className="hidden sm:flex items-center relative mr-3">
+                            <div
+                                className="w-16 text-center font-display font-semibold tabular-nums"
+                                style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
+                            >
+                                {totalPins}
+                            </div>
+                            <div
+                                className="w-16 text-center font-display font-semibold tabular-nums"
+                                style={{
+                                    fontSize: "15px",
+                                    color: `${accent}cc`,
+                                }}
+                            >
+                                {gigaCount}
+                            </div>
+                        </div>
+                    );
+                })()}
                 <div
-                    className="font-display font-black text-lg tabular-nums relative"
-                    style={{ color: "#FFD700", textShadow: "0 0 14px rgba(255,215,0,0.55)" }}
+                    className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums relative"
+                    style={{
+                        fontSize: "20px",
+                        color: "#FFD700",
+                        textShadow: "0 0 14px rgba(255,215,0,0.55)",
+                    }}
                 >
                     {entry.count.toLocaleString()}
                 </div>
@@ -294,7 +429,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
             } : undefined}
         >
             <div
-                className="flex-shrink-0 w-7 text-center font-display font-black text-sm"
+                className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm"
                 style={{
                     color: medal ? medal.rankColor : undefined,
                     textShadow: medal ? `0 0 10px ${medal.rankColor}55` : undefined,
@@ -308,11 +443,45 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 size={36}
             />
             <div className="flex-1 min-w-0">
-                <div className={`font-display font-black text-sm truncate ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
+                <div className={`font-display font-semibold text-sm truncate ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
                     {isUser ? "You" : entry.username}
                 </div>
             </div>
-            <div className="font-display font-black text-sm" style={{ color: accent }}>
+            {setPins && setPins.length > 0 && (() => {
+                const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
+                const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                return (
+                    <>
+                        <div
+                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                            style={{
+                                fontSize: "14px",
+                                color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                            }}
+                        >
+                            {totalPins}
+                        </div>
+                        <div
+                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                            style={{
+                                fontSize: "15px",
+                                color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
+                            }}
+                        >
+                            {gigaCount}
+                        </div>
+                    </>
+                );
+            })()}
+            <div
+                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                style={{
+                    fontSize: "18px",
+                    color: accent,
+                    textShadow: `0 0 12px ${accent}88`,
+                }}
+            >
                 {entry.count.toLocaleString()}
             </div>
         </Link>
@@ -347,16 +516,39 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => clearTimeout(t);
     }, [promo.endsAt]);
 
+    // Set events open on the "Set" tab — players see the collection
+    // surface (their progress + the pins to chase) before the
+    // leaderboard. Reads as a personal "what's left" first, public
+    // ranking second.
+    const [view, setView] = useState<"leaderboard" | "set">("set");
+    const [setPins, setSetPins] = useState<EventSetPin[]>([]);
+    const [setMeta, setSetMeta] = useState<EventSetMeta>({ setBonusPoints: null, scoreCap: null });
+    const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
+
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
-        fetch(`/api/promo/leaderboard`)
+        // Set events go through ?set=<id> which sources the points
+        // leaderboard and returns per-pin owned counts. Standalone
+        // events keep the original endpoint shape.
+        const url = promo.eventSetId
+            ? `/api/promo/leaderboard?set=${encodeURIComponent(promo.eventSetId)}`
+            : `/api/promo/leaderboard`;
+        fetch(url)
             .then(r => (r.ok ? r.json() : null))
             .then(d => {
                 if (cancelled || !d) return;
                 setEntries(d.leaderboard || []);
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
+                if (d.eventSet?.pins) setSetPins(d.eventSet.pins);
+                if (d.eventSet) {
+                    setSetMeta({
+                        setBonusPoints: d.eventSet.setBonusPoints ?? null,
+                        scoreCap: d.eventSet.scoreCap ?? null,
+                    });
+                }
+                if (d.scoreLabel === "points") setScoreLabel("points");
                 setLoading(false);
             })
             .catch(() => {
@@ -365,7 +557,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [promo.eventSetId]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -401,7 +593,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 transition={{ type: "spring", damping: 32, stiffness: 320 }}
             >
                 <div
-                    className="relative max-h-[92vh] overflow-hidden rounded-t-3xl border-t border-x"
+                    className="relative max-h-[96vh] overflow-hidden rounded-t-3xl border-t border-x"
                     style={{
                         background: "linear-gradient(180deg, #0e0820 0%, #0a0418 100%)",
                         borderColor: `${accent}55`,
@@ -431,7 +623,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                     </button>
 
                     {/* Scrollable body */}
-                    <div className="overflow-y-auto max-h-[calc(92vh-12px)] pb-8">
+                    <div className="overflow-y-auto max-h-[calc(96vh-12px)] pb-8">
                         {/* Hero */}
                         <div
                             className="relative flex flex-col items-center px-6 pt-6 pb-7"
@@ -450,13 +642,6 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 }}
                             >
                                 <span
-                                    className="h-1.5 w-1.5 rounded-full"
-                                    style={{
-                                        background: ended ? "rgba(255,255,255,0.35)" : accent,
-                                        boxShadow: ended ? "none" : `0 0 8px ${accent}`,
-                                    }}
-                                />
-                                <span
                                     className="font-display text-[10px] tracking-[0.3em]"
                                     style={{ color: ended ? "rgba(255,255,255,0.65)" : GOLD }}
                                 >
@@ -473,20 +658,28 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                             </div>
 
                             <div className="relative w-28 h-28 mb-4">
-                                <div className="absolute inset-0 rounded-full" style={{ filter: `drop-shadow(0 6px 20px ${accent}55)` }}>
+                                <div
+                                    className="absolute inset-0 rounded-full overflow-hidden"
+                                    style={{
+                                        filter: `drop-shadow(0 6px 20px ${accent}55)`,
+                                        border: `2px solid ${accent}66`,
+                                    }}
+                                >
                                     <Image
                                         src={promo.image}
                                         alt={promo.name}
                                         fill
                                         sizes="112px"
-                                        className="object-contain"
+                                        className="object-cover"
                                     />
                                 </div>
                             </div>
 
-                            <div className="font-mundial text-[11px] tracking-[0.28em] uppercase text-white/45 mb-1">
-                                {promo.partnerName}
-                            </div>
+                            {promo.partnerName && (
+                                <div className="font-mundial text-[11px] tracking-[0.28em] uppercase text-white/45 mb-1">
+                                    {promo.partnerName}
+                                </div>
+                            )}
                             <h2 className="font-display font-black text-white text-3xl sm:text-4xl tracking-tight text-center mb-3 leading-[1.05]">
                                 {promo.name}
                             </h2>
@@ -496,7 +689,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 </p>
                             )}
 
-                            {promo.endsAt && <Countdown endsAt={promo.endsAt} accent={accent} />}
+                            {(promo.startsAt || promo.endsAt) && (
+                                <Countdown
+                                    startsAt={promo.startsAt}
+                                    endsAt={promo.endsAt}
+                                    accent={accent}
+                                />
+                            )}
 
                             {/* Stat row */}
                             <div className="flex gap-2 w-full max-w-md">
@@ -516,63 +715,387 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 </div>
                                 <div className="flex-1 rounded-xl px-3 py-2.5 text-center"
                                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                    <div className="font-display text-[9px] tracking-[0.3em] text-white/45 mb-0.5">YOUR PINS</div>
-                                    <div className="font-display text-xl font-black text-white">
+                                    <div className="font-display text-[9px] tracking-[0.3em] text-white/45 mb-0.5">
+                                        {(() => {
+                                            const userScore = userEntry?.count ?? 0;
+                                            const maxed = setMeta.scoreCap !== null && userScore >= setMeta.scoreCap;
+                                            if (maxed) return "MAXED";
+                                            return scoreLabel === "points" ? "YOUR POINTS" : "YOUR PINS";
+                                        })()}
+                                    </div>
+                                    <div
+                                        className="font-display text-xl font-black"
+                                        style={{
+                                            color: setMeta.scoreCap !== null && (userEntry?.count ?? 0) >= setMeta.scoreCap
+                                                ? accent
+                                                : "#fff",
+                                        }}
+                                    >
                                         {userEntry ? userEntry.count.toLocaleString() : "0"}
+                                        {setMeta.scoreCap !== null && (
+                                            <span className="font-display text-sm font-black text-white/35">
+                                                {" "}/ {setMeta.scoreCap}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Leaderboard */}
-                        <div className="px-5 pb-3">
-                            <h3 className="font-display font-black text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
-                            {loading ? (
-                                <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
-                            ) : entries.length === 0 ? (
-                                <div className="py-12 text-center">
-                                    <div className="font-mundial text-sm text-white/50">No collectors yet.</div>
-                                    <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
-                                </div>
-                            ) : (
-                                <div className="space-y-1.5">
-                                    {entries.map(entry => (
-                                        <LeaderboardRow
-                                            key={entry.username}
-                                            entry={entry}
-                                            isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
-                                            accent={accent}
-                                            currentAvatarUrl={currentAvatarUrl}
-                                            isWinner={ended && entry.rank === 1}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                        {/* Tab strip — only rendered for set events. Single-pin
+                            events skip straight to the leaderboard view since
+                            there's no "set" to show. Centered with larger tap
+                            targets so the two tabs feel balanced under the
+                            hero rather than left-anchored. */}
+                        {promo.eventSetId && (
+                            <div className="px-5 pt-2 pb-2 flex justify-center gap-6 border-b border-white/[0.04]">
+                                <button
+                                    type="button"
+                                    onClick={() => setView("set")}
+                                    className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                    style={{
+                                        color: view === "set" ? accent : "rgba(255,255,255,0.5)",
+                                        borderBottom: view === "set" ? `2px solid ${accent}` : "2px solid transparent",
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    The Set
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView("leaderboard")}
+                                    className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                    style={{
+                                        color: view === "leaderboard" ? accent : "rgba(255,255,255,0.5)",
+                                        borderBottom: view === "leaderboard" ? `2px solid ${accent}` : "2px solid transparent",
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Leaderboard
+                                </button>
+                            </div>
+                        )}
 
-                            {/* User pinned row when not in top 50 */}
-                            {userRow && (
-                                <div className="mt-3 pt-3 border-t border-white/5">
-                                    <Link
-                                        href={`/u/${encodeURIComponent(userRow.username)}`}
-                                        className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
-                                    >
-                                        <div className="flex-shrink-0 w-7 text-center font-display font-black text-sm text-white/60">
-                                            {userRow.rank}
+                        {/* Content */}
+                        {view === "leaderboard" ? (
+                            <div className="px-5 pb-3 pt-3">
+                                {/* TOP COLLECTORS header is redundant with the
+                                    "Leaderboard" tab label on set events. Keep
+                                    it for single-pin events where there's no
+                                    tab strip above to do that job. */}
+                                {!promo.eventSetId && (
+                                    <h3 className="font-display font-semibold text-white text-sm tracking-[0.2em] mb-3">TOP COLLECTORS</h3>
+                                )}
+                                {loading ? (
+                                    <div className="py-12 text-center font-mundial text-sm text-white/40">Loading leaderboard…</div>
+                                ) : entries.length === 0 ? (
+                                    <div className="py-12 text-center">
+                                        <div className="font-mundial text-sm text-white/50">No collectors yet.</div>
+                                        <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* GIGA CHAD callout — celebrates the player
+                                            with the most pulls of the highest-points
+                                            pin in the set. Distinct prize lane from
+                                            the score-cap raffle, so leaders here can
+                                            differ from the top of the points board.
+                                            Derived from the visible top-50 rows;
+                                            adequate for events that fit in that
+                                            window. */}
+                                        {(() => {
+                                            if (!promo.eventSetId || setPins.length === 0) return null;
+                                            const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                                            if (!gigaPin) return null;
+                                            const leader = [...entries]
+                                                .filter(e => (e.pinCounts?.[gigaPin.id] ?? 0) > 0)
+                                                .sort((a, b) =>
+                                                    (b.pinCounts?.[gigaPin.id] ?? 0) - (a.pinCounts?.[gigaPin.id] ?? 0)
+                                                )[0];
+                                            if (!leader) return null;
+                                            const gigaCount = leader.pinCounts?.[gigaPin.id] ?? 0;
+                                            const isYou = !!currentUsername && leader.username.toLowerCase() === currentUsername.toLowerCase();
+                                            return (
+                                                <Link
+                                                    href={`/u/${encodeURIComponent(leader.username)}`}
+                                                    prefetch={false}
+                                                    className="relative flex items-center gap-3 mb-4 px-3 py-3 rounded-xl overflow-hidden transition-transform hover:-translate-y-[1px]"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${accent}22 0%, ${accent}0a 60%, transparent 100%)`,
+                                                        border: `1.5px solid ${accent}55`,
+                                                        boxShadow: `0 0 20px ${accent}22, inset 0 0 14px ${accent}0a`,
+                                                    }}
+                                                >
+                                                    {/* Sparkles for celebration. Same
+                                                        keyframe used by the winner row. */}
+                                                    {[
+                                                        { top: "22%", left: "12%", size: 9, delay: "0s" },
+                                                        { top: "65%", left: "32%", size: 7, delay: "0.8s" },
+                                                        { top: "18%", left: "58%", size: 8, delay: "1.6s" },
+                                                        { top: "70%", left: "82%", size: 9, delay: "0.4s" },
+                                                    ].map((s, i) => (
+                                                        <svg
+                                                            key={i}
+                                                            aria-hidden
+                                                            className="pointer-events-none absolute"
+                                                            viewBox="0 0 24 24"
+                                                            style={{
+                                                                top: s.top,
+                                                                left: s.left,
+                                                                width: s.size,
+                                                                height: s.size,
+                                                                animation: `sparkle-twinkle 2.7s ease-in-out ${s.delay} infinite both`,
+                                                                filter: `drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px ${accent})`,
+                                                            }}
+                                                        >
+                                                            <path
+                                                                d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
+                                                                fill="#ffffff"
+                                                            />
+                                                        </svg>
+                                                    ))}
+                                                    <div
+                                                        className="relative w-14 h-14 flex-shrink-0 rounded-full overflow-hidden"
+                                                        style={{
+                                                            border: `2px solid ${accent}77`,
+                                                            boxShadow: `0 0 14px ${accent}55`,
+                                                        }}
+                                                    >
+                                                        <Image
+                                                            src={gigaPin.image}
+                                                            alt={gigaPin.name}
+                                                            fill
+                                                            sizes="56px"
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 relative">
+                                                        <div
+                                                            className="font-display text-[10px] tracking-[0.3em] uppercase mb-0.5"
+                                                            style={{ color: accent, fontWeight: 600 }}
+                                                        >
+                                                            Giga Chad
+                                                        </div>
+                                                        <div className={`font-display font-semibold text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
+                                                            {isYou ? "You" : leader.username}
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative flex flex-col items-end shrink-0">
+                                                        <div
+                                                            className="font-display font-semibold text-2xl tabular-nums leading-none"
+                                                            style={{ color: accent, textShadow: `0 0 12px ${accent}77` }}
+                                                        >
+                                                            ×{gigaCount}
+                                                        </div>
+                                                        <div className="font-mundial text-[9px] tracking-[0.18em] uppercase text-white/40 mt-1">
+                                                            Collected
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })()}
+                                        {/* Per-pin count column headers (only on set
+                                            events). Renders right-aligned to match the
+                                            row data; pin name is abbreviated to its
+                                            rarity letter so 4 columns fit even on
+                                            mobile. The full pin name lives in the
+                                            Set tab if anyone needs the legend. */}
+                                        {promo.eventSetId && setPins.length > 0 && (
+                                            <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05] text-[9px] tracking-[0.2em] uppercase font-display text-white/40">
+                                                <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
+                                                <div className="flex-shrink-0" style={{ width: 36 }} />
+                                                <div className="flex-1 min-w-0">COLLECTOR</div>
+                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Total Pins</div>
+                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: `${accent}aa` }}>Giga Gum</div>
+                                                <div className="flex-shrink-0 w-16 text-center tabular-nums" style={{ color: accent }}>Points</div>
+                                            </div>
+                                        )}
+                                        <div className="space-y-1.5">
+                                            {entries.map(entry => (
+                                                <LeaderboardRow
+                                                    key={entry.username}
+                                                    entry={entry}
+                                                    isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                    accent={accent}
+                                                    currentAvatarUrl={currentAvatarUrl}
+                                                    isWinner={ended && entry.rank === 1}
+                                                    setPins={promo.eventSetId ? setPins : undefined}
+                                                />
+                                            ))}
                                         </div>
-                                        <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-display font-black text-sm text-[#B366FF]">You</div>
-                                        </div>
-                                        <div className="font-display font-black text-sm" style={{ color: accent }}>
-                                            {userRow.count.toLocaleString()}
-                                        </div>
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                                    </>
+                                )}
+
+                                {/* User pinned row when not in top 50 */}
+                                {userRow && (
+                                    <div className="mt-3 pt-3 border-t border-white/5">
+                                        <Link
+                                            href={`/u/${encodeURIComponent(userRow.username)}`}
+                                            className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
+                                        >
+                                            <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/60">
+                                                {userRow.rank}
+                                            </div>
+                                            <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-display font-semibold text-sm text-[#B366FF]">You</div>
+                                            </div>
+                                            {promo.eventSetId && setPins.length > 0 && (() => {
+                                                const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
+                                                const totalPins = setPins.reduce((sum, p) => sum + (userRow.pinCounts?.[p.id] ?? 0), 0);
+                                                const gigaCount = userRow.pinCounts?.[gigaPin.id] ?? 0;
+                                                return (
+                                                    <>
+                                                        <div
+                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                                                            style={{
+                                                                fontSize: "14px",
+                                                                color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                                                            }}
+                                                        >
+                                                            {totalPins}
+                                                        </div>
+                                                        <div
+                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                                                            style={{
+                                                                fontSize: "15px",
+                                                                color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
+                                                            }}
+                                                        >
+                                                            {gigaCount}
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                            <div
+                                                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                                                style={{
+                                                    fontSize: "18px",
+                                                    color: accent,
+                                                    textShadow: `0 0 12px ${accent}88`,
+                                                }}
+                                            >
+                                                {userRow.count.toLocaleString()}
+                                            </div>
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <SetView
+                                pins={setPins}
+                                accent={accent}
+                                setBonusPoints={setMeta.setBonusPoints}
+                                scoreCap={setMeta.scoreCap}
+                            />
+                        )}
                     </div>
                 </div>
             </motion.div>
         </AnimatePresence>
+    );
+}
+
+// ── Set view ─────────────────────────────────────────────────────────
+// Tab 2 of the drawer for multi-pin events. Renders the 4 set pins as
+// cards: image, name, rarity label, point value, and the signed-in
+// user's owned count. Provides the "what's left to collect?" answer
+// the leaderboard alone can't.
+function SetView({
+    pins,
+    accent,
+    setBonusPoints,
+    scoreCap,
+}: {
+    pins: EventSetPin[];
+    accent: string;
+    setBonusPoints: number | null;
+    scoreCap: number | null;
+}) {
+    if (pins.length === 0) {
+        return (
+            <div className="px-5 pt-6 pb-12 text-center font-mundial text-sm text-white/40">
+                Loading set…
+            </div>
+        );
+    }
+    return (
+        <div className="px-5 pt-4 pb-6">
+            {/* Bonus + cap explainer. Hidden when neither is configured
+                so single-pin sets and uncapped events render unchanged. */}
+            {(setBonusPoints !== null || scoreCap !== null) && (
+                <div
+                    className="rounded-xl px-4 py-3 mb-4 flex flex-wrap gap-x-5 gap-y-1.5 justify-center text-center"
+                    style={{
+                        background: `linear-gradient(135deg, ${accent}14, ${accent}06)`,
+                        border: `1px solid ${accent}33`,
+                    }}
+                >
+                    {setBonusPoints !== null && setBonusPoints > 0 && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">FULL SET</span>
+                            <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
+                                +{setBonusPoints} pts
+                            </span>
+                        </div>
+                    )}
+                    {scoreCap !== null && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">CAPS AT</span>
+                            <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
+                                {scoreCap} pts
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {pins.map(pin => (
+                    <div
+                        key={pin.id}
+                        className="rounded-xl p-3 flex flex-col items-center text-center transition-transform"
+                        style={{
+                            background: `linear-gradient(135deg, ${accent}14, ${accent}05)`,
+                            border: `1px solid ${accent}33`,
+                            boxShadow: pin.owned > 0 ? `0 0 14px ${accent}26` : "none",
+                            opacity: pin.owned > 0 ? 1 : 0.7,
+                        }}
+                    >
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-2">
+                            <Image
+                                src={pin.image}
+                                alt={pin.name}
+                                fill
+                                sizes="80px"
+                                className="object-contain"
+                                style={pin.owned === 0 ? { filter: "grayscale(70%) brightness(0.7)" } : undefined}
+                                unoptimized
+                            />
+                        </div>
+                        <div className="font-display font-semibold text-[11px] sm:text-[12px] text-white leading-tight mb-1 line-clamp-2">
+                            {pin.name}
+                        </div>
+                        {pin.rarityLabel && (
+                            <div className="font-display text-[9px] tracking-[0.2em] uppercase mb-1.5" style={{ color: accent }}>
+                                {pin.rarityLabel}
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between w-full mt-auto pt-2 border-t border-white/5">
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS PER</span>
+                            <span className="font-display font-semibold text-[18px] tabular-nums leading-none" style={{ color: accent }}>
+                                {pin.points}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between w-full mt-1">
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">Collected</span>
+                            <span className="font-display font-semibold text-[18px] tabular-nums leading-none text-white">
+                                {pin.owned}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }

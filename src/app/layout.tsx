@@ -8,6 +8,7 @@ const GA_ID = "G-GZGEF3KQF9";
 
 const brice = localFont({
   src: [
+    { path: "../../public/fonts/Brice-SemiBold.otf", weight: "600" },
     { path: "../../public/fonts/Brice-Bold.otf", weight: "700" },
     { path: "../../public/fonts/Brice-Black.otf", weight: "900" },
   ],
