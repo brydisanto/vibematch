@@ -663,11 +663,15 @@ export default function AppClient() {
   };
 
   const handlePlayAgain = async () => {
-    // Only classic supports "play again" — daily is one per day. If we're here
-    // for a classic game, issue a fresh match token at the new game's start.
+    // Classic + Frenzy both support "play again" — daily is one per day.
+    // Whichever mode we're in, issue a fresh match token so the new game
+    // has a server-side matchId. Skipping this on Frenzy (as a prior
+    // bug did) meant rematched Frenzy games submitted without a token
+    // and were silently rejected — no leaderboard entry, no capsule,
+    // and the plays counter never decremented.
     const mode = game.state?.gameMode;
     let playAgainSeed: number | undefined;
-    if (mode === 'classic' && userProfile?.username) {
+    if ((mode === 'classic' || mode === 'frenzy') && userProfile?.username) {
       // CRITICAL: wait for the prior game's end flow (logGame + earnCapsule +
       // achievements) to finish before issuing a new trackGame. Otherwise the
       // server sees the previous match as "unlogged + <5min old" and burns
