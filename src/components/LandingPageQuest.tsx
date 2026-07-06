@@ -288,58 +288,58 @@ export default function LandingPageQuest({
                     <button
                         type="button"
                         onClick={() => setEventDrawerOpen(true)}
-                        className="group relative w-full mb-3 rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                        className="group relative w-full mb-2.5 rounded-xl overflow-hidden active:scale-[0.98] transition-transform"
                         style={{
                             background: promoEnded
                                 ? "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))"
                                 : `linear-gradient(180deg, #1a0a2a 0%, #0f0518 100%)`,
                             border: promoEnded
                                 ? "1px solid rgba(255,255,255,0.28)"
-                                : `2px solid ${accent}`,
+                                : `1.5px solid ${accent}`,
                             boxShadow: promoEnded
-                                ? "0 2px 8px rgba(0,0,0,0.4)"
-                                : `0 0 24px ${accent}55, 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 ${accent}44`,
+                                ? "0 2px 6px rgba(0,0,0,0.4)"
+                                : `0 0 16px ${accent}44, 0 2px 6px rgba(0,0,0,0.5)`,
                         }}
                         aria-label={`Open ${activePromo.name} event`}
                     >
                         {/* Accent glow strip along the top */}
                         {!promoEnded && (
                             <div
-                                className="absolute inset-x-0 top-0 h-[3px]"
+                                className="absolute inset-x-0 top-0 h-[2px]"
                                 style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
                             />
                         )}
-                        <div className="relative flex items-center gap-3 px-3.5 py-3">
+                        <div className="relative flex items-center gap-2.5 px-3 py-2">
                             <div
-                                className="relative w-11 h-11 shrink-0 rounded-full overflow-hidden"
+                                className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden"
                                 style={{
-                                    boxShadow: promoEnded ? undefined : `0 0 12px ${accent}88, 0 0 0 2px ${accent}`,
+                                    boxShadow: promoEnded ? undefined : `0 0 8px ${accent}77, 0 0 0 1.5px ${accent}`,
                                 }}
                             >
                                 <Image
                                     src={activePromo.image}
                                     alt=""
                                     fill
-                                    sizes="44px"
+                                    sizes="32px"
                                     className="object-cover"
                                     style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
                                 />
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                                 <div
-                                    className="font-display font-black text-[10px] tracking-[0.28em] leading-none"
+                                    className="font-display font-black text-[9px] tracking-[0.26em] leading-none"
                                     style={{
                                         color: promoEnded ? "rgba(255,255,255,0.7)" : accent,
-                                        textShadow: promoEnded ? undefined : `0 0 8px ${accent}66`,
+                                        textShadow: promoEnded ? undefined : `0 0 6px ${accent}55`,
                                     }}
                                 >
                                     {promoEnded ? "FINAL RESULTS" : !promoStarted ? "COMING SOON" : "EVENT LIVE"}
                                 </div>
-                                <div className="font-display font-black text-[14px] tracking-[0.08em] uppercase text-white mt-1.5 truncate">
+                                <div className="font-display font-black text-[12px] tracking-[0.06em] uppercase text-white mt-1 truncate">
                                     {activePromo.partnerName || activePromo.name}
                                 </div>
                             </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform group-active:translate-x-0.5" style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : accent }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform group-active:translate-x-0.5" style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : accent }}>
                                 <path d="M9 18l6-6-6-6" />
                             </svg>
                         </div>
