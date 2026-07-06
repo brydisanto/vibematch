@@ -60,6 +60,10 @@ interface GameBoardProps {
      *  with `e.isTrusted` so useGame can flag synthetic-input games for
      *  the bot-detection audit log. */
     onPointerTrust?: (trusted: boolean) => void;
+    /** When true, replace the default gold board frame with a
+     *  Bubble Gum pink/magenta gradient — matches Craig's event
+     *  aesthetic. Falls back to gold when omitted. */
+    bubbleGumFrame?: boolean;
 }
 
 /* ===== FULL-TILE IMMERSIVE SPECIAL EFFECTS ===== */
@@ -899,6 +903,7 @@ function GameBoardImpl({
     frenzyPenaltyAt = null,
     timePenaltyPopups = EMPTY_TIME_PENALTY_POPUPS,
     onPointerTrust,
+    bubbleGumFrame = false,
 }: GameBoardProps) {
     const [effectsQueue, setEffectsQueue] = useState<MatchEffect[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -1082,8 +1087,12 @@ function GameBoardImpl({
             <div
                 className={`${boardGlowClass} rounded-2xl p-[3px] ${shakeClass} transition-all duration-300 h-full ${isPrizeGame ? "prize-game-pulse" : ""}`}
                 style={{
-                    background: "linear-gradient(180deg, #FFE048 0%, #c9a84c 40%, #8B6914 100%)",
-                    boxShadow: "0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",
+                    background: bubbleGumFrame
+                        ? "linear-gradient(180deg, #FFB4E5 0%, #D26AFF 45%, #5A1F8C 100%)"
+                        : "linear-gradient(180deg, #FFE048 0%, #c9a84c 40%, #8B6914 100%)",
+                    boxShadow: bubbleGumFrame
+                        ? "0 2px 0 #5A1F8C, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)"
+                        : "0 2px 0 #8B6914, 0 4px 8px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.4)",
                 }}
             >
                 <div className="rounded-[13px] bg-[#111]/95 p-1 sm:p-2 h-full" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>

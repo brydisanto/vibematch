@@ -15,6 +15,7 @@ import InstructionsModal from "@/components/InstructionsModal";
 import MoveLogModal from "@/components/MoveLogModal";
 import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
+import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
@@ -784,8 +785,16 @@ export default function AppClient() {
             className="h-screen flex flex-col overflow-hidden relative"
           >
             <div className="absolute inset-0 z-0 bg-[#0a0015]">
+              {/* Swap the default cityscape for the Bubble Gum backdrop
+                  while a multi-pin set event is active (Craig's Bubble
+                  Gum Blast). Falls back to the standard art the moment
+                  the event ends. */}
               <Image
-                src="/vibematchbg2.jpg"
+                src={
+                  isPromoActive() && getPrimaryActiveEvent()?.kind === "set"
+                    ? "/backgrounds/game-bg-bubble-gum.webp"
+                    : "/vibematchbg2.jpg"
+                }
                 alt="Background"
                 fill
                 className="object-cover object-center"
@@ -935,6 +944,7 @@ export default function AppClient() {
                     frenzyPenaltyAt={game.frenzyPenaltyAt}
                     timePenaltyPopups={game.timePenaltyPopups}
                     onPointerTrust={game.recordEventTrust}
+                    bubbleGumFrame={isPromoActive() && getPrimaryActiveEvent()?.kind === "set"}
                   />
                 </div>
               </div>

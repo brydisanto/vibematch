@@ -779,12 +779,24 @@ export const BADGES: Badge[] = [
 // at call time so it can include any active promo pins — promos slot
 // into the blue/Common tier pool when their active flag is on, and
 // disappear automatically when the flag flips off.
+//
+// Set events (e.g. Craig's Bubble Gum Blast) intentionally do NOT
+// include their pins in the tile pool — the pins only appear as
+// capsule inserts on open. Keeps the game surface visually stable
+// while still letting the event drop happen inside capsules.
 function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getDroppablePromoBadges } = require("./promo-badges") as { getDroppablePromoBadges: () => Badge[] };
-    return [...BADGES.filter(b => !b.collectOnly), ...getDroppablePromoBadges()];
+    const { getDroppablePromoBadges, getPrimaryActiveEvent } = require("./promo-badges") as {
+        getDroppablePromoBadges: () => Badge[];
+        getPrimaryActiveEvent: () => { kind: "set" | "standalone" } | null;
+    };
+    const base = BADGES.filter(b => !b.collectOnly);
+    if (getPrimaryActiveEvent()?.kind === "set") {
+        return base;
+    }
+    return [...base, ...getDroppablePromoBadges()];
 }
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation

@@ -72,6 +72,10 @@ interface PinBookData {
      *  (by capsule count, not transaction count) so multi-capsule
      *  rerolls progress the quest by the right amount. */
     lifetimeRerollsCompleted?: number;
+    /** Per-event capsule eligibility counter. Mirrors the field on
+     *  the canonical PinBookData in ../route.ts; reroll-earned capsules
+     *  are event-eligible because the user paid VIBESTR for them. */
+    eligibleByEvent?: Record<string, number>;
 }
 
 export async function POST(request: Request) {
@@ -366,6 +370,18 @@ export async function POST(request: Request) {
         // rerolled, not by 1 per transaction, so a 5-capsule reroll
         // progresses Pin Wizard (50+) by 5.
         pinbook.lifetimeRerollsCompleted = (pinbook.lifetimeRerollsCompleted || 0) + totalCapsules;
+
+        // Event-eligibility: reroll-earned capsules count toward the
+        // active event because the user paid VIBESTR for them. Bypasses
+        // the pre-event hoarding lockout that gates game-earned capsules.
+        try {
+            const { activeEligibilityWindow } = await import('@/lib/promo-badges');
+            const elig = activeEligibilityWindow();
+            if (elig) {
+                if (!pinbook.eligibleByEvent) pinbook.eligibleByEvent = {};
+                pinbook.eligibleByEvent[elig.eventKey] = (pinbook.eligibleByEvent[elig.eventKey] || 0) + totalCapsules;
+            }
+        } catch {}
 
         await kv.set(pinbookKey, pinbook);
         await bumpDailyCounter(username, "capsulesEarned", totalCapsules);

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFE048"/>
+      <stop offset="100%" stop-color="#A06A00"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,224,72,0.5)"/>
+      <stop offset="100%" stop-color="rgba(255,224,72,0)"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="98" fill="url(#glow)"/>
+  <circle cx="100" cy="100" r="88" fill="url(#g)" stroke="#FFF1A8" stroke-width="4"/>
+  <text x="100" y="92" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="900" font-size="22" fill="#1A1A1A">SAMPLE</text>
+  <text x="100" y="124" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="900" font-size="22" fill="#1A1A1A" letter-spacing="2">LEGENDARY</text>
+  <text x="100" y="158" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="rgba(0,0,0,0.55)" letter-spacing="2">PLACEHOLDER</text>
+</svg>
