@@ -63,12 +63,11 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(mills % 100 === 0 ? 2 : 2)}`;
 }
 
-/** Decimal-aware big-number renderer — keeps "1.1" from collapsing into
- *  "11" by shrinking the fractional part so the dot reads clearly. */
+/** Big-number renderer — tabular-nums + slight letter-spacing so the
+ *  decimal reads clearly at full weight. Previously shrank the
+ *  fractional part to 0.62em which made "$1.10" look like "$110". */
 function TokenAmount({ value }: { value: string }) {
-    if (!value.includes(".")) return <>{value}</>;
-    const [whole, frac] = value.split(".");
-    return <>{whole}<span style={{ fontSize: "0.62em", letterSpacing: "0.02em" }}>.{frac}</span></>;
+    return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>{value}</span>;
 }
 
 // localStorage key for stranded-reroll recovery. Scoped per wallet so a
@@ -756,7 +755,7 @@ export default function RerollModal({ isOpen, onClose, pins, onSuccess }: Reroll
                                                             {totalTokenDisplay} {railLabel[paymentRail]}
                                                         </span>
                                                         {totalUsdMills > 0 && paymentRail !== "usdc" && (
-                                                            <span className="block font-mundial text-[10px] text-white/35 mt-0.5">~{formatUsdFromMills(totalUsdMills)}</span>
+                                                            <span className="block font-mundial text-[11px] text-white/60 mt-0.5 tabular-nums">≈ {formatUsdFromMills(totalUsdMills)} USD</span>
                                                         )}
                                                     </span>
                                                 </div>

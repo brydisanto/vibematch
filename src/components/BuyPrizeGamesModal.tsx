@@ -74,12 +74,11 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(2)}`;
 }
 
-/** Decimal-aware big-number renderer — keeps "1.1" from collapsing into
- *  "11" by shrinking the fractional part so the dot reads clearly. */
+/** Big-number renderer — tabular-nums + slight letter-spacing so the
+ *  decimal reads clearly at full weight. Previously shrank the
+ *  fractional part to 0.62em which made "$1.10" look like "$110". */
 function TokenAmount({ value }: { value: string }) {
-    if (!value.includes(".")) return <>{value}</>;
-    const [whole, frac] = value.split(".");
-    return <>{whole}<span style={{ fontSize: "0.62em", letterSpacing: "0.02em" }}>.{frac}</span></>;
+    return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>{value}</span>;
 }
 const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
 const PACKAGE_SIZES: PackageSize[] = [1, 5, 10];
@@ -459,12 +458,14 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                                 {paymentRail === "usdc" && "$"}
                                                                 <TokenAmount value={totalDisplay} />
                                                             </div>
-                                                            <div className="text-white/40 text-[10px] font-mundial tracking-wider">
+                                                            <div className="text-white/50 text-[10px] font-mundial tracking-wider">
                                                                 {RAIL_LABELS[paymentRail]}
-                                                                {usdMills > 0 && paymentRail !== "usdc" && (
-                                                                    <span className="text-white/30"> · ~{formatUsdFromMills(usdMills)}</span>
-                                                                )}
                                                             </div>
+                                                            {usdMills > 0 && paymentRail !== "usdc" && (
+                                                                <div className="text-white/65 text-[11px] font-mundial tabular-nums mt-1">
+                                                                    ≈ {formatUsdFromMills(usdMills)} USD
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </button>
