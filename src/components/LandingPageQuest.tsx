@@ -10,6 +10,8 @@ import { User, BookOpen, Trophy, Crown, HelpCircle, LogOut, LogIn } from "lucide
 import ProfileModal from "./ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import AuthModal from "./AuthModal";
+import EventDrawer from "./EventDrawer";
+import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
 import {
     ChunkyButton,
     EnamelCard,
@@ -100,9 +102,71 @@ export default function LandingPageQuest({
     }, []);
     const [isAuthOpen, setAuthOpen] = useState(false);
     const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
+    const [eventDrawerOpen, setEventDrawerOpen] = useState(false);
     const [streak, setStreak] = useState(0);
     const countdown = useDailyCountdown();
     const notifyRef = useRef(false);
+
+    // Resolve the active event for the top chip + drawer. Same shape as
+    // the desktop LandingPageArcade resolver so a single EventDrawer
+    // works across both layouts.
+    const activePromo = (() => {
+        if (!isPromoActive()) return null;
+        const primary = getPrimaryActiveEvent();
+        if (!primary) return null;
+        if (primary.kind === "standalone") {
+            const p = primary.promo;
+            return {
+                id: p.id, name: p.name, partnerName: p.partnerName ?? "",
+                tabLabel: p.tabLabel, image: p.image, description: p.description,
+                eventWindow: p.eventWindow, prizeNote: p.prizeNote,
+                accentColor: p.accentColor,
+                startsAt: undefined as string | undefined,
+                endsAt: p.endsAt,
+                eventSetId: undefined as string | undefined,
+            };
+        }
+        const set = primary.set;
+        const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+        return {
+            id: set.id, name: set.name, partnerName: set.partnerName ?? "",
+            tabLabel: set.tabLabel,
+            image: set.heroImage ?? heroPin?.image ?? "",
+            description: set.description, eventWindow: set.eventWindow,
+            prizeNote: set.prizeNote, accentColor: set.accentColor,
+            startsAt: set.startsAt, endsAt: set.endsAt, eventSetId: set.id,
+        };
+    })();
+
+    // Reactive started/ended flags — mirror the desktop chip's
+    // setTimeout pattern so the label auto-flips at startsAt / endsAt
+    // without a page refresh.
+    const [promoEnded, setPromoEnded] = useState<boolean>(() => {
+        if (!activePromo?.endsAt) return false;
+        return Date.now() >= new Date(activePromo.endsAt).getTime();
+    });
+    useEffect(() => {
+        if (!activePromo?.endsAt) return;
+        const endMs = new Date(activePromo.endsAt).getTime();
+        const remaining = endMs - Date.now();
+        if (remaining <= 0) { setPromoEnded(true); return; }
+        setPromoEnded(false);
+        const t = setTimeout(() => setPromoEnded(true), remaining);
+        return () => clearTimeout(t);
+    }, [activePromo?.endsAt]);
+    const [promoStarted, setPromoStarted] = useState<boolean>(() => {
+        if (!activePromo?.startsAt) return true;
+        return Date.now() >= new Date(activePromo.startsAt).getTime();
+    });
+    useEffect(() => {
+        if (!activePromo?.startsAt) return;
+        const startMs = new Date(activePromo.startsAt).getTime();
+        const remaining = startMs - Date.now();
+        if (remaining <= 0) { setPromoStarted(true); return; }
+        setPromoStarted(false);
+        const t = setTimeout(() => setPromoStarted(true), remaining);
+        return () => clearTimeout(t);
+    }, [activePromo?.startsAt]);
 
     const isLoggedIn = !!userProfile;
     const username = userProfile?.username || "";
@@ -212,6 +276,57 @@ export default function LandingPageQuest({
             <FloatingBadges />
 
             <div className="relative z-10 flex flex-col justify-start w-full max-w-lg mx-auto px-4 pt-6 pb-6 min-h-screen">
+                {/* Active-event chip — sits above the header rail. Renders
+                    only while NEXT_PUBLIC_PROMO_ACTIVE is on and there's
+                    a resolved primary event. Full-width tap target opens
+                    the same EventDrawer the desktop chip uses. Copy
+                    auto-cascades COMING SOON → EVENT LIVE → FINAL
+                    RESULTS via the promoStarted / promoEnded timers. */}
+                {activePromo && (
+                    <button
+                        type="button"
+                        onClick={() => setEventDrawerOpen(true)}
+                        className="group relative w-full mb-3 rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                        style={{
+                            background: promoEnded
+                                ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))"
+                                : `linear-gradient(180deg, ${activePromo.accentColor ?? GOLD}26, ${activePromo.accentColor ?? GOLD_DEEP}14)`,
+                            border: promoEnded
+                                ? "1px solid rgba(255,255,255,0.16)"
+                                : `1px solid ${activePromo.accentColor ?? GOLD}66`,
+                            boxShadow: promoEnded ? "none" : `0 0 20px ${activePromo.accentColor ?? GOLD}22`,
+                        }}
+                        aria-label={`Open ${activePromo.name} event`}
+                    >
+                        <div className="relative flex items-center gap-3 px-3 py-2.5">
+                            <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden ring-1 ring-white/15">
+                                <Image
+                                    src={activePromo.image}
+                                    alt=""
+                                    fill
+                                    sizes="36px"
+                                    className="object-cover"
+                                    style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
+                                />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                                <div
+                                    className="font-display text-[9px] tracking-[0.3em] leading-none"
+                                    style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : (activePromo.accentColor ?? GOLD) }}
+                                >
+                                    {promoEnded ? "FINAL RESULTS" : !promoStarted ? "COMING SOON" : "EVENT LIVE"}
+                                </div>
+                                <div className="font-display text-[13px] tracking-[0.08em] uppercase text-white mt-1 truncate">
+                                    {activePromo.partnerName || activePromo.name}
+                                </div>
+                            </div>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 shrink-0 transition-transform group-active:translate-x-0.5">
+                                <path d="M9 18l6-6-6-6" />
+                            </svg>
+                        </div>
+                    </button>
+                )}
+
                 {/* ========== HEADER RAIL ========== */}
                 <HeaderRail
                     isLoggedIn={isLoggedIn}
@@ -627,6 +742,27 @@ export default function LandingPageQuest({
                     currentUsername={username}
                     currentAvatarUrl={avatarUrl}
                     onClose={() => setLeaderboardOpen(false)}
+                />
+            )}
+            {eventDrawerOpen && activePromo && (
+                <EventDrawer
+                    onClose={() => setEventDrawerOpen(false)}
+                    currentUsername={username}
+                    currentAvatarUrl={avatarUrl}
+                    promo={{
+                        id: activePromo.id,
+                        name: activePromo.name,
+                        partnerName: activePromo.partnerName,
+                        tabLabel: activePromo.tabLabel,
+                        image: activePromo.image,
+                        description: activePromo.description,
+                        eventWindow: activePromo.eventWindow,
+                        prizeNote: activePromo.prizeNote,
+                        accentColor: activePromo.accentColor,
+                        startsAt: activePromo.startsAt,
+                        endsAt: activePromo.endsAt,
+                        eventSetId: activePromo.eventSetId,
+                    }}
                 />
             )}
         </div>
