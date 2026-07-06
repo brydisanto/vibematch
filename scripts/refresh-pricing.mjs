@@ -83,16 +83,65 @@ async function getEthUsdMills() {
     }
 }
 
-async function getVibestrUsdMills() {
-    if (process.env.VIBESTR_USD_OVERRIDE) {
-        return Math.round(parseFloat(process.env.VIBESTR_USD_OVERRIDE) * 1000);
+// Uniswap v4 StateView on mainnet — same address as used by the cron
+// endpoint in src/lib/pricing-refresh.ts. getSlot0(bytes32) selector
+// is keccak256('getSlot0(bytes32)')[:4] = 0xf3fef3a3.
+const STATE_VIEW_ADDRESS = '0x7ffe42c4a5deea5b0fec41c94c136cf115597227';
+const VIBESTR_V4_POOL_ID = '0x56c8fc0c410ec0778484600246847e2e77c428f888a35a11351dc12bbff09c6d';
+const GET_SLOT0_SELECTOR = '0xc815641c';
+
+async function ethCall(rpcUrl, to, data) {
+    const r = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to, data }, 'latest'],
+        }),
+    });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || 'rpc error');
+    return j.result;
+}
+
+async function getVibestrSqrtPriceX96() {
+    try {
+        const rpcUrl = ALCHEMY_KEY
+            ? `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`
+            : 'https://ethereum.publicnode.com';
+        const data = GET_SLOT0_SELECTOR + VIBESTR_V4_POOL_ID.slice(2);
+        const result = await ethCall(rpcUrl, STATE_VIEW_ADDRESS, data);
+        if (!result || result === '0x' || result.length < 66) {
+            throw new Error(`empty result: ${result}`);
+        }
+        // Return is (uint160, int24, uint24, uint24) — 32 bytes per ABI word,
+        // sqrtPriceX96 lives in the first word.
+        const sqrtPriceX96 = BigInt('0x' + result.slice(2, 66));
+        if (sqrtPriceX96 <= BigInt(0)) throw new Error('sqrtPriceX96 <= 0');
+        return sqrtPriceX96;
+    } catch (e) {
+        console.warn('[refresh-pricing] VIBESTR pool read failed:', e.message);
+        return null;
     }
-    // VIBESTR is illiquid in oracle terms; the script accepts a manual
-    // override and otherwise uses the fallback. For production cron a
-    // proper Uniswap v3 slot0 read goes here (TODO when we wire the
-    // pool address into env).
-    console.warn('[refresh-pricing] No VIBESTR_USD_OVERRIDE; using fallback', VIBESTR_USDC_FALLBACK_MILLS / 1000);
-    return VIBESTR_USDC_FALLBACK_MILLS;
+}
+
+function vibestrUsdMillsFromSlot0(sqrtPriceX96, ethUsdMills) {
+    const Q96 = BigInt(2) ** BigInt(96);
+    // Scale by 1000 to preserve one decimal of precision before rounding.
+    const scaled = BigInt(ethUsdMills) * BigInt(1000) * Q96 * Q96;
+    const scaledMills = scaled / (sqrtPriceX96 * sqrtPriceX96);
+    const mills = Number((scaledMills + BigInt(500)) / BigInt(1000));
+    return Math.max(1, mills);
+}
+
+function vibestrWeiFromSlot0(usdMillsAnchor, ethUsdMills, sqrtPriceX96, decimals) {
+    const Q96 = BigInt(2) ** BigInt(96);
+    const scale = BigInt(10) ** BigInt(decimals);
+    const numerator = BigInt(usdMillsAnchor) * scale * sqrtPriceX96 * sqrtPriceX96;
+    const denominator = BigInt(ethUsdMills) * Q96 * Q96;
+    return numerator / denominator;
 }
 
 // ── Wei math ──────────────────────────────────────────────────────────
@@ -123,17 +172,31 @@ const PACKAGES = {
 };
 
 async function buildSnapshot() {
-    const [ethUsdMills, vibestrUsdMills] = await Promise.all([
-        getEthUsdMills(),
-        getVibestrUsdMills(),
-    ]);
+    const ethUsdMills = await getEthUsdMills();
+
+    // Env override → pool read → hardcoded fallback.
+    const envRaw = process.env.VIBESTR_USD_OVERRIDE;
+    const envMills =
+        envRaw && isFinite(parseFloat(envRaw)) && parseFloat(envRaw) > 0
+            ? Math.round(parseFloat(envRaw) * 1000)
+            : null;
+    const sqrtPriceX96 = envMills === null ? await getVibestrSqrtPriceX96() : null;
+    const vibestrUsdMills =
+        envMills ??
+        (sqrtPriceX96 !== null
+            ? vibestrUsdMillsFromSlot0(sqrtPriceX96, ethUsdMills)
+            : VIBESTR_USDC_FALLBACK_MILLS);
+
     const packages = {};
     for (const [id, anchors] of Object.entries(PACKAGES)) {
-        // VIBESTR amounts always round UP to the nearest whole token
-        // so the player-facing number reads cleanly (e.g. "63 VIBESTR"
-        // instead of "62.5"). Rounding up keeps the USD value above
-        // the anchor — never under-charges.
-        const rawVibestrWei = BigInt(weiForUsd(anchors.vibestrUsdMills, vibestrUsdMills, VIBESTR_DECIMALS));
+        // Live pool read → precise wei from sqrtPriceX96. Otherwise
+        // route through the mill-rounded price. VIBESTR still ceils
+        // to whole tokens either way so the display number is clean
+        // and we never under-charge.
+        const rawVibestrWei =
+            sqrtPriceX96 !== null
+                ? vibestrWeiFromSlot0(anchors.vibestrUsdMills, ethUsdMills, sqrtPriceX96, VIBESTR_DECIMALS)
+                : BigInt(weiForUsd(anchors.vibestrUsdMills, vibestrUsdMills, VIBESTR_DECIMALS));
         const vibestrWei = ceilToWholeToken(rawVibestrWei, VIBESTR_DECIMALS).toString();
         packages[id] = {
             usdMills: anchors.usdMills,
