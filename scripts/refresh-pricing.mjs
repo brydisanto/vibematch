@@ -60,7 +60,7 @@ async function kvSet(key, value) {
 // derive the spot price. For preview/testing the env-var overrides
 // short-circuit this and let you pin exact USD prices.
 
-const VIBESTR_USDC_FALLBACK_MILLS = 4;     // $0.004 (~75 VIBESTR per $0.30)
+const VIBESTR_USDC_FALLBACK_MILLS = 3;     // $0.003 (100 VIBESTR per $0.30)
 const ETH_USD_FALLBACK_MILLS = 3_000_000;  // $3,000
 
 async function getEthUsdMills() {

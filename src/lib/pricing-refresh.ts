@@ -30,7 +30,7 @@ import {
 
 const USDC_USD_MILLS = 1000;
 const ETH_USD_FALLBACK_MILLS = 3_000_000;
-const VIBESTR_USD_FALLBACK_MILLS = 4; // $0.004
+const VIBESTR_USD_FALLBACK_MILLS = 3; // $0.003
 
 // USD anchors per package. Mirror FALLBACK_PRICING in src/lib/pricing.ts;
 // the cron blesses these into KV on every fire so they stay authoritative.

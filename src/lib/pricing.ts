@@ -77,12 +77,12 @@ export const ETH_DECIMALS = 18;
  *   bonus 5  $1.00 → VIBESTR | $1.10  → USDC/ETH
  *   bonus 10 $1.67 → VIBESTR | $1.85  → USDC/ETH
  *
- * Wei amounts use placeholder ETH = $3,000 and VIBESTR = $0.04 so the
+ * Wei amounts use placeholder ETH = $3,000 and VIBESTR = $0.003 so the
  * UI can boot without KV. The cron-refreshed values overwrite these
  * on every refresh.
  */
 const ETH_USD_FALLBACK_MILLS = 3_000_000;     // $3,000/ETH (in mills)
-const VIBESTR_USD_FALLBACK_MILLS = 4;         // $0.004/VIBESTR (~75 VIBESTR per $0.30 reroll)
+const VIBESTR_USD_FALLBACK_MILLS = 3;         // $0.003/VIBESTR (100 VIBESTR per $0.30 reroll)
 const USDC_USD_MILLS = 1000;                   // $1.00 exactly
 
 export function weiForUsd(usdMills: number, tokenUsdMills: number, decimals: number): string {
