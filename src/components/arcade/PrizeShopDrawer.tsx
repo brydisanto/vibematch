@@ -108,7 +108,7 @@ function TokenAmount({ value }: { value: string }) {
     return (
         <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>
             {whole}
-            <span style={{ margin: "0 0.08em", display: "inline-block" }}>.</span>
+            <span style={{ margin: "0 0.12em", display: "inline-block", fontSize: "1.5em", lineHeight: 0, verticalAlign: "middle" }}>.</span>
             {frac}
         </span>
     );
