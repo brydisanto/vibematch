@@ -63,11 +63,23 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(mills % 100 === 0 ? 2 : 2)}`;
 }
 
-/** Big-number renderer — tabular-nums + slight letter-spacing so the
- *  decimal reads clearly at full weight. Previously shrank the
- *  fractional part to 0.62em which made "$1.10" look like "$110". */
+/** Big-number renderer for heavy display fonts. The period glyph is
+ *  tiny at font-black weights and visually merges with adjacent digits
+ *  — "$1.10" ends up reading as "$110". Fix: split whole and fractional,
+ *  wrap the decimal in an inline-block with explicit horizontal margin
+ *  so it can't visually collide with the digits on either side. */
 function TokenAmount({ value }: { value: string }) {
-    return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>{value}</span>;
+    if (!value.includes(".")) {
+        return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>{value}</span>;
+    }
+    const [whole, frac] = value.split(".");
+    return (
+        <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>
+            {whole}
+            <span style={{ margin: "0 0.08em", display: "inline-block" }}>.</span>
+            {frac}
+        </span>
+    );
 }
 
 // localStorage key for stranded-reroll recovery. Scoped per wallet so a

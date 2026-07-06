@@ -101,7 +101,17 @@ function formatUsdFromMills(mills: number): string {
  *  display weights. "1.1" → "1" + ".1" (smaller). Returns the input
  *  string unchanged when there's no decimal. */
 function TokenAmount({ value }: { value: string }) {
-    return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>{value}</span>;
+    if (!value.includes(".")) {
+        return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>{value}</span>;
+    }
+    const [whole, frac] = value.split(".");
+    return (
+        <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>
+            {whole}
+            <span style={{ margin: "0 0.08em", display: "inline-block" }}>.</span>
+            {frac}
+        </span>
+    );
 }
 
 interface PrizeShopDrawerProps {
