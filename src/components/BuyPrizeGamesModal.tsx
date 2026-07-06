@@ -74,23 +74,9 @@ function formatUsdFromMills(mills: number): string {
     return `$${(mills / 1000).toFixed(2)}`;
 }
 
-/** Big-number renderer for heavy display fonts. The period glyph is
- *  tiny at font-black weights and visually merges with adjacent digits
- *  — "$1.10" ends up reading as "$110". Fix: split whole and fractional,
- *  wrap the decimal in an inline-block with explicit horizontal margin
- *  so it can't visually collide with the digits on either side. */
+/** Big-number renderer — tabular-nums so decimals line up column-wise. */
 function TokenAmount({ value }: { value: string }) {
-    if (!value.includes(".")) {
-        return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>{value}</span>;
-    }
-    const [whole, frac] = value.split(".");
-    return (
-        <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>
-            {whole}
-            <span style={{ margin: "0 0.12em", display: "inline-block", fontSize: "1.5em", lineHeight: 0, verticalAlign: "middle" }}>.</span>
-            {frac}
-        </span>
-    );
+    return <span style={{ fontVariantNumeric: "tabular-nums" }}>{value}</span>;
 }
 const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
 const PACKAGE_SIZES: PackageSize[] = [1, 5, 10];
@@ -466,7 +452,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                             )}
                                                         </div>
                                                         <div className="text-right">
-                                                            <div className="text-[#FFE048] font-display text-xl font-black">
+                                                            <div className="text-[#FFE048] font-mundial text-xl font-black">
                                                                 {paymentRail === "usdc" && "$"}
                                                                 <TokenAmount value={totalDisplay} />
                                                             </div>

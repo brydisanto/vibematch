@@ -101,17 +101,7 @@ function formatUsdFromMills(mills: number): string {
  *  display weights. "1.1" → "1" + ".1" (smaller). Returns the input
  *  string unchanged when there's no decimal. */
 function TokenAmount({ value }: { value: string }) {
-    if (!value.includes(".")) {
-        return <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>{value}</span>;
-    }
-    const [whole, frac] = value.split(".");
-    return (
-        <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em" }}>
-            {whole}
-            <span style={{ margin: "0 0.12em", display: "inline-block", fontSize: "1.5em", lineHeight: 0, verticalAlign: "middle" }}>.</span>
-            {frac}
-        </span>
-    );
+    return <span style={{ fontVariantNumeric: "tabular-nums" }}>{value}</span>;
 }
 
 interface PrizeShopDrawerProps {
@@ -618,12 +608,12 @@ function PurchaseState({
 
                                 <div className="text-right shrink-0">
                                     <div
-                                        className="font-display leading-none tabular-nums"
+                                        className="font-mundial leading-none tabular-nums"
                                         style={{
                                             color: p.featured ? COSMIC : GOLD,
                                             fontSize: 22,
                                             letterSpacing: "0.01em",
-                                            fontWeight: 600,
+                                            fontWeight: 800,
                                         }}
                                     >
                                         {paymentRail === "usdc" && "$"}
