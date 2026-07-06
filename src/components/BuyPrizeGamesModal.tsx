@@ -1,33 +1,85 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useWriteContract } from 'wagmi';
-import { parseEther, parseAbi } from 'viem';
+import { useAccount, useWriteContract, useSendTransaction } from 'wagmi';
+import { parseAbi, formatUnits } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS as `0x${string}`;
 const VIBESTR_ADDRESS = '0xd0cC2b0eFb168bFe1f94a948D8df70FA10257196';
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+const TOKEN_DECIMALS = { vibestr: 18, usdc: 6, eth: 18 } as const;
 const erc20Abi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 1500;
 // Mirror of MAX_BONUS_PRIZE_GAMES_PER_DAY in src/app/api/pinbook/route.ts.
 const MAX_BONUS_PER_DAY = 15;
 
-interface Package {
-    size: 1 | 5 | 10;
-    price: string;
-    pricePerGame: string;
-    discount?: string;
-    featured?: boolean;
+type PaymentRail = 'vibestr' | 'usdc' | 'eth';
+type PackageSize = 1 | 5 | 10;
+const PACKAGE_IDS: Record<PackageSize, string> = {
+    1: 'prize-games-1',
+    5: 'prize-games-5',
+    10: 'prize-games-10',
+};
+const PACKAGE_DISCOUNTS: Record<PackageSize, string | undefined> = {
+    1: undefined,
+    5: '20% off',
+    10: '33% off',
+};
+interface PricingPackageEntry {
+    usdMills: number;
+    vibestrUsdMills: number;
+    vibestrWei: string;
+    usdcWei: string;
+    ethWei: string;
+}
+interface PricingSnapshot {
+    updatedAt: number;
+    ethUsdMills: number;
+    vibestrUsdMills: number;
+    packages: Record<string, PricingPackageEntry>;
 }
 
-const PACKAGES: Package[] = [
-    { size: 1, price: '150', pricePerGame: '150' },
-    { size: 5, price: '600', pricePerGame: '120', discount: '20% off' },
-    { size: 10, price: '1000', pricePerGame: '100', discount: '33% off', featured: true },
-];
+function railWei(entry: PricingPackageEntry, rail: PaymentRail): bigint {
+    const raw = rail === 'vibestr' ? entry.vibestrWei : rail === 'usdc' ? entry.usdcWei : entry.ethWei;
+    try { return BigInt(raw); } catch { return BigInt(0); }
+}
+function railUsdMills(entry: PricingPackageEntry, rail: PaymentRail): number {
+    return rail === 'vibestr' ? entry.vibestrUsdMills : entry.usdMills;
+}
+function formatTokenAmount(
+    wei: bigint,
+    decimals: number,
+    maxFrac = 4,
+    minFrac = 0,
+    exactDecimals?: number,
+): string {
+    if (exactDecimals !== undefined) {
+        return Number(formatUnits(wei, decimals)).toFixed(exactDecimals);
+    }
+    if (wei === BigInt(0)) return minFrac > 0 ? `0.${'0'.repeat(minFrac)}` : '0';
+    const s = formatUnits(wei, decimals);
+    if (!s.includes('.')) {
+        return minFrac > 0 ? `${s}.${'0'.repeat(minFrac)}` : s;
+    }
+    const [whole, frac] = s.split('.');
+    let trimmed = frac.replace(/0+$/, '').slice(0, maxFrac);
+    if (trimmed.length < minFrac) trimmed = trimmed.padEnd(minFrac, '0');
+    return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
+}
+function formatUsdFromMills(mills: number): string {
+    return `$${(mills / 1000).toFixed(2)}`;
+}
+
+/** Big-number renderer — tabular-nums so decimals line up column-wise. */
+function TokenAmount({ value }: { value: string }) {
+    return <span style={{ fontVariantNumeric: "tabular-nums" }}>{value}</span>;
+}
+const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
+const PACKAGE_SIZES: PackageSize[] = [1, 5, 10];
 
 interface BuyPrizeGamesModalProps {
     isOpen: boolean;
@@ -38,7 +90,9 @@ interface BuyPrizeGamesModalProps {
 
 export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSuccess }: BuyPrizeGamesModalProps) {
     const { address, isConnected } = useAccount();
-    const [selectedSize, setSelectedSize] = useState<1 | 5 | 10>(10);
+    const [selectedSize, setSelectedSize] = useState<PackageSize>(10);
+    const [paymentRail, setPaymentRail] = useState<PaymentRail>('vibestr');
+    const [pricing, setPricing] = useState<PricingSnapshot | null>(null);
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -47,17 +101,46 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const addressRef = useRef(address);
     const selectedSizeRef = useRef(selectedSize);
+    const paymentRailRef = useRef(paymentRail);
     const onSuccessRef = useRef(onSuccess);
 
     useEffect(() => { addressRef.current = address; }, [address]);
     useEffect(() => { selectedSizeRef.current = selectedSize; }, [selectedSize]);
+    useEffect(() => { paymentRailRef.current = paymentRail; }, [paymentRail]);
     useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
 
-    const { writeContractAsync, isPending: isSending, reset: resetTx } = useWriteContract();
+    // Pull the active pricing snapshot when the modal opens. Falls
+    // back to FALLBACK_PRICING server-side, so cost rendering shows
+    // sensible numbers even on a fresh deploy without KV.
+    useEffect(() => {
+        if (!isOpen) return;
+        let cancelled = false;
+        fetch('/api/pricing/current')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (cancelled || !data) return;
+                setPricing(data as PricingSnapshot);
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [isOpen]);
+
+    const { writeContractAsync, isPending: isWriting, reset: resetTx } = useWriteContract();
+    const { sendTransactionAsync, isPending: isSendingEth } = useSendTransaction();
+    const isSending = isWriting || isSendingEth;
 
     const remaining = MAX_BONUS_PER_DAY - currentBonus;
-    const selectedPkg = PACKAGES.find(p => p.size === selectedSize)!;
-    const cannotAfford = selectedPkg.size > remaining;
+    const selectedPackageId = PACKAGE_IDS[selectedSize];
+    const selectedEntry = pricing?.packages[selectedPackageId] ?? null;
+    const selectedRequiredWei = selectedEntry ? railWei(selectedEntry, paymentRail) : BigInt(0);
+    const selectedUsdMills = selectedEntry ? railUsdMills(selectedEntry, paymentRail) : 0;
+    const railDecimals = TOKEN_DECIMALS[paymentRail];
+    const selectedTokenDisplay = selectedEntry
+        ? paymentRail === 'eth'
+        ? formatTokenAmount(selectedRequiredWei, railDecimals, 5, 0, 5)
+        : formatTokenAmount(selectedRequiredWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0)
+        : '—';
+    const cannotAfford = selectedSize > remaining;
 
     const startPolling = (hash: string) => {
         setVerifying(true);
@@ -86,6 +169,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                         txHash: hash,
                         walletAddress: addressRef.current,
                         packageSize: selectedSizeRef.current,
+                        paymentRail: paymentRailRef.current,
                     }),
                     signal: controller.signal,
                 });
@@ -128,31 +212,47 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
             setError('Config error: treasury address not set. Please contact support.');
             return;
         }
+        if (!selectedEntry || selectedRequiredWei <= BigInt(0)) {
+            setError('Pricing not loaded yet. Please try again.');
+            return;
+        }
+
+        const capturedRail = paymentRail;
+        const capturedRequiredWei = selectedRequiredWei;
 
         try {
             console.log('[BuyPrizeGames] Sending tx', {
-                token: VIBESTR_ADDRESS,
+                rail: capturedRail,
                 treasury: TREASURY_ADDRESS,
-                amount: selectedPkg.price,
+                requiredWei: capturedRequiredWei.toString(),
                 from: address,
             });
-            const hash = await writeContractAsync({
-                address: VIBESTR_ADDRESS,
-                abi: erc20Abi,
-                functionName: 'transfer',
-                args: [TREASURY_ADDRESS, parseEther(selectedPkg.price)],
-            });
+            let hash: `0x${string}`;
+            if (capturedRail === 'eth') {
+                hash = await sendTransactionAsync({
+                    to: TREASURY_ADDRESS,
+                    value: capturedRequiredWei,
+                });
+            } else {
+                const tokenAddress = capturedRail === 'usdc' ? (USDC_ADDRESS as `0x${string}`) : (VIBESTR_ADDRESS as `0x${string}`);
+                hash = await writeContractAsync({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: 'transfer',
+                    args: [TREASURY_ADDRESS, capturedRequiredWei],
+                });
+            }
             console.log('[BuyPrizeGames] Tx hash:', hash);
             startPolling(hash);
         } catch (err: any) {
             // Log the full error so we can diagnose
-            console.error('[BuyPrizeGames] writeContractAsync failed:', err);
+            console.error('[BuyPrizeGames] tx submit failed:', err);
             const raw = err?.shortMessage || err?.message || String(err);
 
             if (raw.includes('rejected') || raw.includes('User denied') || raw.includes('User rejected')) {
                 setError('Transaction was rejected.');
             } else if (raw.includes('insufficient funds') || raw.includes('exceeds the balance')) {
-                setError('Not enough VIBESTR in your wallet.');
+                setError(`Not enough ${RAIL_LABELS[capturedRail]} in your wallet.`);
             } else if (raw.includes('chain') || raw.includes('network')) {
                 setError('Please switch your wallet to Ethereum mainnet.');
             } else {
@@ -226,7 +326,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                     />
                                     <h2 className="font-display text-2xl font-black text-[#FFE048] mb-2">Purchase Complete!</h2>
                                     <p className="text-white/70 font-mundial text-sm mb-6">
-                                        {selectedPkg.size} prize {selectedPkg.size === 1 ? 'game' : 'games'} added. Go crush it!
+                                        {selectedSize} prize {selectedSize === 1 ? 'game' : 'games'} added. Go crush it!
                                     </p>
                                     <button
                                         onClick={handleClose}
@@ -245,15 +345,78 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                         </p>
                                     )}
 
-                                    {/* Package options */}
+                                    {/* Payment-rail toggle. Mirrors the RerollModal
+                                        treatment for consistency. */}
+                                    {isConnected && (
+                                        <div className="mb-3">
+                                            <div className="flex items-center justify-between mb-1.5 px-1">
+                                                <span className="font-display text-[10px] tracking-[0.2em] uppercase text-white/45">Pay with</span>
+                                                {pricing && (
+                                                    <span className="font-mundial text-[10px] text-white/30">Updated {new Date(pricing.updatedAt * 1000).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-1.5">
+                                                {(['vibestr', 'usdc', 'eth'] as PaymentRail[]).map(rail => {
+                                                    const selected = paymentRail === rail;
+                                                    return (
+                                                        <button
+                                                            key={rail}
+                                                            type="button"
+                                                            onClick={() => setPaymentRail(rail)}
+                                                            disabled={isProcessing}
+                                                            className={`relative py-2 rounded-lg font-display text-[12px] tracking-[0.15em] uppercase transition-all disabled:opacity-40 ${
+                                                                selected
+                                                                    ? 'bg-[#FFE048] text-black shadow-md'
+                                                                    : 'bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80 border border-white/[0.08]'
+                                                            }`}
+                                                            style={{ fontWeight: 600 }}
+                                                        >
+                                                            {RAIL_LABELS[rail]}
+                                                            {rail === 'vibestr' && (
+                                                                <span
+                                                                    className="absolute -top-1.5 -right-1.5 font-display text-[9px] tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                                                                    style={{
+                                                                        background: selected ? '#1A0633' : '#FFE048',
+                                                                        color: selected ? '#FFE048' : '#1A0633',
+                                                                        fontWeight: 600,
+                                                                    }}
+                                                                >
+                                                                    -10%
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Package options — prices flow from the active
+                                        pricing snapshot + selected rail. */}
                                     <div className="flex flex-col gap-2 mb-4">
-                                        {PACKAGES.map(pkg => {
-                                            const disabled = pkg.size > remaining;
-                                            const isSelected = selectedSize === pkg.size;
+                                        {PACKAGE_SIZES.map(size => {
+                                            const disabled = size > remaining;
+                                            const isSelected = selectedSize === size;
+                                            const entry = pricing?.packages[PACKAGE_IDS[size]] ?? null;
+                                            const totalWei = entry ? railWei(entry, paymentRail) : BigInt(0);
+                                            const perGameWei = entry ? totalWei / BigInt(size) : BigInt(0);
+                                            const totalDisplay = entry
+                                                ? (paymentRail === 'eth'
+                                                    ? formatTokenAmount(totalWei, railDecimals, 5, 0, 5)
+                                                    : formatTokenAmount(totalWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0))
+                                                : '—';
+                                            const perGameDisplay = entry
+                                                ? (paymentRail === 'eth'
+                                                    ? formatTokenAmount(perGameWei, railDecimals, 5, 0, 5)
+                                                    : formatTokenAmount(perGameWei, railDecimals, 2, paymentRail === 'usdc' ? 2 : 0))
+                                                : '—';
+                                            const usdMills = entry ? railUsdMills(entry, paymentRail) : 0;
+                                            const discount = PACKAGE_DISCOUNTS[size];
+                                            const featured = size === 10;
                                             return (
                                                 <button
-                                                    key={pkg.size}
-                                                    onClick={() => !disabled && setSelectedSize(pkg.size)}
+                                                    key={size}
+                                                    onClick={() => !disabled && setSelectedSize(size)}
                                                     disabled={disabled}
                                                     className={`relative rounded-xl p-3 text-left transition-all ${
                                                         disabled ? 'opacity-30 cursor-not-allowed' : ''
@@ -267,7 +430,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                             : "2px solid rgba(255,255,255,0.08)",
                                                     }}
                                                 >
-                                                    {pkg.featured && !disabled && (
+                                                    {featured && !disabled && (
                                                         <span className="absolute -top-2 -right-2 bg-[#FFE048] text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                                                             Best Value
                                                         </span>
@@ -276,25 +439,31 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                         <div>
                                                             <div className="flex items-baseline gap-2">
                                                                 <span className="font-display text-2xl font-black text-white">
-                                                                    {pkg.size}
+                                                                    {size}
                                                                 </span>
                                                                 <span className="text-white/60 text-xs font-mundial">
-                                                                    {pkg.size === 1 ? 'bonus game' : 'bonus games'}
+                                                                    {size === 1 ? 'bonus game' : 'bonus games'}
                                                                 </span>
                                                             </div>
-                                                            {pkg.discount && (
+                                                            {discount && (
                                                                 <div className="text-[#FFE048] text-[10px] font-bold mt-0.5">
-                                                                    {pkg.discount} · {pkg.pricePerGame} $VIBESTR each
+                                                                    {discount} · {perGameDisplay} {RAIL_LABELS[paymentRail]} each
                                                                 </div>
                                                             )}
                                                         </div>
                                                         <div className="text-right">
-                                                            <div className="text-[#FFE048] font-display text-xl font-black">
-                                                                {pkg.price}
+                                                            <div className="text-[#FFE048] font-mundial text-xl font-black">
+                                                                {paymentRail === "usdc" && "$"}
+                                                                <TokenAmount value={totalDisplay} />
                                                             </div>
-                                                            <div className="text-white/40 text-[10px] font-mundial tracking-wider">
-                                                                $VIBESTR
+                                                            <div className="text-white/50 text-[10px] font-mundial tracking-wider">
+                                                                {RAIL_LABELS[paymentRail]}
                                                             </div>
+                                                            {usdMills > 0 && paymentRail !== "usdc" && (
+                                                                <div className="text-white/65 text-[11px] font-mundial tabular-nums mt-1">
+                                                                    ≈ {formatUsdFromMills(usdMills)} USD
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </button>
@@ -344,7 +513,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                                     {statusText}
                                                 </span>
                                             ) : cannotAfford ? 'Exceeds daily limit' :
-                                                `Buy for ${selectedPkg.price} $VIBESTR`}
+                                                `Buy for ${paymentRail === 'usdc' ? '$' : ''}${selectedTokenDisplay} ${RAIL_LABELS[paymentRail]}`}
                                         </button>
                                     )}
 
