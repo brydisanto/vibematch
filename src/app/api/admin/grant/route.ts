@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getEasternDailyKey } from "@/lib/daily-window";
+import { activeEligibilityWindow } from "@/lib/promo-badges";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,11 @@ interface PinbookData {
     totalEarned?: number;
     totalOpened?: number;
     pins?: Record<string, { count: number; firstEarned: string }>;
+    /** Per-event count of capsules eligible to roll event pins.
+     *  Mirror of the field in the pinbook route type — grant path
+     *  keeps it in sync so admin-granted capsules can drop event
+     *  pins when the event window is open. */
+    eligibleByEvent?: Record<string, number>;
 }
 
 interface DailyTracker {
@@ -106,6 +112,16 @@ export async function POST(req: Request) {
         const existing = ((await kv.get(pinbookKey)) as PinbookData | null) || {};
         const capsules = (existing.capsules || 0) + amount;
         const totalEarned = (existing.totalEarned || 0) + amount;
+        // If an event window is currently open, credit event
+        // eligibility on the grant so the new capsules can drop
+        // event pins. Pre-event and no-event states return null and
+        // this block is skipped — matching the earn / open credit
+        // paths in the pinbook route.
+        const elig = activeEligibilityWindow();
+        const eligibleByEvent = { ...(existing.eligibleByEvent || {}) };
+        if (elig) {
+            eligibleByEvent[elig.eventKey] = (eligibleByEvent[elig.eventKey] || 0) + amount;
+        }
         const next: PinbookData = {
             ...existing,
             capsules,
@@ -113,6 +129,7 @@ export async function POST(req: Request) {
             // Preserve pins map and totalOpened if present
             pins: existing.pins || {},
             totalOpened: existing.totalOpened || 0,
+            eligibleByEvent,
         };
         await kv.set(pinbookKey, next);
         balance.capsules = capsules;
