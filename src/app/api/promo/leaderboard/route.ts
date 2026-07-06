@@ -100,13 +100,24 @@ export async function GET(req: Request) {
                 currentUsername ? kv.zscore(key, currentUsername) : Promise.resolve(null),
                 currentUsername ? kv.zrank(key, currentUsername) : Promise.resolve(null),
             ]);
-            const leaderboard: { username: string; count: number; rank: number; pinCounts: Record<string, number> }[] = [];
+            const leaderboard: { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string }[] = [];
             for (let i = 0; i < topRaw.length; i += 2) {
                 leaderboard.push({
                     username: String(topRaw[i]),
                     count: Number(topRaw[i + 1]),
                     rank: (i / 2) + 1,
                     pinCounts: {}, // filled in below
+                    avatarUrl: '', // filled in below
+                });
+            }
+            // Batch-fetch profiles so the drawer doesn't fire N per-row
+            // fetches to /api/profiles when it opens. One mget covers
+            // every visible avatar in a single RTT.
+            if (leaderboard.length > 0) {
+                const profileKeys = leaderboard.map(e => `user:${e.username}`);
+                const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
+                leaderboard.forEach((entry, i) => {
+                    entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
                 });
             }
             // Enrich each leaderboard row with per-pin counts. One
@@ -130,7 +141,7 @@ export async function GET(req: Request) {
                 });
             }
             const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : 0;
-            let userEntry: { username: string; count: number; rank: number; pinCounts: Record<string, number> } | null = null;
+            let userEntry: { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string } | null = null;
             // Per-pin owned counts for the signed-in user — drives the
             // "Set" tab in the drawer.
             const ownedPerPin: Record<string, number> = {};
@@ -148,6 +159,7 @@ export async function GET(req: Request) {
                     userEntry = inTop;
                 } else if (userScoreRaw !== null && userScoreRaw !== undefined) {
                     const ascRank = typeof userAscRankRaw === 'number' ? userAscRankRaw : null;
+                    const userProfile = await kv.get(`user:${currentUsername}`) as { avatarUrl?: string } | null;
                     userEntry = {
                         username: currentUsername,
                         count: Number(userScoreRaw),
@@ -155,6 +167,7 @@ export async function GET(req: Request) {
                         // Reuse the per-pin owned counts we already fetched
                         // for the Set tab.
                         pinCounts: { ...ownedPerPin },
+                        avatarUrl: userProfile?.avatarUrl ?? '',
                     };
                 }
             }

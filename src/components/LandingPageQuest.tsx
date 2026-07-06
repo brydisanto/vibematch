@@ -282,50 +282,70 @@ export default function LandingPageQuest({
                     the same EventDrawer the desktop chip uses. Copy
                     auto-cascades COMING SOON → EVENT LIVE → FINAL
                     RESULTS via the promoStarted / promoEnded timers. */}
-                {activePromo && (
+                {activePromo && (() => {
+                    const accent = activePromo.accentColor ?? GOLD;
+                    return (
                     <button
                         type="button"
                         onClick={() => setEventDrawerOpen(true)}
                         className="group relative w-full mb-3 rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
                         style={{
                             background: promoEnded
-                                ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))"
-                                : `linear-gradient(180deg, ${activePromo.accentColor ?? GOLD}26, ${activePromo.accentColor ?? GOLD_DEEP}14)`,
+                                ? "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))"
+                                : `linear-gradient(180deg, #1a0a2a 0%, #0f0518 100%)`,
                             border: promoEnded
-                                ? "1px solid rgba(255,255,255,0.16)"
-                                : `1px solid ${activePromo.accentColor ?? GOLD}66`,
-                            boxShadow: promoEnded ? "none" : `0 0 20px ${activePromo.accentColor ?? GOLD}22`,
+                                ? "1px solid rgba(255,255,255,0.28)"
+                                : `2px solid ${accent}`,
+                            boxShadow: promoEnded
+                                ? "0 2px 8px rgba(0,0,0,0.4)"
+                                : `0 0 24px ${accent}55, 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 ${accent}44`,
                         }}
                         aria-label={`Open ${activePromo.name} event`}
                     >
-                        <div className="relative flex items-center gap-3 px-3 py-2.5">
-                            <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden ring-1 ring-white/15">
+                        {/* Accent glow strip along the top */}
+                        {!promoEnded && (
+                            <div
+                                className="absolute inset-x-0 top-0 h-[3px]"
+                                style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+                            />
+                        )}
+                        <div className="relative flex items-center gap-3 px-3.5 py-3">
+                            <div
+                                className="relative w-11 h-11 shrink-0 rounded-full overflow-hidden"
+                                style={{
+                                    boxShadow: promoEnded ? undefined : `0 0 12px ${accent}88, 0 0 0 2px ${accent}`,
+                                }}
+                            >
                                 <Image
                                     src={activePromo.image}
                                     alt=""
                                     fill
-                                    sizes="36px"
+                                    sizes="44px"
                                     className="object-cover"
                                     style={promoEnded ? { filter: "grayscale(40%) brightness(0.9)" } : undefined}
                                 />
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                                 <div
-                                    className="font-display text-[9px] tracking-[0.3em] leading-none"
-                                    style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : (activePromo.accentColor ?? GOLD) }}
+                                    className="font-display font-black text-[10px] tracking-[0.28em] leading-none"
+                                    style={{
+                                        color: promoEnded ? "rgba(255,255,255,0.7)" : accent,
+                                        textShadow: promoEnded ? undefined : `0 0 8px ${accent}66`,
+                                    }}
                                 >
                                     {promoEnded ? "FINAL RESULTS" : !promoStarted ? "COMING SOON" : "EVENT LIVE"}
                                 </div>
-                                <div className="font-display text-[13px] tracking-[0.08em] uppercase text-white mt-1 truncate">
+                                <div className="font-display font-black text-[14px] tracking-[0.08em] uppercase text-white mt-1.5 truncate">
                                     {activePromo.partnerName || activePromo.name}
                                 </div>
                             </div>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 shrink-0 transition-transform group-active:translate-x-0.5">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform group-active:translate-x-0.5" style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : accent }}>
                                 <path d="M9 18l6-6-6-6" />
                             </svg>
                         </div>
                     </button>
-                )}
+                    );
+                })()}
 
                 {/* ========== HEADER RAIL ========== */}
                 <HeaderRail

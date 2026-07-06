@@ -15,6 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { GOLD, GOLD_DEEP } from "@/lib/arcade-tokens";
+import { findPromoEventSet, getEventSetPins } from "@/lib/promo-badges";
 
 interface EventEntry {
     username: string;
@@ -364,7 +365,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 >
                     <Avatar
                         username={entry.username}
-                        hintUrl={isUser ? currentAvatarUrl : undefined}
+                        hintUrl={isUser ? currentAvatarUrl : (entry.avatarUrl || undefined)}
                         size={44}
                     />
                 </div>
@@ -439,7 +440,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
             </div>
             <Avatar
                 username={entry.username}
-                hintUrl={isUser ? currentAvatarUrl : undefined}
+                hintUrl={isUser ? currentAvatarUrl : (entry.avatarUrl || undefined)}
                 size={36}
             />
             <div className="flex-1 min-w-0">
@@ -540,8 +541,30 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     // leaderboard. Reads as a personal "what's left" first, public
     // ranking second.
     const [view, setView] = useState<"leaderboard" | "set">("set");
-    const [setPins, setSetPins] = useState<EventSetPin[]>([]);
-    const [setMeta, setSetMeta] = useState<EventSetMeta>({ setBonusPoints: null, scoreCap: null });
+    // Seed pin metadata (id, name, image, rarityLabel, points) from the
+    // client-side event registry so pin art renders on the first frame
+    // instead of waiting for the /api/promo/leaderboard round-trip.
+    // owned counts come in from the fetch and get merged on top.
+    const [setPins, setSetPins] = useState<EventSetPin[]>(() => {
+        if (!promo.eventSetId) return [];
+        const seedPins = getEventSetPins(promo.eventSetId);
+        return seedPins.map(p => ({
+            id: p.id,
+            name: p.name,
+            image: p.image,
+            rarityLabel: p.rarityLabel ?? null,
+            points: p.points ?? 1,
+            owned: 0,
+        }));
+    });
+    const [setMeta, setSetMeta] = useState<EventSetMeta>(() => {
+        if (!promo.eventSetId) return { setBonusPoints: null, scoreCap: null };
+        const setDef = findPromoEventSet(promo.eventSetId);
+        return {
+            setBonusPoints: setDef?.setBonusPoints ?? null,
+            scoreCap: setDef?.scoreCap ?? null,
+        };
+    });
     const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
 
     useEffect(() => {
@@ -560,7 +583,22 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setEntries(d.leaderboard || []);
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
-                if (d.eventSet?.pins) setSetPins(d.eventSet.pins);
+                if (d.eventSet?.pins) {
+                    // Merge server owned counts onto the client-seeded
+                    // metadata rather than replacing wholesale — the
+                    // client seed already has image URLs mounted, so
+                    // this keeps the <Image> src stable and avoids a
+                    // flash of network activity when the fetch lands.
+                    setSetPins(prev => {
+                        const byId = new Map(prev.map(p => [p.id, p]));
+                        return (d.eventSet.pins as EventSetPin[]).map(server => {
+                            const seeded = byId.get(server.id);
+                            return seeded
+                                ? { ...seeded, owned: server.owned ?? 0 }
+                                : server;
+                        });
+                    });
+                }
                 if (d.eventSet) {
                     setSetMeta({
                         setBonusPoints: d.eventSet.setBonusPoints ?? null,
