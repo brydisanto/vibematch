@@ -81,6 +81,51 @@ function TokenAmount({ value }: { value: string }) {
 const RAIL_LABELS: Record<PaymentRail, string> = { vibestr: '$VIBESTR', usdc: 'USDC', eth: 'ETH' };
 const PACKAGE_SIZES: PackageSize[] = [1, 5, 10];
 
+// Stranded-purchase recovery via localStorage. Mirror of the reroll
+// modal's pending-tx pattern. If the wallet returns a tx hash but
+// the modal closes before the server-side POST lands (page reload,
+// tab switch, WalletConnect promise never resolves on iOS Safari,
+// etc.), the on-chain payment stays uncredited unless we can find
+// it again from disk on the next modal open. Joker's July 6 tx was
+// exactly this failure mode: 532 VIBESTR sent, tx never POSTed.
+const PENDING_PURCHASE_PREFIX = 'pindrop:purchase_pending:';
+const PENDING_PURCHASE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+function pendingPurchaseKey(wallet: string | undefined): string | null {
+    if (!wallet || typeof window === 'undefined') return null;
+    return `${PENDING_PURCHASE_PREFIX}${wallet.toLowerCase()}`;
+}
+interface PendingPurchase {
+    walletAddress: string;
+    packageSize: PackageSize;
+    paymentRail: PaymentRail;
+    startedAt: number;
+    txHash?: string;
+}
+function readPendingPurchase(wallet: string | undefined): PendingPurchase | null {
+    const key = pendingPurchaseKey(wallet);
+    if (!key) return null;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as PendingPurchase;
+        if (Date.now() - parsed.startedAt > PENDING_PURCHASE_MAX_AGE_MS) {
+            localStorage.removeItem(key);
+            return null;
+        }
+        return parsed;
+    } catch { return null; }
+}
+function writePendingPurchase(wallet: string | undefined, entry: PendingPurchase): void {
+    const key = pendingPurchaseKey(wallet);
+    if (!key) return;
+    try { localStorage.setItem(key, JSON.stringify(entry)); } catch {}
+}
+function clearPendingPurchase(wallet: string | undefined): void {
+    const key = pendingPurchaseKey(wallet);
+    if (!key) return;
+    try { localStorage.removeItem(key); } catch {}
+}
+
 interface BuyPrizeGamesModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -124,6 +169,25 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
             .catch(() => {});
         return () => { cancelled = true; };
     }, [isOpen]);
+
+    // Stranded-purchase recovery. On modal open with a connected
+    // wallet, check localStorage for a pending purchase that never
+    // finished polling. If we have a txHash, restore the package /
+    // rail selection to match, then silently re-enter the polling
+    // loop. The server-side reservation is idempotent — a duplicate
+    // POST either credits (if not yet processed) or returns 409
+    // (already credited). Both paths clean up the pending entry.
+    useEffect(() => {
+        if (!isOpen || !address) return;
+        const pending = readPendingPurchase(address);
+        if (!pending || !pending.txHash) return;
+        setSelectedSize(pending.packageSize);
+        setPaymentRail(pending.paymentRail);
+        selectedSizeRef.current = pending.packageSize;
+        paymentRailRef.current = pending.paymentRail;
+        startPolling(pending.txHash);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, address]);
 
     const { writeContractAsync, isPending: isWriting, reset: resetTx } = useWriteContract();
     const { sendTransactionAsync, isPending: isSendingEth } = useSendTransaction();
@@ -181,6 +245,7 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                     pollingRef.current = false;
                     setVerifying(false);
                     setSuccess(true);
+                    clearPendingPurchase(addressRef.current);
                     onSuccessRef.current(data.bonusPrizeGames);
                     return;
                 }
@@ -193,6 +258,12 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
 
                 pollingRef.current = false;
                 setVerifying(false);
+                // 409 = already processed (idempotent replay lands here after
+                // a successful recovery). Treat that as success too and clear
+                // the pending entry so we don't keep re-verifying.
+                if (res.status === 409) {
+                    clearPendingPurchase(addressRef.current);
+                }
                 setError(data.error || 'Verification failed');
             } catch (e) {
                 timerRef.current = setTimeout(() => poll(attempt + 1), POLL_INTERVAL_MS);
@@ -243,6 +314,17 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                 });
             }
             console.log('[BuyPrizeGames] Tx hash:', hash);
+            // Persist the pending purchase before we start polling so a
+            // page reload / modal close / dropped WalletConnect promise
+            // doesn't strand the tx uncredited. Cleared on success or
+            // on a terminal server rejection.
+            writePendingPurchase(address, {
+                walletAddress: address,
+                packageSize: selectedSizeRef.current,
+                paymentRail: paymentRailRef.current,
+                startedAt: Date.now(),
+                txHash: hash,
+            });
             startPolling(hash);
         } catch (err: any) {
             // Log the full error so we can diagnose
