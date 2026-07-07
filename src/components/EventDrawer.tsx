@@ -960,11 +960,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             Set tab if anyone needs the legend. */}
                                         {promo.eventSetId && setPins.length > 0 && (
                                             <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
-                                                <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
-                                                <div className="flex-1 min-w-0">COLLECTOR</div>
-                                                <div className="flex-shrink-0 w-11 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Pins</div>
-                                                <div className="flex-shrink-0 w-11 text-center" style={{ color: `${accent}aa` }}>Giga</div>
-                                                <div className="flex-shrink-0 w-11 text-center tabular-nums" style={{ color: accent }}>Points</div>
+                                                <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                <div className="flex-shrink-0 w-11 text-center">Pins</div>
+                                                <div className="flex-shrink-0 w-11 text-center">Giga</div>
+                                                <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                             </div>
                                         )}
                                         <div className="space-y-1.5">
