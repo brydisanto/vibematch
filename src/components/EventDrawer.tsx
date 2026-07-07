@@ -416,7 +416,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
         <Link
             href={`/u/${encodeURIComponent(entry.username)}`}
             prefetch={false}
-            className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors ${
+            className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${
                 isUser
                     ? "bg-[#B366FF]/10 border border-[#B366FF]/20"
                     : medal
@@ -441,7 +441,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
             <Avatar
                 username={entry.username}
                 hintUrl={isUser ? currentAvatarUrl : (entry.avatarUrl || undefined)}
-                size={36}
+                size={32}
             />
             <div className="flex-1 min-w-0">
                 <div className={`font-display font-semibold text-sm truncate ${isUser ? "text-[#B366FF]" : "text-white/90"}`}>
@@ -455,7 +455,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 return (
                     <>
                         <div
-                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "14px",
                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -464,7 +464,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                             {totalPins}
                         </div>
                         <div
-                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "15px",
                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
@@ -476,7 +476,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 );
             })()}
             <div
-                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
                 style={{
                     fontSize: "18px",
                     color: accent,
@@ -959,13 +959,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             mobile. The full pin name lives in the
                                             Set tab if anyone needs the legend. */}
                                         {promo.eventSetId && setPins.length > 0 && (
-                                            <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05] text-[9px] tracking-[0.2em] uppercase font-display text-white/40">
+                                            <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
                                                 <div className="flex-shrink-0 w-7 text-center" style={{ color: `${accent}cc` }}>RANK</div>
-                                                <div className="flex-shrink-0" style={{ width: 36 }} />
                                                 <div className="flex-1 min-w-0">COLLECTOR</div>
-                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Total Pins</div>
-                                                <div className="flex-shrink-0 w-16 text-center" style={{ color: `${accent}aa` }}>Giga Gum</div>
-                                                <div className="flex-shrink-0 w-16 text-center tabular-nums" style={{ color: accent }}>Points</div>
+                                                <div className="flex-shrink-0 w-11 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Pins</div>
+                                                <div className="flex-shrink-0 w-11 text-center" style={{ color: `${accent}aa` }}>Giga</div>
+                                                <div className="flex-shrink-0 w-11 text-center tabular-nums" style={{ color: accent }}>Points</div>
                                             </div>
                                         )}
                                         <div className="space-y-1.5">
@@ -989,12 +988,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     <div className="mt-3 pt-3 border-t border-white/5">
                                         <Link
                                             href={`/u/${encodeURIComponent(userRow.username)}`}
-                                            className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
+                                            className="flex items-center gap-2 py-2.5 px-2 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
                                         >
                                             <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/60">
                                                 {userRow.rank}
                                             </div>
-                                            <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={36} />
+                                            <Avatar username={userRow.username} hintUrl={currentAvatarUrl} size={32} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-display font-semibold text-sm text-[#B366FF]">You</div>
                                             </div>
@@ -1005,7 +1004,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 return (
                                                     <>
                                                         <div
-                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "14px",
                                                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -1014,7 +1013,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             {totalPins}
                                                         </div>
                                                         <div
-                                                            className="flex-shrink-0 w-16 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "15px",
                                                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
@@ -1026,7 +1025,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 );
                                             })()}
                                             <div
-                                                className="flex-shrink-0 w-16 text-center font-display font-black tabular-nums"
+                                                className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
                                                 style={{
                                                     fontSize: "18px",
                                                     color: accent,
