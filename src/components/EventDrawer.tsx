@@ -995,7 +995,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             className="font-display text-[10px] tracking-[0.3em] uppercase mb-0.5"
                                                             style={{ color: accent, fontWeight: 600 }}
                                                         >
-                                                            Grails Chase Leader
+                                                            Most Grails
                                                         </div>
                                                         <div className={`font-display font-semibold text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
                                                             {isYou ? "You" : leader.username}
