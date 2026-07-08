@@ -8,6 +8,8 @@ import {
     promoLeaderboardKey,
     findPromoBadge,
     eventSetPointsKey,
+    eventSetHerdsKey,
+    decodeHerdsScore,
     findPromoEventSet,
     getEventSetPins,
 } from '@/lib/promo-badges';
@@ -171,6 +173,30 @@ export async function GET(req: Request) {
                     };
                 }
             }
+            // Herds leaderboard — same top-50 read, but from the herds
+            // zset with composite score (fullSets × 1000 + points).
+            // Decoded into { herds, points } per entry for the client.
+            const herdsKey = eventSetHerdsKey(querySetId);
+            const herdsRaw = await kv.zrange(herdsKey, 0, 49, { rev: true, withScores: true }) as Array<string | number>;
+            const herdsLeaderboard: { username: string; herds: number; count: number; rank: number; avatarUrl: string }[] = [];
+            for (let i = 0; i < herdsRaw.length; i += 2) {
+                const username = String(herdsRaw[i]);
+                const decoded = decodeHerdsScore(Number(herdsRaw[i + 1]));
+                herdsLeaderboard.push({
+                    username,
+                    herds: decoded.fullSets,
+                    count: decoded.cappedPoints,
+                    rank: (i / 2) + 1,
+                    avatarUrl: '', // filled below via mget
+                });
+            }
+            if (herdsLeaderboard.length > 0) {
+                const profileKeys = herdsLeaderboard.map(e => `user:${e.username}`);
+                const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
+                herdsLeaderboard.forEach((entry, i) => {
+                    entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
+                });
+            }
             return NextResponse.json(
                 {
                     eventSet: {
@@ -196,6 +222,7 @@ export async function GET(req: Request) {
                     },
                     scoreLabel: 'points',
                     leaderboard,
+                    herdsLeaderboard,
                     userEntry,
                     totalPlayers,
                     active: isPromoActive(),

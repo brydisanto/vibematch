@@ -111,6 +111,10 @@ export interface PromoEventSet {
     startsAt?: string;
     /** Short tab label on the LeaderboardModal (keep under ~8 chars). */
     tabLabel: string;
+    /** Label for the drawer's pin-collection tab. Defaults to "The Set"
+     *  which reads generically. Partner events with a themed name (e.g.
+     *  "The Herd" for the Claynosaurz event) override here. */
+    setTabLabel?: string;
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -128,6 +132,23 @@ export interface PromoEventSet {
      *  score. Use when the event ends in a raffle of all "maxed"
      *  collectors rather than a strict ranking. Omit for uncapped. */
     scoreCap?: number;
+    /** Board frame color palette used by GameBoard while this set is
+     *  active. When omitted, the frame stays gold. Set colors that
+     *  read from lightest → darkest to keep the metallic-edge feel
+     *  consistent with Craig's pink frame. */
+    frameGradient?: {
+        top: string;
+        mid: string;
+        bottom: string;
+        shadow: string;
+    };
+    /** When true, this set's pins are included in the game-board tile
+     *  pool during the event (they can appear as playable tiles in
+     *  addition to dropping from capsules). Defaults false — Craig's
+     *  set-event pins only drop from capsules. Turn on for partner
+     *  events where showing the partner's IP on-board is part of the
+     *  co-marketing beat. */
+    includeInGameTiles?: boolean;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -206,19 +227,18 @@ export const PROMO_BADGES: PromoBadge[] = [
         dropWeight: 2,
         rarityLabel: "Legendary",
     },
-    // ── Claynosaurz partner event (PLACEHOLDER names) ───────────────
-    // 4 base pins + 1 Cosmic chase pin (rarer than Legendary). Cosmic
-    // adds points but is EXCLUDED from the min-of-pins set-bonus math,
-    // so completing the 4-pin base set still fires the setBonusPoints
-    // whether the player has the Cosmic or not. Drop weights sum to
-    // ~101 so the 15% pool per-cap odds land roughly at:
-    //   Common       10.4%
-    //   Rare          2.97%
-    //   Epic          1.19%
-    //   Legendary     0.30%
-    //   Cosmic (chase) 0.15%  ← ultra-rare, rarer than Legendary
-    // Pin art (common / rare / epic / legendary / cosmic .png) is
-    // in place under /badges/promo/set/claynosaurz/. Rename copy TBD.
+    // ── Claynosaurz partner event ───────────────────────────────────
+    // 4 base pins + 1 Cosmic chase pin. Cosmic adds points but is
+    // EXCLUDED from the min-of-pins set-bonus math, so completing the
+    // 4-pin base set still fires setBonusPoints whether or not you
+    // land the Cosmic. Weights are smoothed vs Craig's: gentler
+    // Common → Legendary gradient, then a hard gap to Cosmic. Sum ≈
+    // 100, drop rate 15%, per-cap odds:
+    //   Common (Milo)          7.50%
+    //   Rare (Bex)             4.05%
+    //   Epic (Trix)            2.25%
+    //   Legendary (Flea)       1.05%
+    //   Cosmic (Claynoz Pio.)  0.15%  ← ultra-rare, excluded from set bonus
     {
         id: "claynosaurz_common",
         name: "Milo",
@@ -227,10 +247,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
-        tabLabel: "Set",
+        tabLabel: "Herd",
         eventSetId: "claynosaurz_partner_event",
         points: 1,
-        dropWeight: 70,
+        dropWeight: 50,
         rarityLabel: "Common",
     },
     {
@@ -241,10 +261,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
-        tabLabel: "Set",
+        tabLabel: "Herd",
         eventSetId: "claynosaurz_partner_event",
         points: 2,
-        dropWeight: 20,
+        dropWeight: 27,
         rarityLabel: "Rare",
     },
     {
@@ -255,10 +275,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
-        tabLabel: "Set",
+        tabLabel: "Herd",
         eventSetId: "claynosaurz_partner_event",
         points: 5,
-        dropWeight: 8,
+        dropWeight: 15,
         rarityLabel: "Epic",
     },
     {
@@ -269,10 +289,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
-        tabLabel: "Set",
+        tabLabel: "Herd",
         eventSetId: "claynosaurz_partner_event",
         points: 10,
-        dropWeight: 2,
+        dropWeight: 7,
         rarityLabel: "Legendary",
     },
     {
@@ -286,7 +306,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
-        tabLabel: "Set",
+        tabLabel: "Herd",
         eventSetId: "claynosaurz_partner_event",
         // Cosmic awards a big point boost (2x Legendary) but doesn't
         // gate the set bonus — see isChase.
@@ -333,6 +353,16 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Hard cap. Reaching 100 pts qualifies for the prize raffle;
         // everyone at 100 is treated equally for the draw.
         scoreCap: 100,
+        // Pink Bubble Gum board frame while Craig's runs (was the
+        // bubbleGumFrame boolean before this refactor).
+        frameGradient: {
+            top:    "#FFB4E5",
+            mid:    "#D26AFF",
+            bottom: "#5A1F8C",
+            shadow: "#5A1F8C",
+        },
+        // Set pins do NOT appear on the game board — capsule drops only.
+        includeInGameTiles: false,
     },
     {
         id: "claynosaurz_partner_event",
@@ -361,6 +391,19 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setBonusPoints: 25,
         // Hard cap on the leaderboard score, same as Craig's.
         scoreCap: 100,
+        // Teal board frame gradient — Claynosaurz brand accent as the
+        // mid stop, brighter tint on top, deep teal on bottom.
+        frameGradient: {
+            top:    "#7FEFE0",
+            mid:    "#00C4B4",
+            bottom: "#004E48",
+            shadow: "#004E48",
+        },
+        // Claynoz characters ARE playable on the game board during
+        // the event — part of the co-marketing beat. The 5 pins get
+        // added to the tile pool alongside the normal tiers.
+        includeInGameTiles: true,
+        setTabLabel: "The Herd",
     },
 ];
 
@@ -371,11 +414,11 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
  * 5th chase tier without cannibalizing base rates and (b) make the co-
  * marketed event feel more generous to first-time visitors from the
  * partner's audience. Per-capsule odds within the Claynosaurz set:
- *   Common          10.4%
- *   Rare             2.97%
- *   Epic             1.19%
- *   Legendary        0.30%
- *   Cosmic (chase)   0.15%  ← rarer than Legendary; excluded from set bonus
+ *   Common          7.50%
+ *   Rare            4.05%
+ *   Epic            2.25%
+ *   Legendary       1.05%
+ *   Cosmic (chase)  0.15%  ← rarer than Legendary; excluded from set bonus
  */
 export const PROMO_DROP_RATE = 0.15;
 
@@ -468,6 +511,24 @@ export function promoLeaderboardKey(promoId: string): string {
  *  pin's points field on every collect; ZRANGE rev for the ranking. */
 export function eventSetPointsKey(setId: string): string {
     return `event_set:${setId}:points`;
+}
+
+/** KV key for an event set's "herds" leaderboard — sorted by fullSets
+ *  (min of base-pin counts) as the primary metric, tie-broken by
+ *  points. Composite score stored as `fullSets × 1000 + cappedPoints`
+ *  so a single ZRANGE returns the correct ordering. Extract with:
+ *      herds  = Math.floor(score / 1000)
+ *      points = score - herds × 1000
+ *  Requires cappedPoints ≤ 999 (safe since scoreCap ≤ 100 in practice). */
+export function eventSetHerdsKey(setId: string): string {
+    return `event_set:${setId}:herds`;
+}
+export function encodeHerdsScore(fullSets: number, cappedPoints: number): number {
+    return fullSets * 1000 + Math.min(999, Math.max(0, cappedPoints));
+}
+export function decodeHerdsScore(score: number): { fullSets: number; cappedPoints: number } {
+    const fullSets = Math.floor(score / 1000);
+    return { fullSets, cappedPoints: score - fullSets * 1000 };
 }
 
 /**

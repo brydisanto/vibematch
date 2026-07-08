@@ -130,7 +130,7 @@ export default function LandingPageQuest({
         const heroPin = [...primary.pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
         return {
             id: set.id, name: set.name, partnerName: set.partnerName ?? "",
-            tabLabel: set.tabLabel,
+            tabLabel: set.tabLabel, setTabLabel: set.setTabLabel,
             image: set.heroImage ?? heroPin?.image ?? "",
             description: set.description, eventWindow: set.eventWindow,
             prizeNote: set.prizeNote, accentColor: set.accentColor,
@@ -774,6 +774,7 @@ export default function LandingPageQuest({
                         name: activePromo.name,
                         partnerName: activePromo.partnerName,
                         tabLabel: activePromo.tabLabel,
+                        setTabLabel: activePromo.setTabLabel,
                         image: activePromo.image,
                         description: activePromo.description,
                         eventWindow: activePromo.eventWindow,

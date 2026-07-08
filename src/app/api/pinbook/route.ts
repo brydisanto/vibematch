@@ -944,8 +944,14 @@ export async function POST(req: Request) {
                             pins.forEach((p, i) => {
                                 perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                             });
-                            const { cappedTotal } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
+                            const { cappedTotal, fullSets } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
                             await kv.zadd(eventSetPointsKey(stalePromo.eventSetId), { score: cappedTotal, member: username });
+                            // Herds zset — kept in lockstep with points.
+                            const { encodeHerdsScore, eventSetHerdsKey } = await import('@/lib/promo-badges');
+                            await kv.zadd(eventSetHerdsKey(stalePromo.eventSetId), {
+                                score: encodeHerdsScore(fullSets, cappedTotal),
+                                member: username,
+                            });
                         }
                     }
                 } else {
@@ -1134,8 +1140,17 @@ export async function POST(req: Request) {
                     pins.forEach((p, i) => {
                         perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                     });
-                    const { cappedTotal } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
+                    const { cappedTotal, fullSets } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
                     await kv.zadd(eventSetPointsKey(promoDef.eventSetId), { score: cappedTotal, member: username });
+                    // Herds leaderboard — sorted by fullSets primary,
+                    // points secondary (encoded as fullSets*1000 + points).
+                    // Written in lockstep with the points zset so both
+                    // leaderboards stay consistent per-drop.
+                    const { encodeHerdsScore, eventSetHerdsKey } = await import('@/lib/promo-badges');
+                    await kv.zadd(eventSetHerdsKey(promoDef.eventSetId), {
+                        score: encodeHerdsScore(fullSets, cappedTotal),
+                        member: username,
+                    });
                 }
                 // Eventide quest flag — flip once; cheap idempotent write
                 // since we hold the user lock for this whole branch.

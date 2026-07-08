@@ -948,7 +948,12 @@ export default function AppClient() {
                     frenzyPenaltyAt={game.frenzyPenaltyAt}
                     timePenaltyPopups={game.timePenaltyPopups}
                     onPointerTrust={game.recordEventTrust}
-                    bubbleGumFrame={isPromoActive() && getPrimaryActiveEvent()?.kind === "set"}
+                    frameGradient={(() => {
+                      if (!isPromoActive()) return undefined;
+                      const primary = getPrimaryActiveEvent();
+                      if (primary?.kind !== "set") return undefined;
+                      return primary.set.frameGradient;
+                    })()}
                   />
                 </div>
               </div>

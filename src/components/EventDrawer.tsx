@@ -34,6 +34,10 @@ interface PromoInfo {
     /** Optional — Pin Drop's in-house events have no partner. */
     partnerName?: string;
     tabLabel: string;
+    /** Label for the pin-collection tab inside the drawer. Defaults
+     *  to "The Set"; partner events with themed naming (e.g. "The
+     *  Herd" for Claynosaurz) can override. */
+    setTabLabel?: string;
     image: string;
     description?: string;
     eventWindow?: string;
@@ -496,6 +500,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     const [totalPlayers, setTotalPlayers] = useState(0);
 
     const accent = promo.accentColor || GOLD;
+    const setTabLabel = promo.setTabLabel || "The Set";
 
     // Reactive "is the event over" — flips the hero pill from EVENT LIVE
     // to FINAL RESULTS the moment endsAt passes, without a refresh. Same
@@ -541,6 +546,17 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     // leaderboard. Reads as a personal "what's left" first, public
     // ranking second.
     const [view, setView] = useState<"leaderboard" | "set">("set");
+    // Sub-view inside the Leaderboard tab for set events — Points is
+    // the default (score-based ranking); Herds ranks by full sets
+    // completed, useful when the field is bunched near the score cap.
+    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds">("points");
+    const [herdsEntries, setHerdsEntries] = useState<Array<{
+        username: string;
+        herds: number;
+        count: number;
+        rank: number;
+        avatarUrl?: string;
+    }>>([]);
     // Seed pin metadata (id, name, image, rarityLabel, points) from the
     // client-side event registry so pin art renders on the first frame
     // instead of waiting for the /api/promo/leaderboard round-trip.
@@ -583,6 +599,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setEntries(d.leaderboard || []);
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
+                setHerdsEntries(d.herdsLeaderboard || []);
                 if (d.eventSet?.pins) {
                     // Merge server owned counts onto the client-seeded
                     // metadata rather than replacing wholesale — the
@@ -816,7 +833,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         fontWeight: 600,
                                     }}
                                 >
-                                    The Set
+                                    {setTabLabel}
                                 </button>
                                 <button
                                     type="button"
@@ -836,6 +853,34 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         {/* Content */}
                         {view === "leaderboard" ? (
                             <div className="px-5 pb-3 pt-3">
+                                {/* Points | Herds subtoggle — only on
+                                    set events. Points is the score-based
+                                    ranking (existing behavior). Herds
+                                    ranks by full sets completed with
+                                    points as the tie-breaker. */}
+                                {promo.eventSetId && (
+                                    <div className="flex justify-center gap-1 mb-3">
+                                        {(["points", "herds"] as const).map(m => {
+                                            const isActive = leaderboardMetric === m;
+                                            return (
+                                                <button
+                                                    key={m}
+                                                    type="button"
+                                                    onClick={() => setLeaderboardMetric(m)}
+                                                    className="px-4 py-1.5 rounded-full font-display text-[10px] tracking-[0.22em] uppercase transition-colors"
+                                                    style={{
+                                                        background: isActive ? `${accent}22` : "transparent",
+                                                        color: isActive ? accent : "rgba(255,255,255,0.5)",
+                                                        border: `1px solid ${isActive ? `${accent}66` : "rgba(255,255,255,0.08)"}`,
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    {m === "points" ? "Points" : "Herds"}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                                 {/* TOP COLLECTORS header is redundant with the
                                     "Leaderboard" tab label on set events. Keep
                                     it for single-pin events where there's no
@@ -952,34 +997,98 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 </Link>
                                             );
                                         })()}
-                                        {/* Per-pin count column headers (only on set
-                                            events). Renders right-aligned to match the
-                                            row data; pin name is abbreviated to its
-                                            rarity letter so 4 columns fit even on
-                                            mobile. The full pin name lives in the
-                                            Set tab if anyone needs the legend. */}
-                                        {promo.eventSetId && setPins.length > 0 && (
-                                            <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
-                                                <div className="flex-shrink-0 w-7 text-center">RANK</div>
-                                                <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                <div className="flex-shrink-0 w-11 text-center">Pins</div>
-                                                <div className="flex-shrink-0 w-11 text-center">Giga</div>
-                                                <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
-                                            </div>
+                                        {/* Points view — the original per-pin count column
+                                            headers + rows. Only rendered when the subtoggle
+                                            is on "points" (or when there's no subtoggle for
+                                            a standalone event). */}
+                                        {leaderboardMetric === "points" && (
+                                            <>
+                                                {promo.eventSetId && setPins.length > 0 && (
+                                                    <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                        <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                        <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                        <div className="flex-shrink-0 w-11 text-center">Pins</div>
+                                                        <div className="flex-shrink-0 w-11 text-center">Giga</div>
+                                                        <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
+                                                    </div>
+                                                )}
+                                                <div className="space-y-1.5">
+                                                    {entries.map(entry => (
+                                                        <LeaderboardRow
+                                                            key={entry.username}
+                                                            entry={entry}
+                                                            isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                            accent={accent}
+                                                            currentAvatarUrl={currentAvatarUrl}
+                                                            isWinner={ended && entry.rank === 1}
+                                                            setPins={promo.eventSetId ? setPins : undefined}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </>
                                         )}
-                                        <div className="space-y-1.5">
-                                            {entries.map(entry => (
-                                                <LeaderboardRow
-                                                    key={entry.username}
-                                                    entry={entry}
-                                                    isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
-                                                    accent={accent}
-                                                    currentAvatarUrl={currentAvatarUrl}
-                                                    isWinner={ended && entry.rank === 1}
-                                                    setPins={promo.eventSetId ? setPins : undefined}
-                                                />
-                                            ))}
-                                        </div>
+                                        {/* Herds view — simpler layout ranked by full sets
+                                            completed. Column order: RANK / COLLECTOR /
+                                            HERDS / POINTS. Points is the tie-breaker. */}
+                                        {leaderboardMetric === "herds" && (
+                                            <>
+                                                <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                    <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                    <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                    <div className="flex-shrink-0 w-11 text-center font-semibold" style={{ color: accent }}>Herds</div>
+                                                    <div className="flex-shrink-0 w-11 text-center tabular-nums">Points</div>
+                                                </div>
+                                                {herdsEntries.length === 0 ? (
+                                                    <div className="py-8 text-center font-mundial text-xs text-white/40">
+                                                        No full sets yet. Be the first to complete a herd.
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1.5">
+                                                        {herdsEntries.map(entry => {
+                                                            const isYou = !!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase();
+                                                            return (
+                                                                <Link
+                                                                    key={entry.username}
+                                                                    href={`/u/${encodeURIComponent(entry.username)}`}
+                                                                    prefetch={false}
+                                                                    className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
+                                                                >
+                                                                    <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/70">
+                                                                        {entry.rank}
+                                                                    </div>
+                                                                    <Avatar
+                                                                        username={entry.username}
+                                                                        hintUrl={isYou ? currentAvatarUrl : (entry.avatarUrl || undefined)}
+                                                                        size={32}
+                                                                    />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className={`font-display font-semibold text-sm truncate ${isYou ? "text-[#B366FF]" : "text-white/90"}`}>
+                                                                            {isYou ? "You" : entry.username}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                                                                        style={{
+                                                                            fontSize: "18px",
+                                                                            color: accent,
+                                                                            textShadow: `0 0 12px ${accent}88`,
+                                                                        }}
+                                                                    >
+                                                                        {entry.herds}
+                                                                    </div>
+                                                                    <div
+                                                                        className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                                                                        style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
+                                                                    >
+                                                                        {entry.count}
+                                                                    </div>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                     </>
                                 )}
 

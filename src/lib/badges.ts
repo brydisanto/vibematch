@@ -780,20 +780,21 @@ export const BADGES: Badge[] = [
 // into the blue/Common tier pool when their active flag is on, and
 // disappear automatically when the flag flips off.
 //
-// Set events (e.g. Craig's Bubble Gum Blast) intentionally do NOT
-// include their pins in the tile pool — the pins only appear as
-// capsule inserts on open. Keeps the game surface visually stable
-// while still letting the event drop happen inside capsules.
+// Set events control tile-pool inclusion via their `includeInGameTiles`
+// flag. Craig's Bubble Gum Blast keeps it off (capsule drops only,
+// visually stable board). Claynosaurz partner event turns it on so
+// the partner's IP appears as playable tiles during the event window.
 function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getDroppablePromoBadges, getPrimaryActiveEvent } = require("./promo-badges") as {
         getDroppablePromoBadges: () => Badge[];
-        getPrimaryActiveEvent: () => { kind: "set" | "standalone" } | null;
+        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { includeInGameTiles?: boolean } } | null;
     };
     const base = BADGES.filter(b => !b.collectOnly);
-    if (getPrimaryActiveEvent()?.kind === "set") {
+    const primary = getPrimaryActiveEvent();
+    if (primary?.kind === "set" && !primary.set?.includeInGameTiles) {
         return base;
     }
     return [...base, ...getDroppablePromoBadges()];
