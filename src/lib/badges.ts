@@ -800,10 +800,46 @@ function getGameBadgePool(): Badge[] {
     return [...base, ...getDroppablePromoBadges()];
 }
 
+// Probability that a game board, when a set event with
+// includeInGameTiles is active, is overridden to include ALL of the
+// event's pins on the board. Silent moment — no banner, no toast.
+// Players who happen to hit it get a rare "full set on the board"
+// experience. Consumes exactly one rng() call so the seeded stream
+// stays deterministic per game seed.
+const FULL_SET_BOARD_PROBABILITY = 0.05;
+
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
     const pool = getGameBadgePool();
+
+    // Silent "full set on the board" moment — when an event with
+    // includeInGameTiles is active, small chance every game to force
+    // ALL of that event's pins onto the board. Fill remaining slots
+    // from the normal pool so tier variety is preserved. Consume the
+    // rng() call FIRST regardless of outcome so the seeded stream
+    // stays consistent between hit and miss branches.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getPrimaryActiveEvent } = require("./promo-badges") as {
+        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string; includeInGameTiles?: boolean } } | null;
+    };
+    const fullSetRoll = rng();
+    const primary = getPrimaryActiveEvent();
+    if (
+        primary?.kind === "set"
+        && primary.set?.includeInGameTiles
+        && fullSetRoll < FULL_SET_BOARD_PROBABILITY
+    ) {
+        const setId = primary.set.id;
+        const setPins = pool.filter((b) => (b as { eventSetId?: string }).eventSetId === setId);
+        if (setPins.length > 0 && setPins.length <= count) {
+            const flexCount = count - setPins.length;
+            const setPinIds = new Set(setPins.map(p => p.id));
+            const remaining = shuffle(pool.filter(b => !setPinIds.has(b.id)), rng);
+            const flex = remaining.slice(0, flexCount);
+            return shuffle([...setPins, ...flex], rng);
+        }
+    }
 
     const byTier: Record<BadgeTier, Badge[]> = {
         blue: shuffle(pool.filter((b) => b.tier === "blue"), rng),
