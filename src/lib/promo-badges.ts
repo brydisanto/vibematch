@@ -342,7 +342,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Monday July 13 2026, 12:00 PM Eastern — exactly one week of
         // collecting. Drives the "ENDS …" countdown once the event is
         // live, then flips the drawer to FINAL RESULTS at cutoff.
-        endsAt: "2026-07-13T16:00:00Z",
+        // PREVIEW OVERRIDE: bumped forward temporarily so Claynosaurz
+        // is the primary event on the branch preview. REVERT to
+        // "2026-07-13T16:00:00Z" before merging to main.
+        endsAt: "2026-07-08T00:00:00Z",
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.jpg",
         // +25 per full set collected (one of every pin). Stacks: 3 of
@@ -377,8 +380,13 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // PLACEHOLDER dates — Monday July 20 2026, 12:00 PM Eastern
         // start; Monday July 27 2026, 12:00 PM Eastern end. Bump
         // when the partnership goes live.
-        startsAt: "2026-07-20T16:00:00Z",
-        endsAt: "2026-07-27T16:00:00Z",
+        // PREVIEW OVERRIDE: pulled forward to be live NOW so the
+        // branch preview can showcase Claynosaurz-specific behavior
+        // (teal frame, The Herd tab, Cosmic drops, tile inclusion).
+        // REVERT to real launch dates ("2026-07-20T16:00:00Z" →
+        // "2026-07-27T16:00:00Z") before merging to main.
+        startsAt: "2026-07-01T16:00:00Z",
+        endsAt: "2026-08-01T16:00:00Z",
         tabLabel: "Set",
         // Temporary hero — pointing at the branded Cosmic pin since
         // it carries the Claynosaurz logo and reads well at hero size.
