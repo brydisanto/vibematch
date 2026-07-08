@@ -68,6 +68,7 @@ interface EventSetPin {
 interface EventSetMeta {
     setBonusPoints: number | null;
     scoreCap: number | null;
+    setBonusLabel: string;
 }
 
 function formatRemaining(targetMs: number): { d: number; h: number; m: number; s: number; done: boolean } {
@@ -581,11 +582,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         }));
     });
     const [setMeta, setSetMeta] = useState<EventSetMeta>(() => {
-        if (!promo.eventSetId) return { setBonusPoints: null, scoreCap: null };
+        if (!promo.eventSetId) return { setBonusPoints: null, scoreCap: null, setBonusLabel: "FULL SET" };
         const setDef = findPromoEventSet(promo.eventSetId);
         return {
             setBonusPoints: setDef?.setBonusPoints ?? null,
             scoreCap: setDef?.scoreCap ?? null,
+            setBonusLabel: setDef?.setBonusLabel ?? "FULL SET",
         };
     });
     const [scoreLabel, setScoreLabel] = useState<"pins" | "points">("pins");
@@ -625,10 +627,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                     });
                 }
                 if (d.eventSet) {
-                    setSetMeta({
+                    setSetMeta(prev => ({
                         setBonusPoints: d.eventSet.setBonusPoints ?? null,
                         scoreCap: d.eventSet.scoreCap ?? null,
-                    });
+                        // setBonusLabel isn't in the API response — keep the
+                        // client-seeded value from findPromoEventSet.
+                        setBonusLabel: prev.setBonusLabel,
+                    }));
                 }
                 if (d.scoreLabel === "points") setScoreLabel("points");
                 setLoading(false);
@@ -1220,6 +1225,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 pins={setPins}
                                 accent={accent}
                                 setBonusPoints={setMeta.setBonusPoints}
+                                setBonusLabel={setMeta.setBonusLabel}
                                 scoreCap={setMeta.scoreCap}
                             />
                         )}
@@ -1239,11 +1245,13 @@ function SetView({
     pins,
     accent,
     setBonusPoints,
+    setBonusLabel,
     scoreCap,
 }: {
     pins: EventSetPin[];
     accent: string;
     setBonusPoints: number | null;
+    setBonusLabel: string;
     scoreCap: number | null;
 }) {
     if (pins.length === 0) {
@@ -1267,7 +1275,7 @@ function SetView({
                 >
                     {setBonusPoints !== null && setBonusPoints > 0 && (
                         <div className="flex items-center gap-2">
-                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">FULL SET</span>
+                            <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">{setBonusLabel}</span>
                             <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
                                 +{setBonusPoints} pts
                             </span>

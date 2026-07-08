@@ -126,6 +126,14 @@ export interface PromoEventSet {
      *  0 (no bonus) so single-pin events and lottery-style sets opt in
      *  explicitly. */
     setBonusPoints?: number;
+    /** Display label for the set-bonus row in the drawer. Defaults to
+     *  "FULL SET"; partner events with themed naming (e.g. "SET OF 4"
+     *  for Claynosaurz where the chase pin is excluded) can override. */
+    setBonusLabel?: string;
+    /** Optional full-bleed background swapped in behind the game board
+     *  while this set is active. Path under /public. When absent the
+     *  default vibematchbg2.jpg is used. */
+    gameBackground?: string;
     /** Hard cap on the per-user leaderboard score. Once reached, the
      *  zset entry stops climbing — any further collects are still
      *  credited to per-pin counters but don't move the leaderboard
@@ -366,6 +374,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         },
         // Set pins do NOT appear on the game board — capsule drops only.
         includeInGameTiles: false,
+        gameBackground: "/backgrounds/game-bg-bubble-gum.webp",
     },
     {
         id: "claynosaurz_partner_event",
@@ -411,6 +420,11 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // added to the tile pool alongside the normal tiers.
         includeInGameTiles: true,
         setTabLabel: "The Herd",
+        // Set-of-4 bonus label — the Grail chase pin is excluded from
+        // the min-of-pins math, so completing 4 of every base pin
+        // fires the bonus.
+        setBonusLabel: "SET OF 4",
+        gameBackground: "/backgrounds/game-bg-claynosaurz.jpg",
     },
 ];
 

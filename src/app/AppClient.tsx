@@ -789,16 +789,18 @@ export default function AppClient() {
             className="h-screen flex flex-col overflow-hidden relative"
           >
             <div className="absolute inset-0 z-0 bg-[#0a0015]">
-              {/* Swap the default cityscape for the Bubble Gum backdrop
-                  while a multi-pin set event is active (Craig's Bubble
-                  Gum Blast). Falls back to the standard art the moment
-                  the event ends. */}
+              {/* Per-set background swap. Each PromoEventSet can supply
+                  its own `gameBackground`; if the primary active event
+                  has one, we render it in place of the default
+                  cityscape. Fallback stays vibematchbg2.jpg for
+                  non-event days or events without their own backdrop. */}
               <Image
-                src={
-                  isPromoActive() && getPrimaryActiveEvent()?.kind === "set"
-                    ? "/backgrounds/game-bg-bubble-gum.webp"
-                    : "/vibematchbg2.jpg"
-                }
+                src={(() => {
+                  if (!isPromoActive()) return "/vibematchbg2.jpg";
+                  const primary = getPrimaryActiveEvent();
+                  if (primary?.kind !== "set") return "/vibematchbg2.jpg";
+                  return primary.set.gameBackground || "/vibematchbg2.jpg";
+                })()}
                 alt="Background"
                 fill
                 className="object-cover object-center"
