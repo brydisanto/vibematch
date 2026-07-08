@@ -377,9 +377,8 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Claynosaurz brand teal / turquoise. Update to their exact
         // brand hex when the partnership brief lands.
         accentColor: "#00C4B4",
-        // PLACEHOLDER dates — Monday July 20 2026, 12:00 PM Eastern
-        // start; Monday July 27 2026, 12:00 PM Eastern end. Bump
-        // when the partnership goes live.
+        // Launch: Monday July 20 2026, 12:00 PM Eastern (16:00 UTC).
+        // Window: 7 days, closing Monday July 27 12:00 PM Eastern.
         // PREVIEW OVERRIDE: pulled forward to be live NOW so the
         // branch preview can showcase Claynosaurz-specific behavior
         // (teal frame, The Herd tab, Cosmic drops, tile inclusion).
@@ -451,9 +450,17 @@ export function getActivePromoBadges(): PromoBadge[] {
     return isPromoActive() ? PROMO_BADGES : [];
 }
 
-/** True once the promo's endsAt has passed. Promos without endsAt
- *  never expire. */
+/** True once the promo's endsAt has passed. For set-event pins the
+ *  lifetime is defined at the SET level (individual pins have no
+ *  endsAt of their own), so we inherit from the parent set. Standalone
+ *  promos check their own endsAt. Anything with no resolved endsAt
+ *  never expires. */
 export function isPromoEnded(promo: PromoBadge): boolean {
+    if (promo.eventSetId) {
+        const set = findPromoEventSet(promo.eventSetId);
+        if (!set?.endsAt) return false;
+        return Date.now() >= new Date(set.endsAt).getTime();
+    }
     if (!promo.endsAt) return false;
     return Date.now() >= new Date(promo.endsAt).getTime();
 }
