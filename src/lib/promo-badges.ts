@@ -71,6 +71,12 @@ export interface PromoBadge extends Badge {
     /** Short human label for the rarity — "Common", "Rare", "Epic",
      *  "Legendary". Shown in the drawer's set view, no game logic. */
     rarityLabel?: string;
+    /** When true, this pin adds `points` to the player's score but is
+     *  EXCLUDED from the min-of-pins calculation that gates the set
+     *  bonus. Used for "chase" tier pins that reward pulling on top
+     *  of a full base set without making the set impossible to
+     *  complete. Defaults to false. */
+    isChase?: boolean;
 }
 
 /**
@@ -200,6 +206,91 @@ export const PROMO_BADGES: PromoBadge[] = [
         dropWeight: 2,
         rarityLabel: "Legendary",
     },
+    // ── Claynosaurz partner event (PLACEHOLDER names + pin art) ─────
+    // 4 base pins + 1 chase pin (rarer than Legendary). Chase adds
+    // points but is EXCLUDED from the min-of-pins set-bonus math, so
+    // completing the 4-pin base set still fires the setBonusPoints
+    // whether the player has the chase or not. Drop weights sum to
+    // ~101 so the 15% pool per-cap odds land roughly at:
+    //   Common       10.4%
+    //   Rare          2.97%
+    //   Epic          1.19%
+    //   Legendary     0.30%
+    //   Chase         0.15%  ← ultra-rare, rarer than Legendary
+    // Drop art at /badges/promo/set/claynosaurz/ before launch.
+    {
+        id: "claynosaurz_common",
+        name: "Claynosaurz Common (TBD)",
+        image: "/badges/promo/set/claynosaurz/common.png",
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true,
+        partnerName: "Claynosaurz",
+        tabLabel: "Set",
+        eventSetId: "claynosaurz_partner_event",
+        points: 1,
+        dropWeight: 70,
+        rarityLabel: "Common",
+    },
+    {
+        id: "claynosaurz_rare",
+        name: "Claynosaurz Rare (TBD)",
+        image: "/badges/promo/set/claynosaurz/rare.png",
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true,
+        partnerName: "Claynosaurz",
+        tabLabel: "Set",
+        eventSetId: "claynosaurz_partner_event",
+        points: 2,
+        dropWeight: 20,
+        rarityLabel: "Rare",
+    },
+    {
+        id: "claynosaurz_epic",
+        name: "Claynosaurz Epic (TBD)",
+        image: "/badges/promo/set/claynosaurz/epic.png",
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true,
+        partnerName: "Claynosaurz",
+        tabLabel: "Set",
+        eventSetId: "claynosaurz_partner_event",
+        points: 5,
+        dropWeight: 8,
+        rarityLabel: "Epic",
+    },
+    {
+        id: "claynosaurz_legendary",
+        name: "Claynosaurz Legendary (TBD)",
+        image: "/badges/promo/set/claynosaurz/legendary.png",
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true,
+        partnerName: "Claynosaurz",
+        tabLabel: "Set",
+        eventSetId: "claynosaurz_partner_event",
+        points: 10,
+        dropWeight: 2,
+        rarityLabel: "Legendary",
+    },
+    {
+        id: "claynosaurz_chase",
+        name: "Claynosaurz Chase (TBD)",
+        image: "/badges/promo/set/claynosaurz/chase.png",
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true,
+        partnerName: "Claynosaurz",
+        tabLabel: "Set",
+        eventSetId: "claynosaurz_partner_event",
+        // Chase awards a big point boost (2x Legendary) but doesn't
+        // gate the set bonus — see isChase.
+        points: 20,
+        dropWeight: 1,
+        rarityLabel: "Chase",
+        isChase: true,
+    },
 ];
 
 /**
@@ -239,21 +330,47 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // everyone at 100 is treated equally for the draw.
         scoreCap: 100,
     },
+    {
+        id: "claynosaurz_partner_event",
+        name: "Claynosaurz Partner Event (TBD)",
+        partnerName: "Claynosaurz",
+        description: "Placeholder description — Claynosaurz partner event. 4 base pins + 1 rare Chase pin. Complete a full base set for a point bonus; Chase pin is bragging rights + a big point boost.",
+        shortDescription: "Collect Claynosaurz pins to win prizes!",
+        eventWindow: "Claynosaurz x Pin Drop",
+        // Claynosaurz brand teal / turquoise. Update to their exact
+        // brand hex when the partnership brief lands.
+        accentColor: "#00C4B4",
+        // PLACEHOLDER dates — Monday July 20 2026, 12:00 PM Eastern
+        // start; Monday July 27 2026, 12:00 PM Eastern end. Bump
+        // when the partnership goes live.
+        startsAt: "2026-07-20T16:00:00Z",
+        endsAt: "2026-07-27T16:00:00Z",
+        tabLabel: "Set",
+        heroImage: "/badges/promo/set/claynosaurz/hero.jpg",
+        // Same as Craig's — +25 per full 4-pin base set completed.
+        // Chase pin does NOT count toward set completion (isChase),
+        // so the max-out math is unchanged from Craig's despite the
+        // 5-pin display.
+        setBonusPoints: 25,
+        // Hard cap on the leaderboard score, same as Craig's.
+        scoreCap: 100,
+    },
 ];
 
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
  * this hits, we skip the tier roll entirely and award the promo. Bumped
- * from 3% → 10% for Craig's Bubble Gum Blast to widen the raffle pool
- * for the 1-week window. Per-capsule odds by tier become
- *   Bubble Gum (Common)   7.00%
- *   Double Bubble Gum     2.00%
- *   Big Bubble Gum        0.80%
- *   Giga Bubble Gum       0.20%
- * Estimate: 20-35 players hit the 100 cap over the week; Giga stays
- * rare (~500 caps for expected 1 pull) so the side-prize keeps bite.
+ * from 10% → 15% for the Claynosaurz partner event to (a) accommodate a
+ * 5th chase tier without cannibalizing base rates and (b) make the co-
+ * marketed event feel more generous to first-time visitors from the
+ * partner's audience. Per-capsule odds within the Claynosaurz set:
+ *   Common       10.4%
+ *   Rare          2.97%
+ *   Epic          1.19%
+ *   Legendary     0.30%
+ *   Chase         0.15%  ← rarer than Legendary; excluded from set bonus
  */
-export const PROMO_DROP_RATE = 0.10;
+export const PROMO_DROP_RATE = 0.15;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
@@ -377,12 +494,19 @@ export function computeEventSetScore(
     }
     let pinScore = 0;
     let minOwned = Infinity;
+    let baseCount = 0;
     for (const pin of pins) {
         const owned = Math.max(0, Number(perPinOwned[pin.id] ?? 0));
         pinScore += owned * (pin.points ?? 1);
+        // Chase pins add to pinScore but don't gate the set bonus —
+        // completing all 4 base pins is what triggers the bonus.
+        if (pin.isChase) continue;
+        baseCount++;
         if (owned < minOwned) minOwned = owned;
     }
-    const fullSets = minOwned === Infinity ? 0 : minOwned;
+    // fullSets = min of BASE pin counts only. If a set is chase-only
+    // (no base pins configured — shouldn't happen), no bonus fires.
+    const fullSets = baseCount === 0 || minOwned === Infinity ? 0 : minOwned;
     const setBonus = fullSets * (set.setBonusPoints ?? 0);
     const rawTotal = pinScore + setBonus;
     const cap = set.scoreCap ?? null;
