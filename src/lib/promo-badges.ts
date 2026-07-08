@@ -206,21 +206,22 @@ export const PROMO_BADGES: PromoBadge[] = [
         dropWeight: 2,
         rarityLabel: "Legendary",
     },
-    // ── Claynosaurz partner event (PLACEHOLDER names + pin art) ─────
-    // 4 base pins + 1 chase pin (rarer than Legendary). Chase adds
-    // points but is EXCLUDED from the min-of-pins set-bonus math, so
-    // completing the 4-pin base set still fires the setBonusPoints
-    // whether the player has the chase or not. Drop weights sum to
+    // ── Claynosaurz partner event (PLACEHOLDER names) ───────────────
+    // 4 base pins + 1 Cosmic chase pin (rarer than Legendary). Cosmic
+    // adds points but is EXCLUDED from the min-of-pins set-bonus math,
+    // so completing the 4-pin base set still fires the setBonusPoints
+    // whether the player has the Cosmic or not. Drop weights sum to
     // ~101 so the 15% pool per-cap odds land roughly at:
     //   Common       10.4%
     //   Rare          2.97%
     //   Epic          1.19%
     //   Legendary     0.30%
-    //   Chase         0.15%  ← ultra-rare, rarer than Legendary
-    // Drop art at /badges/promo/set/claynosaurz/ before launch.
+    //   Cosmic (chase) 0.15%  ← ultra-rare, rarer than Legendary
+    // Pin art (common / rare / epic / legendary / cosmic .png) is
+    // in place under /badges/promo/set/claynosaurz/. Rename copy TBD.
     {
         id: "claynosaurz_common",
-        name: "Claynosaurz Common (TBD)",
+        name: "Milo",
         image: "/badges/promo/set/claynosaurz/common.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -234,7 +235,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
     {
         id: "claynosaurz_rare",
-        name: "Claynosaurz Rare (TBD)",
+        name: "Bex",
         image: "/badges/promo/set/claynosaurz/rare.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -248,7 +249,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
     {
         id: "claynosaurz_epic",
-        name: "Claynosaurz Epic (TBD)",
+        name: "Trix",
         image: "/badges/promo/set/claynosaurz/epic.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -262,7 +263,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
     {
         id: "claynosaurz_legendary",
-        name: "Claynosaurz Legendary (TBD)",
+        name: "Flea",
         image: "/badges/promo/set/claynosaurz/legendary.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -275,20 +276,23 @@ export const PROMO_BADGES: PromoBadge[] = [
         rarityLabel: "Legendary",
     },
     {
-        id: "claynosaurz_chase",
-        name: "Claynosaurz Chase (TBD)",
-        image: "/badges/promo/set/claynosaurz/chase.png",
+        // "Cosmic" is Claynosaurz's chosen name for their chase-tier pin.
+        // The mechanic (isChase) stays generically named because future
+        // events may pick their own chase-tier label.
+        id: "claynosaurz_cosmic",
+        name: "Claynoz Pioneer",
+        image: "/badges/promo/set/claynosaurz/cosmic.png",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Set",
         eventSetId: "claynosaurz_partner_event",
-        // Chase awards a big point boost (2x Legendary) but doesn't
+        // Cosmic awards a big point boost (2x Legendary) but doesn't
         // gate the set bonus — see isChase.
         points: 20,
         dropWeight: 1,
-        rarityLabel: "Chase",
+        rarityLabel: "Cosmic",
         isChase: true,
     },
 ];
@@ -346,7 +350,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         startsAt: "2026-07-20T16:00:00Z",
         endsAt: "2026-07-27T16:00:00Z",
         tabLabel: "Set",
-        heroImage: "/badges/promo/set/claynosaurz/hero.jpg",
+        // Temporary hero — pointing at the branded Cosmic pin since
+        // it carries the Claynosaurz logo and reads well at hero size.
+        // Swap when a dedicated character/mascot hero drops.
+        heroImage: "/badges/promo/set/claynosaurz/cosmic.png",
         // Same as Craig's — +25 per full 4-pin base set completed.
         // Chase pin does NOT count toward set completion (isChase),
         // so the max-out math is unchanged from Craig's despite the
@@ -364,11 +371,11 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
  * 5th chase tier without cannibalizing base rates and (b) make the co-
  * marketed event feel more generous to first-time visitors from the
  * partner's audience. Per-capsule odds within the Claynosaurz set:
- *   Common       10.4%
- *   Rare          2.97%
- *   Epic          1.19%
- *   Legendary     0.30%
- *   Chase         0.15%  ← rarer than Legendary; excluded from set bonus
+ *   Common          10.4%
+ *   Rare             2.97%
+ *   Epic             1.19%
+ *   Legendary        0.30%
+ *   Cosmic (chase)   0.15%  ← rarer than Legendary; excluded from set bonus
  */
 export const PROMO_DROP_RATE = 0.15;
 

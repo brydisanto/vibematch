@@ -1,9 +1,8 @@
 # Claynosaurz partner event assets
 
-Drop these files here (exact filenames) — the code in
-`src/lib/promo-badges.ts` references them by name.
+Files are referenced by name from `src/lib/promo-badges.ts`.
 
-## Pin art (5 files)
+## Pin art (5 files) ✅ IN PLACE
 
 | filename | rarity | pt value | drop weight | notes |
 | --- | --- | --- | --- | --- |
@@ -11,7 +10,7 @@ Drop these files here (exact filenames) — the code in
 | `rare.png` | Rare | 2 | 20 | ~2.97% |
 | `epic.png` | Epic | 5 | 8 | ~1.19% |
 | `legendary.png` | Legendary | 10 | 2 | ~0.30% |
-| `chase.png` | Chase | 20 | 1 | ~0.15% — ultra-rare, doesn't count toward set completion |
+| `cosmic.png` | Cosmic (chase) | 20 | 1 | ~0.15% — ultra-rare, doesn't count toward set completion |
 
 Format guidance to match Craig's set:
 - Square PNGs, ideally 1024×1024, transparent background
