@@ -420,7 +420,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
         <Link
             href={`/u/${encodeURIComponent(entry.username)}`}
             prefetch={false}
-            className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${
+            className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-colors ${
                 isUser
                     ? "bg-[#B366FF]/10 border border-[#B366FF]/20"
                     : medal
@@ -459,7 +459,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 return (
                     <>
                         <div
-                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "14px",
                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -468,7 +468,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                             {totalPins}
                         </div>
                         <div
-                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "15px",
                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
@@ -480,7 +480,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 );
             })()}
             <div
-                className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
                 style={{
                     fontSize: "18px",
                     color: accent,
@@ -990,7 +990,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             className="font-display text-[10px] tracking-[0.3em] uppercase mb-0.5"
                                                             style={{ color: accent, fontWeight: 600 }}
                                                         >
-                                                            Giga Chad
+                                                            Grails Chase Leader
                                                         </div>
                                                         <div className={`font-display font-semibold text-base truncate ${isYou ? "text-[#B366FF]" : "text-white"}`}>
                                                             {isYou ? "You" : leader.username}
@@ -1017,12 +1017,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         {leaderboardMetric === "points" && (
                                             <>
                                                 {promo.eventSetId && setPins.length > 0 && (
-                                                    <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                    <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                        <div className="flex-shrink-0 w-11 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-11 text-center">Giga</div>
-                                                        <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
+                                                        <div className="flex-shrink-0 w-14 text-center">Pins</div>
+                                                        <div className="flex-shrink-0 w-14 text-center">Grails</div>
+                                                        <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
                                                 )}
                                                 <div className="space-y-1.5">
@@ -1045,10 +1045,10 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             COLLECTOR / GRAILS. */}
                                         {leaderboardMetric === "grail" && (
                                             <>
-                                                <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                    <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Grails</div>
+                                                    <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Grails</div>
                                                 </div>
                                                 {grailEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
@@ -1063,7 +1063,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                     key={entry.username}
                                                                     href={`/u/${encodeURIComponent(entry.username)}`}
                                                                     prefetch={false}
-                                                                    className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
+                                                                    className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
                                                                 >
                                                                     <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/70">
                                                                         {entry.rank}
@@ -1079,7 +1079,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                         </div>
                                                                     </div>
                                                                     <div
-                                                                        className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                                                                        className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
                                                                         style={{
                                                                             fontSize: "18px",
                                                                             color: accent,
@@ -1100,11 +1100,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             HERDS / POINTS. Points is the tie-breaker. */}
                                         {leaderboardMetric === "herds" && (
                                             <>
-                                                <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                    <div className="flex-shrink-0 w-11 text-center font-semibold" style={{ color: accent }}>Herds</div>
-                                                    <div className="flex-shrink-0 w-11 text-center tabular-nums">Points</div>
+                                                    <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>Herds</div>
+                                                    <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
                                                 </div>
                                                 {herdsEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
@@ -1119,7 +1119,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                     key={entry.username}
                                                                     href={`/u/${encodeURIComponent(entry.username)}`}
                                                                     prefetch={false}
-                                                                    className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
+                                                                    className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
                                                                 >
                                                                     <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/70">
                                                                         {entry.rank}
@@ -1135,7 +1135,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                         </div>
                                                                     </div>
                                                                     <div
-                                                                        className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                                                                        className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
                                                                         style={{
                                                                             fontSize: "18px",
                                                                             color: accent,
@@ -1145,7 +1145,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                         {entry.herds}
                                                                     </div>
                                                                     <div
-                                                                        className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                                                                        className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
                                                                         style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
                                                                     >
                                                                         {entry.count}
@@ -1165,7 +1165,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     <div className="mt-3 pt-3 border-t border-white/5">
                                         <Link
                                             href={`/u/${encodeURIComponent(userRow.username)}`}
-                                            className="flex items-center gap-2 py-2.5 px-2 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
+                                            className="flex items-center gap-3 py-2.5 px-2 rounded-xl bg-[#B366FF]/10 border border-[#B366FF]/20"
                                         >
                                             <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/60">
                                                 {userRow.rank}
@@ -1181,7 +1181,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 return (
                                                     <>
                                                         <div
-                                                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "14px",
                                                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -1190,7 +1190,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             {totalPins}
                                                         </div>
                                                         <div
-                                                            className="flex-shrink-0 w-11 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "15px",
                                                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
@@ -1202,7 +1202,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 );
                                             })()}
                                             <div
-                                                className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                                                className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
                                                 style={{
                                                     fontSize: "18px",
                                                     color: accent,
