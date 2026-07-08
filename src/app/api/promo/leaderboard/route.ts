@@ -197,6 +197,34 @@ export async function GET(req: Request) {
                     entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
                 });
             }
+            // Grail Chase leaderboard — ranked by chase-pin (isChase)
+            // count. Reuses the existing per-pin zset for the chase pin,
+            // so no separate KV write is needed at drop time. Only
+            // present for sets that actually have a chase pin defined.
+            const chasePin = pins.find(p => p.isChase);
+            const grailLeaderboard: { username: string; count: number; rank: number; avatarUrl: string }[] = [];
+            if (chasePin) {
+                const grailRaw = await kv.zrange(
+                    promoLeaderboardKey(chasePin.id),
+                    0, 49,
+                    { rev: true, withScores: true },
+                ) as Array<string | number>;
+                for (let i = 0; i < grailRaw.length; i += 2) {
+                    grailLeaderboard.push({
+                        username: String(grailRaw[i]),
+                        count: Number(grailRaw[i + 1]),
+                        rank: (i / 2) + 1,
+                        avatarUrl: '',
+                    });
+                }
+                if (grailLeaderboard.length > 0) {
+                    const profileKeys = grailLeaderboard.map(e => `user:${e.username}`);
+                    const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
+                    grailLeaderboard.forEach((entry, i) => {
+                        entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
+                    });
+                }
+            }
             return NextResponse.json(
                 {
                     eventSet: {
@@ -223,6 +251,7 @@ export async function GET(req: Request) {
                     scoreLabel: 'points',
                     leaderboard,
                     herdsLeaderboard,
+                    grailLeaderboard,
                     userEntry,
                     totalPlayers,
                     active: isPromoActive(),

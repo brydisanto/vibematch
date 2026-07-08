@@ -312,7 +312,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         // gate the set bonus — see isChase.
         points: 20,
         dropWeight: 1,
-        rarityLabel: "Cosmic",
+        rarityLabel: "Chase",
         isChase: true,
     },
 ];

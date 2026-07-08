@@ -546,13 +546,20 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     // leaderboard. Reads as a personal "what's left" first, public
     // ranking second.
     const [view, setView] = useState<"leaderboard" | "set">("set");
-    // Sub-view inside the Leaderboard tab for set events — Points is
-    // the default (score-based ranking); Herds ranks by full sets
-    // completed, useful when the field is bunched near the score cap.
-    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds">("points");
+    // Sub-view inside the Leaderboard tab for set events. Three tabs:
+    //   points  — score-based ranking (default)
+    //   herds   — ranks by full sets completed, tie-broken by points
+    //   grail   — ranks by chase-pin (Grail) pull count
+    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds" | "grail">("points");
     const [herdsEntries, setHerdsEntries] = useState<Array<{
         username: string;
         herds: number;
+        count: number;
+        rank: number;
+        avatarUrl?: string;
+    }>>([]);
+    const [grailEntries, setGrailEntries] = useState<Array<{
+        username: string;
         count: number;
         rank: number;
         avatarUrl?: string;
@@ -600,6 +607,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setUserEntry(d.userEntry || null);
                 setTotalPlayers(d.totalPlayers || 0);
                 setHerdsEntries(d.herdsLeaderboard || []);
+                setGrailEntries(d.grailLeaderboard || []);
                 if (d.eventSet?.pins) {
                     // Merge server owned counts onto the client-seeded
                     // metadata rather than replacing wholesale — the
@@ -853,21 +861,26 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         {/* Content */}
                         {view === "leaderboard" ? (
                             <div className="px-5 pb-3 pt-3">
-                                {/* Points | Herds subtoggle — only on
-                                    set events. Points is the score-based
-                                    ranking (existing behavior). Herds
-                                    ranks by full sets completed with
-                                    points as the tie-breaker. */}
+                                {/* Points | Herds | Grail Chase subtoggle —
+                                    only on set events. Points ranks by
+                                    score. Herds ranks by full sets
+                                    completed (tie-break: points). Grail
+                                    Chase ranks by chase-pin (isChase)
+                                    pull count. */}
                                 {promo.eventSetId && (
                                     <div className="flex justify-center gap-1 mb-3">
-                                        {(["points", "herds"] as const).map(m => {
-                                            const isActive = leaderboardMetric === m;
+                                        {([
+                                            { key: "points", label: "Total Points" },
+                                            { key: "herds", label: "Herds" },
+                                            { key: "grail", label: "Grail Chase" },
+                                        ] as const).map(({ key, label }) => {
+                                            const isActive = leaderboardMetric === key;
                                             return (
                                                 <button
-                                                    key={m}
+                                                    key={key}
                                                     type="button"
-                                                    onClick={() => setLeaderboardMetric(m)}
-                                                    className="px-4 py-1.5 rounded-full font-display text-[10px] tracking-[0.22em] uppercase transition-colors"
+                                                    onClick={() => setLeaderboardMetric(key)}
+                                                    className="px-3 py-1.5 rounded-full font-display text-[9px] tracking-[0.18em] uppercase transition-colors"
                                                     style={{
                                                         background: isActive ? `${accent}22` : "transparent",
                                                         color: isActive ? accent : "rgba(255,255,255,0.5)",
@@ -875,7 +888,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         fontWeight: 600,
                                                     }}
                                                 >
-                                                    {m === "points" ? "Points" : "Herds"}
+                                                    {label}
                                                 </button>
                                             );
                                         })}
@@ -1025,6 +1038,61 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         />
                                                     ))}
                                                 </div>
+                                            </>
+                                        )}
+                                        {/* Grail Chase view — ranked by chase-pin
+                                            pull count. Column order: RANK /
+                                            COLLECTOR / GRAILS. */}
+                                        {leaderboardMetric === "grail" && (
+                                            <>
+                                                <div className="flex items-center gap-2 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[8px] tracking-[0.18em] uppercase font-display text-white/40">
+                                                    <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                    <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                    <div className="flex-shrink-0 w-11 text-center tabular-nums font-semibold" style={{ color: accent }}>Grails</div>
+                                                </div>
+                                                {grailEntries.length === 0 ? (
+                                                    <div className="py-8 text-center font-mundial text-xs text-white/40">
+                                                        No Grails pulled yet. Be the first to find one.
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1.5">
+                                                        {grailEntries.map(entry => {
+                                                            const isYou = !!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase();
+                                                            return (
+                                                                <Link
+                                                                    key={entry.username}
+                                                                    href={`/u/${encodeURIComponent(entry.username)}`}
+                                                                    prefetch={false}
+                                                                    className={`flex items-center gap-2 py-2.5 px-2 rounded-xl transition-colors ${isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"}`}
+                                                                >
+                                                                    <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/70">
+                                                                        {entry.rank}
+                                                                    </div>
+                                                                    <Avatar
+                                                                        username={entry.username}
+                                                                        hintUrl={isYou ? currentAvatarUrl : (entry.avatarUrl || undefined)}
+                                                                        size={32}
+                                                                    />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className={`font-display font-semibold text-sm truncate ${isYou ? "text-[#B366FF]" : "text-white/90"}`}>
+                                                                            {isYou ? "You" : entry.username}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        className="flex-shrink-0 w-11 text-center font-display font-black tabular-nums"
+                                                                        style={{
+                                                                            fontSize: "18px",
+                                                                            color: accent,
+                                                                            textShadow: `0 0 12px ${accent}88`,
+                                                                        }}
+                                                                    >
+                                                                        {entry.count}
+                                                                    </div>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                         {/* Herds view — simpler layout ranked by full sets
