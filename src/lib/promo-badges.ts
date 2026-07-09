@@ -251,6 +251,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_common",
         name: "Milo",
         image: "/badges/promo/set/claynosaurz/common.png",
+        // Base tier — matches other 1× blue tiles on the board.
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -265,8 +266,9 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_rare",
         name: "Bex",
         image: "/badges/promo/set/claynosaurz/rare.png",
-        tier: "blue" as BadgeTier,
-        pointMultiplier: 1,
+        // Silver rarity → matches other 1.5× silver tiles on the board.
+        tier: "silver" as BadgeTier,
+        pointMultiplier: 1.5,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -279,8 +281,9 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_epic",
         name: "Trix",
         image: "/badges/promo/set/claynosaurz/epic.png",
-        tier: "blue" as BadgeTier,
-        pointMultiplier: 1,
+        // Gold rarity → matches other 2× gold tiles on the board.
+        tier: "gold" as BadgeTier,
+        pointMultiplier: 2,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -293,8 +296,9 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_legendary",
         name: "Flea",
         image: "/badges/promo/set/claynosaurz/legendary.png",
-        tier: "blue" as BadgeTier,
-        pointMultiplier: 1,
+        // Cosmic rarity → matches other 3× cosmic tiles on the board.
+        tier: "cosmic" as BadgeTier,
+        pointMultiplier: 3,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -304,14 +308,19 @@ export const PROMO_BADGES: PromoBadge[] = [
         rarityLabel: "Legendary",
     },
     {
-        // "Cosmic" is Claynosaurz's chosen name for their chase-tier pin.
-        // The mechanic (isChase) stays generically named because future
-        // events may pick their own chase-tier label.
+        // "Cosmic" is Claynosaurz's original file naming; the visible
+        // rarity label is "Grail" and the mechanic (isChase) is
+        // generic. Pin is EXCLUDED from the game-board tile pool
+        // (getGameBadgePool filters isChase out) — Grail is
+        // capsule-only, preserving its rarity feel and keeping the
+        // base cosmic tier composition unaffected.
         id: "claynosaurz_cosmic",
         name: "Claynoz Pioneer",
         image: "/badges/promo/set/claynosaurz/cosmic.png",
-        tier: "blue" as BadgeTier,
-        pointMultiplier: 1,
+        // Cosmic tier for pin-registry consistency; never appears on
+        // the board so the 3× wouldn't apply in-game anyway.
+        tier: "cosmic" as BadgeTier,
+        pointMultiplier: 3,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",

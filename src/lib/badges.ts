@@ -784,6 +784,11 @@ export const BADGES: Badge[] = [
 // flag. Craig's Bubble Gum Blast keeps it off (capsule drops only,
 // visually stable board). Claynosaurz partner event turns it on so
 // the partner's IP appears as playable tiles during the event window.
+//
+// Chase pins (isChase) are ALWAYS filtered out of the tile pool so the
+// chase rarity feel is preserved — Grail-tier pins only appear via
+// capsules. Base tier composition stays intact since we're removing
+// the pin from the shared pool before selectGameBadges runs.
 function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
@@ -797,49 +802,36 @@ function getGameBadgePool(): Badge[] {
     if (primary?.kind === "set" && !primary.set?.includeInGameTiles) {
         return base;
     }
-    return [...base, ...getDroppablePromoBadges()];
+    const eligiblePromos = getDroppablePromoBadges().filter(
+        p => !(p as { isChase?: boolean }).isChase
+    );
+    return [...base, ...eligiblePromos];
 }
 
 // Probability that a game board, when a set event with
-// includeInGameTiles is active, is overridden to include ALL of the
-// event's pins on the board. Silent moment — no banner, no toast.
-// Players who happen to hit it get a rare "full set on the board"
-// experience. Consumes exactly one rng() call so the seeded stream
-// stays deterministic per game seed.
+// includeInGameTiles is active, promotes the event's base pins to the
+// front of their tier's selection queue — effectively guaranteeing
+// one pin per tier lands on the board (up to whichever tiers the set
+// covers). Silent — no banner, no toast. Tile composition stays
+// exactly 3B/1S/1G/1C so game complexion is preserved. Consumes one
+// rng() call regardless of outcome so the seeded stream is
+// deterministic per game seed.
 const FULL_SET_BOARD_PROBABILITY = 0.05;
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
     const pool = getGameBadgePool();
-
-    // Silent "full set on the board" moment — when an event with
-    // includeInGameTiles is active, small chance every game to force
-    // ALL of that event's pins onto the board. Fill remaining slots
-    // from the normal pool so tier variety is preserved. Consume the
-    // rng() call FIRST regardless of outcome so the seeded stream
-    // stays consistent between hit and miss branches.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getPrimaryActiveEvent } = require("./promo-badges") as {
         getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string; includeInGameTiles?: boolean } } | null;
     };
     const fullSetRoll = rng();
     const primary = getPrimaryActiveEvent();
-    if (
+    const forceSetOnBoard =
         primary?.kind === "set"
-        && primary.set?.includeInGameTiles
-        && fullSetRoll < FULL_SET_BOARD_PROBABILITY
-    ) {
-        const setId = primary.set.id;
-        const setPins = pool.filter((b) => (b as { eventSetId?: string }).eventSetId === setId);
-        if (setPins.length > 0 && setPins.length <= count) {
-            const flexCount = count - setPins.length;
-            const setPinIds = new Set(setPins.map(p => p.id));
-            const remaining = shuffle(pool.filter(b => !setPinIds.has(b.id)), rng);
-            const flex = remaining.slice(0, flexCount);
-            return shuffle([...setPins, ...flex], rng);
-        }
-    }
+        && !!primary.set?.includeInGameTiles
+        && fullSetRoll < FULL_SET_BOARD_PROBABILITY;
 
     const byTier: Record<BadgeTier, Badge[]> = {
         blue: shuffle(pool.filter((b) => b.tier === "blue"), rng),
@@ -848,6 +840,24 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
         gold: shuffle(pool.filter((b) => b.tier === "gold"), rng),
         cosmic: shuffle(pool.filter((b) => b.tier === "cosmic"), rng),
     };
+
+    // When the special-board trigger fires, promote this set's base
+    // pins to the front of their tier arrays so selectFromTier picks
+    // them first. Distribution (3B/1S/1G/1C) is unchanged — the trick
+    // is that the set pin sits at index 0 of each tier queue and gets
+    // chosen deterministically before the random base pins.
+    if (forceSetOnBoard && primary?.kind === "set" && primary.set) {
+        const setId = primary.set.id;
+        (Object.keys(byTier) as BadgeTier[]).forEach(tier => {
+            const inSet = byTier[tier].filter(
+                b => (b as { eventSetId?: string }).eventSetId === setId
+            );
+            const others = byTier[tier].filter(
+                b => (b as { eventSetId?: string }).eventSetId !== setId
+            );
+            byTier[tier] = [...inSet, ...others];
+        });
+    }
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
     // "special" badges are collection-only so they don't appear on the board.
