@@ -346,6 +346,15 @@ export function eventSetPointsKey(setId: string): string {
     return `event_set:${setId}:points`;
 }
 
+/** Per-user timestamp of the first time cappedTotal reached the set's
+ *  scoreCap. Written with { nx: true } so only the FIRST cap-crossing
+ *  is recorded. Read by the leaderboard endpoint as the "speed to
+ *  100" tiebreaker — earlier ms wins. Absent for users who haven't
+ *  reached the cap yet. */
+export function eventSetReachedCapKey(setId: string, username: string): string {
+    return `event_set:${setId}:reached_cap:${username}`;
+}
+
 /**
  * Compute a user's total event-set score from their per-pin owned
  * counts. Pure function — no KV reads — so the server can reuse it

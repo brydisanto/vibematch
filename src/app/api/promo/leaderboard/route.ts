@@ -8,6 +8,7 @@ import {
     promoLeaderboardKey,
     findPromoBadge,
     eventSetPointsKey,
+    eventSetReachedCapKey,
     findPromoEventSet,
     getEventSetPins,
 } from '@/lib/promo-badges';
@@ -139,6 +140,41 @@ export async function GET(req: Request) {
                     const v = allCounts[i];
                     leaderboard[ref.entryIdx].pinCounts[ref.pinId] = typeof v === 'number' ? Number(v) : 0;
                 });
+            }
+            // Tiebreaker cascade for the points board: points →
+            // gigas (highest-points pin count) → total pins → speed
+            // to cap (earliest cappedTotal ≥ scoreCap). Reorders
+            // rows that share the same points score; ranks are
+            // reassigned after the sort so the client sees the true
+            // order.
+            if (leaderboard.length > 1) {
+                const gigaPin = [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+                // Batch reached_cap timestamps — one mget for all rows.
+                const capKeys = leaderboard.map(e => eventSetReachedCapKey(querySetId, e.username));
+                const capTimestamps = capKeys.length > 0
+                    ? await kv.mget(...capKeys) as (number | string | null)[]
+                    : [];
+                const reachedAt = new Map<string, number>();
+                leaderboard.forEach((e, i) => {
+                    const raw = capTimestamps[i];
+                    const ts = typeof raw === 'number' ? raw : (typeof raw === 'string' ? Number(raw) : NaN);
+                    if (!isNaN(ts) && ts > 0) reachedAt.set(e.username, ts);
+                });
+                const totalPinsFor = (e: typeof leaderboard[number]) =>
+                    pins.reduce((sum, p) => sum + (e.pinCounts[p.id] ?? 0), 0);
+                leaderboard.sort((a, b) => {
+                    if (b.count !== a.count) return b.count - a.count;
+                    const aGigas = gigaPin ? (a.pinCounts[gigaPin.id] ?? 0) : 0;
+                    const bGigas = gigaPin ? (b.pinCounts[gigaPin.id] ?? 0) : 0;
+                    if (bGigas !== aGigas) return bGigas - aGigas;
+                    const aTotal = totalPinsFor(a);
+                    const bTotal = totalPinsFor(b);
+                    if (bTotal !== aTotal) return bTotal - aTotal;
+                    const aCap = reachedAt.get(a.username) ?? Infinity;
+                    const bCap = reachedAt.get(b.username) ?? Infinity;
+                    return aCap - bCap;
+                });
+                leaderboard.forEach((e, i) => { e.rank = i + 1; });
             }
             const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : 0;
             let userEntry: { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string } | null = null;

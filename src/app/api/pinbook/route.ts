@@ -944,8 +944,16 @@ export async function POST(req: Request) {
                             pins.forEach((p, i) => {
                                 perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                             });
-                            const { cappedTotal } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
+                            const { cappedTotal, cap } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
                             await kv.zadd(eventSetPointsKey(stalePromo.eventSetId), { score: cappedTotal, member: username });
+                            if (cap !== null && cappedTotal >= cap) {
+                                const { eventSetReachedCapKey } = await import('@/lib/promo-badges');
+                                await kv.set(
+                                    eventSetReachedCapKey(stalePromo.eventSetId, username),
+                                    Date.now(),
+                                    { nx: true },
+                                );
+                            }
                         }
                     }
                 } else {
@@ -1134,8 +1142,19 @@ export async function POST(req: Request) {
                     pins.forEach((p, i) => {
                         perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                     });
-                    const { cappedTotal } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
+                    const { cappedTotal, cap } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
                     await kv.zadd(eventSetPointsKey(promoDef.eventSetId), { score: cappedTotal, member: username });
+                    // Record first cap-crossing for the "speed to 100"
+                    // tiebreaker. NX so only the earliest write wins;
+                    // subsequent drops at the cap don't overwrite.
+                    if (cap !== null && cappedTotal >= cap) {
+                        const { eventSetReachedCapKey } = await import('@/lib/promo-badges');
+                        await kv.set(
+                            eventSetReachedCapKey(promoDef.eventSetId, username),
+                            Date.now(),
+                            { nx: true },
+                        );
+                    }
                 }
                 // Eventide quest flag — flip once; cheap idempotent write
                 // since we hold the user lock for this whole branch.
