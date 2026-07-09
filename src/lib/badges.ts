@@ -785,10 +785,11 @@ export const BADGES: Badge[] = [
 // visually stable board). Claynosaurz partner event turns it on so
 // the partner's IP appears as playable tiles during the event window.
 //
-// Chase pins (isChase) are ALWAYS filtered out of the tile pool so the
-// chase rarity feel is preserved — Grail-tier pins only appear via
-// capsules. Base tier composition stays intact since we're removing
-// the pin from the shared pool before selectGameBadges runs.
+// Chase pins (isChase) DO appear on the board like any other tile of
+// their tier — they compete with base tiles in their tier pool. What
+// they DON'T do is get force-promoted alongside the base pins by the
+// special-board trigger (see selectGameBadges); that trigger is a
+// "here comes the herd" moment for the 4 base pins only.
 function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
@@ -802,10 +803,7 @@ function getGameBadgePool(): Badge[] {
     if (primary?.kind === "set" && !primary.set?.includeInGameTiles) {
         return base;
     }
-    const eligiblePromos = getDroppablePromoBadges().filter(
-        p => !(p as { isChase?: boolean }).isChase
-    );
-    return [...base, ...eligiblePromos];
+    return [...base, ...getDroppablePromoBadges()];
 }
 
 // Probability that a game board, when a set event with
@@ -841,20 +839,22 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
         cosmic: shuffle(pool.filter((b) => b.tier === "cosmic"), rng),
     };
 
-    // When the special-board trigger fires, promote this set's base
+    // When the special-board trigger fires, promote this set's BASE
     // pins to the front of their tier arrays so selectFromTier picks
-    // them first. Distribution (3B/1S/1G/1C) is unchanged — the trick
-    // is that the set pin sits at index 0 of each tier queue and gets
-    // chosen deterministically before the random base pins.
+    // them first. Chase pins (isChase) are intentionally NOT promoted
+    // — they compete for their tier slot at the normal random rate,
+    // preserving the "landing a Grail is lucky" feel. Distribution
+    // (3B/1S/1G/1C) is unchanged; the trick is that a base set pin
+    // sits at index 0 of each tier queue and gets chosen
+    // deterministically before the random base pins.
     if (forceSetOnBoard && primary?.kind === "set" && primary.set) {
         const setId = primary.set.id;
         (Object.keys(byTier) as BadgeTier[]).forEach(tier => {
             const inSet = byTier[tier].filter(
-                b => (b as { eventSetId?: string }).eventSetId === setId
+                b => (b as { eventSetId?: string; isChase?: boolean }).eventSetId === setId
+                    && !(b as { isChase?: boolean }).isChase
             );
-            const others = byTier[tier].filter(
-                b => (b as { eventSetId?: string }).eventSetId !== setId
-            );
+            const others = byTier[tier].filter(b => !inSet.includes(b));
             byTier[tier] = [...inSet, ...others];
         });
     }
