@@ -814,7 +814,7 @@ function getGameBadgePool(): Badge[] {
 // exactly 3B/1S/1G/1C so game complexion is preserved. Consumes one
 // rng() call regardless of outcome so the seeded stream is
 // deterministic per game seed.
-const FULL_SET_BOARD_PROBABILITY = 0.05;
+const FULL_SET_BOARD_PROBABILITY = 0.10;
 
 // Select N random badges for a game session, ensuring tier diversity + conflict group separation
 export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
