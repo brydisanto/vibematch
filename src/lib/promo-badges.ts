@@ -151,7 +151,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_common",
         name: "Bubble Gum",
-        image: "/badges/promo/set/bubble_gum.png",
+        image: "/badges/promo/set/bubble_gum.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -164,7 +164,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_rare",
         name: "Double Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_pink.png",
+        image: "/badges/promo/set/bubble_gum_pink.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -177,7 +177,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_epic",
         name: "Big Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_big.png",
+        image: "/badges/promo/set/bubble_gum_big.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -190,7 +190,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_legendary",
         name: "Giga Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_giga.png",
+        image: "/badges/promo/set/bubble_gum_giga.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -229,7 +229,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // live, then flips the drawer to FINAL RESULTS at cutoff.
         endsAt: "2026-07-13T16:00:00Z",
         tabLabel: "Set",
-        heroImage: "/badges/promo/set/craig_vibington.jpg",
+        heroImage: "/badges/promo/set/craig_vibington.webp",
         // +25 per full set collected (one of every pin). Stacks: 3 of
         // each = 75 bonus. Combined with per-pin points + the 100 cap,
         // exactly 3 full sets gets you to the max (54 pin pts + 75 set
