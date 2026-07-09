@@ -35,11 +35,34 @@ interface TxRecord {
     /** Reroll txs are tagged 'reroll'; bonus-game purchases have no `type` field. */
     type?: string;
     amount?: string;
+    /** Persisted from the pricing rail the tx paid on. Absent on legacy
+     *  records from before this field was added — those are inferred at
+     *  display time from the amount magnitude (see inferPaymentRail). */
+    paymentRail?: "vibestr" | "usdc" | "eth";
     timestamp?: number;
     wallet?: string;
     burns?: { tier: string; pinsNeeded: number }[];
     totalCapsules?: number;
 }
+
+/** Best-effort rail inference for tx records persisted before we
+ *  started recording paymentRail. Uses amount magnitude:
+ *    < 0.01                → ETH (fractional native transfers)
+ *    ≥ 0.01 and < 50       → USDC (dollar-scale amounts)
+ *    ≥ 50                  → VIBESTR (100+ token payments at $0.003 anchor)
+ *  Wrong for edge cases (e.g., a very small USDC purchase or a very
+ *  cheap VIBESTR era) but correct for the current pricing regime. */
+function inferPaymentRail(amount: string | undefined): "vibestr" | "usdc" | "eth" {
+    const a = parseFloat(amount || "0");
+    if (a < 0.01) return "eth";
+    if (a < 50) return "usdc";
+    return "vibestr";
+}
+const RAIL_LABEL: Record<"vibestr" | "usdc" | "eth", string> = {
+    vibestr: "VIBESTR",
+    usdc: "USDC",
+    eth: "ETH",
+};
 
 interface UserDetail {
     auth: {
@@ -471,6 +494,8 @@ function TransactionRow({ tx }: { tx: TxRecord }) {
         ? `${tx.txHash.slice(0, 10)}...`
         : tx.txHash || "—";
     const amount = parseFloat(tx.amount || "0");
+    const rail = tx.paymentRail ?? inferPaymentRail(tx.amount);
+    const railLabel = RAIL_LABEL[rail];
 
     return (
         <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
@@ -494,7 +519,14 @@ function TransactionRow({ tx }: { tx: TxRecord }) {
                 </div>
             </div>
             <div className="text-right">
-                <div className="text-[#FFE048] font-bold">{amount.toLocaleString()} VIBESTR</div>
+                <div className="text-[#FFE048] font-bold">
+                    {rail === "eth"
+                        ? amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")
+                        : rail === "usdc"
+                            ? amount.toFixed(2)
+                            : amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {" "}{railLabel}
+                </div>
                 {tx.txHash ? (
                     <a
                         href={`https://etherscan.io/tx/${tx.txHash}`}

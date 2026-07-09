@@ -290,6 +290,7 @@ export async function POST(request: Request) {
                     burns: parsedBurns,
                     totalCapsules,
                     amount: formatUnits(actualAmount, decimals),
+                    paymentRail,
                     timestamp: Date.now(),
                     refund_pending: true,
                     refund_reason: reason,
@@ -404,6 +405,7 @@ export async function POST(request: Request) {
             burns: parsedBurns,
             totalCapsules,
             amount: formatUnits(actualAmount, decimals),
+            paymentRail,
             timestamp: Date.now(),
         }));
 
