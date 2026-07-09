@@ -466,6 +466,37 @@ export default function LandingPageArcade({
             .catch(() => { /* silent */ });
     }, [username]);
 
+    // Silent preloader for game-board badges + active-event assets.
+    // Mirrors the mobile Quest landing so the desktop arcade also has
+    // warm cache for the drawer + first game.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const t = setTimeout(async () => {
+            const seen = new Set<string>();
+            const preload = (url: string) => {
+                if (seen.has(url)) return;
+                seen.add(url);
+                const raw = new window.Image();
+                raw.src = url;
+                const optimized = new window.Image();
+                optimized.src = `/_next/image?url=${encodeURIComponent(url)}&w=96&q=75`;
+            };
+            BADGES.filter(b => !b.collectOnly).forEach(b => preload(b.image));
+            try {
+                const promoModule = await import("@/lib/promo-badges");
+                if (promoModule.isPromoActive()) {
+                    promoModule.getActivePromoBadges().forEach(p => preload(p.image));
+                    const primary = promoModule.getPrimaryActiveEvent();
+                    if (primary?.kind === "set") {
+                        if (primary.set.heroImage) preload(primary.set.heroImage);
+                        if (primary.set.gameBackground) preload(primary.set.gameBackground);
+                    }
+                }
+            } catch { /* silent */ }
+        }, 800);
+        return () => clearTimeout(t);
+    }, []);
+
     // Classic leaderboard fetch — personal best + all-time score rank.
     // Total players (marquee count) now comes from /api/players-vibing
     // so the count matches the avatar stack.

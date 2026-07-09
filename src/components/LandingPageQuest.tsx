@@ -196,19 +196,38 @@ export default function LandingPageQuest({
     }, [userProfile]);
 
     // Silent preloader for game-board badges — warms the browser cache
+    // for the base pool + any active promo/event pins + backdrop art
+    // so the first game and the drawer feel instant.
     useEffect(() => {
         if (typeof window === "undefined") return;
-        const t = setTimeout(() => {
-            const gameBadges = BADGES.filter(b => !b.collectOnly);
+        const t = setTimeout(async () => {
             const seen = new Set<string>();
-            gameBadges.forEach(badge => {
-                if (seen.has(badge.image)) return;
-                seen.add(badge.image);
-                const img1 = new window.Image();
-                img1.src = badge.image;
-                const img2 = new window.Image();
-                img2.src = `/_next/image?url=${encodeURIComponent(badge.image)}&w=96&q=75`;
-            });
+            const preload = (url: string) => {
+                if (seen.has(url)) return;
+                seen.add(url);
+                const raw = new window.Image();
+                raw.src = url;
+                const optimized = new window.Image();
+                optimized.src = `/_next/image?url=${encodeURIComponent(url)}&w=96&q=75`;
+            };
+
+            BADGES.filter(b => !b.collectOnly).forEach(b => preload(b.image));
+
+            // Preload active event assets so the drawer + game board
+            // don't stall on first render. Lazy-imported to keep the
+            // promo module out of the landing bundle when the flag is
+            // off.
+            try {
+                const promoModule = await import("@/lib/promo-badges");
+                if (promoModule.isPromoActive()) {
+                    promoModule.getActivePromoBadges().forEach(p => preload(p.image));
+                    const primary = promoModule.getPrimaryActiveEvent();
+                    if (primary?.kind === "set") {
+                        if (primary.set.heroImage) preload(primary.set.heroImage);
+                        if (primary.set.gameBackground) preload(primary.set.gameBackground);
+                    }
+                }
+            } catch { /* silent */ }
         }, 800);
         return () => clearTimeout(t);
     }, []);
