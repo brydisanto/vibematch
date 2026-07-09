@@ -250,7 +250,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "claynosaurz_common",
         name: "Milo",
-        image: "/badges/promo/set/claynosaurz/common.png",
+        image: "/badges/promo/set/claynosaurz/common.webp",
         // Base tier — matches other 1× blue tiles on the board.
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -265,7 +265,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "claynosaurz_rare",
         name: "Bex",
-        image: "/badges/promo/set/claynosaurz/rare.png",
+        image: "/badges/promo/set/claynosaurz/rare.webp",
         // Silver rarity → matches other 1.5× silver tiles on the board.
         tier: "silver" as BadgeTier,
         pointMultiplier: 1.5,
@@ -280,7 +280,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "claynosaurz_epic",
         name: "Trix",
-        image: "/badges/promo/set/claynosaurz/epic.png",
+        image: "/badges/promo/set/claynosaurz/epic.webp",
         // Gold rarity → matches other 2× gold tiles on the board.
         tier: "gold" as BadgeTier,
         pointMultiplier: 2,
@@ -295,7 +295,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "claynosaurz_legendary",
         name: "Flea",
-        image: "/badges/promo/set/claynosaurz/legendary.png",
+        image: "/badges/promo/set/claynosaurz/legendary.webp",
         // Cosmic rarity → matches other 3× cosmic tiles on the board.
         tier: "cosmic" as BadgeTier,
         pointMultiplier: 3,
@@ -316,7 +316,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         // base cosmic tier composition unaffected.
         id: "claynosaurz_cosmic",
         name: "Claynoz Pioneer",
-        image: "/badges/promo/set/claynosaurz/cosmic.png",
+        image: "/badges/promo/set/claynosaurz/cosmic.webp",
         // Cosmic tier for pin-registry consistency; never appears on
         // the board so the 3× wouldn't apply in-game anyway.
         tier: "cosmic" as BadgeTier,
@@ -408,7 +408,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Temporary hero — pointing at the branded Cosmic pin since
         // it carries the Claynosaurz logo and reads well at hero size.
         // Swap when a dedicated character/mascot hero drops.
-        heroImage: "/badges/promo/set/claynosaurz/cosmic.png",
+        heroImage: "/badges/promo/set/claynosaurz/cosmic.webp",
         // Same as Craig's — +25 per full 4-pin base set completed.
         // Chase pin does NOT count toward set completion (isChase),
         // so the max-out math is unchanged from Craig's despite the

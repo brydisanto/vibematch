@@ -6,11 +6,11 @@ Files are referenced by name from `src/lib/promo-badges.ts`.
 
 | filename | rarity | pt value | drop weight | notes |
 | --- | --- | --- | --- | --- |
-| `common.png` | Common | 1 | 70 | ~10.4% per capsule |
-| `rare.png` | Rare | 2 | 20 | ~2.97% |
-| `epic.png` | Epic | 5 | 8 | ~1.19% |
-| `legendary.png` | Legendary | 10 | 2 | ~0.30% |
-| `cosmic.png` | Cosmic (chase) | 20 | 1 | ~0.15% — ultra-rare, doesn't count toward set completion |
+| `common.webp` | Common | 1 | 70 | ~10.4% per capsule |
+| `rare.webp` | Rare | 2 | 20 | ~2.97% |
+| `epic.webp` | Epic | 5 | 8 | ~1.19% |
+| `legendary.webp` | Legendary | 10 | 2 | ~0.30% |
+| `cosmic.webp` | Cosmic (chase) | 20 | 1 | ~0.15% — ultra-rare, doesn't count toward set completion |
 
 Format guidance to match Craig's set:
 - Square PNGs, ideally 1024×1024, transparent background
