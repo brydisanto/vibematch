@@ -387,7 +387,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
     },
     {
         id: "claynosaurz_partner_event",
-        name: "Claynosaurz Partner Event (TBD)",
+        name: "Claynosaurz Chase!",
         partnerName: "Claynosaurz",
         description: "Placeholder description — Claynosaurz partner event. 4 base pins + 1 rare Chase pin. Complete a full base set for a point bonus; Chase pin is bragging rights + a big point boost.",
         shortDescription: "Collect Claynosaurz pins to win prizes!",
