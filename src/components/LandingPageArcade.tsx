@@ -1204,13 +1204,11 @@ export default function LandingPageArcade({
                                             />
                                         </span>
                                         <span className="relative font-display text-[10px] tracking-[0.25em] text-white/85 uppercase whitespace-nowrap">
-                                            {/* Pin Drop in-house events have no partnerName,
-                                                so we show the event name as the primary label
-                                                and skip the partner · name bullet entirely. */}
-                                            {activePromo.partnerName || activePromo.name}
-                                            {activePromo.partnerName && (
-                                                <span className="hidden 2xl:inline"> · {activePromo.name}</span>
-                                            )}
+                                            {/* Always show the event name — partnerName is
+                                                still surfaced via aria-label + the drawer hero,
+                                                but showing "Claynosaurz · Claynosaurz Chase!"
+                                                on the chip is redundant. */}
+                                            {activePromo.name}
                                         </span>
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative text-white/55 transition-transform group-hover:translate-x-0.5">
                                             <path d="M9 18l6-6-6-6" />

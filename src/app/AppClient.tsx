@@ -843,7 +843,7 @@ export default function AppClient() {
                   )}
                 </div>
 
-                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center z-20 mt-1 sm:mt-2">
+                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 sm:gap-4 z-20 mt-1 sm:mt-2">
                   <Image
                     src="/assets/logo-v3.png"
                     alt="PIN DROP"
@@ -853,6 +853,30 @@ export default function AppClient() {
                     priority
                     style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite" }}
                   />
+                  {(() => {
+                    if (!isPromoActive()) return null;
+                    const primary = getPrimaryActiveEvent();
+                    if (primary?.kind !== "set" || !primary.set.partnerLogo) return null;
+                    return (
+                      <>
+                        <span
+                          className="font-display font-black text-white/60 text-2xl sm:text-4xl lg:text-5xl drop-shadow-[0_6px_18px_rgba(0,0,0,0.6)]"
+                          style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite" }}
+                        >
+                          ×
+                        </span>
+                        <Image
+                          src={primary.set.partnerLogo}
+                          alt={`${primary.set.name} logo`}
+                          width={1208}
+                          height={731}
+                          className="w-auto h-16 sm:h-24 lg:h-32 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
+                          priority
+                          style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite 0.4s" }}
+                        />
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex-1 flex justify-end items-start gap-2 pt-1 sm:pt-4 relative z-10">

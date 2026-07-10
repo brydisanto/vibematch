@@ -355,7 +355,7 @@ export default function LandingPageQuest({
                                     {promoEnded ? "FINAL RESULTS" : !promoStarted ? "COMING SOON" : "EVENT LIVE"}
                                 </div>
                                 <div className="font-display font-black text-[12px] tracking-[0.06em] uppercase text-white mt-1 truncate">
-                                    {activePromo.partnerName || activePromo.name}
+                                    {activePromo.name}
                                 </div>
                             </div>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform group-active:translate-x-0.5" style={{ color: promoEnded ? "rgba(255,255,255,0.6)" : accent }}>

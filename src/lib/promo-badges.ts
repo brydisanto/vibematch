@@ -134,6 +134,12 @@ export interface PromoEventSet {
      *  while this set is active. Path under /public. When absent the
      *  default vibematchbg2.jpg is used. */
     gameBackground?: string;
+    /** Optional partner logo shown alongside the Pin Drop logo above
+     *  the game board during the event. The Pin Drop logo stays its
+     *  usual size and slides left, the partner logo sits to its right
+     *  separated by a small "×". Path under /public. When absent only
+     *  the Pin Drop logo is shown. */
+    partnerLogo?: string;
     /** Hard cap on the per-user leaderboard score. Once reached, the
      *  zset entry stops climbing — any further collects are still
      *  credited to per-pin counters but don't move the leaderboard
@@ -434,6 +440,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // fires the bonus.
         setBonusLabel: "SET OF 4",
         gameBackground: "/backgrounds/game-bg-claynosaurz.jpg",
+        partnerLogo: "/assets/claynosaurz-logo.webp",
     },
 ];
 
