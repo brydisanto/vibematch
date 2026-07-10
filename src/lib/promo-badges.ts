@@ -186,7 +186,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_common",
         name: "Bubble Gum",
-        image: "/badges/promo/set/bubble_gum.png",
+        image: "/badges/promo/set/bubble_gum.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -199,7 +199,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_rare",
         name: "Double Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_pink.png",
+        image: "/badges/promo/set/bubble_gum_pink.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -212,7 +212,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_epic",
         name: "Big Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_big.png",
+        image: "/badges/promo/set/bubble_gum_big.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -225,7 +225,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         id: "craigs_bubble_gum_blast_legendary",
         name: "Giga Bubble Gum",
-        image: "/badges/promo/set/bubble_gum_giga.png",
+        image: "/badges/promo/set/bubble_gum_giga.webp",
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true,
@@ -364,7 +364,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // "2026-07-13T16:00:00Z" before merging to main.
         endsAt: "2026-07-08T00:00:00Z",
         tabLabel: "Set",
-        heroImage: "/badges/promo/set/craig_vibington.jpg",
+        heroImage: "/badges/promo/set/craig_vibington.webp",
         // +25 per full set collected (one of every pin). Stacks: 3 of
         // each = 75 bonus. Combined with per-pin points + the 100 cap,
         // exactly 3 full sets gets you to the max (54 pin pts + 75 set
@@ -567,6 +567,15 @@ export function encodeHerdsScore(fullSets: number, cappedPoints: number): number
 export function decodeHerdsScore(score: number): { fullSets: number; cappedPoints: number } {
     const fullSets = Math.floor(score / 1000);
     return { fullSets, cappedPoints: score - fullSets * 1000 };
+}
+
+/** Per-user timestamp of the first time cappedTotal reached the set's
+ *  scoreCap. Written with { nx: true } so only the FIRST cap-crossing
+ *  is recorded. Read by the leaderboard endpoint as the "speed to
+ *  100" tiebreaker — earlier ms wins. Absent for users who haven't
+ *  reached the cap yet. */
+export function eventSetReachedCapKey(setId: string, username: string): string {
+    return `event_set:${setId}:reached_cap:${username}`;
 }
 
 /**

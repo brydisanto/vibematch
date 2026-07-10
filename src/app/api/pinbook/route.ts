@@ -944,14 +944,23 @@ export async function POST(req: Request) {
                             pins.forEach((p, i) => {
                                 perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                             });
-                            const { cappedTotal, fullSets } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
+                            const { cappedTotal, cap, fullSets } = computeEventSetScore(stalePromo.eventSetId, perPinOwned);
                             await kv.zadd(eventSetPointsKey(stalePromo.eventSetId), { score: cappedTotal, member: username });
                             // Herds zset — kept in lockstep with points.
-                            const { encodeHerdsScore, eventSetHerdsKey } = await import('@/lib/promo-badges');
+                            const { encodeHerdsScore, eventSetHerdsKey, eventSetReachedCapKey } = await import('@/lib/promo-badges');
                             await kv.zadd(eventSetHerdsKey(stalePromo.eventSetId), {
                                 score: encodeHerdsScore(fullSets, cappedTotal),
                                 member: username,
                             });
+                            // First cap-crossing timestamp — powers the
+                            // "speed to cap" tiebreaker on the points board.
+                            if (cap !== null && cappedTotal >= cap) {
+                                await kv.set(
+                                    eventSetReachedCapKey(stalePromo.eventSetId, username),
+                                    Date.now(),
+                                    { nx: true },
+                                );
+                            }
                         }
                     }
                 } else {
@@ -1140,17 +1149,25 @@ export async function POST(req: Request) {
                     pins.forEach((p, i) => {
                         perPinOwned[p.id] = typeof counts[i] === 'number' ? Number(counts[i]) : 0;
                     });
-                    const { cappedTotal, fullSets } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
+                    const { cappedTotal, cap, fullSets } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
                     await kv.zadd(eventSetPointsKey(promoDef.eventSetId), { score: cappedTotal, member: username });
                     // Herds leaderboard — sorted by fullSets primary,
-                    // points secondary (encoded as fullSets*1000 + points).
-                    // Written in lockstep with the points zset so both
-                    // leaderboards stay consistent per-drop.
-                    const { encodeHerdsScore, eventSetHerdsKey } = await import('@/lib/promo-badges');
+                    // points secondary. Written in lockstep with points.
+                    // First cap-crossing timestamp powers the "speed to
+                    // 100" tiebreaker on the points board (NX so only
+                    // the earliest write wins).
+                    const { encodeHerdsScore, eventSetHerdsKey, eventSetReachedCapKey } = await import('@/lib/promo-badges');
                     await kv.zadd(eventSetHerdsKey(promoDef.eventSetId), {
                         score: encodeHerdsScore(fullSets, cappedTotal),
                         member: username,
                     });
+                    if (cap !== null && cappedTotal >= cap) {
+                        await kv.set(
+                            eventSetReachedCapKey(promoDef.eventSetId, username),
+                            Date.now(),
+                            { nx: true },
+                        );
+                    }
                 }
                 // Eventide quest flag — flip once; cheap idempotent write
                 // since we hold the user lock for this whole branch.
