@@ -3,6 +3,10 @@
     {
       "path": "/api/admin/pricing/refresh",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/admin/reconcile-purchases",
+      "schedule": "0 * * * *"
     }
   ]
 }
