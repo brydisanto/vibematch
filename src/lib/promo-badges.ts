@@ -252,7 +252,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     //   Rare (Bex)             4.05%
     //   Epic (Trix)            2.25%
     //   Legendary (Flea)       1.05%
-    //   Cosmic (Claynoz Pio.)  0.15%  ← ultra-rare, excluded from set bonus
+    //   Cosmic (Claynoz Pio.)  0.25%  ← ultra-rare, excluded from set bonus
     {
         id: "claynosaurz_common",
         name: "Milo",
@@ -334,7 +334,12 @@ export const PROMO_BADGES: PromoBadge[] = [
         // Cosmic awards a big point boost (2x Legendary) but doesn't
         // gate the set bonus — see isChase.
         points: 20,
-        dropWeight: 1,
+        // Fractional weight — bumps Chase per-cap odds from ~0.15%
+        // (weight=1) to ~0.25% (weight≈1.67) at the 15% pool rate,
+        // without perturbing the four base tiers' odds. dropWeight is
+        // treated as a plain number by the weighted picker, so the
+        // fraction is safe.
+        dropWeight: 1.67,
         rarityLabel: "Grail",
         isChase: true,
     },
@@ -455,7 +460,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
  *   Rare            4.05%
  *   Epic            2.25%
  *   Legendary       1.05%
- *   Cosmic (chase)  0.15%  ← rarer than Legendary; excluded from set bonus
+ *   Cosmic (chase)  0.25%  ← rarer than Legendary; excluded from set bonus
  */
 export const PROMO_DROP_RATE = 0.15;
 
