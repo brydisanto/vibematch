@@ -1012,9 +1012,31 @@ export async function POST(req: Request) {
                     }
                 }
             }
-            const activePromo = canRollPromo && Math.random() < PROMO_DROP_RATE
-                ? pickActivePromoBadge()
-                : null;
+            // Admin-scheduled forced pin — bypasses RNG for a queued
+            // drop. Persists as `pinbook:<user>:forced_pin` = pin id.
+            // Delete-on-consume so it fires exactly once. Bypasses the
+            // eligibility counter + drop-rate gate because it's an
+            // admin gift, not an organic drop. Still checks that the
+            // pin exists in the current promo registry and the promo
+            // flag is on.
+            let activePromo = null;
+            if (isPromoActive()) {
+                const forcedPinKey = `pinbook:${username}:forced_pin`;
+                const forcedPinRaw = await kv.get(forcedPinKey);
+                const forcedPinId = typeof forcedPinRaw === 'string' ? forcedPinRaw : null;
+                if (forcedPinId) {
+                    const forced = findPromoBadge(forcedPinId);
+                    if (forced) {
+                        activePromo = forced;
+                        await kv.del(forcedPinKey);
+                    }
+                }
+            }
+            if (!activePromo) {
+                activePromo = canRollPromo && Math.random() < PROMO_DROP_RATE
+                    ? pickActivePromoBadge()
+                    : null;
+            }
             if (activePromo) {
                 tier = activePromo.tier; // blue — treated as Common visually
                 badge = activePromo;
