@@ -63,6 +63,7 @@ interface EventSetPin {
     rarityLabel: string | null;
     points: number;
     owned: number;
+    isChase?: boolean;
 }
 
 interface EventSetMeta {
@@ -579,6 +580,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
             rarityLabel: p.rarityLabel ?? null,
             points: p.points ?? 1,
             owned: 0,
+            isChase: p.isChase ?? false,
         }));
     });
     const [setMeta, setSetMeta] = useState<EventSetMeta>(() => {
@@ -1291,8 +1293,60 @@ function SetView({
                     )}
                 </div>
             )}
+            {/* Chase pin gets a full-width featured banner above the base
+                grid instead of orphaning onto its own grid row. */}
+            {pins.filter(p => p.isChase).map(pin => (
+                <div
+                    key={pin.id}
+                    className="rounded-xl px-4 py-3 mb-3 flex items-center gap-4"
+                    style={{
+                        background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
+                        border: `1px solid ${accent}55`,
+                        boxShadow: pin.owned > 0 ? `0 0 20px ${accent}33` : `0 0 12px ${accent}1a`,
+                    }}
+                >
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
+                        <Image
+                            src={pin.image}
+                            alt={pin.name}
+                            fill
+                            sizes="96px"
+                            className="object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+                            style={pin.owned === 0 ? { filter: "grayscale(70%) brightness(0.7)" } : undefined}
+                            unoptimized
+                        />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                        {pin.rarityLabel && (
+                            <div className="font-display text-[9px] tracking-[0.24em] uppercase mb-0.5" style={{ color: accent }}>
+                                {pin.rarityLabel}
+                            </div>
+                        )}
+                        <div className="font-display font-bold text-[15px] sm:text-[17px] text-white leading-tight">
+                            {pin.name}
+                        </div>
+                        <div className="font-mundial text-[10px] text-white/45 mt-0.5">
+                            Ultra rare capsule pull
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2">
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">PTS PER</span>
+                            <span className="font-display font-semibold text-[20px] tabular-nums leading-none" style={{ color: accent }}>
+                                {pin.points}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mundial text-[10px] tracking-[0.18em] uppercase text-white/45">Collected</span>
+                            <span className="font-display font-semibold text-[20px] tabular-nums leading-none text-white">
+                                {pin.owned}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            ))}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {pins.map(pin => (
+                {pins.filter(p => !p.isChase).map(pin => (
                     <div
                         key={pin.id}
                         className="rounded-xl p-3 flex flex-col items-center text-center transition-transform"
