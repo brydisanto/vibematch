@@ -870,7 +870,7 @@ export default function AppClient() {
                           alt={`${primary.set.name} logo`}
                           width={1143}
                           height={709}
-                          className="w-auto h-20 sm:h-32 lg:h-44 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
+                          className="w-auto h-16 sm:h-24 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                           priority
                           style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite 0.4s" }}
                         />

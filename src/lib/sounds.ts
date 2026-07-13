@@ -82,18 +82,6 @@ export function toggleMute(muted: boolean): boolean {
 // ===== BACKGROUND MUSIC =====
 let bgmAudio: HTMLAudioElement | null = null;
 const TRACK_STORAGE_KEY = 'vibematch_bgm_track';
-let currentBGMTrack = (() => {
-    if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(TRACK_STORAGE_KEY);
-        if (saved !== null) {
-            const idx = parseInt(saved, 10);
-            if (!isNaN(idx) && idx >= 0) return idx;
-        }
-    }
-    return 0;
-})();
-// Fix #4: Track whether BGM has been requested to play.
-let bgmShouldPlay = false;
 
 export const BGM_TRACK_NAMES = [
     "Feel The Beat",
@@ -104,7 +92,8 @@ export const BGM_TRACK_NAMES = [
     "Voxel Revolution",
     "Electrodoodle",
     "Andromeda",
-    "Sunlight"
+    "Sunlight",
+    "Claynoz Theme",
 ];
 
 const BGM_FILES = [
@@ -116,8 +105,42 @@ const BGM_FILES = [
     "/music/voxel-revolution.mp3",
     "/music/electrodoodle.mp3",
     "/music/andromeda.mp3",
-    "/music/sunlight.mp3"
+    "/music/sunlight.mp3",
+    "/music/claynoz-theme.mp3",
 ];
+const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynoz Theme");
+
+let currentBGMTrack = (() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(TRACK_STORAGE_KEY);
+        if (saved !== null) {
+            const idx = parseInt(saved, 10);
+            if (!isNaN(idx) && idx >= 0) return idx;
+        }
+        // No saved preference — if a set event with a themed track is
+        // primary, default to it. Currently hardcoded to Claynoz;
+        // generalize to a `themeTrack` field on PromoEventSet if we do
+        // this for more events.
+        try {
+            // Lazy require to avoid a top-level import cycle across
+            // client bundles that pull sounds.ts + promo-badges.ts.
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { isPromoActive, getPrimaryActiveEvent } = require("./promo-badges") as {
+                isPromoActive: () => boolean;
+                getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string } } | null;
+            };
+            if (isPromoActive()) {
+                const primary = getPrimaryActiveEvent();
+                if (primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event") {
+                    return CLAYNOZ_TRACK_INDEX >= 0 ? CLAYNOZ_TRACK_INDEX : 0;
+                }
+            }
+        } catch { /* silent — fall through to default */ }
+    }
+    return 0;
+})();
+// Fix #4: Track whether BGM has been requested to play.
+let bgmShouldPlay = false;
 
 // Tracks the most recent play() promise so stopMP3 can await it before
 // pausing. Without this, iOS Safari leaves the audio element in a stuck
