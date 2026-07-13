@@ -317,7 +317,13 @@ function applyPlaybackRate(rate: number) {
 
 export function startFrenzyBGM() {
     savedTrackBeforeFrenzy = currentBGMTrack;
-    currentBGMTrack = FRENZY_TRACK_INDEX >= 0 ? FRENZY_TRACK_INDEX : 0;
+    // During the Claynosaurz event the theme owns Frenzy too; the
+    // tempo ramp below still applies, so it speeds up as the clock
+    // runs down just like Werq did.
+    const frenzyTrack = isClaynozEventLive() && CLAYNOZ_TRACK_INDEX >= 0
+        ? CLAYNOZ_TRACK_INDEX
+        : FRENZY_TRACK_INDEX;
+    currentBGMTrack = frenzyTrack >= 0 ? frenzyTrack : 0;
     bgmShouldPlay = true;
     if (bgmAudio) stopMP3();
     startMP3();
