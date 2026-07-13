@@ -444,7 +444,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // the min-of-pins math, so completing 4 of every base pin
         // fires the bonus.
         setBonusLabel: "SET OF 4",
-        gameBackground: "/backgrounds/game-bg-claynosaurz.jpg",
+        gameBackground: "/backgrounds/game-bg-claynosaurz.webp",
         partnerLogo: "/assets/claynosaurz-logo.webp",
     },
 ];
