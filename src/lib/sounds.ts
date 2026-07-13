@@ -1,5 +1,7 @@
 "use client";
 
+import { isPromoActive, getPrimaryActiveEvent } from "./promo-badges";
+
 // ===== Web Audio API Sound Engine for Pin Drop =====
 // Generates all sounds procedurally — no audio files needed.
 
@@ -114,20 +116,9 @@ const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynosaurz Theme");
  *  Currently hardcoded to Claynoz; generalize to a `themeTrack` field
  *  on PromoEventSet if more events ship theme music. */
 function isClaynozEventLive(): boolean {
-    try {
-        // Lazy require to avoid a top-level import cycle across
-        // client bundles that pull sounds.ts + promo-badges.ts.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { isPromoActive, getPrimaryActiveEvent } = require("./promo-badges") as {
-            isPromoActive: () => boolean;
-            getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string } } | null;
-        };
-        if (!isPromoActive()) return false;
-        const primary = getPrimaryActiveEvent();
-        return primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event";
-    } catch {
-        return false;
-    }
+    if (!isPromoActive()) return false;
+    const primary = getPrimaryActiveEvent();
+    return primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event";
 }
 
 let currentBGMTrack = (() => {
