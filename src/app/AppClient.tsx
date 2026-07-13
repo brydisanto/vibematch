@@ -868,8 +868,8 @@ export default function AppClient() {
                         <Image
                           src={primary.set.partnerLogo}
                           alt={`${primary.set.name} logo`}
-                          width={1208}
-                          height={731}
+                          width={1254}
+                          height={1254}
                           className="w-auto h-16 sm:h-24 lg:h-32 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                           priority
                           style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite 0.4s" }}
