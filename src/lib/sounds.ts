@@ -93,7 +93,7 @@ export const BGM_TRACK_NAMES = [
     "Electrodoodle",
     "Andromeda",
     "Sunlight",
-    "Claynoz Theme",
+    "Claynosaurz Theme",
 ];
 
 const BGM_FILES = [
@@ -108,34 +108,42 @@ const BGM_FILES = [
     "/music/sunlight.mp3",
     "/music/claynoz-theme.mp3",
 ];
-const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynoz Theme");
+const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynosaurz Theme");
+
+/** True while the Claynosaurz set event is the primary active event.
+ *  Currently hardcoded to Claynoz; generalize to a `themeTrack` field
+ *  on PromoEventSet if more events ship theme music. */
+function isClaynozEventLive(): boolean {
+    try {
+        // Lazy require to avoid a top-level import cycle across
+        // client bundles that pull sounds.ts + promo-badges.ts.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { isPromoActive, getPrimaryActiveEvent } = require("./promo-badges") as {
+            isPromoActive: () => boolean;
+            getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string } } | null;
+        };
+        if (!isPromoActive()) return false;
+        const primary = getPrimaryActiveEvent();
+        return primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event";
+    } catch {
+        return false;
+    }
+}
 
 let currentBGMTrack = (() => {
     if (typeof window !== 'undefined') {
+        // The event theme is the primary track for everyone while the
+        // Claynosaurz event is live — it wins over any saved track
+        // preference at load. The switch button still cycles freely
+        // for the session, and saved picks resume after the event.
+        if (isClaynozEventLive() && CLAYNOZ_TRACK_INDEX >= 0) {
+            return CLAYNOZ_TRACK_INDEX;
+        }
         const saved = localStorage.getItem(TRACK_STORAGE_KEY);
         if (saved !== null) {
             const idx = parseInt(saved, 10);
             if (!isNaN(idx) && idx >= 0) return idx;
         }
-        // No saved preference — if a set event with a themed track is
-        // primary, default to it. Currently hardcoded to Claynoz;
-        // generalize to a `themeTrack` field on PromoEventSet if we do
-        // this for more events.
-        try {
-            // Lazy require to avoid a top-level import cycle across
-            // client bundles that pull sounds.ts + promo-badges.ts.
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { isPromoActive, getPrimaryActiveEvent } = require("./promo-badges") as {
-                isPromoActive: () => boolean;
-                getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string } } | null;
-            };
-            if (isPromoActive()) {
-                const primary = getPrimaryActiveEvent();
-                if (primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event") {
-                    return CLAYNOZ_TRACK_INDEX >= 0 ? CLAYNOZ_TRACK_INDEX : 0;
-                }
-            }
-        } catch { /* silent — fall through to default */ }
     }
     return 0;
 })();
