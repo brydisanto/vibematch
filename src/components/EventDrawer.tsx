@@ -384,6 +384,10 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                     const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
                     const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
                     const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                    const basePins = setPins.filter(p => !p.isChase);
+                    const herds = basePins.length > 0
+                        ? Math.min(...basePins.map(p => entry.pinCounts?.[p.id] ?? 0))
+                        : 0;
                     return (
                         <div className="hidden sm:flex items-center relative mr-3">
                             <div
@@ -391,6 +395,12 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                                 style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
                             >
                                 {totalPins}
+                            </div>
+                            <div
+                                className="w-16 text-center font-display font-semibold tabular-nums"
+                                style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
+                            >
+                                {herds}
                             </div>
                             <div
                                 className="w-16 text-center font-display font-semibold tabular-nums"
@@ -422,7 +432,7 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
         <Link
             href={`/u/${encodeURIComponent(entry.username)}`}
             prefetch={false}
-            className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-colors ${
+            className={`flex items-center gap-2 sm:gap-3 py-2.5 px-2 rounded-xl transition-colors ${
                 isUser
                     ? "bg-[#B366FF]/10 border border-[#B366FF]/20"
                     : medal
@@ -458,10 +468,17 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                 const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
                 const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
                 const gigaCount = entry.pinCounts?.[gigaPin.id] ?? 0;
+                // Herds = full sets completed = min of the BASE pin
+                // counts (chase pins don't gate the set), mirroring
+                // computeEventSetScore on the server.
+                const basePins = setPins.filter(p => !p.isChase);
+                const herds = basePins.length > 0
+                    ? Math.min(...basePins.map(p => entry.pinCounts?.[p.id] ?? 0))
+                    : 0;
                 return (
                     <>
                         <div
-                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "14px",
                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -470,7 +487,16 @@ const LeaderboardRow = memo(function LeaderboardRow({ entry, isUser, accent, cur
                             {totalPins}
                         </div>
                         <div
-                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
+                            style={{
+                                fontSize: "14px",
+                                color: herds > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                            }}
+                        >
+                            {herds}
+                        </div>
+                        <div
+                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
                             style={{
                                 fontSize: "15px",
                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
@@ -1024,11 +1050,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         {leaderboardMetric === "points" && (
                                             <>
                                                 {promo.eventSetId && setPins.length > 0 && (
-                                                    <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
+                                                    <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                        <div className="flex-shrink-0 w-14 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-14 text-center">Grails</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Herds</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
                                                         <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
                                                 )}
