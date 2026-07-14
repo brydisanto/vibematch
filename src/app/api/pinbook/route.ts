@@ -9,6 +9,7 @@ import { bumpDailyCounter } from '@/lib/daily-counters';
 import {
     PROMO_DROP_RATE,
     isPromoActive,
+    isPromoEnded,
     pickActivePromoBadge,
     findPromoBadge,
     promoLeaderboardKey,
@@ -305,6 +306,24 @@ export async function GET() {
 }
 
 // POST — earn capsule or open capsule
+// A pending PROMO reveal that settles after its event's endsAt must
+// not materialize an event pin — pins stop existing the moment the
+// event ends, and all event leaderboards freeze at the cutoff. (The
+// roll happens at open time, which is correctly gated, but pendings
+// live 24h, so a pre-cutoff open could otherwise credit an event pin
+// and move standings hours after the event closed — this happened
+// with a Craig's pending that swept 92 minutes post-event.) The
+// player legitimately spent the capsule, so they get a random
+// STANDARD pin of the same tier instead. Returns the replacement, or
+// null when the promo is still live (caller does normal crediting).
+function endedPromoReplacement(pending: { tier: string; badgeId: string }): Badge | null {
+    const promoDef = findPromoBadge(pending.badgeId);
+    if (!promoDef || !isPromoEnded(promoDef)) return null;
+    const pool = BADGES.filter(b => b.tier === pending.tier && !b.collectOnly);
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // body: { action: "earn", score: number } or { action: "open" }
 export async function POST(req: Request) {
     try {
@@ -927,7 +946,22 @@ export async function POST(req: Request) {
             const pendingKey = `pinbook:${username}:pending`;
             const existingPending = await kv.get(pendingKey) as { tier: string; badgeId: string; openedAt: number; isPromo?: boolean } | null;
             if (existingPending) {
-                if (existingPending.isPromo) {
+                const endedSwap = existingPending.isPromo ? endedPromoReplacement(existingPending) : null;
+                if (endedSwap) {
+                    // Event ended while this promo pending sat unrevealed —
+                    // credit a standard same-tier pin instead (see
+                    // endedPromoReplacement).
+                    const nowIso = new Date().toISOString();
+                    const existingPin = data.pins[endedSwap.id];
+                    if (existingPin) {
+                        existingPin.count += 1;
+                        existingPin.lastPulled = nowIso;
+                    } else {
+                        data.pins[endedSwap.id] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+                    }
+                    const tierFound = ensureTotalFoundByTier(data);
+                    tierFound[endedSwap.tier] = (tierFound[endedSwap.tier] || 0) + 1;
+                } else if (existingPending.isPromo) {
                     // Stale promo pending — credit to promo zset, not pin map.
                     const stalePromo = findPromoBadge(existingPending.badgeId);
                     if (stalePromo && stalePromo.tier === existingPending.tier) {
@@ -1126,6 +1160,33 @@ export async function POST(req: Request) {
                 const promoDef = findPromoBadge(badgeId);
                 if (!promoDef || promoDef.tier !== pending.tier) {
                     return NextResponse.json({ error: 'Invalid promo badge' }, { status: 400 });
+                }
+                // Event ended between open and collect — settle as a
+                // standard same-tier pin, no event zset writes (see
+                // endedPromoReplacement).
+                const endedSwap = endedPromoReplacement(pending);
+                if (endedSwap) {
+                    await kv.del(pendingKey);
+                    const nowIso = new Date().toISOString();
+                    const existingPin = data.pins[endedSwap.id];
+                    const swapWasNew = !existingPin;
+                    if (existingPin) {
+                        existingPin.count += 1;
+                        existingPin.lastPulled = nowIso;
+                    } else {
+                        data.pins[endedSwap.id] = { count: 1, firstEarned: nowIso, lastPulled: nowIso };
+                    }
+                    const tierFound = ensureTotalFoundByTier(data);
+                    tierFound[endedSwap.tier] = (tierFound[endedSwap.tier] || 0) + 1;
+                    await kv.set(key, data);
+                    return NextResponse.json({
+                        collected: true,
+                        isPromo: false,
+                        swappedFromEndedEvent: true,
+                        badgeId: endedSwap.id,
+                        isDuplicate: !swapWasNew,
+                        count: data.pins[endedSwap.id].count,
+                    });
                 }
                 await kv.del(pendingKey);
                 // Per-pin counter: ZINCRBY by 1. For standalone events
