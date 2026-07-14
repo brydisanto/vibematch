@@ -321,7 +321,8 @@ export const PROMO_BADGES: PromoBadge[] = [
         // capsule-only, preserving its rarity feel and keeping the
         // base cosmic tier composition unaffected.
         id: "claynosaurz_cosmic",
-        name: "Claynoz Pioneer",
+        name: "Claynotopia",
+        description: "Ultra rare. Go grail hunting!",
         image: "/badges/promo/set/claynosaurz/cosmic.webp",
         // Cosmic tier for pin-registry consistency; never appears on
         // the board so the 3× wouldn't apply in-game anyway.
@@ -398,10 +399,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
     },
     {
         id: "claynosaurz_partner_event",
-        name: "Claynosaurz Chase!",
+        name: "Comfy In Clay",
         partnerName: "Claynosaurz",
-        description: "Placeholder description — Claynosaurz partner event. 4 base pins + 1 rare Chase pin. Complete a full base set for a point bonus; Chase pin is bragging rights + a big point boost.",
-        shortDescription: "Collect Claynosaurz pins to win prizes!",
+        description: "Get comfy in Clay and collect all of your favorite characters to win fun prizes.",
+        shortDescription: "Get comfy in Clay and collect all of your favorite characters to win fun prizes.",
         eventWindow: "Claynosaurz x Pin Drop",
         // Claynosaurz brand teal / turquoise. Update to their exact
         // brand hex when the partnership brief lands.

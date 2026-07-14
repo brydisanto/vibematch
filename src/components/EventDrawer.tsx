@@ -64,6 +64,7 @@ interface EventSetPin {
     points: number;
     owned: number;
     isChase?: boolean;
+    description?: string;
 }
 
 interface EventSetMeta {
@@ -607,6 +608,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
             points: p.points ?? 1,
             owned: 0,
             isChase: p.isChase ?? false,
+            description: p.description,
         }));
     });
     const [setMeta, setSetMeta] = useState<EventSetMeta>(() => {
@@ -1353,7 +1355,7 @@ function SetView({
                             {pin.name}
                         </div>
                         <div className="font-mundial text-[10px] text-white/45 mt-0.5">
-                            Ultra rare capsule pull
+                            {pin.description || "Ultra rare capsule pull"}
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
