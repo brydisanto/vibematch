@@ -202,13 +202,23 @@ export default function LandingPageQuest({
         if (typeof window === "undefined") return;
         const t = setTimeout(async () => {
             const seen = new Set<string>();
+            // Vercel skew protection suffixes asset requests with
+            // ?dpl=<deployment-id>; warm the suffixed URL so it's an
+            // exact cache hit for what the game fetches (see the
+            // arcade landing preloader for the same trick).
+            const dplMatch = Array.from(document.querySelectorAll<HTMLElement>("link[href], script[src], img[src]"))
+                .map(el => el.getAttribute("href") || el.getAttribute("src") || "")
+                .join(" ")
+                .match(/[?&]dpl=(dpl_[A-Za-z0-9]+)/);
+            const dpl = dplMatch ? dplMatch[1] : null;
+            const withDpl = (u: string) => (dpl ? `${u}${u.includes("?") ? "&" : "?"}dpl=${dpl}` : u);
             const preload = (url: string) => {
                 if (seen.has(url)) return;
                 seen.add(url);
                 const raw = new window.Image();
-                raw.src = url;
+                raw.src = withDpl(url);
                 const optimized = new window.Image();
-                optimized.src = `/_next/image?url=${encodeURIComponent(url)}&w=96&q=75`;
+                optimized.src = withDpl(`/_next/image?url=${encodeURIComponent(url)}&w=96&q=75`);
             };
 
             BADGES.filter(b => !b.collectOnly).forEach(b => preload(b.image));
