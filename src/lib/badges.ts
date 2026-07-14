@@ -857,6 +857,23 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
             const others = byTier[tier].filter(b => !inSet.includes(b));
             byTier[tier] = [...inSet, ...others];
         });
+    } else if (primary?.kind === "set" && primary.set?.includeInGameTiles) {
+        // EVENT FLOOR: when the herd trigger doesn't fire, still
+        // guarantee at least ONE of the set's base pins on every
+        // board — pick one uniformly and promote it to the front of
+        // its tier queue. Composition stays 3B/1S/1G/1C; the other
+        // slots keep their normal odds. Chase pins are excluded here
+        // too, so landing a Grail tile stays lucky.
+        const setId = primary.set.id;
+        const basePins = pool.filter(
+            b => (b as { eventSetId?: string }).eventSetId === setId
+                && !(b as { isChase?: boolean }).isChase
+        );
+        if (basePins.length > 0) {
+            const pick = basePins[Math.floor(rng() * basePins.length)];
+            const tier = pick.tier as BadgeTier;
+            byTier[tier] = [pick, ...byTier[tier].filter(b => b.id !== pick.id)];
+        }
     }
 
     // Distribution: 3 blue, 1 silver, 1 gold, 1 cosmic = 6 tiles
