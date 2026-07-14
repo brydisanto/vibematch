@@ -730,6 +730,28 @@ export default function AppClient() {
   const inner = (
     <main className="min-h-screen bg-[#050505] relative">
 
+      {/* Event asset warmup — hidden priority images for the in-game
+          background + partner logo. `priority` makes Next emit
+          <link rel="preload"> in the initial HTML, so both assets
+          start downloading during page parse instead of racing the
+          800ms-delayed JS preloader (players who tapped into a game
+          fast still hit a cold cache and saw a 1-2s white flash).
+          `unoptimized` keeps the URL identical to the in-game render. */}
+      {isPromoActive() && (() => {
+        const primary = getPrimaryActiveEvent();
+        if (primary?.kind !== "set") return null;
+        return (
+          <div className="hidden" aria-hidden>
+            {primary.set.gameBackground && (
+              <Image src={primary.set.gameBackground} alt="" width={32} height={18} priority unoptimized />
+            )}
+            {primary.set.partnerLogo && (
+              <Image src={primary.set.partnerLogo} alt="" width={32} height={20} priority unoptimized />
+            )}
+          </div>
+        );
+      })()}
+
       {view === "playing" && <FlameBackground />}
       <AnimatePresence mode="wait">
         {view === "landing" ? (
