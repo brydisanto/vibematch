@@ -805,6 +805,11 @@ export default function AppClient() {
                 fill
                 className="object-cover object-center"
                 priority
+                // Serve the raw asset (already a hand-tuned WebP) so the
+                // landing preloader's cache warm hits the exact URL the
+                // game requests — the optimizer variant was a cold-cache
+                // miss that painted white for 1-2s on game start.
+                unoptimized
                 placeholder="blur"
                 blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
               />
@@ -872,6 +877,9 @@ export default function AppClient() {
                           height={709}
                           className="w-auto h-16 sm:h-24 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                           priority
+                          // Raw URL so the landing preloader's warm matches
+                          // (see background note above).
+                          unoptimized
                           style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite 0.4s" }}
                         />
                       </>

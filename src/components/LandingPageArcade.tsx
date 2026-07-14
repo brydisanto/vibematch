@@ -490,6 +490,7 @@ export default function LandingPageArcade({
                     if (primary?.kind === "set") {
                         if (primary.set.heroImage) preload(primary.set.heroImage);
                         if (primary.set.gameBackground) preload(primary.set.gameBackground);
+                        if (primary.set.partnerLogo) preload(primary.set.partnerLogo);
                     }
                 }
             } catch { /* silent */ }

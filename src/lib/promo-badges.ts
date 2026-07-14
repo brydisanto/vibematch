@@ -322,7 +322,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         // base cosmic tier composition unaffected.
         id: "claynosaurz_cosmic",
         name: "Claynotopia",
-        description: "Ultra rare. Go grail hunting!",
+        description: "Ultra rare. Go grail hunting and watch the points rain!",
         image: "/badges/promo/set/claynosaurz/cosmic.webp",
         // Cosmic tier for pin-registry consistency; never appears on
         // the board so the 3× wouldn't apply in-game anyway.
