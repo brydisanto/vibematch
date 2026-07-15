@@ -122,6 +122,11 @@ export interface PromoEventSet {
      *  score. Use when the event ends in a raffle of all "maxed"
      *  collectors rather than a strict ranking. Omit for uncapped. */
     scoreCap?: number;
+    /** Post-event prize results. When present, the EventDrawer shows a
+     *  WINNERS tab that filters the leaderboard to these usernames
+     *  (keeping leaderboard order) with each player's prize appended.
+     *  Populate after prizes are decided; keyed by exact username. */
+    winners?: Array<{ username: string; prize: string }>;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -238,6 +243,22 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Hard cap. Reaching 100 pts qualifies for the prize raffle;
         // everyone at 100 is treated equally for the draw.
         scoreCap: 100,
+        // Prize results, decided 2026-07-15 after the July 13 close.
+        // Raffle winners from the 100-point pool + the Giga chase.
+        winners: [
+            { username: "tylersmom423", prize: "GVC #4957" },
+            { username: "gabo", prize: "50K $VIBESTR" },
+            { username: "brandon87", prize: "20K $VIBESTR" },
+            { username: "bassline81", prize: "20K $VIBESTR" },
+            { username: "joker", prize: "20K $VIBESTR" },
+            { username: "btdwayne", prize: "20K $VIBESTR" },
+            { username: "gintonic", prize: "20K $VIBESTR" },
+            { username: "jordankallman", prize: "20K $VIBESTR" },
+            { username: "charles", prize: "20K $VIBESTR" },
+            { username: "joafe82", prize: "20K $VIBESTR" },
+            { username: "itsarmana", prize: "20K $VIBESTR" },
+            { username: "wyllt", prize: "20K $VIBESTR" },
+        ],
     },
 ];
 
