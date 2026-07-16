@@ -5,6 +5,7 @@ import { TIER_COLORS, TIER_BORDER_COLORS, BadgeTier } from "@/lib/badges";
 import { ScorePopup, MatchEffect, TimePenaltyPopup } from "@/lib/useGame";
 import { memo, useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { isClaynozEventLive } from "@/lib/sounds";
 
 const EMPTY_HINT_SET = new Set<string>();
 const EMPTY_TIME_PENALTY_POPUPS: TimePenaltyPopup[] = [];
@@ -582,14 +583,19 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     // Combo 6+ uses the intentional keysmash label — the joke is that
     // hitting a 6-combo is so overwhelming you just bash the keyboard.
     // Don't "fix" this string. It's the punchline.
+    //
+    // During the Claynosaurz event, dino-flavored phrases rotate into
+    // each tier's pool alongside the standard ones. They drop out
+    // automatically when the event ends.
+    const claynoz = isClaynozEventLive();
     const COMBO_TIERS = [
         // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
         // overflows the viewport on mobile. Drop to text-3xl on phones.
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
-        { minCombo: 5, label: "MAX STOKED!!!!",   fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!"] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
-        { minCombo: 3, label: "EPIC!!",           fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
-        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!"] as readonly string[], fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", labelPool: ["rkf4trrgrggrgh;[['11]", ...(claynoz ? ["Claynotopia"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
+        { minCombo: 5, label: "MAX STOKED!!!!", labelPool: ["MAX STOKED!!!!", ...(claynoz ? ["FEROCIOUS!!!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!", ...(claynoz ? ["DINO-MITE!!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
+        { minCombo: 3, label: "EPIC!!", labelPool: ["EPIC!!", ...(claynoz ? ["AWESOME!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
+        { minCombo: 2, label: "RAD!", labelPool: ["RAD!", "DOPE!", "SICK!", ...(claynoz ? ["RAWR!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#FF5F1F", shadow: "rgba(255,95,31,0.9)", rotate: -3, size: "text-7xl sm:text-9xl", italic: false },
     ];
 
     const tier = COMBO_TIERS.find(t => effect.combo >= t.minCombo) ?? COMBO_TIERS[COMBO_TIERS.length - 1];

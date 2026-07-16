@@ -115,7 +115,7 @@ const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynosaurz Theme");
 /** True while the Claynosaurz set event is the primary active event.
  *  Currently hardcoded to Claynoz; generalize to a `themeTrack` field
  *  on PromoEventSet if more events ship theme music. */
-function isClaynozEventLive(): boolean {
+export function isClaynozEventLive(): boolean {
     if (!isPromoActive()) return false;
     const primary = getPrimaryActiveEvent();
     return primary?.kind === "set" && primary.set?.id === "claynosaurz_partner_event";
