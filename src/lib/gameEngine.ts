@@ -868,6 +868,13 @@ export function processTurn(
     // Track which positions have pending specials (prevents overwrites)
     const pendingSpecials = new Map<string, SpecialTileType>();
 
+    // Cell id each creation ended up on (indexed like specialTilesCreated).
+    // Later cascade iterations can drop the new special further down the
+    // board, so the match-time position goes stale — we resolve each
+    // creation's FINAL position from these ids after the loop so the
+    // spawn visuals draw where the tile actually sits.
+    const placedCellIdByCreation: (string | undefined)[] = [];
+
     // Process cascades (cap at 50 to prevent infinite loops from 2x2 gravity fills)
     const MAX_CASCADES = 50;
     let matches = initialMatches;
@@ -887,7 +894,7 @@ export function processTurn(
         // Store them by a stable cell ID so they survive gravity shifts.
         // We also track sourceBadge so cosmic_blast knows which badge type
         // to clear on detonation (the type the player just matched).
-        const iterationSpecials: { cellId: string; type: SpecialTileType; sourceBadge: Badge }[] = [];
+        const iterationSpecials: { cellId: string; type: SpecialTileType; sourceBadge: Badge; createdIdx: number }[] = [];
         for (const match of matches) {
             const specialType = getSpecialTileForMatch(match);
             if (specialType) {
@@ -897,7 +904,7 @@ export function processTurn(
                 // Only keep the highest-tier special per cell
                 const posKey = `${midPos.row},${midPos.col}`;
                 if (!pendingSpecials.has(posKey)) {
-                    iterationSpecials.push({ cellId, type: specialType, sourceBadge: match.badge });
+                    iterationSpecials.push({ cellId, type: specialType, sourceBadge: match.badge, createdIdx: specialTilesCreated.length });
                     pendingSpecials.set(posKey, specialType);
                     // cascadeCount === 0 → this iteration is processing the
                     // player's initial swap match; anything later is a
@@ -947,13 +954,13 @@ export function processTurn(
         // Track where specials should be placed (by position before gravity).
         // We record the row/col of each special so we can place it on the
         // NEW cell that fills that position after gravity.
-        const specialPlacements: { row: number; col: number; type: SpecialTileType; sourceBadge: Badge }[] = [];
+        const specialPlacements: { row: number; col: number; type: SpecialTileType; sourceBadge: Badge; createdIdx: number }[] = [];
         for (const special of iterationSpecials) {
             // Find the current position of this cell
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     if (currentBoard[r][c].id === special.cellId) {
-                        specialPlacements.push({ row: r, col: c, type: special.type, sourceBadge: special.sourceBadge });
+                        specialPlacements.push({ row: r, col: c, type: special.type, sourceBadge: special.sourceBadge, createdIdx: special.createdIdx });
                     }
                 }
             }
@@ -1004,6 +1011,7 @@ export function processTurn(
                     // visible (non-conflicting) badge ended up being.
                     cosmicTargetBadgeId: sp.type === "cosmic_blast" ? sp.sourceBadge.id : undefined,
                 };
+                placedCellIdByCreation[sp.createdIdx] = currentCell.id;
             }
         }
 
@@ -1027,6 +1035,25 @@ export function processTurn(
 
     // Combo carry: momentum from big combos persists across turns
     const comboCarryOut = combo >= 5 ? 3 : combo >= 4 ? 2 : combo >= 3 ? 1 : 0;
+
+    // Resolve each created special's FINAL board position. The match-time
+    // position goes stale when later cascade iterations clear tiles below
+    // the new special and it falls — the spawn ring was drawing on the
+    // old square while the tile sat rows lower. Specials that got
+    // consumed by a same-turn chain reaction keep their creation
+    // position (the moment still happened there).
+    for (let i = 0; i < specialTilesCreated.length; i++) {
+        const placedId = placedCellIdByCreation[i];
+        if (!placedId) continue;
+        outer: for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if (currentBoard[r][c].id === placedId && currentBoard[r][c].isSpecial) {
+                    specialTilesCreated[i].pos = { row: r, col: c };
+                    break outer;
+                }
+            }
+        }
+    }
 
     return {
         board: currentBoard,
