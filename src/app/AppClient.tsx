@@ -845,10 +845,14 @@ export default function AppClient() {
             <div className="flex-shrink-0 z-40 px-3 sm:px-4 pt-[max(0.25rem,env(safe-area-inset-top))] pb-0 relative">
               {/* min-height reserves space for the absolutely-positioned
                   logo so the game board below sits below it instead of
-                  underneath. Heights mirror logo h-20 / sm:h-32 / lg:h-44
-                  (80 / 128 / 176px) plus the small top margin. */}
-              <div className="relative flex items-start justify-between w-full min-h-[5.5rem] sm:min-h-[9rem] lg:min-h-[12rem]">
-                <div className="flex-1 flex justify-start gap-2 pt-1 sm:pt-4 z-10">
+                  underneath. Heights fit logo h-[5.5rem] / sm:h-32 /
+                  lg:h-44 with breathing room; the logo block is
+                  vertically centered inside this box. Buttons stack
+                  VERTICALLY on the left/right edges (z-30, above the
+                  z-20 logo) so they never sit behind the logos on
+                  narrow screens. */}
+              <div className="relative flex items-start justify-between w-full min-h-[6.5rem] sm:min-h-[9.5rem] lg:min-h-[12.5rem]">
+                <div className="flex flex-col items-start gap-2 pt-1 sm:pt-2 z-30">
                   <button
                     onClick={handleGoHome}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
@@ -870,13 +874,16 @@ export default function AppClient() {
                   )}
                 </div>
 
-                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 sm:gap-4 z-20 mt-1 sm:mt-2">
+                {/* Logo block — absolutely centered BOTH ways in the
+                    header box so it reads as the marquee regardless of
+                    how many buttons stack on either side. */}
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 sm:gap-4 z-20">
                   <Image
                     src="/assets/logo-v3.png"
                     alt="PIN DROP"
                     width={1854}
                     height={1623}
-                    className="w-auto h-20 sm:h-32 lg:h-44 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
+                    className="w-auto h-[5.5rem] sm:h-32 lg:h-44 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                     priority
                     style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite" }}
                   />
@@ -887,7 +894,7 @@ export default function AppClient() {
                     return (
                       <>
                         <span
-                          className="font-display font-black text-white/60 text-2xl sm:text-4xl lg:text-5xl drop-shadow-[0_6px_18px_rgba(0,0,0,0.6)]"
+                          className="font-display font-black text-white/60 text-3xl sm:text-4xl lg:text-5xl drop-shadow-[0_6px_18px_rgba(0,0,0,0.6)]"
                           style={{ animation: "vmInGameLogoBob 3.2s ease-in-out infinite" }}
                         >
                           ×
@@ -897,7 +904,7 @@ export default function AppClient() {
                           alt={`${primary.set.name} logo`}
                           width={1143}
                           height={709}
-                          className="w-auto h-16 sm:h-24 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
+                          className="w-auto h-[4.5rem] sm:h-24 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                           priority
                           // Raw URL so the landing preloader's warm matches
                           // (see background note above).
@@ -909,7 +916,7 @@ export default function AppClient() {
                   })()}
                 </div>
 
-                <div className="flex-1 flex justify-end items-start gap-2 pt-1 sm:pt-4 relative z-10">
+                <div className="flex flex-col items-end gap-2 pt-1 sm:pt-2 relative z-30">
                   <button
                     onClick={handleSwitchTrack}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#b366ff] flex items-center justify-center shadow-lg hover:bg-[#b366ff] transition-all duration-200 group"
@@ -941,7 +948,7 @@ export default function AppClient() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -5, scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-12 sm:top-16 bg-[#2A2333]/95 border border-[#b366ff]/50 rounded-lg px-3 py-1.5 shadow-lg whitespace-nowrap pointer-events-none"
+                        className="absolute right-12 top-0 bg-[#2A2333]/95 border border-[#b366ff]/50 rounded-lg px-3 py-1.5 shadow-lg whitespace-nowrap pointer-events-none"
                       >
                         <span className="font-display tracking-wide text-sm text-white">{trackLabel}</span>
                       </motion.div>
