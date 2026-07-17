@@ -963,7 +963,14 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 ) : entries.length === 0 ? (
                                     <div className="py-12 text-center">
                                         <div className="font-mundial text-sm text-white/50">No collectors yet.</div>
-                                        <div className="font-mundial text-xs text-white/30 mt-1">Be the first to pull an {promo.name}.</div>
+                                        <div className="font-mundial text-xs text-white/30 mt-1">
+                                            {/* Pre-start: the boards are empty by design, so
+                                                point at the start moment instead of urging a
+                                                pull that can't happen yet. */}
+                                            {!started
+                                                ? `${promo.partnerName || promo.name} special event pins will appear once the event begins.`
+                                                : `Be the first to pull an ${promo.name}.`}
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
@@ -1110,7 +1117,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 </div>
                                                 {grailEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
-                                                        No Grails pulled yet. Be the first to find one.
+                                                        {!started
+                                                            ? "Grail pins will appear once the event begins."
+                                                            : "No Grails pulled yet. Be the first to find one."}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-1.5">
@@ -1166,7 +1175,9 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 </div>
                                                 {herdsEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
-                                                        No full sets yet. Be the first to complete a herd.
+                                                        {!started
+                                                            ? "Herds will appear once the event begins."
+                                                            : "No full sets yet. Be the first to complete a herd."}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-1.5">
