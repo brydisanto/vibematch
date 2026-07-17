@@ -615,8 +615,9 @@ function StatCard({ label, value, accent, deep }: { label: string; value: React.
 // Each trophy gets a partner-appropriate glow color.
 const OPENSEA_BLUE = "#4A9EFF";
 
-function getEventAccent(eventId: string): string {
-    if (eventId === "promo_opensea") return OPENSEA_BLUE;
+function getEventAccent(event: { id: string; accentColor?: string }): string {
+    if (event.accentColor) return event.accentColor;
+    if (event.id === "promo_opensea") return OPENSEA_BLUE;
     return GOLD;
 }
 
@@ -727,7 +728,7 @@ function TrophyShell({
 }
 
 function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["events"][number] }) {
-    const accent = getEventAccent(event.id);
+    const accent = getEventAccent(event);
     // Wrap in EventTrophyButton — tapping any event trophy now opens
     // the matching EventDrawer with the finalized leaderboard. Falls
     // back to a non-interactive shell when the event's PromoBadge
@@ -755,7 +756,13 @@ function EventTrophyCard({ event }: { event: ProfileResponse["trophyCase"]["even
                 style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }}
             />
             <div className="flex items-end justify-center gap-4 w-full">
-                <TrophyStat value={`×${event.owned}`} label="COLLECTED" color={accent} />
+                {/* Set-event trophies surface total points; standalone
+                    promos keep the collected-count stat. */}
+                {event.points != null ? (
+                    <TrophyStat value={event.points.toLocaleString()} label="POINTS" color={accent} />
+                ) : (
+                    <TrophyStat value={`×${event.owned}`} label="COLLECTED" color={accent} />
+                )}
                 {event.rank !== null && (
                     <TrophyStat value={`#${event.rank}`} label="RANK" color={ORANGE} />
                 )}

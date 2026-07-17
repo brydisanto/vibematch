@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import EventDrawer from "@/components/EventDrawer";
-import { findPromoBadge } from "@/lib/promo-badges";
+import { findPromoBadge, findPromoEventSet, getEventSetPins } from "@/lib/promo-badges";
 
 interface EventTrophyButtonProps {
     eventId: string;
@@ -22,9 +22,50 @@ interface EventTrophyButtonProps {
  */
 export default function EventTrophyButton({ eventId, accent, children }: EventTrophyButtonProps) {
     const [open, setOpen] = useState(false);
-    const promo = useMemo(() => findPromoBadge(eventId), [eventId]);
+    // eventId is either a standalone PromoBadge id or (for rolled-up
+    // set-event trophies) a PromoEventSet id. Resolve either into the
+    // drawer's promo shape.
+    const drawerPromo = useMemo(() => {
+        const promo = findPromoBadge(eventId);
+        if (promo) {
+            return {
+                id: promo.id,
+                name: promo.name,
+                partnerName: promo.partnerName,
+                tabLabel: promo.tabLabel,
+                image: promo.image,
+                description: promo.description,
+                eventWindow: promo.eventWindow,
+                prizeNote: promo.prizeNote,
+                accentColor: promo.accentColor,
+                startsAt: undefined,
+                endsAt: promo.endsAt,
+                eventSetId: promo.eventSetId,
+            };
+        }
+        const set = findPromoEventSet(eventId);
+        if (set) {
+            const pins = getEventSetPins(set.id);
+            const heroPin = [...pins].sort((a, b) => (b.points ?? 1) - (a.points ?? 1))[0];
+            return {
+                id: set.id,
+                name: set.name,
+                partnerName: set.partnerName,
+                tabLabel: set.tabLabel,
+                image: set.heroImage ?? heroPin?.image ?? "",
+                description: set.description,
+                eventWindow: set.eventWindow,
+                prizeNote: set.prizeNote,
+                accentColor: set.accentColor,
+                startsAt: set.startsAt,
+                endsAt: set.endsAt,
+                eventSetId: set.id,
+            };
+        }
+        return null;
+    }, [eventId]);
 
-    if (!promo) {
+    if (!drawerPromo) {
         return (
             <div
                 className="rounded-xl p-4 flex flex-col items-center text-center"
@@ -50,27 +91,14 @@ export default function EventTrophyButton({ eventId, accent, children }: EventTr
                     border: `1.5px solid ${accent}40`,
                     boxShadow: `0 0 14px ${accent}33, 0 0 28px ${accent}18`,
                 }}
-                aria-label={`Open ${promo.partnerName || promo.name} event leaderboard`}
+                aria-label={`Open ${drawerPromo.partnerName || drawerPromo.name} event leaderboard`}
             >
                 {children}
             </button>
             {open && (
                 <EventDrawer
                     onClose={() => setOpen(false)}
-                    promo={{
-                        id: promo.id,
-                        name: promo.name,
-                        partnerName: promo.partnerName,
-                        tabLabel: promo.tabLabel,
-                        image: promo.image,
-                        description: promo.description,
-                        eventWindow: promo.eventWindow,
-                        prizeNote: promo.prizeNote,
-                        accentColor: promo.accentColor,
-                        startsAt: undefined,
-                        endsAt: promo.endsAt,
-                        eventSetId: promo.eventSetId,
-                    }}
+                    promo={drawerPromo}
                 />
             )}
         </>
