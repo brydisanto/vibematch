@@ -252,12 +252,12 @@ export const PROMO_BADGES: PromoBadge[] = [
     // 4-pin base set still fires setBonusPoints whether or not you
     // land the Cosmic. Weights are smoothed vs Craig's: gentler
     // Common → Legendary gradient, then a hard gap to Cosmic. Sum ≈
-    // 100, drop rate 15%, per-cap odds:
-    //   Common (Milo)          7.50%
-    //   Rare (Bex)             4.05%
-    //   Epic (Trix)            2.25%
-    //   Legendary (Flea)       1.05%
-    //   Cosmic (Claynoz Pio.)  0.25%  ← ultra-rare, excluded from set bonus
+    // 100, drop rate 20%, per-cap odds:
+    //   Common (Milo)          9.93%
+    //   Rare (Bex)             5.36%
+    //   Epic (Trix)            2.98%
+    //   Legendary (Flea)       1.39%
+    //   Cosmic (Claynotopia)   0.33%  ← ultra-rare, excluded from set bonus
     {
         id: "claynosaurz_common",
         name: "Milo",
@@ -471,17 +471,18 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
  * this hits, we skip the tier roll entirely and award the promo. Bumped
- * from 10% → 15% for the Claynosaurz partner event to (a) accommodate a
- * 5th chase tier without cannibalizing base rates and (b) make the co-
- * marketed event feel more generous to first-time visitors from the
- * partner's audience. Per-capsule odds within the Claynosaurz set:
- *   Common          7.50%
- *   Rare            4.05%
- *   Epic            2.25%
- *   Legendary       1.05%
- *   Cosmic (chase)  0.25%  ← rarer than Legendary; excluded from set bonus
+ * 10% → 15% → 20% (1 in 5) for the Claynosaurz partner event to (a)
+ * accommodate a 5th chase tier without cannibalizing base rates and
+ * (b) make the co-marketed event feel more generous to first-time
+ * visitors from the partner's audience. Per-capsule odds within the
+ * Claynosaurz set at 20%:
+ *   Common          9.93%
+ *   Rare            5.36%
+ *   Epic            2.98%
+ *   Legendary       1.39%
+ *   Cosmic (chase)  0.33%  ← rarer than Legendary; excluded from set bonus
  */
-export const PROMO_DROP_RATE = 0.15;
+export const PROMO_DROP_RATE = 0.20;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
