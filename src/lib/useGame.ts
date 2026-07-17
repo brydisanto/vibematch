@@ -496,8 +496,14 @@ export function useGame(): UseGameReturn {
             navigator.vibrate(pattern);
         }
 
-        // Clear match effect after animation
-        setTimeout(() => setMatchEffect(null), intensity === "ultra" ? 2400 : intensity === "mega" ? 1800 : 1200);
+        // Clear match effect after animation. Power-tile creations hold
+        // a floor of 1800ms — the creation ring + label start on a
+        // ~0.45s settle delay (see PowerTileCreationMoment) and the
+        // label alone runs 1.1s, so a 1200ms window would unmount it
+        // mid-display.
+        const baseClearMs = intensity === "ultra" ? 2400 : intensity === "mega" ? 1800 : 1200;
+        const clearMs = result.specialTilesCreated.length > 0 ? Math.max(baseClearMs, 1800) : baseClearMs;
+        setTimeout(() => setMatchEffect(null), clearMs);
 
         // Add score popup. scoreMultiplier surfaces Frenzy's heat 2x so
         // the floating number matches what the score tile actually adds.

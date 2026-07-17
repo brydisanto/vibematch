@@ -493,6 +493,13 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
     const created = effect.specialTilesCreated;
     if (!created || created.length === 0 || cellSize === 0) return null;
 
+    // Hold the creation moment until the board settles: the match-clear
+    // flash + tile drops run for ~0.30-0.45s after the effect fires, and
+    // the new special only visually arrives at its cell when they finish.
+    // Firing at t=0 drew the ring on a square the tile hadn't landed on
+    // yet, which read as "wrong place" even with correct coordinates.
+    const SETTLE_DELAY_S = 0.45;
+
     const STYLES = {
         bomb:         { label: "BOMB!",         color: "#FF3333", glow: "rgba(255,51,51,0.85)" },
         vibestreak:   { label: "LASER PARTY!",  color: "#4AE0FF", glow: "rgba(74,224,255,0.85)" },
@@ -527,7 +534,7 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
                             border: `4px solid ${style.color}`,
                             borderRadius: "50%",
                             boxShadow: `0 0 30px ${style.glow}, inset 0 0 20px ${style.glow}`,
-                            animationDelay: `${i * 0.08}s`,
+                            animationDelay: `${SETTLE_DELAY_S + i * 0.08}s`,
                         }}
                     />
                 );
@@ -541,7 +548,7 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
             {mounted && createPortal(
                 <div
                     className="fixed left-0 right-0 flex justify-center pointer-events-none power-tile-create-label"
-                    style={{ top: "22vh", zIndex: 73 }}
+                    style={{ top: "22vh", zIndex: 73, animationDelay: `${SETTLE_DELAY_S}s` }}
                 >
                     <div
                         className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
