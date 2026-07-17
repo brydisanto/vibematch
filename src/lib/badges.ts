@@ -794,13 +794,17 @@ function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getDroppablePromoBadges, getPrimaryActiveEvent } = require("./promo-badges") as {
+    const { getDroppablePromoBadges, getPrimaryActiveEvent, isEventSetLive } = require("./promo-badges") as {
         getDroppablePromoBadges: () => Badge[];
-        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { includeInGameTiles?: boolean } } | null;
+        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { includeInGameTiles?: boolean; startsAt?: string; endsAt?: string } } | null;
+        isEventSetLive: (set: { startsAt?: string; endsAt?: string }) => boolean;
     };
     const base = BADGES.filter(b => !b.collectOnly);
     const primary = getPrimaryActiveEvent();
-    if (primary?.kind === "set" && !primary.set?.includeInGameTiles) {
+    // Event pins join the tile pool only while the event is LIVE —
+    // pre-start (COMING SOON announce phase) the board stays stock
+    // even though the pins are technically droppable-window pending.
+    if (primary?.kind === "set" && (!primary.set?.includeInGameTiles || !isEventSetLive(primary.set))) {
         return base;
     }
     return [...base, ...getDroppablePromoBadges()];
@@ -821,14 +825,17 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
     const rng = seed !== undefined ? seededRandom(seed) : Math.random;
     const pool = getGameBadgePool();
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getPrimaryActiveEvent } = require("./promo-badges") as {
-        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string; includeInGameTiles?: boolean } } | null;
+    const { getPrimaryActiveEvent, isEventSetLive } = require("./promo-badges") as {
+        getPrimaryActiveEvent: () => { kind: "set" | "standalone"; set?: { id: string; includeInGameTiles?: boolean; startsAt?: string; endsAt?: string } } | null;
+        isEventSetLive: (set: { startsAt?: string; endsAt?: string }) => boolean;
     };
     const fullSetRoll = rng();
     const primary = getPrimaryActiveEvent();
+    const setIsLive = primary?.kind === "set" && !!primary.set && isEventSetLive(primary.set);
     const forceSetOnBoard =
         primary?.kind === "set"
         && !!primary.set?.includeInGameTiles
+        && setIsLive
         && fullSetRoll < FULL_SET_BOARD_PROBABILITY;
 
     const byTier: Record<BadgeTier, Badge[]> = {
@@ -857,7 +864,7 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
             const others = byTier[tier].filter(b => !inSet.includes(b));
             byTier[tier] = [...inSet, ...others];
         });
-    } else if (primary?.kind === "set" && primary.set?.includeInGameTiles) {
+    } else if (primary?.kind === "set" && primary.set?.includeInGameTiles && setIsLive) {
         // EVENT FLOOR: when the herd trigger doesn't fire, still
         // guarantee at least ONE of the set's base pins on every
         // board — pick one uniformly and promote it to the front of

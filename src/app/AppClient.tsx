@@ -15,7 +15,7 @@ import InstructionsModal from "@/components/InstructionsModal";
 import MoveLogModal from "@/components/MoveLogModal";
 import AuthModal from "@/components/AuthModal";
 import FlameBackground from "@/components/FlameBackground";
-import { isPromoActive, getPrimaryActiveEvent } from "@/lib/promo-badges";
+import { isPromoActive, getPrimaryActiveEvent, isEventSetLive } from "@/lib/promo-badges";
 import SettingsModal from "@/components/SettingsModal";
 import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
@@ -820,7 +820,7 @@ export default function AppClient() {
                 src={(() => {
                   if (!isPromoActive()) return "/vibematchbg2.jpg";
                   const primary = getPrimaryActiveEvent();
-                  if (primary?.kind !== "set") return "/vibematchbg2.jpg";
+                  if (primary?.kind !== "set" || !isEventSetLive(primary.set)) return "/vibematchbg2.jpg";
                   return primary.set.gameBackground || "/vibematchbg2.jpg";
                 })()}
                 alt="Background"
@@ -883,7 +883,7 @@ export default function AppClient() {
                   {(() => {
                     if (!isPromoActive()) return null;
                     const primary = getPrimaryActiveEvent();
-                    if (primary?.kind !== "set" || !primary.set.partnerLogo) return null;
+                    if (primary?.kind !== "set" || !primary.set.partnerLogo || !isEventSetLive(primary.set)) return null;
                     return (
                       <>
                         <span
@@ -1007,7 +1007,7 @@ export default function AppClient() {
                     frameGradient={(() => {
                       if (!isPromoActive()) return undefined;
                       const primary = getPrimaryActiveEvent();
-                      if (primary?.kind !== "set") return undefined;
+                      if (primary?.kind !== "set" || !isEventSetLive(primary.set)) return undefined;
                       return primary.set.frameGradient;
                     })()}
                   />

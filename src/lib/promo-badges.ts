@@ -371,10 +371,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Monday July 13 2026, 12:00 PM Eastern — exactly one week of
         // collecting. Drives the "ENDS …" countdown once the event is
         // live, then flips the drawer to FINAL RESULTS at cutoff.
-        // PREVIEW OVERRIDE: bumped forward temporarily so Claynosaurz
-        // is the primary event on the branch preview. REVERT to
-        // "2026-07-13T16:00:00Z" before merging to main.
-        endsAt: "2026-07-08T00:00:00Z",
+        endsAt: "2026-07-13T16:00:00Z",
         tabLabel: "Set",
         heroImage: "/badges/promo/set/craig_vibington.webp",
         // +25 per full set collected (one of every pin). Stacks: 3 of
@@ -409,13 +406,8 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         accentColor: "#00C4B4",
         // Launch: Monday July 20 2026, 12:00 PM Eastern (16:00 UTC).
         // Window: 7 days, closing Monday July 27 12:00 PM Eastern.
-        // PREVIEW OVERRIDE: pulled forward to be live NOW so the
-        // branch preview can showcase Claynosaurz-specific behavior
-        // (teal frame, The Herd tab, Cosmic drops, tile inclusion).
-        // REVERT to real launch dates ("2026-07-20T16:00:00Z" →
-        // "2026-07-27T16:00:00Z") before merging to main.
-        startsAt: "2026-07-01T16:00:00Z",
-        endsAt: "2026-08-01T16:00:00Z",
+        startsAt: "2026-07-20T16:00:00Z",
+        endsAt: "2026-07-27T16:00:00Z",
         tabLabel: "Set",
         // Temporary hero — pointing at the branded Cosmic pin since
         // it carries the Claynosaurz logo and reads well at hero size.
@@ -507,6 +499,19 @@ export function isPromoEnded(promo: PromoBadge): boolean {
  *  needing the env flag flipped. */
 export function getDroppablePromoBadges(): PromoBadge[] {
     return getActivePromoBadges().filter(p => !isPromoEnded(p));
+}
+
+/** True while a set event is INSIDE its window (startsAt passed, endsAt
+ *  not). This is the gate for every event-specific game surface — board
+ *  tiles, background, frame gradient, partner logo, theme music, combo
+ *  phrases. Pre-start the event is announce-only: banner shows COMING
+ *  SOON, drawer opens with info, but the game itself stays stock until
+ *  the window opens. */
+export function isEventSetLive(set: Pick<PromoEventSet, "startsAt" | "endsAt">): boolean {
+    const now = Date.now();
+    if (set.startsAt && now < new Date(set.startsAt).getTime()) return false;
+    if (set.endsAt && now >= new Date(set.endsAt).getTime()) return false;
+    return true;
 }
 
 /**
