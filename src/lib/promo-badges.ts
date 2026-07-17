@@ -432,7 +432,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         accentColor: "#00C4B4",
         // Launch: Monday July 20 2026, 12:00 PM Eastern (16:00 UTC).
         // Window: 7 days, closing Monday July 27 12:00 PM Eastern.
-        startsAt: "2026-07-20T16:00:00Z",
+        // PREVIEW SHIM (branch only, never merge to main): pulled
+        // forward so the live-event board/tiles/visuals can be
+        // previewed before launch. Real launch is 2026-07-20T16:00:00Z.
+        startsAt: "2026-07-17T00:00:00Z",
         endsAt: "2026-07-27T16:00:00Z",
         tabLabel: "Set",
         // Temporary hero — pointing at the branded Cosmic pin since
