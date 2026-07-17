@@ -297,9 +297,22 @@ export function getActivePromoBadges(): PromoBadge[] {
     return isPromoActive() ? PROMO_BADGES : [];
 }
 
-/** True once the promo's endsAt has passed. Promos without endsAt
- *  never expire. */
+/** True once the promo's endsAt has passed. For set-event pins the
+ *  lifetime is defined at the SET level (individual pins have no
+ *  endsAt of their own), so we inherit from the parent set. Standalone
+ *  promos check their own endsAt. Anything with no resolved endsAt
+ *  never expires.
+ *
+ *  The set inheritance is load-bearing: without it, set-event pins
+ *  never read as ended and keep dropping from eligible capsules
+ *  indefinitely — this is exactly how Craig's pins kept dropping for
+ *  three days after the July 13 cutoff. */
 export function isPromoEnded(promo: PromoBadge): boolean {
+    if (promo.eventSetId) {
+        const set = findPromoEventSet(promo.eventSetId);
+        if (!set?.endsAt) return false;
+        return Date.now() >= new Date(set.endsAt).getTime();
+    }
     if (!promo.endsAt) return false;
     return Date.now() >= new Date(promo.endsAt).getTime();
 }
