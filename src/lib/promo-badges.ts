@@ -163,6 +163,11 @@ export interface PromoEventSet {
      *  events where showing the partner's IP on-board is part of the
      *  co-marketing beat. */
     includeInGameTiles?: boolean;
+    /** Post-event prize results. When present, the EventDrawer shows a
+     *  WINNERS tab that filters the leaderboard to these usernames
+     *  (keeping leaderboard order) with each player's prize appended.
+     *  Populate after prizes are decided; keyed by exact username. */
+    winners?: Array<{ username: string; prize: string }>;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -393,6 +398,22 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Set pins do NOT appear on the game board — capsule drops only.
         includeInGameTiles: false,
         gameBackground: "/backgrounds/game-bg-bubble-gum.webp",
+        // Prize results, decided 2026-07-15 after the July 13 close.
+        // Raffle winners from the 100-point pool + the Giga chase.
+        winners: [
+            { username: "tylersmom423", prize: "GVC #4957" },
+            { username: "gabo", prize: "50K $VIBESTR" },
+            { username: "brandon87", prize: "20K $VIBESTR" },
+            { username: "bassline81", prize: "20K $VIBESTR" },
+            { username: "joker", prize: "20K $VIBESTR" },
+            { username: "btdwayne", prize: "20K $VIBESTR" },
+            { username: "gintonic", prize: "20K $VIBESTR" },
+            { username: "jordankallman", prize: "20K $VIBESTR" },
+            { username: "charles", prize: "20K $VIBESTR" },
+            { username: "joafe82", prize: "20K $VIBESTR" },
+            { username: "itsarmana", prize: "20K $VIBESTR" },
+            { username: "wyllt", prize: "20K $VIBESTR" },
+        ],
     },
     {
         id: "claynosaurz_partner_event",
@@ -482,7 +503,12 @@ export function getActivePromoBadges(): PromoBadge[] {
  *  lifetime is defined at the SET level (individual pins have no
  *  endsAt of their own), so we inherit from the parent set. Standalone
  *  promos check their own endsAt. Anything with no resolved endsAt
- *  never expires. */
+ *  never expires.
+ *
+ *  The set inheritance is load-bearing: without it, set-event pins
+ *  never read as ended and keep dropping from eligible capsules
+ *  indefinitely — this is exactly how Craig's pins kept dropping for
+ *  three days after the July 13 cutoff. */
 export function isPromoEnded(promo: PromoBadge): boolean {
     if (promo.eventSetId) {
         const set = findPromoEventSet(promo.eventSetId);

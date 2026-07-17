@@ -10,7 +10,7 @@
  * Data source: `/api/promo/leaderboard` (active promo's collector zset).
  */
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -570,11 +570,19 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         return () => clearTimeout(t);
     }, [promo.startsAt]);
 
+    // Prize results — configured on the set def after the event closes
+    // and prizes are decided. Presence of the list drives the WINNERS
+    // tab (and makes it the default view: for a decided event the
+    // results are the headline).
+    const eventWinners = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.winners ?? null : null),
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
-    // ranking second.
-    const [view, setView] = useState<"leaderboard" | "set">("set");
+    // ranking second. Once winners are published, open there instead.
+    const [view, setView] = useState<"leaderboard" | "set" | "winners">(eventWinners ? "winners" : "set");
     // Sub-view inside the Leaderboard tab for set events. Three tabs:
     //   points  — score-based ranking (default)
     //   herds   — ranks by full sets completed, tie-broken by points
@@ -890,6 +898,20 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 >
                                     Leaderboard
                                 </button>
+                                {eventWinners && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setView("winners")}
+                                        className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                        style={{
+                                            color: view === "winners" ? accent : "rgba(255,255,255,0.5)",
+                                            borderBottom: view === "winners" ? `2px solid ${accent}` : "2px solid transparent",
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        Winners
+                                    </button>
+                                )}
                             </div>
                         )}
 
@@ -1250,6 +1272,108 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         </Link>
                                     </div>
                                 )}
+                            </div>
+                        ) : view === "winners" && eventWinners ? (
+                            <div className="px-5 pb-3 pt-3">
+                                {loading ? (
+                                    <div className="py-12 text-center font-mundial text-sm text-white/40">Loading winners…</div>
+                                ) : (() => {
+                                    // Leaderboard rows filtered to the prize
+                                    // winners, preserving leaderboard order.
+                                    // Prize text comes from the set config.
+                                    const prizeByUser = new Map(eventWinners.map(w => [w.username.toLowerCase(), w.prize]));
+                                    const winnerRows = entries.filter(e => prizeByUser.has(e.username.toLowerCase()));
+                                    if (winnerRows.length === 0) {
+                                        return (
+                                            <div className="py-12 text-center font-mundial text-sm text-white/40">
+                                                Winners will appear here shortly.
+                                            </div>
+                                        );
+                                    }
+                                    // Same stat derivations the leaderboard rows
+                                    // use: total event pins held + pulls of the
+                                    // highest-points ("Giga") pin in the set.
+                                    const gigaPin = setPins.length > 0 ? [...setPins].sort((a, b) => b.points - a.points)[0] : null;
+                                    return (
+                                        <>
+                                            <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
+                                                <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                <div className="flex-1 min-w-0 pl-3">WINNER</div>
+                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Pins</div>
+                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Gigas</div>
+                                                <div className="flex-shrink-0 w-11 sm:w-14 text-center">Points</div>
+                                                <div className="flex-shrink-0 w-20 sm:w-28 text-center tabular-nums font-semibold" style={{ color: accent }}>Prize</div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {winnerRows.map((entry, i) => {
+                                                    const isYou = !!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase();
+                                                    const prize = prizeByUser.get(entry.username.toLowerCase()) || "";
+                                                    const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
+                                                    const gigaCount = gigaPin ? (entry.pinCounts?.[gigaPin.id] ?? 0) : 0;
+                                                    return (
+                                                        <Link
+                                                            key={entry.username}
+                                                            href={`/u/${encodeURIComponent(entry.username)}`}
+                                                            prefetch={false}
+                                                            className={`flex items-center gap-2 sm:gap-3 py-2.5 px-2 rounded-xl transition-colors ${
+                                                                isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"
+                                                            }`}
+                                                        >
+                                                            <div className="flex-shrink-0 w-7 text-center font-display font-semibold text-sm text-white/60">
+                                                                {i + 1}
+                                                            </div>
+                                                            <Avatar
+                                                                username={entry.username}
+                                                                hintUrl={isYou ? currentAvatarUrl : (entry.avatarUrl || undefined)}
+                                                                size={32}
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className={`font-display font-semibold text-sm truncate ${isYou ? "text-[#B366FF]" : "text-white/90"}`}>
+                                                                    {isYou ? "You" : entry.username}
+                                                                </div>
+                                                            </div>
+                                                            <div
+                                                                className="flex-shrink-0 w-9 sm:w-11 text-center font-display font-semibold tabular-nums"
+                                                                style={{
+                                                                    fontSize: "14px",
+                                                                    color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                                                                }}
+                                                            >
+                                                                {totalPins}
+                                                            </div>
+                                                            <div
+                                                                className="flex-shrink-0 w-9 sm:w-11 text-center font-display font-semibold tabular-nums"
+                                                                style={{
+                                                                    fontSize: "14px",
+                                                                    color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
+                                                                }}
+                                                            >
+                                                                {gigaCount}
+                                                            </div>
+                                                            <div
+                                                                className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-black tabular-nums"
+                                                                style={{ fontSize: "16px", color: "rgba(255,255,255,0.8)" }}
+                                                            >
+                                                                {entry.count.toLocaleString()}
+                                                            </div>
+                                                            <div
+                                                                className="flex-shrink-0 w-20 sm:w-28 text-center font-display font-semibold text-[10px] sm:text-[12px] leading-tight rounded-lg px-1 py-1.5"
+                                                                style={{
+                                                                    color: accent,
+                                                                    background: `${accent}14`,
+                                                                    border: `1px solid ${accent}33`,
+                                                                    textShadow: `0 0 10px ${accent}55`,
+                                                                }}
+                                                            >
+                                                                {prize}
+                                                            </div>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         ) : (
                             <SetView
