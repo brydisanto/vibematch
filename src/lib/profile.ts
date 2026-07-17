@@ -7,9 +7,61 @@ import {
     PROMO_EVENT_SETS,
     promoLeaderboardKey,
     eventSetPointsKey,
+    eventSetReachedCapKey,
     getEventSetPins,
     type PromoBadge,
 } from "@/lib/promo-badges";
+
+/**
+ * FINAL leaderboard rank for a set event — matches the ordering the
+ * EventDrawer shows, not raw zset order. Everyone with strictly more
+ * points ranks above; the user's equal-points cohort is sorted by the
+ * same tiebreaker cascade as /api/promo/leaderboard: gigas (highest-
+ * points pin count) → total pins → speed to cap (earliest reached_cap
+ * timestamp). Keep the comparator in lockstep with that route.
+ */
+async function eventSetFinalRank(setId: string, username: string, points: number): Promise<number> {
+    const key = eventSetPointsKey(setId);
+    const [higherCountRaw, cohortRaw] = await Promise.all([
+        kv.zcount(key, `(${points}`, "+inf"),
+        kv.zrange(key, points, points, { byScore: true }) as Promise<string[]>,
+    ]);
+    const higherCount = typeof higherCountRaw === "number" ? higherCountRaw : 0;
+    const cohort = (cohortRaw || []).map(String);
+    if (cohort.length <= 1) return higherCount + 1;
+
+    const pins = getEventSetPins(setId);
+    const gigaPin = [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+    const pinScores = await Promise.all(
+        cohort.flatMap(member =>
+            pins.map(p => kv.zscore(promoLeaderboardKey(p.id), member) as Promise<number | null>)
+        ),
+    );
+    const capStamps = await kv.mget(...cohort.map(m => eventSetReachedCapKey(setId, m))) as (number | string | null)[];
+
+    const stats = cohort.map((member, i) => {
+        const counts: Record<string, number> = {};
+        pins.forEach((p, j) => {
+            const v = pinScores[i * pins.length + j];
+            counts[p.id] = typeof v === "number" ? Number(v) : 0;
+        });
+        const rawTs = capStamps[i];
+        const ts = typeof rawTs === "number" ? rawTs : (typeof rawTs === "string" ? Number(rawTs) : NaN);
+        return {
+            member,
+            gigas: gigaPin ? (counts[gigaPin.id] ?? 0) : 0,
+            totalPins: pins.reduce((sum, p) => sum + (counts[p.id] ?? 0), 0),
+            capAt: !isNaN(ts) && ts > 0 ? ts : Infinity,
+        };
+    });
+    stats.sort((a, b) => {
+        if (b.gigas !== a.gigas) return b.gigas - a.gigas;
+        if (b.totalPins !== a.totalPins) return b.totalPins - a.totalPins;
+        return a.capAt - b.capAt;
+    });
+    const idx = stats.findIndex(s => s.member.toLowerCase() === username.toLowerCase());
+    return higherCount + (idx >= 0 ? idx : cohort.length - 1) + 1;
+}
 
 /**
  * Shared profile-data aggregator used by both /api/profile/[username]
@@ -279,12 +331,13 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     const setLookups = await Promise.all(
         PROMO_EVENT_SETS.map(async (set) => {
             const key = eventSetPointsKey(set.id);
-            const [scoreRaw, rankRaw] = await Promise.all([
-                kv.zscore(key, username) as Promise<number | null>,
-                kv.zrevrank(key, username) as Promise<number | null>,
-            ]);
+            const scoreRaw = await kv.zscore(key, username) as number | null;
             const points = scoreRaw !== null ? Number(scoreRaw) : 0;
             if (points <= 0) return null;
+            // Rank follows the FINAL leaderboard ordering (tiebreaker
+            // cascade), not raw zset order — a capped event has many
+            // tied scores and the trophy must agree with the drawer.
+            const rank = await eventSetFinalRank(set.id, username, points);
             // Hero art falls back to the highest-points pin in the set.
             const pins = getEventSetPins(set.id);
             const heroPin = [...pins].sort((a, b) => (b.points ?? 1) - (a.points ?? 1))[0];
@@ -294,7 +347,7 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
                 image: set.heroImage ?? heroPin?.image ?? "",
                 partnerName: set.partnerName ?? "PIN DROP",
                 owned: 0,
-                rank: rankRaw !== null ? rankRaw + 1 : null,
+                rank,
                 points,
                 accentColor: set.accentColor,
             } as ProfileEventTrophy;
