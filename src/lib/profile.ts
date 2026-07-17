@@ -2,7 +2,14 @@ import { kv } from "@vercel/kv";
 import { BADGES, type BadgeTier } from "@/lib/badges";
 import { getEasternDailyKey, getEasternYesterdayKey } from "@/lib/daily-window";
 import { getTier, type TierInfo, type TierId } from "@/lib/tiers";
-import { PROMO_BADGES, promoLeaderboardKey, type PromoBadge } from "@/lib/promo-badges";
+import {
+    PROMO_BADGES,
+    PROMO_EVENT_SETS,
+    promoLeaderboardKey,
+    eventSetPointsKey,
+    getEventSetPins,
+    type PromoBadge,
+} from "@/lib/promo-badges";
 
 /**
  * Shared profile-data aggregator used by both /api/profile/[username]
@@ -29,17 +36,24 @@ export interface ProfileRecentRun {
 }
 
 export interface ProfileEventTrophy {
-    /** Promo / event badge id (e.g. "promo_opensea"). */
+    /** Promo badge id (standalone, e.g. "promo_opensea") or event-set
+     *  id (rolled-up set events, e.g. "craigs_bubble_gum_blast"). */
     id: string;
-    /** Display name pulled from the PromoBadge definition. */
+    /** Display name pulled from the PromoBadge / PromoEventSet definition. */
     name: string;
     image: string;
     /** Partner / event label (e.g. "OpenSea Event"). */
     partnerName: string;
-    /** Number of these the player collected. */
+    /** Number of these the player collected (standalone promos only —
+     *  set-event trophies surface `points` instead). */
     owned: number;
     /** 1-indexed rank on the event leaderboard. Null when not ranked. */
     rank: number | null;
+    /** Total event points collected. Present only on set-event trophies;
+     *  the trophy card shows POINTS instead of COLLECTED when set. */
+    points?: number | null;
+    /** Event accent color from the set definition, for the card glow. */
+    accentColor?: string;
 }
 
 export interface ProfileTrophyCase {
@@ -234,8 +248,12 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
     // come from the same zset: zscore for count, zrevrank for rank.
     // Daily wins are a forward-only hash counter bumped in
     // /api/daily-champ-bonus on successful claim.
+    // Standalone promos (no eventSetId) keep the one-trophy-per-pin
+    // model. Pins belonging to a set event are EXCLUDED here — they
+    // roll up into a single per-event trophy below, so a 4-pin event
+    // occupies one slot in the case, not four.
     const promoLookups = await Promise.all(
-        PROMO_BADGES.map(async (promo: PromoBadge) => {
+        PROMO_BADGES.filter((p: PromoBadge) => !p.eventSetId).map(async (promo: PromoBadge) => {
             const lbKey = promoLeaderboardKey(promo.id);
             const [scoreRaw, rankRaw] = await Promise.all([
                 kv.zscore(lbKey, username) as Promise<number | null>,
@@ -253,11 +271,40 @@ export async function getProfile(rawUsername: string): Promise<ProfileResponse |
             } as ProfileEventTrophy;
         }),
     );
+
+    // Set events: ONE trophy per event — event hero art, the player's
+    // rank on the points leaderboard, and total points collected. Same
+    // pattern for every set event we run; new events appear here
+    // automatically once the player has points on the board.
+    const setLookups = await Promise.all(
+        PROMO_EVENT_SETS.map(async (set) => {
+            const key = eventSetPointsKey(set.id);
+            const [scoreRaw, rankRaw] = await Promise.all([
+                kv.zscore(key, username) as Promise<number | null>,
+                kv.zrevrank(key, username) as Promise<number | null>,
+            ]);
+            const points = scoreRaw !== null ? Number(scoreRaw) : 0;
+            if (points <= 0) return null;
+            // Hero art falls back to the highest-points pin in the set.
+            const pins = getEventSetPins(set.id);
+            const heroPin = [...pins].sort((a, b) => (b.points ?? 1) - (a.points ?? 1))[0];
+            return {
+                id: set.id,
+                name: set.name,
+                image: set.heroImage ?? heroPin?.image ?? "",
+                partnerName: set.partnerName ?? "PIN DROP",
+                owned: 0,
+                rank: rankRaw !== null ? rankRaw + 1 : null,
+                points,
+                accentColor: set.accentColor,
+            } as ProfileEventTrophy;
+        }),
+    );
     const completedPinBook = uniquePins >= BADGES.length && BADGES.length > 0;
 
     const trophyCase: ProfileTrophyCase = {
         dailyWins: Number(dailyWinsRaw || 0),
-        events: promoLookups.filter((t): t is ProfileEventTrophy => !!t),
+        events: [...setLookups, ...promoLookups].filter((t): t is ProfileEventTrophy => !!t),
         completedPinBook,
     };
 
