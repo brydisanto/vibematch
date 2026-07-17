@@ -866,6 +866,17 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
             const others = byTier[tier].filter(b => !inSet.includes(b));
             byTier[tier] = [...inSet, ...others];
         });
+        // The one non-event slot on the full-herd board is themed too:
+        // Citizen of Vibetown ("any GVC") takes the final blue slot,
+        // queued right behind the promoted set pins — the herd plus
+        // one citizen. Neither the citizen nor the set pins conflict-
+        // group against each other, so the pick is deterministic.
+        const citizen = byTier.blue.find(b => b.id === "any_gvc");
+        if (citizen) {
+            const setBlues = byTier.blue.filter(b => (b as { eventSetId?: string }).eventSetId === setId);
+            const rest = byTier.blue.filter(b => b !== citizen && !setBlues.includes(b));
+            byTier.blue = [...setBlues, citizen, ...rest];
+        }
     } else if (primary?.kind === "set" && primary.set?.includeInGameTiles && setIsLive) {
         // EVENT FLOOR: when the herd trigger doesn't fire, still
         // guarantee at least ONE of the set's base pins on every
