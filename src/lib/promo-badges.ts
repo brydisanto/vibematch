@@ -277,9 +277,13 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_rare",
         name: "Bex",
         image: "/badges/promo/set/claynosaurz/rare.webp",
-        // Silver rarity → matches other 1.5× silver tiles on the board.
-        tier: "silver" as BadgeTier,
-        pointMultiplier: 1.5,
+        // Blue in-game tier (1×) so Milo + Bex can BOTH occupy blue
+        // slots on the full-herd board — the 3B/1S/1G/1C composition
+        // has one slot per upper tier, so fitting all 5 pins means
+        // stacking the two most common pins in blue. Event rarity /
+        // drop odds are unchanged (dropWeight + rarityLabel below).
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -292,9 +296,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_epic",
         name: "Trix",
         image: "/badges/promo/set/claynosaurz/epic.webp",
-        // Gold rarity → matches other 2× gold tiles on the board.
-        tier: "gold" as BadgeTier,
-        pointMultiplier: 2,
+        // Silver in-game tier (1.5×) — shifted down one so Claynotopia
+        // can hold the cosmic slot on the full-herd board.
+        tier: "silver" as BadgeTier,
+        pointMultiplier: 1.5,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -307,9 +312,10 @@ export const PROMO_BADGES: PromoBadge[] = [
         id: "claynosaurz_legendary",
         name: "Flea",
         image: "/badges/promo/set/claynosaurz/legendary.webp",
-        // Cosmic rarity → matches other 3× cosmic tiles on the board.
-        tier: "cosmic" as BadgeTier,
-        pointMultiplier: 3,
+        // Gold in-game tier (2×) — shifted down one so Claynotopia
+        // can hold the cosmic slot on the full-herd board.
+        tier: "gold" as BadgeTier,
+        pointMultiplier: 2,
         isPromo: true,
         partnerName: "Claynosaurz",
         tabLabel: "Herd",
@@ -321,16 +327,15 @@ export const PROMO_BADGES: PromoBadge[] = [
     {
         // "Cosmic" is Claynosaurz's original file naming; the visible
         // rarity label is "Grail" and the mechanic (isChase) is
-        // generic. Pin is EXCLUDED from the game-board tile pool
-        // (getGameBadgePool filters isChase out) — Grail is
-        // capsule-only, preserving its rarity feel and keeping the
-        // base cosmic tier composition unaffected.
+        // generic. On the game board Claynotopia IS the cosmic-tier
+        // pin for the event, and the full-herd board promotes it into
+        // the cosmic slot so all 5 pins appear together. isChase still
+        // excludes it from set-completion math and from the every-board
+        // event floor.
         id: "claynosaurz_cosmic",
         name: "Claynotopia",
         description: "Ultra rare. Go grail hunting and watch the points rain!",
         image: "/badges/promo/set/claynosaurz/cosmic.webp",
-        // Cosmic tier for pin-registry consistency; never appears on
-        // the board so the 3× wouldn't apply in-game anyway.
         tier: "cosmic" as BadgeTier,
         pointMultiplier: 3,
         isPromo: true,

@@ -785,11 +785,12 @@ export const BADGES: Badge[] = [
 // visually stable board). Claynosaurz partner event turns it on so
 // the partner's IP appears as playable tiles during the event window.
 //
-// Chase pins (isChase) DO appear on the board like any other tile of
-// their tier — they compete with base tiles in their tier pool. What
-// they DON'T do is get force-promoted alongside the base pins by the
-// special-board trigger (see selectGameBadges); that trigger is a
-// "here comes the herd" moment for the 4 base pins only.
+// Chase pins (isChase) appear on the board like any other tile of
+// their tier — they compete with base tiles in their tier pool, AND
+// the special-board trigger promotes them along with the base pins
+// (the full-herd board carries all 5 event pins, chase in the cosmic
+// slot). What chase pins stay excluded from is the every-board event
+// floor and set-completion math.
 function getGameBadgePool(): Badge[] {
     // Lazy import to avoid pulling promo-badges into modules that only
     // need the canonical 101.
@@ -846,20 +847,21 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
         cosmic: shuffle(pool.filter((b) => b.tier === "cosmic"), rng),
     };
 
-    // When the special-board trigger fires, promote this set's BASE
-    // pins to the front of their tier arrays so selectFromTier picks
-    // them first. Chase pins (isChase) are intentionally NOT promoted
-    // — they compete for their tier slot at the normal random rate,
-    // preserving the "landing a Grail is lucky" feel. Distribution
-    // (3B/1S/1G/1C) is unchanged; the trick is that a base set pin
-    // sits at index 0 of each tier queue and gets chosen
-    // deterministically before the random base pins.
+    // When the special-board trigger fires, promote ALL of this set's
+    // pins — chase included — to the front of their tier arrays so
+    // selectFromTier picks them first. With the Claynoz tier stacking
+    // (Milo + Bex blue, Trix silver, Flea gold, Claynotopia cosmic)
+    // the full-herd board carries all 5 event pins at once: two of the
+    // three blue slots plus every upper-tier slot, with one random
+    // blue rounding out the 6. Distribution (3B/1S/1G/1C) is
+    // unchanged; the trick is that set pins sit at the head of each
+    // tier queue and get chosen deterministically before the random
+    // base pins.
     if (forceSetOnBoard && primary?.kind === "set" && primary.set) {
         const setId = primary.set.id;
         (Object.keys(byTier) as BadgeTier[]).forEach(tier => {
             const inSet = byTier[tier].filter(
-                b => (b as { eventSetId?: string; isChase?: boolean }).eventSetId === setId
-                    && !(b as { isChase?: boolean }).isChase
+                b => (b as { eventSetId?: string }).eventSetId === setId
             );
             const others = byTier[tier].filter(b => !inSet.includes(b));
             byTier[tier] = [...inSet, ...others];
