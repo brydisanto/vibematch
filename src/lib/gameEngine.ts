@@ -845,6 +845,22 @@ export function processTurn(
         return null; // Invalid move — no match formed
     }
 
+    // Snapshot each tile's row BEFORE the cascade loop (post-swap board),
+    // keyed by cell id. The whole move resolves in the engine and renders
+    // once, so the drop animation must reflect the NET fall of every tile
+    // from where the player last saw it to its final resting row — not
+    // just the last cascade iteration's movement (which is what the
+    // per-iteration applyGravity dropDistance captured, leaving
+    // earlier-cascade tiles to pop into place / teleport). We recompute
+    // dropDistance from this snapshot after the loop. Purely visual
+    // metadata — no gameplay effect.
+    const preRowById = new Map<string, number>();
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            preRowById.set(currentBoard[r][c].id, r);
+        }
+    }
+
     let totalScore = 0;
     // Start combo from carried-over value (cross-turn momentum)
     let combo = comboCarryIn;
@@ -1051,6 +1067,26 @@ export function processTurn(
                     specialTilesCreated[i].pos = { row: r, col: c };
                     break outer;
                 }
+            }
+        }
+    }
+
+    // Recompute NET dropDistance for the single render (see preRowById).
+    // A tile that survived the whole move gets finalRow - preSwapRow;
+    // a tile spawned during any cascade fell in from above the board, so
+    // it enters from finalRow + 1 rows up. This makes every moved tile
+    // animate its true fall in one smooth drop instead of only the last
+    // cascade's tiles animating while the rest teleport.
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const cell = currentBoard[r][c];
+            const preRow = preRowById.get(cell.id);
+            if (preRow === undefined) {
+                // New tile (not present pre-cascade) — entered from above.
+                currentBoard[r][c] = { ...cell, isNew: true, dropDistance: r + 1 };
+            } else {
+                const drop = r - preRow;
+                currentBoard[r][c] = { ...cell, isNew: false, dropDistance: drop > 0 ? drop : 0 };
             }
         }
     }
