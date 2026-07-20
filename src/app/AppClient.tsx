@@ -965,9 +965,9 @@ export default function AppClient() {
                 header, so the menu button overlapped the COMBO tile and
                 the header (z-40) clipped the stats' top border. Bottom
                 high-score row may scroll instead — board + header win. */}
-            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center mt-0 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-start lg:justify-center mt-0 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
-              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100svh - 220px), 680px)" }}>
+              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100svh - 250px), 680px)" }}>
                 <GameHUD
                   state={game.state}
                   username={userProfile?.username}
@@ -999,8 +999,8 @@ export default function AppClient() {
                   mid-animation and teleporting tiles. svh never changes
                   with chrome, so the board size is locked. */}
               <div className="flex-shrink-0 relative overflow-visible flex items-center justify-center -mb-1 sm:-mb-2" style={{
-                height: "min(100vw - 8px, calc(100svh - 220px), 680px)",
-                width: "min(100vw - 8px, calc(100svh - 220px), 680px)",
+                height: "min(100vw - 8px, calc(100svh - 250px), 680px)",
+                width: "min(100vw - 8px, calc(100svh - 250px), 680px)",
               }}
               >
                 <div className="absolute inset-0">
