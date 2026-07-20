@@ -598,7 +598,7 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     const COMBO_TIERS = [
         // Keysmash is 22 chars — at the standard text-6xl/8xl sizing it
         // overflows the viewport on mobile. Drop to text-3xl on phones.
-        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", labelPool: ["rkf4trrgrggrgh;[['11]", ...(claynoz ? ["Claynotopia"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
+        { minCombo: 6, label: "rkf4trrgrggrgh;[['11]", labelPool: ["rkf4trrgrggrgh;[['11]", ...(claynoz ? ["CLAYNOTOPIA"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.95)", rotate: -2, size: "text-3xl sm:text-7xl", italic: true },
         { minCombo: 5, label: "MAX STOKED!!!!", labelPool: ["MAX STOKED!!!!", ...(claynoz ? ["FEROCIOUS!!!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#B366FF", shadow: "rgba(179,102,255,0.85)", rotate: 3,  size: "text-6xl sm:text-8xl", italic: false },
         { minCombo: 4, label: "ELECTRIC!!!", labelPool: ["ELECTRIC!!!", "YUUUUSSSS!!!", ...(claynoz ? ["DINO-MITE!!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#FFE048", shadow: "rgba(255,224,72,0.95)",  rotate: -2, size: "text-6xl sm:text-8xl", italic: true },
         { minCombo: 3, label: "EPIC!!", labelPool: ["EPIC!!", ...(claynoz ? ["AWESOME!!"] : [])] as readonly string[], fill: "#FFFFFF", stroke: "#FF6B9D", shadow: "rgba(255,107,157,0.9)",  rotate: 2,  size: "text-6xl sm:text-8xl", italic: false },
