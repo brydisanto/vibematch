@@ -852,7 +852,7 @@ export default function AppClient() {
                   z-20 logo) so they never sit behind the logos on
                   narrow screens. */}
               <div className="relative flex items-start justify-between w-full min-h-[6.5rem] sm:min-h-[9.5rem] lg:min-h-[12.5rem]">
-                <div className="flex flex-col items-start gap-2 pt-1 sm:pt-2 z-30">
+                <div className="flex flex-col items-start gap-1.5 sm:gap-2 pt-1 sm:pt-2 z-30">
                   <button
                     onClick={handleGoHome}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#c9a84c] flex items-center justify-center shadow-lg hover:bg-[#FFE048] hover:border-[#FFE048] transition-all duration-200 group"
@@ -916,7 +916,7 @@ export default function AppClient() {
                   })()}
                 </div>
 
-                <div className="flex flex-col items-end gap-2 pt-1 sm:pt-2 relative z-30">
+                <div className="flex flex-col items-end gap-1.5 sm:gap-2 pt-1 sm:pt-2 relative z-30">
                   <button
                     onClick={handleSwitchTrack}
                     className="w-10 h-10 rounded-full bg-[#111]/90 border-2 border-[#b366ff] flex items-center justify-center shadow-lg hover:bg-[#b366ff] transition-all duration-200 group"
@@ -963,7 +963,7 @@ export default function AppClient() {
                 header logo so the board sits where it did pre-rebrand. */}
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center -mt-4 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
-              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100dvh - 220px), 680px)" }}>
+              <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100svh - 220px), 680px)" }}>
                 <GameHUD
                   state={game.state}
                   username={userProfile?.username}
@@ -972,8 +972,10 @@ export default function AppClient() {
                 />
               </div>
 
-              {/* Mobile HUD Top — Metrics only */}
-              <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-1 order-first">
+              {/* Mobile HUD Top — Metrics only. pb-3 reserves room for
+                  the TURBO chip that floats below the score card
+                  (-bottom-2.5); with pb-1 it clipped on Frenzy. */}
+              <div className="lg:hidden w-full max-w-[680px] flex-shrink-0 pb-3 order-first">
                 <div className="w-full">
                   <GameHUD
                     state={game.state}
@@ -985,10 +987,16 @@ export default function AppClient() {
                 </div>
               </div>
 
-              {/* Board — fills available height, capped */}
+              {/* Board — fills available height, capped. Uses svh (small
+                  viewport height, stable when mobile browser chrome
+                  shows/hides) instead of dvh: dvh jitters on scroll,
+                  and a taller header made the height term win the min()
+                  on more screens, so that jitter was resizing the board
+                  mid-animation and teleporting tiles. svh never changes
+                  with chrome, so the board size is locked. */}
               <div className="flex-shrink-0 relative overflow-visible flex items-center justify-center -mb-1 sm:-mb-2" style={{
-                height: "min(100vw - 8px, calc(100dvh - 220px), 680px)",
-                width: "min(100vw - 8px, calc(100dvh - 220px), 680px)",
+                height: "min(100vw - 8px, calc(100svh - 220px), 680px)",
+                width: "min(100vw - 8px, calc(100svh - 220px), 680px)",
               }}
               >
                 <div className="absolute inset-0">
