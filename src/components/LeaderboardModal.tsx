@@ -336,8 +336,15 @@ export default function LeaderboardModal({ onClose, currentUsername, currentAvat
         // pull-count ranking. The active set id is derived from the
         // first active promo's eventSetId.
         if (targetMode === "promo") {
-            const activePromos = getActivePromoBadges();
-            const activeSetId = activePromos.find(p => p.eventSetId)?.eventSetId ?? null;
+            // Route to the PRIMARY active event (same resolver the banner
+            // + drawer use), NOT the first-defined promo. getActivePromoBadges
+            // returns every promo including ended ones, so .find() picked
+            // whichever set was declared first in the registry — that's why
+            // the EVENT tab kept showing the previous event (Craig's) after
+            // it ended instead of the current one. getPrimaryActiveEvent
+            // prefers the live/coming-soon set over an ended archive.
+            const primary = getPrimaryActiveEvent();
+            const activeSetId = primary?.kind === "set" ? primary.set.id : null;
             const url = activeSetId
                 ? `/api/promo/leaderboard?set=${encodeURIComponent(activeSetId)}`
                 : `/api/promo/leaderboard`;
