@@ -339,6 +339,17 @@ body {
   83%  { transform: translate(-0.6px, 0.3px); }
   100% { transform: translate(0, 0); }
 }
+/* Mobile: neutralize board-shake. Translating the whole board while the
+   tiles inside are running their own drop transforms compounds into
+   shaky/teleporty drops during combos (mega/ultra matches fire the
+   shake, which is exactly when tiles are also falling), and moving the
+   full board + glows + shadows is GPU-heavy on phones. The combo banner
+   and score popups carry the juice; the board itself stays steady. */
+@media (max-width: 767px) {
+  @keyframes board-shake {
+    0%, 100% { transform: translate(0, 0); }
+  }
+}
 
 /* ===== TILE DEPTH & TIER IDLE ANIMATIONS ===== */
 

@@ -959,9 +959,13 @@ export default function AppClient() {
             </div>
 
             {/* Game Layout — Royal Match style: HUD left, Board center.
-                Negative top margin compensates for the larger PIN DROP
-                header logo so the board sits where it did pre-rebrand. */}
-            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center -mt-4 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
+                Desktop keeps a negative top margin to tuck the board up
+                under the big logo. Mobile uses mt-0: the -mt-4 there
+                pulled the stats row up into the taller stacked-button
+                header, so the menu button overlapped the COMBO tile and
+                the header (z-40) clipped the stats' top border. Bottom
+                high-score row may scroll instead — board + header win. */}
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-center mt-0 lg:-mt-8 pt-1 pb-2 px-1 sm:p-4 gap-2 sm:gap-4 overflow-y-auto w-full relative z-10">
               {/* Left HUD — Desktop only */}
               <div className="hidden lg:flex flex-col justify-center w-56 flex-shrink-0 min-w-0 -mb-1 sm:-mb-2" style={{ height: "min(100vw - 8px, calc(100svh - 220px), 680px)" }}>
                 <GameHUD
