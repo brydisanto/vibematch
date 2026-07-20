@@ -1202,8 +1202,12 @@ body {
     100% { transform: translateY(0); opacity: 1; }
 }
 .game-tile--dropping {
+    /* No per-column stagger: the previous var(--drop-delay) added up to
+       ~140ms for the rightmost column, pushing the effective animation
+       past the input-release window so a queued tap fired mid-fall and
+       teleported the tile. Every column now drops together and finishes
+       at a uniform 300ms, which the 320ms cleanup fully covers. */
     animation: tile-drop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: var(--drop-delay, 0s);
 }
 
 /* === Hint pulse overlay ===
