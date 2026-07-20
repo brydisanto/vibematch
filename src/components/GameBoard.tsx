@@ -493,12 +493,13 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
     const created = effect.specialTilesCreated;
     if (!created || created.length === 0 || cellSize === 0) return null;
 
-    // Hold the creation moment until the board settles: the match-clear
-    // flash + tile drops run for ~0.30-0.45s after the effect fires, and
-    // the new special only visually arrives at its cell when they finish.
-    // Firing at t=0 drew the ring on a square the tile hadn't landed on
-    // yet, which read as "wrong place" even with correct coordinates.
-    const SETTLE_DELAY_S = 0.45;
+    // Hold the creation moment until the board settles AND the combo
+    // banner (fires at t=0, top: 14vh) has had its punch: the match-clear
+    // flash + tile drops run ~0.30-0.45s, and firing the label at t=0
+    // stacked it right under the combo text in Frenzy where both fire on
+    // the same match. 0.6s lets the combo peak first, then this lands in
+    // its own lower lane (top: 34vh).
+    const SETTLE_DELAY_S = 0.6;
 
     const STYLES = {
         bomb:         { label: "BOMB!",         color: "#FF3333", glow: "rgba(255,51,51,0.85)" },
@@ -548,7 +549,7 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
             {mounted && createPortal(
                 <div
                     className="fixed left-0 right-0 flex justify-center pointer-events-none power-tile-create-label"
-                    style={{ top: "22vh", zIndex: 73, animationDelay: `${SETTLE_DELAY_S}s` }}
+                    style={{ top: "34vh", zIndex: 73, animationDelay: `${SETTLE_DELAY_S}s` }}
                 >
                     <div
                         className="font-display font-black text-5xl sm:text-7xl uppercase tracking-tight select-none"
@@ -630,7 +631,7 @@ function ComboStreakBanner({ effect }: { effect: MatchEffect }) {
     return createPortal(
         <div
             className="fixed left-0 right-0 flex flex-col items-center pointer-events-none combo-banner-enter px-2"
-            style={{ top: "16vh", zIndex: 74 }}
+            style={{ top: "14vh", zIndex: 74 }}
         >
             {/* Static radial background flash — sized to the banner's
                 bounding box so it tracks the floating text instead of
@@ -737,7 +738,7 @@ function ShapeAnnouncement({ effect }: { effect: MatchEffect }) {
     return createPortal(
         <div
             className="fixed left-0 right-0 flex flex-col items-center pointer-events-none shape-announce-enter"
-            style={{ top: "10vh", zIndex: 75 }}
+            style={{ top: "7vh", zIndex: 75 }}
             key={effect.timestamp}
         >
             {/* Confetti burst from the badge \u2014 12 sparkles fanning out
