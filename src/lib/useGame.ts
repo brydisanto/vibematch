@@ -670,15 +670,19 @@ export function useGame(): UseGameReturn {
                 setIsAnimating(false);
             }, 1800);
         } else {
-            // Cleanup delay = how long until the next queued tap is
-            // allowed to fire. Mobile Classic uses 120ms for snappiness,
-            // but Frenzy players match every 400-500ms; releasing input
-            // at 120ms lets the queued tap fire mid-animation and Framer
-            // Motion restarts gravity from the tile's in-flight position,
-            // reading as a teleport. Use the desktop value (300ms) for
-            // Frenzy and for desktop in general to give gravity time to
-            // finish visually before the next cascade begins.
-            const cleanupMs = isFrenzy ? 300 : (isMobile ? 120 : 300);
+            // Cleanup fires when the drop animation has VISUALLY finished:
+            // it both releases input (isAnimating=false) and clears
+            // dropDistance, and clearing dropDistance removes the
+            // .game-tile--dropping class — which snaps the tile to its
+            // final position. If that happens before the CSS animation
+            // ends, the tile teleports mid-fall. The drop keyframe runs
+            // 300ms (column stagger now removed so every column finishes
+            // together), so cleanup must be >= 300ms. Mobile Classic used
+            // to fire at 120ms, cutting every drop ~40% through — the
+            // teleport players saw. 320ms across the board clears just
+            // after the animation settles, so gravity always completes
+            // before the next queued tap can start a new cascade.
+            const cleanupMs = 320;
             setTimeout(() => {
                 setIsAnimating(false);
                 setState(prev2 => {
