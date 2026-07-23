@@ -45,6 +45,12 @@ const USDC_ADDRESS = USDC_TOKEN_ADDRESS.toLowerCase();
 const VIBESTR_TOLERANCE = 0.20;
 // USDC is 1:1 with USD; only tiny tolerance for rounding.
 const USDC_TOLERANCE = 0.02;
+// ETH amount is derived from ETH/USD at purchase time; the reconcile
+// snapshot may be a few hours stale, so allow for intraday price drift.
+// The 1/5/10 packages are 5x apart, so a 10% band can't confuse sizes.
+const ETH_TOLERANCE = 0.10;
+
+type Rail = 'vibestr' | 'usdc' | 'eth';
 
 // How many blocks back to scan on each run — 24h at ~7000 blocks/day
 // gives us plenty of headroom for a cron running hourly, and avoids
@@ -58,13 +64,16 @@ interface EtherscanTokenTx {
     from: string;
     to: string;
     value: string;
-    tokenDecimal: string;
+    tokenDecimal?: string;
+    // Present on `txlist` (native ETH) rows, absent on `tokentx` rows.
+    isError?: string;
+    input?: string;
 }
 
 interface ReconcileResult {
     txHash: string;
     from: string;
-    rail: 'vibestr' | 'usdc';
+    rail: Rail;
     amountRaw: string;
     outcome:
         | { status: 'credited'; username: string; packageSize: number }
@@ -98,6 +107,40 @@ async function fetchTokenTransfers(tokenAddress: string, startBlock: number): Pr
     const json = await res.json() as { status: string; result: EtherscanTokenTx[] | string };
     if (json.status !== '1' || !Array.isArray(json.result)) return [];
     return json.result.filter(t => t.to.toLowerCase() === TREASURY_ADDRESS);
+}
+
+/**
+ * Native ETH transfers into the treasury (Etherscan `txlist`). MetaMask
+ * mobile users frequently pay the ETH rail, and a mobile wallet round-trip
+ * can strand the confirmation before the client POSTs to us — so these
+ * need the same reconcile safety net the token rails already have.
+ * Keep only successful, plain value transfers (input == 0x): a contract
+ * call to the treasury would have a data payload and isn't a purchase.
+ */
+async function fetchNativeTransfers(startBlock: number): Promise<EtherscanTokenTx[]> {
+    if (!ETHERSCAN_API_KEY || !TREASURY_ADDRESS) return [];
+    const params = new URLSearchParams({
+        chainid: '1',
+        module: 'account',
+        action: 'txlist',
+        address: TREASURY_ADDRESS,
+        startblock: String(startBlock),
+        endblock: '99999999',
+        sort: 'desc',
+        page: '1',
+        offset: '1000',
+        apikey: ETHERSCAN_API_KEY,
+    });
+    const res = await fetch(`https://api.etherscan.io/v2/api?${params.toString()}`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const json = await res.json() as { status: string; result: EtherscanTokenTx[] | string };
+    if (json.status !== '1' || !Array.isArray(json.result)) return [];
+    return json.result.filter(t =>
+        t.to.toLowerCase() === TREASURY_ADDRESS &&
+        t.value !== '0' &&
+        (t.isError ?? '0') === '0' &&
+        (t.input ?? '0x') === '0x'
+    );
 }
 
 async function getCurrentBlock(): Promise<number> {
@@ -149,17 +192,21 @@ async function buildWalletMap(): Promise<Map<string, string>> {
  * snapshot. Returns the package id + size, or null if no match within
  * tolerance.
  */
+function railWei(entry: { vibestrWei: string; usdcWei: string; ethWei: string }, rail: Rail): string {
+    return rail === 'vibestr' ? entry.vibestrWei : rail === 'usdc' ? entry.usdcWei : entry.ethWei;
+}
+
 function matchPackage(
-    rail: 'vibestr' | 'usdc',
+    rail: Rail,
     amountWei: bigint,
     snapshot: Awaited<ReturnType<typeof getPricingSnapshot>>,
 ): { packageId: PricingPackageId; packageSize: number } | null {
     const candidates: Array<{ id: PricingPackageId; size: number; requiredWei: bigint }> = [
-        { id: 'prize-games-1', size: 1, requiredWei: BigInt(rail === 'vibestr' ? snapshot.packages['prize-games-1'].vibestrWei : snapshot.packages['prize-games-1'].usdcWei) },
-        { id: 'prize-games-5', size: 5, requiredWei: BigInt(rail === 'vibestr' ? snapshot.packages['prize-games-5'].vibestrWei : snapshot.packages['prize-games-5'].usdcWei) },
-        { id: 'prize-games-10', size: 10, requiredWei: BigInt(rail === 'vibestr' ? snapshot.packages['prize-games-10'].vibestrWei : snapshot.packages['prize-games-10'].usdcWei) },
+        { id: 'prize-games-1', size: 1, requiredWei: BigInt(railWei(snapshot.packages['prize-games-1'], rail)) },
+        { id: 'prize-games-5', size: 5, requiredWei: BigInt(railWei(snapshot.packages['prize-games-5'], rail)) },
+        { id: 'prize-games-10', size: 10, requiredWei: BigInt(railWei(snapshot.packages['prize-games-10'], rail)) },
     ];
-    const tolerance = rail === 'vibestr' ? VIBESTR_TOLERANCE : USDC_TOLERANCE;
+    const tolerance = rail === 'vibestr' ? VIBESTR_TOLERANCE : rail === 'usdc' ? USDC_TOLERANCE : ETH_TOLERANCE;
     // Match the LARGEST package that's within tolerance and ≤ amount + tol.
     // Sort desc by size so we credit the biggest matching package.
     candidates.sort((a, b) => b.size - a.size);
@@ -179,7 +226,7 @@ function matchPackage(
 
 async function reconcileTx(
     tx: EtherscanTokenTx,
-    rail: 'vibestr' | 'usdc',
+    rail: Rail,
     walletMap: Map<string, string>,
     snapshot: Awaited<ReturnType<typeof getPricingSnapshot>>,
 ): Promise<ReconcileResult> {
@@ -241,7 +288,7 @@ async function reconcileTx(
             username,
             wallet: from,
             packageSize: match.packageSize,
-            amount: (Number(amountRaw) / (rail === 'vibestr' ? 1e18 : 1e6)).toString(),
+            amount: (Number(amountRaw) / (rail === 'usdc' ? 1e6 : 1e18)).toString(),
             paymentRail: rail,
             timestamp: Number(tx.timeStamp) * 1000,
             reconciled_by: 'cron',
@@ -268,15 +315,17 @@ export async function GET(req: Request) {
     const currentBlock = await getCurrentBlock();
     const startBlock = currentBlock > SCAN_BLOCK_WINDOW ? currentBlock - SCAN_BLOCK_WINDOW : 0;
 
-    const [vibestrTxs, usdcTxs] = await Promise.all([
+    const [vibestrTxs, usdcTxs, ethTxs] = await Promise.all([
         fetchTokenTransfers(VIBESTR_ADDRESS, startBlock),
         fetchTokenTransfers(USDC_ADDRESS, startBlock),
+        fetchNativeTransfers(startBlock),
     ]);
 
     // Filter down to orphans (no KV record yet). Batch mget the tx keys.
-    const allTxs: Array<{ rail: 'vibestr' | 'usdc'; tx: EtherscanTokenTx }> = [
+    const allTxs: Array<{ rail: Rail; tx: EtherscanTokenTx }> = [
         ...vibestrTxs.map(tx => ({ rail: 'vibestr' as const, tx })),
         ...usdcTxs.map(tx => ({ rail: 'usdc' as const, tx })),
+        ...ethTxs.map(tx => ({ rail: 'eth' as const, tx })),
     ];
     if (allTxs.length === 0) {
         return NextResponse.json({ scanned: 0, credited: 0, skipped: 0, results: [] });
