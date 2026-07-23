@@ -1247,10 +1247,18 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
                                                 const totalPins = setPins.reduce((sum, p) => sum + (userRow.pinCounts?.[p.id] ?? 0), 0);
                                                 const gigaCount = userRow.pinCounts?.[gigaPin.id] ?? 0;
+                                                // Herds = min of the BASE (non-chase) pin counts,
+                                                // matching LeaderboardRow. This column was missing
+                                                // here, so an out-of-top-50 player's Giga count
+                                                // rendered under the Herds header (read as "0 herds").
+                                                const basePins = setPins.filter(p => !p.isChase);
+                                                const herds = basePins.length > 0
+                                                    ? Math.min(...basePins.map(p => userRow.pinCounts?.[p.id] ?? 0))
+                                                    : 0;
                                                 return (
                                                     <>
                                                         <div
-                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "14px",
                                                                 color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
@@ -1259,7 +1267,16 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             {totalPins}
                                                         </div>
                                                         <div
-                                                            className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
+                                                            style={{
+                                                                fontSize: "14px",
+                                                                color: herds > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                                                            }}
+                                                        >
+                                                            {herds}
+                                                        </div>
+                                                        <div
+                                                            className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-semibold tabular-nums"
                                                             style={{
                                                                 fontSize: "15px",
                                                                 color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",

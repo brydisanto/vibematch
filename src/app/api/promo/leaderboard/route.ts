@@ -282,6 +282,10 @@ export async function GET(req: Request) {
                             rarityLabel: p.rarityLabel ?? null,
                             points: p.points ?? 1,
                             owned: ownedPerPin[p.id] ?? 0,
+                            // isChase lets any client exclude the grail pin from
+                            // herd (min-of-base) math without re-deriving it from
+                            // the registry.
+                            isChase: p.isChase ?? false,
                         })),
                     },
                     scoreLabel: 'points',
