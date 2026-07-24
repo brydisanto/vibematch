@@ -135,7 +135,17 @@ function MetaBar() {
     const items: { k: string; v: React.ReactNode }[] = [
         { k: "Format", v: "In-game event" },
         { k: "Partners", v: "GVC × Axie" },
-        { k: "Dates", v: <span style={{ color: GOLD }}>TBA</span> },
+        {
+            k: "Dates",
+            v: (
+                <span>
+                    Aug 3 <span className="text-white/40">→</span> Aug 10
+                    <span className="block font-mundial font-normal text-white/45 text-[11px] tracking-[0.04em] mt-0.5">
+                        12PM ET both days
+                    </span>
+                </span>
+            ),
+        },
         {
             k: "Play",
             v: (
@@ -374,7 +384,7 @@ function HolderBoard() {
 /* ===== PRIZE POOL ===== */
 function PrizePool() {
     const prizes: { big: string; title: string; sub: string; color: string }[] = [
-        { big: "1", title: "Good Vibes Club NFT", sub: "The grand prize.", color: GOLD },
+        { big: "1", title: "NFT", sub: "The grand prize.", color: GOLD },
         { big: "◆", title: "$VIBESTR", sub: "The Good Vibes Club ecosystem token.", color: COSMIC },
         { big: "5K+", title: "Limited edition Axie accessories", sub: "Inspired by Good Vibes Club.", color: PINK },
         { big: "100", title: "Collectible Axies", sub: "Reserved for GVC holders. Japanese, Nightmare, and Summer, per the holder leaderboard.", color: AXIE_BLUE },
