@@ -42,9 +42,19 @@ extension ChestType {
     var cosmicChance: Double {
         switch self {
         case .bronze: return 0.00   // [PLACEHOLDER] Never from bronze
+        case .silver: return 0.02   // [PLACEHOLDER] 2% per slot
+        case .gold:   return 0.05   // [PLACEHOLDER] 5% per slot
+        case .cosmic: return 0.15   // [PLACEHOLDER] 15% per slot
+        }
+    }
+
+    /// Chance that any individual drop slot rolls a special badge.
+    var specialChance: Double {
+        switch self {
+        case .bronze: return 0.00   // [PLACEHOLDER] Never from bronze
         case .silver: return 0.05   // [PLACEHOLDER] 5% per slot
-        case .gold:   return 0.15   // [PLACEHOLDER] 15% per slot
-        case .cosmic: return 0.40   // [PLACEHOLDER] 40% per slot
+        case .gold:   return 0.10   // [PLACEHOLDER] 10% per slot
+        case .cosmic: return 0.15   // [PLACEHOLDER] 15% per slot
         }
     }
 
@@ -52,9 +62,9 @@ extension ChestType {
     var goldChance: Double {
         switch self {
         case .bronze: return 0.05   // [PLACEHOLDER]
-        case .silver: return 0.15   // [PLACEHOLDER]
-        case .gold:   return 0.35   // [PLACEHOLDER]
-        case .cosmic: return 0.30   // [PLACEHOLDER]
+        case .silver: return 0.12   // [PLACEHOLDER]
+        case .gold:   return 0.25   // [PLACEHOLDER]
+        case .cosmic: return 0.25   // [PLACEHOLDER]
         }
     }
 
@@ -62,8 +72,8 @@ extension ChestType {
     var silverChance: Double {
         switch self {
         case .bronze: return 0.25   // [PLACEHOLDER]
-        case .silver: return 0.35   // [PLACEHOLDER]
-        case .gold:   return 0.30   // [PLACEHOLDER]
+        case .silver: return 0.25   // [PLACEHOLDER]
+        case .gold:   return 0.25   // [PLACEHOLDER]
         case .cosmic: return 0.20   // [PLACEHOLDER]
         }
     }
@@ -128,6 +138,12 @@ enum ChestTrigger: Codable, Hashable, Sendable {
     /// Achievement system awarded this chest.
     case achievement(String)
 
+    /// Completed a content level (level number, stars earned).
+    case levelComplete(Int, Int)
+
+    /// Player leveled up (new player level).
+    case playerLevelUp(Int)
+
     /// Human-readable description of how the chest was earned.
     var displayReason: String {
         switch self {
@@ -144,13 +160,17 @@ enum ChestTrigger: Codable, Hashable, Sendable {
         case .collectionMilestone(let count):
             return "Discovered \(count) badges"
         case .firstSpecialTile(let tile):
-            return "First \(tile.rawValue) tile"
+            return "First \(tile.displayName) tile"
         case .cascadeChain(let depth):
             return "\(depth)+ cascade chain"
         case .weeklyChallenge:
             return "Weekly challenge complete"
         case .achievement(let name):
             return "Achievement: \(name)"
+        case .levelComplete(let level, let stars):
+            return "Level \(level) complete (\(stars) star\(stars != 1 ? "s" : ""))"
+        case .playerLevelUp(let level):
+            return "Reached Player Level \(level)"
         }
     }
 }
@@ -220,9 +240,47 @@ struct GameResult: Codable, Hashable, Sendable {
     let specialTilesCreated: [SpecialTileType]
     let movesUsed: Int
     let stars: Int  // 0-3 star rating
+    let gameMode: GameMode
 
     /// Per-badge match counts for mastery tracking. [badgeId: timesMatched]
     let badgeMatchCounts: [String: Int]
+
+    // MARK: - Per-Game Computed Stats (for achievement evaluation)
+
+    /// Number of bombs created this game.
+    var bombsCreated: Int {
+        specialTilesCreated.filter { $0 == .bomb }.count
+    }
+
+    /// Number of Laser Party (vibestreak) tiles created this game.
+    var vibestreaksCreated: Int {
+        specialTilesCreated.filter { $0 == .vibestreak }.count
+    }
+
+    /// Number of Cosmic Blasts created this game.
+    var cosmicBlastsCreated: Int {
+        specialTilesCreated.filter { $0 == .cosmicBlast }.count
+    }
+
+    /// Number of L-shapes landed this game.
+    var lShapeCount: Int {
+        shapeBonuses.filter { $0 == .L }.count
+    }
+
+    /// Number of T-shapes landed this game.
+    var tShapeCount: Int {
+        shapeBonuses.filter { $0 == .T }.count
+    }
+
+    /// Number of cross-shapes landed this game.
+    var crossShapeCount: Int {
+        shapeBonuses.filter { $0 == .cross }.count
+    }
+
+    /// Whether all three shape types were landed in this game.
+    var hasShapeTrifecta: Bool {
+        lShapeCount > 0 && tShapeCount > 0 && crossShapeCount > 0
+    }
 }
 
 // MARK: - Lifetime Stats
@@ -262,6 +320,31 @@ struct LifetimeStats: Codable, Hashable, Sendable {
     var hasLandedL: Bool = false
     var hasLandedT: Bool = false
     var hasLandedCross: Bool = false
+
+    // Per-game best records (for single-game achievements)
+    var bestSingleGameCascades: Int = 0
+    var bestSingleGameBombs: Int = 0
+    var bestSingleGameLShapes: Int = 0
+    var bestSingleGameTShapes: Int = 0
+    var bestSingleGameCrossShapes: Int = 0
+    var hasAchievedShapeTrifecta: Bool = false
+
+    // Daily mode tracking
+    var highestDailyScore: Int = 0
+    var hasDailyChampion: Bool = false
+
+    // Games played today (for daily_cap achievement)
+    var gamesPlayedToday: Int = 0
+    var gamesPlayedTodayDate: Date?
+
+    // Referrals (set from server)
+    var referrals: Int = 0
+
+    // Lifetime pulls per tier (duplicates count — for found_* achievements)
+    var totalFoundByTier: [BadgeTier: Int] = [:]
+
+    // Profile
+    var hasUploadedAvatar: Bool = false
 }
 
 // MARK: - Chest System
@@ -354,11 +437,11 @@ final class ChestSystem {
         // -- Shape bonuses (first-time triggers) --
         for shape in result.shapeBonuses {
             switch shape {
-            case .l where !lifetimeStats.hasLandedL:
-                earned.append(EarnedChest(tier: .bronze, trigger: .shapeBonus(.l)))
+            case .L where !lifetimeStats.hasLandedL:
+                earned.append(EarnedChest(tier: .bronze, trigger: .shapeBonus(.L)))
                 lifetimeStats.hasLandedL = true
-            case .t where !lifetimeStats.hasLandedT:
-                earned.append(EarnedChest(tier: .bronze, trigger: .shapeBonus(.t)))
+            case .T where !lifetimeStats.hasLandedT:
+                earned.append(EarnedChest(tier: .bronze, trigger: .shapeBonus(.T)))
                 lifetimeStats.hasLandedT = true
             case .cross where !lifetimeStats.hasLandedCross:
                 earned.append(EarnedChest(tier: .silver, trigger: .shapeBonus(.cross)))
@@ -505,6 +588,10 @@ final class ChestSystem {
             // Add to collection
             collectionManager.addBadge(badge.id, quantity: quantity)
 
+            // Track lifetime pulls per tier (for found_* achievements).
+            // Duplicates count — every copy the player receives bumps the counter.
+            lifetimeStats.totalFoundByTier[badge.tier, default: 0] += quantity
+
             rewards.append(ChestRewardDrop(
                 badge: badge,
                 quantity: quantity,
@@ -524,16 +611,19 @@ final class ChestSystem {
     // MARK: - Drop Rolling
 
     /// Rolls a badge tier for a single drop slot based on the chest tier's probability table.
-    /// Uses a weighted random roll: cosmic% -> gold% -> silver% -> remaining = blue.
+    /// Uses a weighted random roll: cosmic% -> special% -> gold% -> silver% -> remaining = blue.
     private func rollBadgeTier(chestTier: ChestType) -> BadgeTier {
         let roll = Double.random(in: 0..<1)
 
         let cosmicThreshold = chestTier.cosmicChance
-        let goldThreshold = cosmicThreshold + chestTier.goldChance
+        let specialThreshold = cosmicThreshold + chestTier.specialChance
+        let goldThreshold = specialThreshold + chestTier.goldChance
         let silverThreshold = goldThreshold + chestTier.silverChance
 
         if roll < cosmicThreshold {
             return .cosmic
+        } else if roll < specialThreshold {
+            return .special
         } else if roll < goldThreshold {
             return .gold
         } else if roll < silverThreshold {
@@ -551,18 +641,20 @@ final class ChestSystem {
     /// player has 2-4 copies of common badges and 1-2 of rare badges after 20 sessions.
     private func rollDropQuantity(chestTier: ChestType, badgeTier: BadgeTier) -> Int {
         switch (chestTier, badgeTier) {
-        case (.cosmic, .blue):   return Int.random(in: 2...3)
-        case (.cosmic, .silver): return Int.random(in: 1...3)
-        case (.cosmic, .gold):   return Int.random(in: 1...2)
-        case (.cosmic, .cosmic): return 1
-        case (.gold, .blue):     return Int.random(in: 1...3)
-        case (.gold, .silver):   return Int.random(in: 1...2)
-        case (.gold, .gold):     return 1
-        case (.gold, .cosmic):   return 1
-        case (.silver, .blue):   return Int.random(in: 1...2)
-        case (.silver, .silver): return 1
-        case (.silver, _):       return 1
-        case (.bronze, _):       return 1
+        case (.cosmic, .blue):    return Int.random(in: 2...3)
+        case (.cosmic, .silver):  return Int.random(in: 1...3)
+        case (.cosmic, .gold):    return Int.random(in: 1...2)
+        case (.cosmic, .special): return 1
+        case (.cosmic, .cosmic):  return 1
+        case (.gold, .blue):      return Int.random(in: 1...3)
+        case (.gold, .silver):    return Int.random(in: 1...2)
+        case (.gold, .gold):      return 1
+        case (.gold, .special):   return 1
+        case (.gold, .cosmic):    return 1
+        case (.silver, .blue):    return Int.random(in: 1...2)
+        case (.silver, .silver):  return 1
+        case (.silver, _):        return 1
+        case (.bronze, _):        return 1
         }
     }
 
@@ -600,8 +692,8 @@ final class ChestSystem {
         // Shape bonus counts
         for shape in result.shapeBonuses {
             switch shape {
-            case .l:      lifetimeStats.lShapesLanded += 1
-            case .t:      lifetimeStats.tShapesLanded += 1
+            case .L:      lifetimeStats.lShapesLanded += 1
+            case .T:      lifetimeStats.tShapesLanded += 1
             case .cross:  lifetimeStats.crossShapesLanded += 1
             }
         }
@@ -615,9 +707,48 @@ final class ChestSystem {
             }
         }
 
-        // Daily streak tracking
+        // Per-game bests for achievements
+        if result.cascadeCount > lifetimeStats.bestSingleGameCascades {
+            lifetimeStats.bestSingleGameCascades = result.cascadeCount
+        }
+        if result.bombsCreated > lifetimeStats.bestSingleGameBombs {
+            lifetimeStats.bestSingleGameBombs = result.bombsCreated
+        }
+        if result.lShapeCount > lifetimeStats.bestSingleGameLShapes {
+            lifetimeStats.bestSingleGameLShapes = result.lShapeCount
+        }
+        if result.tShapeCount > lifetimeStats.bestSingleGameTShapes {
+            lifetimeStats.bestSingleGameTShapes = result.tShapeCount
+        }
+        if result.crossShapeCount > lifetimeStats.bestSingleGameCrossShapes {
+            lifetimeStats.bestSingleGameCrossShapes = result.crossShapeCount
+        }
+        if result.hasShapeTrifecta {
+            lifetimeStats.hasAchievedShapeTrifecta = true
+        }
+
+        // Daily mode tracking
+        if case .daily = result.gameMode {
+            if result.score > lifetimeStats.highestDailyScore {
+                lifetimeStats.highestDailyScore = result.score
+            }
+        }
+
+        // Daily streak + games-played-today tracking
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
+
+        // Games played today tracking
+        if let lastDate = lifetimeStats.gamesPlayedTodayDate {
+            if calendar.startOfDay(for: lastDate) == today {
+                lifetimeStats.gamesPlayedToday += 1
+            } else {
+                lifetimeStats.gamesPlayedToday = 1
+            }
+        } else {
+            lifetimeStats.gamesPlayedToday = 1
+        }
+        lifetimeStats.gamesPlayedTodayDate = .now
 
         if let lastPlayed = lifetimeStats.lastPlayedDate {
             let lastDay = calendar.startOfDay(for: lastPlayed)
@@ -689,5 +820,15 @@ final class ChestSystem {
         lifetimeStats = LifetimeStats()
         UserDefaults.standard.removeObject(forKey: Self.chestsKey)
         UserDefaults.standard.removeObject(forKey: Self.statsKey)
+    }
+
+    // MARK: - Profile Events
+
+    /// Marks that the player has uploaded a profile picture.
+    /// Call this after a successful avatar upload to unlock the "Face Lift" achievement.
+    func markAvatarUploaded() {
+        guard !lifetimeStats.hasUploadedAvatar else { return }
+        lifetimeStats.hasUploadedAvatar = true
+        save()
     }
 }

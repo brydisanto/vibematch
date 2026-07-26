@@ -133,8 +133,18 @@ export async function GET(req: Request) {
                     all[ref.entryIdx].pinCounts[ref.pinId] = typeof v === 'number' ? Number(v) : 0;
                 });
             }
+            // Timed-board events (Axie) rank the points board's final
+            // tiebreaker by set-completion time (earliest wins); Claynoz
+            // uses herds. Pull the completion-time map once for timed sets.
+            const timed = !!setDef.timedBoards;
+            const setDoneAt = new Map<string, number>();
+            if (timed) {
+                const { eventSetSetDoneKey } = await import('@/lib/promo-badges');
+                const raw = await kv.zrange(eventSetSetDoneKey(querySetId), 0, -1, { withScores: true }) as Array<string | number>;
+                for (let i = 0; i < raw.length; i += 2) setDoneAt.set(String(raw[i]), Number(raw[i + 1]));
+            }
             // Cascade: points → grails (chase-pin count) → total pins →
-            // herds (full sets, i.e. min of the base non-chase pin counts).
+            // [timed: set-completion time earliest | else herds].
             const grailPin = pins.find(p => p.isChase)
                 ?? [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
             const basePins = pins.filter(p => !p.isChase);
@@ -147,6 +157,9 @@ export async function GET(req: Request) {
                 if (bG !== aG) return bG - aG;
                 const aT = totalPinsFor(a), bT = totalPinsFor(b);           // pins
                 if (bT !== aT) return bT - aT;
+                if (timed) {                                                // set-time (earlier wins)
+                    return (setDoneAt.get(a.username) ?? Infinity) - (setDoneAt.get(b.username) ?? Infinity);
+                }
                 return herdsFor(b) - herdsFor(a);                           // herds
             });
             all.forEach((e, i) => { e.rank = i + 1; });
@@ -178,22 +191,41 @@ export async function GET(req: Request) {
                     }
                 }
             }
-            // Herds leaderboard — same top-50 read, but from the herds
-            // zset with composite score (fullSets × 1000 + points).
-            // Decoded into { herds, points } per entry for the client.
-            const herdsKey = eventSetHerdsKey(querySetId);
-            const herdsRaw = await kv.zrange(herdsKey, 0, 49, { rev: true, withScores: true }) as Array<string | number>;
-            const herdsLeaderboard: { username: string; herds: number; count: number; rank: number; avatarUrl: string }[] = [];
-            for (let i = 0; i < herdsRaw.length; i += 2) {
-                const username = String(herdsRaw[i]);
-                const decoded = decodeHerdsScore(Number(herdsRaw[i + 1]));
-                herdsLeaderboard.push({
-                    username,
-                    herds: decoded.fullSets,
-                    count: decoded.cappedPoints,
-                    rank: (i / 2) + 1,
-                    avatarUrl: '', // filled below via mget
-                });
+            // Sets ("Full Set Race") leaderboard.
+            //  - Timed events (Axie): the set is a one-time race. Read the
+            //    set_done zset ascending (earliest completion first); the
+            //    score IS the completion timestamp, surfaced as completedAt
+            //    so the client can render a finished-at column.
+            //  - Claynoz model: read the herds zset with composite score
+            //    (fullSets × 1000 + points), decoded into { herds, points }.
+            const herdsLeaderboard: { username: string; herds: number; count: number; rank: number; avatarUrl: string; completedAt?: number }[] = [];
+            if (timed) {
+                const { eventSetSetDoneKey } = await import('@/lib/promo-badges');
+                const doneRaw = await kv.zrange(eventSetSetDoneKey(querySetId), 0, 49, { withScores: true }) as Array<string | number>;
+                for (let i = 0; i < doneRaw.length; i += 2) {
+                    herdsLeaderboard.push({
+                        username: String(doneRaw[i]),
+                        herds: 1,
+                        count: 0,
+                        completedAt: Number(doneRaw[i + 1]),
+                        rank: (i / 2) + 1,
+                        avatarUrl: '',
+                    });
+                }
+            } else {
+                const herdsKey = eventSetHerdsKey(querySetId);
+                const herdsRaw = await kv.zrange(herdsKey, 0, 49, { rev: true, withScores: true }) as Array<string | number>;
+                for (let i = 0; i < herdsRaw.length; i += 2) {
+                    const username = String(herdsRaw[i]);
+                    const decoded = decodeHerdsScore(Number(herdsRaw[i + 1]));
+                    herdsLeaderboard.push({
+                        username,
+                        herds: decoded.fullSets,
+                        count: decoded.cappedPoints,
+                        rank: (i / 2) + 1,
+                        avatarUrl: '', // filled below via mget
+                    });
+                }
             }
             if (herdsLeaderboard.length > 0) {
                 const profileKeys = herdsLeaderboard.map(e => `user:${e.username}`);
@@ -202,13 +234,25 @@ export async function GET(req: Request) {
                     entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
                 });
             }
-            // Grail Chase leaderboard — ranked by chase-pin (isChase)
-            // count. Reuses the existing per-pin zset for the chase pin,
-            // so no separate KV write is needed at drop time. Only
-            // present for sets that actually have a chase pin defined.
+            // Grail Chase leaderboard — ranked by chase-pin (isChase) count.
+            //  - Timed events: read the grails composite zset (zrevrange),
+            //    decoding count via decodeGrailScore so ties break on who
+            //    reached each count first (encoded in the score).
+            //  - Claynoz model: reuse the chase pin's per-pin zset directly.
             const chasePin = pins.find(p => p.isChase);
             const grailLeaderboard: { username: string; count: number; rank: number; avatarUrl: string }[] = [];
-            if (chasePin) {
+            if (chasePin && timed) {
+                const { eventSetGrailsKey, decodeGrailScore } = await import('@/lib/promo-badges');
+                const grailRaw = await kv.zrange(eventSetGrailsKey(querySetId), 0, 49, { rev: true, withScores: true }) as Array<string | number>;
+                for (let i = 0; i < grailRaw.length; i += 2) {
+                    grailLeaderboard.push({
+                        username: String(grailRaw[i]),
+                        count: decodeGrailScore(Number(grailRaw[i + 1])).count,
+                        rank: (i / 2) + 1,
+                        avatarUrl: '',
+                    });
+                }
+            } else if (chasePin) {
                 const grailRaw = await kv.zrange(
                     promoLeaderboardKey(chasePin.id),
                     0, 49,
@@ -222,13 +266,13 @@ export async function GET(req: Request) {
                         avatarUrl: '',
                     });
                 }
-                if (grailLeaderboard.length > 0) {
-                    const profileKeys = grailLeaderboard.map(e => `user:${e.username}`);
-                    const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
-                    grailLeaderboard.forEach((entry, i) => {
-                        entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
-                    });
-                }
+            }
+            if (grailLeaderboard.length > 0) {
+                const profileKeys = grailLeaderboard.map(e => `user:${e.username}`);
+                const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
+                grailLeaderboard.forEach((entry, i) => {
+                    entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
+                });
             }
             return NextResponse.json(
                 {
@@ -244,6 +288,8 @@ export async function GET(req: Request) {
                         endsAt: setDef.endsAt,
                         setBonusPoints: setDef.setBonusPoints ?? null,
                         scoreCap: setDef.scoreCap ?? null,
+                        timedBoards: setDef.timedBoards ?? false,
+                        setsBoardLabel: setDef.setsBoardLabel ?? null,
                         pins: pins.map(p => ({
                             id: p.id,
                             name: p.name,

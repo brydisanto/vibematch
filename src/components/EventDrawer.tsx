@@ -85,6 +85,30 @@ function formatRemaining(targetMs: number): { d: number; h: number; m: number; s
 
 /** "JUL 7 · 12 PM ET" — date + time in America/New_York, capitalized
  *  to match the existing display weight. */
+// Full Set Race finish stamp — "AUG 4 · 2:47 PM ET" in two lines so it
+// fits the narrow board column. Returns a placeholder if the timestamp
+// is missing (shouldn't happen for a completed entry).
+function formatFinishedAt(ms?: number): string {
+    if (!ms || !Number.isFinite(ms)) return "—";
+    try {
+        const date = new Date(ms);
+        const dateStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            month: "short",
+            day: "numeric",
+        }).format(date).toUpperCase();
+        const timeStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        }).format(date).toUpperCase();
+        return `${dateStr} · ${timeStr} ET`;
+    } catch {
+        return "—";
+    }
+}
+
 function formatEasternLabel(iso: string): string {
     try {
         const date = new Date(iso);
@@ -584,6 +608,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.setsBoardLabel : null) ?? "Herds",
         [promo.eventSetId],
     );
+    // Timed-board events (Axie) run the completion board as a one-time
+    // race: ranked by finish time, with a "Finished" timestamp column
+    // instead of a running full-set count.
+    const timedBoards = useMemo(
+        () => (promo.eventSetId ? !!findPromoEventSet(promo.eventSetId)?.timedBoards : false),
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
@@ -600,6 +631,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         count: number;
         rank: number;
         avatarUrl?: string;
+        completedAt?: number; // timed events only: set-completion timestamp
     }>>([]);
     const [grailEntries, setGrailEntries] = useState<Array<{
         username: string;
@@ -1176,14 +1208,22 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                    <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>{setsLabel}</div>
-                                                    <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
+                                                    {timedBoards ? (
+                                                        <div className="flex-shrink-0 w-28 text-center font-semibold" style={{ color: accent }}>Finished</div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>{setsLabel}</div>
+                                                            <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                                 {herdsEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
                                                         {!started
-                                                            ? `${setsLabel} will appear once the event begins.`
-                                                            : `No full sets yet. Be the first to complete a ${setsLabel.replace(/s$/, "").toLowerCase()}.`}
+                                                            ? `The ${setsLabel} board opens once the event begins.`
+                                                            : timedBoards
+                                                                ? "No one has completed the full set of 9 yet. Be the first to finish."
+                                                                : `No full sets yet. Be the first to complete a ${setsLabel.replace(/s$/, "").toLowerCase()}.`}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-1.5">
@@ -1209,22 +1249,33 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                             {isYou ? "You" : entry.username}
                                                                         </div>
                                                                     </div>
-                                                                    <div
-                                                                        className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
-                                                                        style={{
-                                                                            fontSize: "18px",
-                                                                            color: accent,
-                                                                            textShadow: `0 0 12px ${accent}88`,
-                                                                        }}
-                                                                    >
-                                                                        {entry.herds}
-                                                                    </div>
-                                                                    <div
-                                                                        className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
-                                                                        style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
-                                                                    >
-                                                                        {entry.count}
-                                                                    </div>
+                                                                    {timedBoards ? (
+                                                                        <div
+                                                                            className="flex-shrink-0 w-28 text-center font-display font-semibold tabular-nums leading-tight"
+                                                                            style={{ fontSize: "12px", color: accent, textShadow: `0 0 10px ${accent}66` }}
+                                                                        >
+                                                                            {formatFinishedAt(entry.completedAt)}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div
+                                                                                className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
+                                                                                style={{
+                                                                                    fontSize: "18px",
+                                                                                    color: accent,
+                                                                                    textShadow: `0 0 12px ${accent}88`,
+                                                                                }}
+                                                                            >
+                                                                                {entry.herds}
+                                                                            </div>
+                                                                            <div
+                                                                                className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                                                style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
+                                                                            >
+                                                                                {entry.count}
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                                 </Link>
                                                             );
                                                         })}

@@ -5,8 +5,9 @@ import SwiftUI
 private enum CollectionFilter: String, CaseIterable {
     case all = "All"
     case blue = "Common"
-    case silver = "Silver"
-    case gold = "Gold"
+    case silver = "Rare"
+    case gold = "Legendary"
+    case special = "Specials"
     case cosmic = "Cosmic"
 
     var badgeTier: BadgeTier? {
@@ -15,6 +16,7 @@ private enum CollectionFilter: String, CaseIterable {
         case .blue: return .blue
         case .silver: return .silver
         case .gold: return .gold
+        case .special: return .special
         case .cosmic: return .cosmic
         }
     }
@@ -25,6 +27,7 @@ private enum CollectionFilter: String, CaseIterable {
         case .blue: return BadgeTier.blue.displayColor
         case .silver: return BadgeTier.silver.displayColor
         case .gold: return BadgeTier.gold.displayColor
+        case .special: return BadgeTier.special.displayColor
         case .cosmic: return BadgeTier.cosmic.displayColor
         }
     }
@@ -33,8 +36,8 @@ private enum CollectionFilter: String, CaseIterable {
 // MARK: - Collection Tab
 
 private enum CollectionTab: String, CaseIterable {
-    case badges = "Badges"
-    case chests = "Chests"
+    case badges = "Pins"
+    case chests = "Capsules"
 }
 
 // MARK: - Collection View
@@ -48,10 +51,14 @@ struct CollectionView: View {
     var onOpenChest: ((Chest) -> Void)? = nil
     var onDismiss: () -> Void
 
+    @Environment(AppState.self) private var appState
+
     @State private var selectedTab: CollectionTab = .badges
     @State private var selectedFilter: CollectionFilter = .all
     @State private var selectedBadge: CollectedBadge? = nil
     @State private var showBadgeDetail = false
+    @State private var showRevealSheet = false
+    @State private var revealedPins: [Badge] = []
 
     private var totalBadges: Int { allBadges.count }
     private var discoveredCount: Int { collection.uniqueCount }
@@ -63,6 +70,13 @@ struct CollectionView: View {
             VStack(spacing: 0) {
                 // Header
                 header
+
+                // Unopened capsules banner
+                if !appState.playerProfile.unopenedCapsules.isEmpty {
+                    unopenedCapsulesBanner
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
 
                 // Tab picker
                 tabPicker
@@ -83,6 +97,84 @@ struct CollectionView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: $showRevealSheet) {
+            CapsuleRevealSheet(revealedPins: revealedPins) {
+                showRevealSheet = false
+                revealedPins = []
+            }
+            .presentationDetents([.large])
+        }
+    }
+
+    // MARK: - Unopened Capsules Banner
+
+    private var unopenedCapsulesBanner: some View {
+        Button(action: openAllCapsules) {
+            HStack(spacing: 12) {
+                Image(systemName: "capsule.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(VibeColors.primary)
+                    .rotationEffect(.degrees(-25))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(appState.playerProfile.unopenedCapsules.count) Pin Capsules Waiting")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundStyle(VibeColors.textPrimary)
+                    Text("Tap to crack them open")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(VibeColors.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(VibeColors.primary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                VibeColors.primary.opacity(0.18),
+                                VibeColors.orange.opacity(0.10),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(VibeColors.primary.opacity(0.5), lineWidth: 1.5)
+                    )
+            )
+            .shadow(color: VibeColors.primary.opacity(0.25), radius: 10, y: 4)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Rolls a pin per unopened capsule, adds to the player collection,
+    /// and shows the reveal sheet so the player sees what they got.
+    private func openAllCapsules() {
+        let capsules = appState.playerProfile.unopenedCapsules
+        guard !capsules.isEmpty else { return }
+        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
+        var revealed: [Badge] = []
+        for _ in capsules {
+            if let pin = PinCapsuleRoll.roll(from: BADGES, rng: &rng) {
+                revealed.append(pin)
+                appState.playerProfile.collection.addBadge(pin, quantity: 1)
+            }
+        }
+        appState.playerProfile.unopenedCapsules = []
+        appState.save()
+
+        revealedPins = revealed
+        showRevealSheet = true
+        let gen = UINotificationFeedbackGenerator()
+        gen.notificationOccurred(.success)
     }
 
     // MARK: - Header
@@ -103,13 +195,22 @@ struct CollectionView: View {
             Spacer()
 
             VStack(spacing: 2) {
-                Text("COLLECTION")
-                    .font(.system(size: 18, weight: .black, design: .rounded))
+                Text("PIN BOOK")
+                    .font(.custom("Brice-Black", size: 20))
                     .tracking(3)
-                    .foregroundStyle(VibeColors.textPrimary)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [ArcadeTokens.goldLight, ArcadeTokens.gold],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .shadow(color: ArcadeTokens.gold.opacity(0.5), radius: 8)
+                    .shadow(color: .black.opacity(0.6), radius: 0, y: 1)
 
-                Text("\(discoveredCount)/\(totalBadges) Badges Discovered")
-                    .font(.system(size: 11, weight: .medium))
+                Text("\(discoveredCount)/\(totalBadges) PINS FOUND")
+                    .font(.custom("Mundial-Bold", size: 10))
+                    .tracking(1.2)
                     .foregroundStyle(VibeColors.textSecondary)
             }
 
@@ -135,18 +236,20 @@ struct CollectionView: View {
                 } label: {
                     VStack(spacing: 6) {
                         HStack(spacing: 6) {
-                            Text(tab.rawValue)
-                                .font(.system(size: 14, weight: selectedTab == tab ? .bold : .medium))
-                                .foregroundStyle(selectedTab == tab ? VibeColors.textPrimary : VibeColors.textSecondary)
+                            Text(tab.rawValue.uppercased())
+                                .font(.custom("Brice-Black", size: 13))
+                                .tracking(1.6)
+                                .foregroundStyle(selectedTab == tab ? ArcadeTokens.gold : VibeColors.textSecondary.opacity(0.7))
 
                             if tab == .chests && !unopenedChests.isEmpty {
                                 Text("\(unopenedChests.count)")
-                                    .font(.system(size: 10, weight: .heavy))
-                                    .foregroundStyle(.white)
+                                    .font(.custom("Mundial-Bold", size: 10))
+                                    .foregroundStyle(PinHex("1A0633"))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(VibeColors.accentWarm)
+                                    .background(ArcadeTokens.gold)
                                     .clipShape(Capsule())
+                                    .shadow(color: ArcadeTokens.gold.opacity(0.5), radius: 4)
                             }
                         }
 

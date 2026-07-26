@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "VibeMatch",
+    name: "PinDrop",
     platforms: [.iOS(.v17)],
     products: [
-        .library(name: "VibeMatch", targets: ["VibeMatch"]),
+        .library(name: "PinDrop", targets: ["PinDrop"]),
     ],
     targets: [
         .target(
-            name: "VibeMatch",
+            name: "PinDrop",
             path: ".",
             exclude: ["Package.swift"],
             resources: [.process("Resources")]

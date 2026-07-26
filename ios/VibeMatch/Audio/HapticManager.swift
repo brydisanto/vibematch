@@ -3,7 +3,7 @@ import UIKit
 
 // MARK: - HapticManager
 
-/// Core Haptics integration for VibeMatch.
+/// Core Haptics integration for Pin Drop.
 /// All haptic patterns are designed to sync with audio playback timestamps.
 final class HapticManager {
 
@@ -532,6 +532,8 @@ final class HapticManager {
             intensity = 0.6; sharpness = 0.6; hasTail = false
         case .gold:
             intensity = 0.8; sharpness = 0.7; hasTail = true
+        case .special:
+            intensity = 0.8; sharpness = 0.7; hasTail = true
         case .cosmic:
             intensity = 1.0; sharpness = 0.8; hasTail = true
         }
@@ -553,6 +555,7 @@ final class HapticManager {
             let tailIntensity: Float
             switch tier {
             case .gold: tailDuration = 0.2; tailIntensity = 0.4
+            case .special: tailDuration = 0.2; tailIntensity = 0.4
             case .cosmic: tailDuration = 0.4; tailIntensity = 0.6
             default: tailDuration = 0; tailIntensity = 0
             }

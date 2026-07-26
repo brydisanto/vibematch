@@ -19,10 +19,10 @@ final class AnimationSequencer {
     }
 
     private enum Colors {
-        static let lavender = SKColor(red: 0x6C/255, green: 0x5C/255, blue: 0xE7/255, alpha: 1)
-        static let gold     = SKColor(red: 0xFF/255, green: 0xE0/255, blue: 0x48/255, alpha: 1)
-        static let orange   = SKColor(red: 0xFF/255, green: 0x5F/255, blue: 0x1F/255, alpha: 1)
-        static let cosmic   = SKColor(red: 0xB3/255, green: 0x66/255, blue: 0xFF/255, alpha: 1)
+        static let lavender = SKColor(red: 108/255.0, green: 92/255.0, blue: 231/255.0, alpha: 1)
+        static let gold     = SKColor(red: 255/255.0, green: 224/255.0, blue: 72/255.0, alpha: 1)
+        static let orange   = SKColor(red: 255/255.0, green: 95/255.0, blue: 31/255.0, alpha: 1)
+        static let cosmic   = SKColor(red: 179/255.0, green: 102/255.0, blue: 255/255.0, alpha: 1)
         static let red      = SKColor(red: 1, green: 0.2, blue: 0.2, alpha: 1)
     }
 
@@ -38,7 +38,8 @@ final class AnimationSequencer {
 
     // MARK: - Swap Animation
 
-    /// Tiles at pos1 and pos2 slide to each other's positions over 250ms.
+    /// Tiles at pos1 and pos2 slide to each other's positions over 250ms
+    /// with particle trails following each tile.
     func animateSwap(pos1: Position, pos2: Position, completion: @escaping () -> Void) {
         guard let scene = scene,
               let tile1 = scene.tileNode(at: pos1),
@@ -49,6 +50,8 @@ final class AnimationSequencer {
 
         let dest1 = tile2.position
         let dest2 = tile1.position
+        let start1 = tile1.position
+        let start2 = tile2.position
 
         let move1 = SKAction.move(to: dest1, duration: Timing.swapDuration)
         move1.timingMode = .easeInEaseOut
@@ -59,6 +62,10 @@ final class AnimationSequencer {
         tile1.zPosition = 10
         tile2.zPosition = 10
 
+        // Spawn trail particles along the swap path
+        spawnSwapTrail(from: start1, to: dest1, in: scene)
+        spawnSwapTrail(from: start2, to: dest2, in: scene)
+
         tile1.run(move1)
         tile2.run(move2) {
             tile1.zPosition = 0
@@ -67,9 +74,49 @@ final class AnimationSequencer {
         }
     }
 
+    /// Spawns a trail of small particles along a swap path.
+    private func spawnSwapTrail(from start: CGPoint, to end: CGPoint, in scene: GameScene) {
+        let trailCount = 5
+        for i in 0..<trailCount {
+            let t = CGFloat(i) / CGFloat(trailCount)
+            let x = start.x + (end.x - start.x) * t
+            let y = start.y + (end.y - start.y) * t
+
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 1.5...3))
+            particle.fillColor = [Colors.lavender, Colors.gold, .white].randomElement()!
+            particle.strokeColor = .clear
+            // Convert from board layer coordinates
+            let boardPos = CGPoint(x: x, y: y)
+            particle.position = scene.convert(boardPos, from: scene.childNode(withName: "boardLayer") ?? scene)
+            particle.position = boardPos
+            particle.zPosition = 9
+            particle.alpha = 0
+            scene.childNode(withName: "boardLayer")?.addChild(particle) ?? scene.addChild(particle)
+
+            let delay = Double(i) * 0.04
+            let fadeIn = SKAction.fadeAlpha(to: 0.7, duration: 0.08)
+            let drift = SKAction.moveBy(
+                x: CGFloat.random(in: -6...6),
+                y: CGFloat.random(in: -6...6),
+                duration: 0.3
+            )
+            drift.timingMode = .easeOut
+            let fadeOut = SKAction.fadeAlpha(to: 0, duration: 0.25)
+            let scale = SKAction.scale(to: 0.3, duration: 0.3)
+
+            particle.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                fadeIn,
+                SKAction.group([drift, fadeOut, scale])
+            ])) {
+                particle.removeFromParent()
+            }
+        }
+    }
+
     // MARK: - Match Animation
 
-    /// Matched tiles flash white and scale to 0 over 300ms.
+    /// Matched tiles shatter with staggered timing (50ms per tile in the chain).
     func animateMatches(positions: [Position], completion: @escaping () -> Void) {
         guard let scene = scene, !positions.isEmpty else {
             completion()
@@ -78,11 +125,16 @@ final class AnimationSequencer {
 
         let group = DispatchGroup()
 
-        for pos in positions {
+        for (i, pos) in positions.enumerated() {
             guard let tile = scene.tileNode(at: pos) else { continue }
             group.enter()
-            tile.playMatchAnimation {
-                group.leave()
+
+            // Stagger destruction: 40ms per tile for a ripple effect
+            let delay = SKAction.wait(forDuration: Double(i) * 0.04)
+            tile.run(delay) {
+                tile.playMatchAnimation {
+                    group.leave()
+                }
             }
         }
 
@@ -93,7 +145,8 @@ final class AnimationSequencer {
 
     // MARK: - Gravity / Drop Animation
 
-    /// Tiles fall from their old row to their new row with a bounce ease over 400ms.
+    /// Tiles fall with spring physics and squash-on-landing.
+    /// Staggered by row within each column for a waterfall cascade effect.
     func animateGravity(drops: [(col: Int, fromRow: Int, toRow: Int)], completion: @escaping () -> Void) {
         guard let scene = scene, !drops.isEmpty else {
             completion()
@@ -103,14 +156,33 @@ final class AnimationSequencer {
         let tileHeight = scene.tileNode(at: Position(row: 0, col: 0))?.size.height ?? 40
         let step = tileHeight + 2.0 // tile + padding
 
+        // Sort drops by column then row for stagger ordering
+        let sorted = drops.sorted { a, b in
+            if a.col != b.col { return a.col < b.col }
+            return a.fromRow < b.fromRow
+        }
+
         let group = DispatchGroup()
 
-        for drop in drops {
+        for (i, drop) in sorted.enumerated() {
             let pos = Position(row: drop.toRow, col: drop.col)
             guard let tile = scene.tileNode(at: pos) else { continue }
             group.enter()
-            tile.playDropAnimation(fromRow: drop.fromRow, toRow: drop.toRow, tileHeight: step) {
-                group.leave()
+
+            // Stagger by 25ms per tile for waterfall effect
+            let delay = Double(i) * 0.025
+            let wait = SKAction.wait(forDuration: delay)
+
+            // Spawn sparkle trail during the drop
+            let dropDistance = abs(drop.toRow - drop.fromRow)
+            if dropDistance >= 2 {
+                spawnCascadeSparkles(at: pos, dropDistance: dropDistance, delay: delay, in: scene)
+            }
+
+            tile.run(wait) {
+                tile.playDropAnimation(fromRow: drop.fromRow, toRow: drop.toRow, tileHeight: step) {
+                    group.leave()
+                }
             }
         }
 
@@ -197,36 +269,76 @@ final class AnimationSequencer {
 
         let center = scene.pointForPosition(position)
 
-        // Expanding ring
-        let ring = SKShapeNode(circleOfRadius: 5)
-        ring.strokeColor = Colors.orange
-        ring.lineWidth = 4
-        ring.fillColor = .clear
-        ring.position = center
-        ring.zPosition = 50
-        scene.addChild(ring)
+        // Multiple concentric expanding rings for depth
+        for i in 0..<3 {
+            let ring = SKShapeNode(circleOfRadius: 5)
+            ring.strokeColor = i == 0 ? .white : (i == 1 ? Colors.gold : Colors.orange)
+            ring.lineWidth = CGFloat(5 - i)
+            ring.fillColor = .clear
+            ring.position = center
+            ring.zPosition = CGFloat(52 - i)
+            ring.alpha = CGFloat(1.0 - Double(i) * 0.2)
+            scene.addChild(ring)
 
-        let expand = SKAction.scale(to: 8, duration: 0.35)
-        expand.timingMode = .easeOut
-        let fade = SKAction.fadeAlpha(to: 0, duration: 0.35)
-        ring.run(SKAction.group([expand, fade])) {
-            ring.removeFromParent()
+            let delay = SKAction.wait(forDuration: Double(i) * 0.06)
+            let expand = SKAction.scale(to: CGFloat(10 - i * 2), duration: 0.4)
+            expand.timingMode = .easeOut
+            let fade = SKAction.fadeAlpha(to: 0, duration: 0.4)
+            ring.run(SKAction.sequence([delay, SKAction.group([expand, fade])])) {
+                ring.removeFromParent()
+            }
         }
 
-        // Flash the screen
-        scene.effects.screenFlash(intensity: .big)
+        // Impact flash at center — bright white burst
+        let flash = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 20))
+        flash.position = center
+        flash.zPosition = 55
+        flash.blendMode = .add
+        scene.addChild(flash)
+        let flashGrow = SKAction.scale(to: 4, duration: 0.1)
+        let flashFade = SKAction.group([
+            SKAction.scale(to: 6, duration: 0.2),
+            SKAction.fadeAlpha(to: 0, duration: 0.2)
+        ])
+        flash.run(SKAction.sequence([flashGrow, flashFade])) { flash.removeFromParent() }
 
-        // Animate affected tiles
+        // Debris particles scattering from center
+        for _ in 0..<12 {
+            let debris = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...4))
+            debris.fillColor = [Colors.orange, Colors.gold, .white].randomElement()!
+            debris.strokeColor = .clear
+            debris.position = center
+            debris.zPosition = 54
+            scene.addChild(debris)
+
+            let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
+            let dist = CGFloat.random(in: 50...130)
+            let move = SKAction.moveBy(x: cos(angle) * dist, y: sin(angle) * dist, duration: 0.4)
+            move.timingMode = .easeOut
+            let fade = SKAction.fadeAlpha(to: 0, duration: 0.35)
+            let spin = SKAction.rotate(byAngle: CGFloat.random(in: -4...4), duration: 0.4)
+            debris.run(SKAction.group([move, fade, spin])) { debris.removeFromParent() }
+        }
+
+        // Screen flash + camera shake
+        scene.effects.screenFlash(intensity: .mega)
+        scene.cameraShake(amplitude: 10, duration: 0.25)
+
+        // Staggered tile destruction — radial delay from center
         let group = DispatchGroup()
         for pos in affected {
             guard let tile = scene.tileNode(at: pos) else { continue }
             group.enter()
 
-            let delay = SKAction.wait(forDuration: Double.random(in: 0...0.1))
+            let dr = abs(pos.row - position.row)
+            let dc = abs(pos.col - position.col)
+            let dist = Double(max(dr, dc)) * 0.05
+
+            let delay = SKAction.wait(forDuration: dist)
             let shake = SKAction.sequence([
-                SKAction.moveBy(x: 3, y: 0, duration: 0.03),
-                SKAction.moveBy(x: -6, y: 0, duration: 0.03),
-                SKAction.moveBy(x: 3, y: 0, duration: 0.03),
+                SKAction.moveBy(x: 4, y: 0, duration: 0.02),
+                SKAction.moveBy(x: -8, y: 0, duration: 0.02),
+                SKAction.moveBy(x: 4, y: 0, duration: 0.02),
             ])
             tile.run(SKAction.sequence([delay, shake])) {
                 tile.playMatchAnimation { group.leave() }
@@ -240,28 +352,86 @@ final class AnimationSequencer {
         guard let scene = scene else { completion(); return }
 
         let center = scene.pointForPosition(position)
+        let beamColor = SKColor(red: 0.29, green: 0.85, blue: 1, alpha: 1)
 
-        // Horizontal and vertical line sweep
-        let lineH = SKShapeNode(rectOf: CGSize(width: 4, height: 4))
-        lineH.fillColor = SKColor(red: 0.29, green: 0.62, blue: 1, alpha: 1)
-        lineH.strokeColor = .clear
-        lineH.position = center
-        lineH.zPosition = 50
-        scene.addChild(lineH)
+        // Horizontal beam sweep — starts narrow, expands through the row
+        let beamH = SKSpriteNode(color: beamColor, size: CGSize(width: 6, height: 6))
+        beamH.position = center
+        beamH.zPosition = 50
+        beamH.blendMode = .add
+        scene.addChild(beamH)
 
-        let expandH = SKAction.scaleX(to: 80, duration: 0.3)
+        let expandH = SKAction.group([
+            SKAction.scaleX(to: 120, duration: 0.25),
+            SKAction.scaleY(to: 3, duration: 0.15)
+        ])
         expandH.timingMode = .easeOut
-        let fadeH = SKAction.fadeAlpha(to: 0, duration: 0.3)
-        lineH.run(SKAction.group([expandH, fadeH])) {
-            lineH.removeFromParent()
+        let fadeH = SKAction.fadeAlpha(to: 0, duration: 0.2)
+        beamH.run(SKAction.sequence([expandH, fadeH])) { beamH.removeFromParent() }
+
+        // Vertical beam sweep
+        let beamV = SKSpriteNode(color: beamColor, size: CGSize(width: 6, height: 6))
+        beamV.position = center
+        beamV.zPosition = 50
+        beamV.blendMode = .add
+        scene.addChild(beamV)
+
+        let expandV = SKAction.group([
+            SKAction.scaleY(to: 120, duration: 0.25),
+            SKAction.scaleX(to: 3, duration: 0.15)
+        ])
+        expandV.timingMode = .easeOut
+        let fadeV = SKAction.fadeAlpha(to: 0, duration: 0.2)
+        beamV.run(SKAction.sequence([expandV, fadeV])) { beamV.removeFromParent() }
+
+        // Central cross flash
+        let crossFlash = SKSpriteNode(color: .white, size: CGSize(width: 12, height: 12))
+        crossFlash.position = center
+        crossFlash.zPosition = 52
+        crossFlash.blendMode = .add
+        scene.addChild(crossFlash)
+        let crossGrow = SKAction.scale(to: 3, duration: 0.12)
+        let crossFade = SKAction.group([
+            SKAction.scale(to: 5, duration: 0.2),
+            SKAction.fadeAlpha(to: 0, duration: 0.2)
+        ])
+        crossFlash.run(SKAction.sequence([crossGrow, crossFade])) { crossFlash.removeFromParent() }
+
+        // Trail particles along beam paths
+        for _ in 0..<8 {
+            let spark = SKShapeNode(circleOfRadius: CGFloat.random(in: 1.5...3))
+            spark.fillColor = [beamColor, .white, Colors.gold].randomElement()!
+            spark.strokeColor = .clear
+            spark.position = center
+            spark.zPosition = 51
+            scene.addChild(spark)
+
+            // Random direction along horizontal or vertical axis
+            let isHorizontal = Bool.random()
+            let dist = CGFloat.random(in: 40...160) * (Bool.random() ? 1 : -1)
+            let dx = isHorizontal ? dist : CGFloat.random(in: -10...10)
+            let dy = isHorizontal ? CGFloat.random(in: -10...10) : dist
+            let sparkMove = SKAction.moveBy(x: dx, y: dy, duration: 0.35)
+            sparkMove.timingMode = .easeOut
+            let sparkFade = SKAction.fadeAlpha(to: 0, duration: 0.3)
+            spark.run(SKAction.group([sparkMove, sparkFade])) { spark.removeFromParent() }
         }
 
-        // Animate affected tiles with staggered delay
+        // Screen effects
+        scene.effects.screenFlash(intensity: .mega)
+        scene.cameraShake(amplitude: 8, duration: 0.2)
+
+        // Staggered tile destruction — distance-based from center
         let group = DispatchGroup()
-        for (i, pos) in affected.enumerated() {
+        for pos in affected {
             guard let tile = scene.tileNode(at: pos) else { continue }
             group.enter()
-            let delay = SKAction.wait(forDuration: Double(i) * 0.03)
+
+            let dr = abs(pos.row - position.row)
+            let dc = abs(pos.col - position.col)
+            let dist = Double(dr + dc) * 0.035
+
+            let delay = SKAction.wait(forDuration: dist)
             tile.run(delay) {
                 tile.playMatchAnimation { group.leave() }
             }
@@ -275,41 +445,92 @@ final class AnimationSequencer {
 
         let center = scene.pointForPosition(position)
 
-        // Purple pulse wave
-        let pulse = SKShapeNode(circleOfRadius: 8)
-        pulse.fillColor = Colors.cosmic.withAlphaComponent(0.4)
-        pulse.strokeColor = Colors.cosmic
-        pulse.lineWidth = 3
-        pulse.glowWidth = 10
-        pulse.position = center
-        pulse.zPosition = 50
-        scene.addChild(pulse)
+        // Phase 1: Central implosion — brief inward pull before explosion
+        let implosion = SKShapeNode(circleOfRadius: 40)
+        implosion.fillColor = Colors.cosmic.withAlphaComponent(0.3)
+        implosion.strokeColor = .clear
+        implosion.position = center
+        implosion.zPosition = 53
+        scene.addChild(implosion)
 
-        let expand = SKAction.scale(to: 12, duration: 0.5)
-        expand.timingMode = .easeOut
-        let fade = SKAction.fadeAlpha(to: 0, duration: 0.5)
-        pulse.run(SKAction.group([expand, fade])) {
-            pulse.removeFromParent()
+        let implode = SKAction.scale(to: 0.2, duration: 0.15)
+        implode.timingMode = .easeIn
+        implosion.run(implode) { implosion.removeFromParent() }
+
+        // Phase 2: Shockwave rings (staggered)
+        let afterImplode = SKAction.wait(forDuration: 0.15)
+        scene.run(afterImplode) { [weak scene] in
+            guard let scene = scene else { return }
+
+            for i in 0..<3 {
+                let ring = SKShapeNode(circleOfRadius: 6)
+                ring.strokeColor = i == 0 ? .white : Colors.cosmic
+                ring.lineWidth = CGFloat(4 - i)
+                ring.fillColor = i == 0 ? Colors.cosmic.withAlphaComponent(0.15) : .clear
+                ring.position = center
+                ring.zPosition = CGFloat(55 - i)
+                scene.addChild(ring)
+
+                let delay = SKAction.wait(forDuration: Double(i) * 0.08)
+                let expand = SKAction.scale(to: CGFloat(16 - i * 3), duration: 0.5)
+                expand.timingMode = .easeOut
+                let fade = SKAction.fadeAlpha(to: 0, duration: 0.5)
+                ring.run(SKAction.sequence([delay, SKAction.group([expand, fade])])) {
+                    ring.removeFromParent()
+                }
+            }
+
+            // Central white flash burst
+            let burst = SKSpriteNode(color: .white, size: CGSize(width: 16, height: 16))
+            burst.position = center
+            burst.zPosition = 56
+            burst.blendMode = .add
+            scene.addChild(burst)
+            let burstGrow = SKAction.scale(to: 6, duration: 0.12)
+            let burstFade = SKAction.group([
+                SKAction.scale(to: 10, duration: 0.25),
+                SKAction.fadeAlpha(to: 0, duration: 0.25)
+            ])
+            burst.run(SKAction.sequence([burstGrow, burstFade])) { burst.removeFromParent() }
+
+            // Cosmic particle spray
+            for _ in 0..<16 {
+                let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...5))
+                particle.fillColor = [Colors.cosmic, SKColor(red: 0.5, green: 0.2, blue: 1, alpha: 1), .white, Colors.gold].randomElement()!
+                particle.strokeColor = .clear
+                particle.position = center
+                particle.zPosition = 54
+                scene.addChild(particle)
+
+                let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
+                let dist = CGFloat.random(in: 60...180)
+                let move = SKAction.moveBy(x: cos(angle) * dist, y: sin(angle) * dist, duration: 0.55)
+                move.timingMode = .easeOut
+                let spin = SKAction.rotate(byAngle: CGFloat.random(in: -5...5), duration: 0.55)
+                let fade = SKAction.fadeAlpha(to: 0, duration: 0.5)
+                let scale = SKAction.scale(to: 0.2, duration: 0.55)
+                particle.run(SKAction.group([move, spin, fade, scale])) { particle.removeFromParent() }
+            }
+
+            // Screen effects — full intensity
+            scene.effects.screenFlash(intensity: .ultra)
+            scene.cameraShake(amplitude: 16, duration: 0.35)
         }
 
-        // Screen flash
-        scene.effects.screenFlash(intensity: .mega)
-
-        // All affected tiles flash cosmic purple then disappear
+        // Staggered tile destruction — ripple outward from center
         let group = DispatchGroup()
         for pos in affected {
             guard let tile = scene.tileNode(at: pos) else { continue }
             group.enter()
 
-            // Brief delay based on distance from origin
             let dr = abs(pos.row - position.row)
             let dc = abs(pos.col - position.col)
-            let dist = Double(dr + dc) * 0.04
+            let dist = Double(max(dr, dc)) * 0.06 + 0.18 // Wait for implosion + shockwave start
 
             let delay = SKAction.wait(forDuration: dist)
             let purpleFlash = SKAction.sequence([
-                SKAction.colorize(with: Colors.cosmic, colorBlendFactor: 0.8, duration: 0.08),
-                SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.08)
+                SKAction.colorize(with: Colors.cosmic, colorBlendFactor: 0.9, duration: 0.06),
+                SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.06)
             ])
             tile.run(SKAction.sequence([delay, purpleFlash])) {
                 tile.playMatchAnimation { group.leave() }
@@ -483,6 +704,276 @@ final class AnimationSequencer {
         ])) { subLabel.removeFromParent() }
     }
 
+    // MARK: - Cascade Sparkles
+
+    /// Spawns sparkle particles along the path a tile drops through.
+    private func spawnCascadeSparkles(at position: Position, dropDistance: Int, delay: Double, in scene: GameScene) {
+        let center = scene.pointForPosition(position)
+        let sparkleCount = min(dropDistance, 4)
+
+        for i in 0..<sparkleCount {
+            let sparkle = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...2.5))
+            sparkle.fillColor = [Colors.gold, Colors.lavender, .white].randomElement()!
+            sparkle.strokeColor = .clear
+            sparkle.position = CGPoint(
+                x: center.x + CGFloat.random(in: -8...8),
+                y: center.y + CGFloat(i) * 12
+            )
+            sparkle.zPosition = 5
+            sparkle.alpha = 0
+            scene.addChild(sparkle)
+
+            let sparkDelay = delay + Double(i) * 0.06
+            let fadeIn = SKAction.fadeAlpha(to: 0.8, duration: 0.1)
+            let drift = SKAction.moveBy(
+                x: CGFloat.random(in: -12...12),
+                y: CGFloat.random(in: 5...20),
+                duration: 0.5
+            )
+            drift.timingMode = .easeOut
+            let fadeOut = SKAction.fadeAlpha(to: 0, duration: 0.4)
+            let shrink = SKAction.scale(to: 0.2, duration: 0.5)
+
+            sparkle.run(SKAction.sequence([
+                SKAction.wait(forDuration: sparkDelay),
+                fadeIn,
+                SKAction.group([drift, fadeOut, shrink])
+            ])) {
+                sparkle.removeFromParent()
+            }
+        }
+    }
+
+    // MARK: - Urgency Effects
+
+    /// Applies urgency effects to all tiles when moves are critically low.
+    /// - movesLeft == 3: subtle vibrate
+    /// - movesLeft == 2: stronger vibrate + slight desaturation
+    /// - movesLeft == 1: intense vibrate + heavy desaturation
+    func applyUrgency(movesLeft: Int) {
+        guard let scene = scene, movesLeft <= 3 else {
+            clearUrgency()
+            return
+        }
+
+        let amplitude: CGFloat
+        let speed: TimeInterval
+        switch movesLeft {
+        case 3:  amplitude = 0.5; speed = 0.12
+        case 2:  amplitude = 1.0; speed = 0.08
+        default: amplitude = 1.5; speed = 0.06
+        }
+
+        for row in 0..<8 {
+            for col in 0..<8 {
+                guard let tile = scene.tileNode(at: Position(row: row, col: col)) else { continue }
+                tile.removeAction(forKey: "urgencyVibrate")
+
+                // Random phase offset so tiles don't vibrate in unison
+                let phase = Double.random(in: 0...0.1)
+                let jitterX = SKAction.moveBy(x: amplitude, y: 0, duration: speed)
+                let jitterBack = SKAction.moveBy(x: -amplitude, y: 0, duration: speed)
+                let cycle = SKAction.sequence([
+                    SKAction.wait(forDuration: phase),
+                    jitterX, jitterBack,
+                    SKAction.wait(forDuration: Double.random(in: 0.3...0.8))
+                ])
+                tile.run(.repeatForever(cycle), withKey: "urgencyVibrate")
+            }
+        }
+    }
+
+    /// Clears urgency effects from all tiles.
+    func clearUrgency() {
+        guard let scene = scene else { return }
+        for row in 0..<8 {
+            for col in 0..<8 {
+                scene.tileNode(at: Position(row: row, col: col))?.removeAction(forKey: "urgencyVibrate")
+            }
+        }
+    }
+
+    // MARK: - Victory Celebration
+
+    /// Plays a victory celebration: confetti burst, tile wave, and score fanfare position.
+    func playVictoryCelebration(finalScore: Int, completion: @escaping () -> Void) {
+        guard let scene = scene else { completion(); return }
+
+        // 1. Confetti burst from top
+        spawnConfetti(in: scene)
+
+        // 2. Tile wave — tiles bounce upward in a wave from bottom-left to top-right
+        let waveGroup = DispatchGroup()
+        for row in (0..<8).reversed() {
+            for col in 0..<8 {
+                guard let tile = scene.tileNode(at: Position(row: row, col: col)) else { continue }
+                waveGroup.enter()
+
+                let delay = Double(7 - row + col) * 0.04 + 0.3 // Start after confetti begins
+                let originalY = tile.position.y
+
+                let wait = SKAction.wait(forDuration: delay)
+                let jumpUp = SKAction.moveBy(x: 0, y: 15, duration: 0.15)
+                jumpUp.timingMode = .easeOut
+                let comeDown = SKAction.moveTo(y: originalY, duration: 0.2)
+                comeDown.timingMode = .easeIn
+                let squash = SKAction.group([
+                    SKAction.scaleX(to: 1.08, duration: 0.06),
+                    SKAction.scaleY(to: 0.92, duration: 0.06)
+                ])
+                let settle = SKAction.scale(to: 1.0, duration: 0.1)
+
+                tile.run(SKAction.sequence([wait, jumpUp, comeDown, squash, settle])) {
+                    waveGroup.leave()
+                }
+            }
+        }
+
+        // 3. Big score display
+        let scoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
+        scoreLabel.text = "\(finalScore)"
+        scoreLabel.fontSize = 64
+        scoreLabel.fontColor = Colors.gold
+        scoreLabel.verticalAlignmentMode = .center
+        scoreLabel.horizontalAlignmentMode = .center
+        scoreLabel.position = CGPoint(x: 0, y: 0)
+        scoreLabel.zPosition = 100
+        scoreLabel.alpha = 0
+        scoreLabel.setScale(0.3)
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.boldSystemFont(ofSize: 64),
+            .foregroundColor: Colors.gold,
+            .strokeColor: SKColor(white: 0, alpha: 0.8),
+            .strokeWidth: -3
+        ]
+        scoreLabel.attributedText = NSAttributedString(string: "\(finalScore)", attributes: attributes)
+        scene.addChild(scoreLabel)
+
+        let scoreDelay = SKAction.wait(forDuration: 0.8)
+        let scoreIn = SKAction.group([
+            SKAction.scale(to: 1.0, duration: 0.3),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.2)
+        ])
+        let scoreHold = SKAction.wait(forDuration: 1.5)
+        let scoreOut = SKAction.group([
+            SKAction.scale(to: 0.8, duration: 0.4),
+            SKAction.fadeAlpha(to: 0, duration: 0.4)
+        ])
+        scoreLabel.run(SKAction.sequence([scoreDelay, scoreIn, scoreHold, scoreOut])) {
+            scoreLabel.removeFromParent()
+        }
+
+        // Complete after wave finishes
+        waveGroup.notify(queue: .main) {
+            // Give time for score display to finish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                completion()
+            }
+        }
+    }
+
+    /// Spawns confetti particles cascading from the top of the screen.
+    private func spawnConfetti(in scene: GameScene) {
+        let confettiColors: [SKColor] = [
+            Colors.gold,
+            Colors.lavender,
+            Colors.orange,
+            Colors.cosmic,
+            .white,
+            SKColor(red: 0.29, green: 0.85, blue: 1, alpha: 1)
+        ]
+
+        let sceneWidth = scene.size.width
+        let sceneHeight = scene.size.height
+
+        for i in 0..<40 {
+            let confetti = SKSpriteNode(
+                color: confettiColors[i % confettiColors.count],
+                size: CGSize(width: CGFloat.random(in: 4...8), height: CGFloat.random(in: 8...16))
+            )
+            confetti.position = CGPoint(
+                x: CGFloat.random(in: -sceneWidth/2...sceneWidth/2),
+                y: sceneHeight / 2 + 20
+            )
+            confetti.zPosition = 95
+            confetti.zRotation = CGFloat.random(in: 0...(CGFloat.pi * 2))
+            scene.addChild(confetti)
+
+            let delay = Double(i) * 0.05
+            let fallDist = sceneHeight + 60
+            let driftX = CGFloat.random(in: -80...80)
+
+            let fall = SKAction.moveBy(x: driftX, y: -fallDist, duration: TimeInterval.random(in: 2.0...3.5))
+            fall.timingMode = .easeIn
+            let spin = SKAction.rotate(byAngle: CGFloat.random(in: -8...8), duration: 3.0)
+            let flutter = SKAction.sequence([
+                SKAction.moveBy(x: CGFloat.random(in: -15...15), y: 0, duration: 0.3),
+                SKAction.moveBy(x: CGFloat.random(in: -15...15), y: 0, duration: 0.3)
+            ])
+
+            confetti.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.group([fall, spin, .repeatForever(flutter)])
+            ])) {
+                confetti.removeFromParent()
+            }
+        }
+    }
+
+    // MARK: - Last-Move Slow-Mo
+
+    /// Temporarily slows the scene's animation speed for the final move of the game.
+    /// Creates a dramatic "last chance" feel. Restores normal speed after duration.
+    func applyLastMoveSlowMo() {
+        guard let scene = scene else { return }
+
+        // Slow to 70% speed
+        scene.speed = 0.7
+
+        // Restore after the animations play out (match + gravity cycle ~1.2s at 0.7x = ~1.7s real)
+        let restore = SKAction.sequence([
+            SKAction.wait(forDuration: 1.8),
+            SKAction.speed(to: 1.0, duration: 0.3)
+        ])
+        scene.run(restore, withKey: "slowMoRestore")
+    }
+
+    /// Restores normal animation speed (call if game state changes before slow-mo ends).
+    func clearSlowMo() {
+        guard let scene = scene else { return }
+        scene.removeAction(forKey: "slowMoRestore")
+        scene.speed = 1.0
+    }
+
+    // MARK: - New Tile Spawn
+
+    /// Animates newly spawned tiles (tiles that appear at the top after gravity).
+    /// Tiles scale up from 0 with a quick bounce.
+    func animateNewTileSpawns(positions: [Position], completion: @escaping () -> Void) {
+        guard let scene = scene, !positions.isEmpty else {
+            completion()
+            return
+        }
+
+        let group = DispatchGroup()
+
+        for (i, pos) in positions.enumerated() {
+            guard let tile = scene.tileNode(at: pos) else { continue }
+            group.enter()
+
+            // Stagger spawn by 30ms per tile
+            let delay = Double(i) * 0.03
+            tile.playSpawnAnimation(delay: delay) {
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion()
+        }
+    }
+
     // MARK: - Helpers
 
     private func comboBannerConfig(combo: Int) -> (String, SKColor) {
@@ -496,19 +987,21 @@ final class AnimationSequencer {
 
     private func particleCountForTier(_ tier: BadgeTier) -> Int {
         switch tier {
-        case .blue:   return 8
-        case .silver: return 12
-        case .gold:   return 18
-        case .cosmic: return 28
+        case .blue:    return 8
+        case .silver:  return 12
+        case .gold:    return 18
+        case .special: return 18
+        case .cosmic:  return 28
         }
     }
 
     private func particleColorForTier(_ tier: BadgeTier) -> SKColor {
         switch tier {
-        case .blue:   return SKColor(red: 0x94/255, green: 0xA3/255, blue: 0xB8/255, alpha: 1)
-        case .silver: return SKColor(red: 0x4A/255, green: 0x9E/255, blue: 0xFF/255, alpha: 1)
-        case .gold:   return Colors.gold
-        case .cosmic: return Colors.cosmic
+        case .blue:    return SKColor(red: 224/255.0, green: 224/255.0, blue: 224/255.0, alpha: 1)
+        case .silver:  return SKColor(red: 74/255.0, green: 158/255.0, blue: 255/255.0, alpha: 1)
+        case .gold:    return Colors.gold
+        case .special: return SKColor(red: 255/255.0, green: 140/255.0, blue: 66/255.0, alpha: 1)
+        case .cosmic:  return Colors.cosmic
         }
     }
 }

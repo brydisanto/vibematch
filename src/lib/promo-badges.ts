@@ -119,6 +119,12 @@ export interface PromoEventSet {
      *  to "Herds" (Claynoz). Events whose set mechanic is a full-set
      *  completion race use "Sets". */
     setsBoardLabel?: string;
+    /** When true, the event uses the TIMED board model: the Sets board is
+     *  a one-per-player completion race ranked by finish time (from the
+     *  set_done zset), and the Grails board ranks by count then time-to-
+     *  count (from the grails composite). When false/absent, the Claynoz
+     *  model is used: Sets = herds count, Grails = raw grail-pin count. */
+    timedBoards?: boolean;
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -564,10 +570,9 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Placeholder hero — swap for Axie key art.
         heroImage: "/badges/promo/set/axie/grail.webp",
         // NO points cap this event — points accumulate uncapped. Sets are
-        // a separate completion-time race (see the leaderboard route), so
-        // completing the set does not award bonus points on the points
-        // board.
-        setBonusPoints: 0,
+        // also a separate completion-time race (see the leaderboard route),
+        // AND completing a full set of 9 awards +25 to the points board.
+        setBonusPoints: 25,
         // scoreCap intentionally omitted — no cap.
         // Axie aqua board frame.
         frameGradient: {
@@ -583,7 +588,8 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // be reviewed for a 9-pin set.
         includeInGameTiles: true,
         setTabLabel: "The Set",
-        setsBoardLabel: "Sets",
+        setsBoardLabel: "Full Set Race",
+        timedBoards: true,
         setBonusLabel: "FULL SET OF 9",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
         partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo

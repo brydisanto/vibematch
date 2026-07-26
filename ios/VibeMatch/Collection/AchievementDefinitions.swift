@@ -9,6 +9,7 @@ enum AchievementRequirement: Codable, Hashable, Sendable {
     // Score-based
     case singleGameScore(Int)
     case lifetimeScore(Int)
+    case dailyModeScore(Int)              // Score threshold in Daily Challenge mode
 
     // Combo-based
     case singleGameCombo(Int)
@@ -19,44 +20,65 @@ enum AchievementRequirement: Codable, Hashable, Sendable {
 
     // Special tiles
     case createSpecialTile(SpecialTileType)
+    case singleGameBombsCreated(Int)      // Bombs created in a single game
     case lifetimeBombsCreated(Int)
     case lifetimeVibestreaksCreated(Int)
     case lifetimeCosmicBlastsCreated(Int)
 
     // Shape bonuses
     case landShapeBonus(ShapeBonusType)
+    case singleGameLShapes(Int)           // L-shapes in a single game
+    case singleGameTShapes(Int)           // T-shapes in a single game
+    case singleGameCrossShapes(Int)       // Cross-shapes in a single game
+    case singleGameShapeTrifecta          // All 3 shape types in one game
     case lifetimeLShapes(Int)
     case lifetimeTShapes(Int)
     case lifetimeCrossShapes(Int)
+
     // Collection
     case uniqueBadgesDiscovered(Int)
+    case firstBadgeOfTier(BadgeTier)      // First pin collected of a specific tier
+    case allBadgesOfTier(BadgeTier, Int)  // All N badges of a tier collected
+    case totalFoundOfTier(BadgeTier, Int) // Lifetime pulls of a tier (counts duplicates)
     case badgeMatchMastery(MatchMasteryLevel)        // Any single badge at this level
     case badgesAtMatchMastery(MatchMasteryLevel, Int) // N badges at this level
+
+    // Profile / engagement
+    case hasUploadedAvatar                // Uploaded a profile picture
 
     // Streaks
     case dailyStreak(Int)
 
     // Games played
     case gamesPlayed(Int)
+    case gamesPlayedToday(Int)            // Games played in a single day (daily cap)
     case perfectGames(Int)
 
-    // Chests
+    // Chests / Capsules
     case chestsOpened(Int)
+
+    // Referrals
+    case referralCount(Int)
+
+    // Special (server-verified)
+    case dailyChampion                    // Finish #1 on Daily Challenge
 }
 
 // MARK: - Achievement Category
 
 /// Groups achievements for UI organization and tab filtering.
+/// Aligned with web: Journey (FTUE progression) and Mastery (long-term goals).
 enum AchievementCategory: String, Codable, Hashable, Sendable, CaseIterable {
+    case journey = "Journey"
+    case mastery = "Mastery"
     case score = "Score"
     case combo = "Combo"
     case cascade = "Cascade"
+    case daily = "Daily"
     case specialTiles = "Special Tiles"
     case shapes = "Shapes"
-    case collection = "Collection"
     case streaks = "Streaks"
-    case daily = "Daily"
-    case mastery = "Mastery"
+    case collection = "Collection"
     case general = "General"
 }
 
@@ -74,7 +96,8 @@ struct AchievementDefinition: Identifiable, Codable, Hashable, Sendable {
     let description: String
     let icon: String           // SF Symbol name
     let category: AchievementCategory
-    let chestReward: ChestType
+    let capsuleReward: Int     // Number of capsules awarded on completion (synced with web)
+    var order: Int = 0         // Display order within category (unused; defaulted)
     let requirement: AchievementRequirement
 
     /// The numerical goal for progress tracking.
@@ -83,24 +106,37 @@ struct AchievementDefinition: Identifiable, Codable, Hashable, Sendable {
         switch requirement {
         case .singleGameScore(let n),
              .lifetimeScore(let n),
+             .dailyModeScore(let n),
              .singleGameCombo(let n),
              .lifetimeHighestCombo(let n),
              .singleGameCascades(let n),
+             .singleGameBombsCreated(let n),
              .lifetimeBombsCreated(let n),
              .lifetimeVibestreaksCreated(let n),
              .lifetimeCosmicBlastsCreated(let n),
+             .singleGameLShapes(let n),
+             .singleGameTShapes(let n),
+             .singleGameCrossShapes(let n),
              .lifetimeLShapes(let n),
              .lifetimeTShapes(let n),
              .lifetimeCrossShapes(let n),
              .uniqueBadgesDiscovered(let n),
              .dailyStreak(let n),
              .gamesPlayed(let n),
+             .gamesPlayedToday(let n),
              .perfectGames(let n),
-             .chestsOpened(let n):
+             .chestsOpened(let n),
+             .referralCount(let n):
             return n
         case .badgesAtMatchMastery(_, let count):
             return count
-        case .createSpecialTile, .landShapeBonus, .badgeMatchMastery:
+        case .allBadgesOfTier(_, let count):
+            return count
+        case .totalFoundOfTier(_, let count):
+            return count
+        case .createSpecialTile, .landShapeBonus, .badgeMatchMastery,
+             .firstBadgeOfTier, .singleGameShapeTrifecta, .dailyChampion,
+             .hasUploadedAvatar:
             return 1
         }
     }
@@ -163,7 +199,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 1,000 points in a single game",
             icon: "star",
             category: .score,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .singleGameScore(1000)
         ),
         AchievementDefinition(
@@ -172,7 +208,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 3,000 points in a single game",
             icon: "star.fill",
             category: .score,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .singleGameScore(3000)
         ),
         AchievementDefinition(
@@ -181,7 +217,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 5,000 points in a single game",
             icon: "star.circle",
             category: .score,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .singleGameScore(5000)
         ),
         AchievementDefinition(
@@ -190,7 +226,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 10,000 points in a single game",
             icon: "star.circle.fill",
             category: .score,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .singleGameScore(10000)
         ),
         AchievementDefinition(
@@ -199,7 +235,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 25,000 points in a single game",
             icon: "sparkles",
             category: .score,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .singleGameScore(25000)
         ),
         AchievementDefinition(
@@ -208,7 +244,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Score 50,000 points in a single game",
             icon: "sun.max.fill",
             category: .score,
-            chestReward: .cosmic,
+            capsuleReward: 5,
             requirement: .singleGameScore(50000)
         ),
     ])
@@ -225,7 +261,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach a 2x combo in a single game",
             icon: "bolt",
             category: .combo,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .singleGameCombo(2)
         ),
         AchievementDefinition(
@@ -234,7 +270,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach a 3x combo in a single game",
             icon: "bolt.fill",
             category: .combo,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .singleGameCombo(3)
         ),
         AchievementDefinition(
@@ -243,7 +279,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach a 4x combo in a single game",
             icon: "bolt.circle",
             category: .combo,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .singleGameCombo(4)
         ),
         AchievementDefinition(
@@ -252,7 +288,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach a 6x combo in a single game",
             icon: "bolt.circle.fill",
             category: .combo,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .singleGameCombo(6)
         ),
         AchievementDefinition(
@@ -261,7 +297,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach a 10x combo in a single game",
             icon: "bolt.shield.fill",
             category: .combo,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .singleGameCombo(10)
         ),
     ])
@@ -278,7 +314,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Trigger 3 cascades in a single game",
             icon: "arrow.down.circle",
             category: .cascade,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .singleGameCascades(3)
         ),
         AchievementDefinition(
@@ -287,7 +323,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Trigger 5 cascades in a single game",
             icon: "arrow.down.circle.fill",
             category: .cascade,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .singleGameCascades(5)
         ),
         AchievementDefinition(
@@ -296,7 +332,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Trigger 8 cascades in a single game",
             icon: "crown",
             category: .cascade,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .singleGameCascades(8)
         ),
     ])
@@ -313,16 +349,16 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Create your first Bomb tile",
             icon: "flame",
             category: .specialTiles,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .createSpecialTile(.bomb)
         ),
         AchievementDefinition(
             id: "special_streak",
-            name: "Streak!",
-            description: "Create your first VibeStreak tile",
+            name: "Laser Party",
+            description: "Create your first Laser Party tile",
             icon: "line.horizontal.3",
             category: .specialTiles,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .createSpecialTile(.vibestreak)
         ),
         AchievementDefinition(
@@ -331,7 +367,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Create your first Cosmic Blast tile",
             icon: "sparkle",
             category: .specialTiles,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .createSpecialTile(.cosmicBlast)
         ),
         AchievementDefinition(
@@ -340,16 +376,16 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Create 25 Bomb tiles across all games",
             icon: "flame.fill",
             category: .specialTiles,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .lifetimeBombsCreated(25)
         ),
         AchievementDefinition(
             id: "special_streak_master",
-            name: "Streak Master",
-            description: "Create 25 VibeStreak tiles across all games",
+            name: "Laser Party Master",
+            description: "Create 25 Laser Party tiles across all games",
             icon: "line.3.horizontal",
             category: .specialTiles,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .lifetimeVibestreaksCreated(25)
         ),
     ])
@@ -366,8 +402,8 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Land your first L-shape match",
             icon: "l.square",
             category: .shapes,
-            chestReward: .bronze,
-            requirement: .landShapeBonus(.l)
+            capsuleReward: 1,
+            requirement: .landShapeBonus(.L)
         ),
         AchievementDefinition(
             id: "shape_t_time",
@@ -375,8 +411,8 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Land your first T-shape match",
             icon: "t.square",
             category: .shapes,
-            chestReward: .bronze,
-            requirement: .landShapeBonus(.t)
+            capsuleReward: 1,
+            requirement: .landShapeBonus(.T)
         ),
         AchievementDefinition(
             id: "shape_cross_master",
@@ -384,7 +420,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Land your first cross-shape match",
             icon: "plus.square",
             category: .shapes,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .landShapeBonus(.cross)
         ),
         AchievementDefinition(
@@ -393,7 +429,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Land 50 L-shape matches across all games",
             icon: "l.square.fill",
             category: .shapes,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .lifetimeLShapes(50)
         ),
     ])
@@ -410,7 +446,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Discover 10 unique badges",
             icon: "rectangle.grid.2x2",
             category: .collection,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .uniqueBadgesDiscovered(10)
         ),
         AchievementDefinition(
@@ -419,7 +455,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Discover 25 unique badges",
             icon: "rectangle.grid.2x2.fill",
             category: .collection,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .uniqueBadgesDiscovered(25)
         ),
         AchievementDefinition(
@@ -428,7 +464,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Discover 50 unique badges",
             icon: "rectangle.grid.3x2",
             category: .collection,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .uniqueBadgesDiscovered(50)
         ),
         AchievementDefinition(
@@ -437,7 +473,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Discover 75 unique badges",
             icon: "rectangle.grid.3x2.fill",
             category: .collection,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .uniqueBadgesDiscovered(75)
         ),
         AchievementDefinition(
@@ -446,7 +482,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Discover all 100 badges",
             icon: "checkmark.seal.fill",
             category: .collection,
-            chestReward: .cosmic,
+            capsuleReward: 5,
             requirement: .uniqueBadgesDiscovered(100)
         ),
     ])
@@ -463,7 +499,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play for 3 days in a row",
             icon: "calendar",
             category: .streaks,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .dailyStreak(3)
         ),
         AchievementDefinition(
@@ -472,7 +508,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play for 7 days in a row",
             icon: "calendar.badge.clock",
             category: .streaks,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .dailyStreak(7)
         ),
         AchievementDefinition(
@@ -481,7 +517,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play for 30 days in a row",
             icon: "calendar.circle",
             category: .streaks,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .dailyStreak(30)
         ),
         AchievementDefinition(
@@ -490,7 +526,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play for 100 days in a row",
             icon: "calendar.circle.fill",
             category: .streaks,
-            chestReward: .cosmic,
+            capsuleReward: 5,
             requirement: .dailyStreak(100)
         ),
     ])
@@ -507,7 +543,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Complete your first game",
             icon: "play.circle",
             category: .daily,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .gamesPlayed(1)
         ),
         AchievementDefinition(
@@ -516,7 +552,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play 10 games total",
             icon: "play.circle.fill",
             category: .daily,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .gamesPlayed(10)
         ),
         AchievementDefinition(
@@ -525,7 +561,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play 50 games total",
             icon: "gamecontroller",
             category: .daily,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .gamesPlayed(50)
         ),
         AchievementDefinition(
@@ -534,7 +570,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Play 100 games total",
             icon: "gamecontroller.fill",
             category: .daily,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .gamesPlayed(100)
         ),
         AchievementDefinition(
@@ -543,7 +579,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Earn 3 stars on any level",
             icon: "star.leadinghalf.filled",
             category: .daily,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .perfectGames(1)
         ),
         AchievementDefinition(
@@ -552,7 +588,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Earn 3 stars on 10 different games",
             icon: "rosette",
             category: .daily,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .perfectGames(10)
         ),
     ])
@@ -569,7 +605,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach Bronze mastery on any badge",
             icon: "shield",
             category: .mastery,
-            chestReward: .bronze,
+            capsuleReward: 1,
             requirement: .badgeMatchMastery(.bronze)
         ),
         AchievementDefinition(
@@ -578,7 +614,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach Gold mastery on any badge",
             icon: "shield.fill",
             category: .mastery,
-            chestReward: .silver,
+            capsuleReward: 2,
             requirement: .badgeMatchMastery(.gold)
         ),
         AchievementDefinition(
@@ -587,7 +623,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach Animated (max) mastery on any badge",
             icon: "shield.lefthalf.filled",
             category: .mastery,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .badgeMatchMastery(.animated)
         ),
         AchievementDefinition(
@@ -596,7 +632,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Reach Animated mastery on 10 different badges",
             icon: "shield.checkered",
             category: .mastery,
-            chestReward: .cosmic,
+            capsuleReward: 5,
             requirement: .badgesAtMatchMastery(.animated, 10)
         ),
         AchievementDefinition(
@@ -605,7 +641,7 @@ let ALL_ACHIEVEMENTS: [AchievementDefinition] = {
             description: "Open 50 chests total",
             icon: "shippingbox.fill",
             category: .general,
-            chestReward: .gold,
+            capsuleReward: 3,
             requirement: .chestsOpened(50)
         ),
     ])
@@ -741,6 +777,10 @@ final class AchievementTracker {
             let value = stats.totalScore
             return (value, value >= target)
 
+        case .dailyModeScore(let target):
+            let value = stats.highestDailyScore
+            return (value, value >= target)
+
         case .singleGameCombo(let target):
             let value = stats.highestCombo
             return (value, value >= target)
@@ -750,12 +790,8 @@ final class AchievementTracker {
             return (value, value >= target)
 
         case .singleGameCascades(let target):
-            // We track lifetime cascades; single-game cascades require per-game tracking.
-            // For now, use lifetime total as a proxy. This will over-count but never
-            // under-count relative to the single-game best.
-            // TODO: Track single-game best cascades in LifetimeStats.
-            let value = stats.totalCascades
-            return (min(value, target), value >= target)
+            let value = stats.bestSingleGameCascades
+            return (value, value >= target)
 
         case .createSpecialTile(let type):
             let created: Bool
@@ -765,6 +801,10 @@ final class AchievementTracker {
             case .cosmicBlast: created = stats.hasCreatedCosmicBlast
             }
             return (created ? 1 : 0, created)
+
+        case .singleGameBombsCreated(let target):
+            let value = stats.bestSingleGameBombs
+            return (value, value >= target)
 
         case .lifetimeBombsCreated(let target):
             let value = stats.bombsCreated
@@ -781,11 +821,27 @@ final class AchievementTracker {
         case .landShapeBonus(let type):
             let landed: Bool
             switch type {
-            case .l:      landed = stats.hasLandedL
-            case .t:      landed = stats.hasLandedT
+            case .L:      landed = stats.hasLandedL
+            case .T:      landed = stats.hasLandedT
             case .cross:  landed = stats.hasLandedCross
             }
             return (landed ? 1 : 0, landed)
+
+        case .singleGameLShapes(let target):
+            let value = stats.bestSingleGameLShapes
+            return (value, value >= target)
+
+        case .singleGameTShapes(let target):
+            let value = stats.bestSingleGameTShapes
+            return (value, value >= target)
+
+        case .singleGameCrossShapes(let target):
+            let value = stats.bestSingleGameCrossShapes
+            return (value, value >= target)
+
+        case .singleGameShapeTrifecta:
+            let achieved = stats.hasAchievedShapeTrifecta
+            return (achieved ? 1 : 0, achieved)
 
         case .lifetimeLShapes(let target):
             let value = stats.lShapesLanded
@@ -802,6 +858,27 @@ final class AchievementTracker {
         case .uniqueBadgesDiscovered(let target):
             let value = collectionManager.totalDiscovered
             return (value, value >= target)
+
+        case .firstBadgeOfTier(let tier):
+            let hasTier = collectionManager.discoveredBadges.values.contains {
+                $0.badge.tier == tier
+            }
+            return (hasTier ? 1 : 0, hasTier)
+
+        case .allBadgesOfTier(let tier, let count):
+            let collected = collectionManager.discoveredBadges.values.filter {
+                $0.badge.tier == tier
+            }.count
+            return (collected, collected >= count)
+
+        case .totalFoundOfTier(let tier, let count):
+            let value = stats.totalFoundByTier[tier] ?? 0
+            return (value, value >= count)
+
+        case .hasUploadedAvatar:
+            let uploaded = stats.hasUploadedAvatar
+            return (uploaded ? 1 : 0, uploaded)
+
 
         case .badgeMatchMastery(let targetLevel):
             let hasAny = collectionManager.discoveredBadges.values.contains {
@@ -823,6 +900,10 @@ final class AchievementTracker {
             let value = stats.totalGamesPlayed
             return (value, value >= target)
 
+        case .gamesPlayedToday(let target):
+            let value = stats.gamesPlayedToday
+            return (value, value >= target)
+
         case .perfectGames(let target):
             let value = stats.perfectGames
             return (value, value >= target)
@@ -830,29 +911,44 @@ final class AchievementTracker {
         case .chestsOpened(let target):
             let value = stats.totalChestsOpened
             return (value, value >= target)
+
+        case .referralCount(let target):
+            let value = stats.referrals
+            return (value, value >= target)
+
+        case .dailyChampion:
+            let achieved = stats.hasDailyChampion
+            return (achieved ? 1 : 0, achieved)
         }
     }
 
     // MARK: - Reward Claiming
 
-    /// Claims the chest reward for a completed achievement.
-    /// Returns the earned chest, or nil if the achievement isn't ready to claim.
-    func claimReward(for achievementId: String) -> EarnedChest? {
+    /// Claims the capsule reward for a completed achievement.
+    /// Awards N capsules (as bronze chests) based on the achievement's capsuleReward.
+    /// Returns all earned chests, or empty array if the achievement isn't ready to claim.
+    func claimReward(for achievementId: String) -> [EarnedChest] {
         guard let definition = ACHIEVEMENT_LOOKUP[achievementId],
               var prog = progress[achievementId],
               prog.isCompleted,
               !prog.isRewardClaimed else {
-            return nil
+            return []
         }
 
         prog.isRewardClaimed = true
         progress[achievementId] = prog
         save()
 
-        return chestSystem.awardChest(
-            tier: definition.chestReward,
-            trigger: .achievement(definition.name)
-        )
+        // Award N capsules as individual chests (matching web's capsule reward system)
+        var chests: [EarnedChest] = []
+        for _ in 0..<definition.capsuleReward {
+            let chest = chestSystem.awardChest(
+                tier: .bronze,
+                trigger: .achievement(definition.name)
+            )
+            chests.append(chest)
+        }
+        return chests
     }
 
     /// Claims all unclaimed achievement rewards at once.
@@ -860,9 +956,7 @@ final class AchievementTracker {
     func claimAllRewards() -> [EarnedChest] {
         var chests: [EarnedChest] = []
         for achievement in unclaimedAchievements {
-            if let chest = claimReward(for: achievement.id) {
-                chests.append(chest)
-            }
+            chests.append(contentsOf: claimReward(for: achievement.id))
         }
         return chests
     }
