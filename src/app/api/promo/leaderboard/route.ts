@@ -274,6 +274,26 @@ export async function GET(req: Request) {
                     entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
                 });
             }
+            // Points/GVC board — the SAME ranked points cohort, filtered to
+            // verified GVC holders (gvc:holders set), then re-ranked 1..N.
+            // Read-time filtering means a player who earns points first and
+            // verifies their wallet later still shows up with no backfill.
+            let gvcLeaderboard: Row[] = [];
+            if (setDef.gvcBoard) {
+                const { gvcHoldersKey } = await import('@/lib/gvc');
+                const holderList = await kv.smembers(gvcHoldersKey()) as string[];
+                const holders = new Set(holderList.map(h => h.toLowerCase()));
+                if (holders.size > 0) {
+                    gvcLeaderboard = all
+                        .filter(e => holders.has(e.username.toLowerCase()))
+                        .slice(0, 50)
+                        .map((e, i) => ({ ...e, rank: i + 1 }));
+                    if (gvcLeaderboard.length > 0) {
+                        const profiles = await kv.mget(...gvcLeaderboard.map(e => `user:${e.username}`)) as Array<{ avatarUrl?: string } | null>;
+                        gvcLeaderboard.forEach((e, i) => { e.avatarUrl = profiles[i]?.avatarUrl ?? ''; });
+                    }
+                }
+            }
             return NextResponse.json(
                 {
                     eventSet: {
@@ -290,6 +310,8 @@ export async function GET(req: Request) {
                         scoreCap: setDef.scoreCap ?? null,
                         timedBoards: setDef.timedBoards ?? false,
                         setsBoardLabel: setDef.setsBoardLabel ?? null,
+                        gvcBoard: setDef.gvcBoard ?? false,
+                        gvcBoardLabel: setDef.gvcBoardLabel ?? null,
                         pins: pins.map(p => ({
                             id: p.id,
                             name: p.name,
@@ -307,6 +329,7 @@ export async function GET(req: Request) {
                     leaderboard,
                     herdsLeaderboard,
                     grailLeaderboard,
+                    gvcLeaderboard,
                     userEntry,
                     totalPlayers,
                     active: isPromoActive(),

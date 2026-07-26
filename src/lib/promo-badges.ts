@@ -125,6 +125,14 @@ export interface PromoEventSet {
      *  count (from the grails composite). When false/absent, the Claynoz
      *  model is used: Sets = herds count, Grails = raw grail-pin count. */
     timedBoards?: boolean;
+    /** When true, the leaderboard exposes an extra "Points/GVC" board that
+     *  ranks only players verified to hold a GVC NFT (see src/lib/gvc.ts).
+     *  Same points cascade as the open board, filtered to the gvc:holders
+     *  set. Off/absent for events without a GVC-gated prize track. */
+    gvcBoard?: boolean;
+    /** Sub-tab / column label for the GVC-only board. Defaults to
+     *  "Points/GVC". */
+    gvcBoardLabel?: string;
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -590,6 +598,8 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setTabLabel: "The Set",
         setsBoardLabel: "Full Set Race",
         timedBoards: true,
+        gvcBoard: true,
+        gvcBoardLabel: "Points/GVC",
         setBonusLabel: "FULL SET OF 9",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
         partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo

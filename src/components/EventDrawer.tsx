@@ -615,6 +615,16 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         () => (promo.eventSetId ? !!findPromoEventSet(promo.eventSetId)?.timedBoards : false),
         [promo.eventSetId],
     );
+    // GVC-holder-only points board — an extra sub-tab shown only for
+    // events that gate a prize track on GVC ownership (Axie).
+    const gvcBoard = useMemo(
+        () => (promo.eventSetId ? !!findPromoEventSet(promo.eventSetId)?.gvcBoard : false),
+        [promo.eventSetId],
+    );
+    const gvcBoardLabel = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.gvcBoardLabel : null) ?? "Points/GVC",
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
@@ -624,7 +634,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     //   points  — score-based ranking (default)
     //   herds   — ranks by full sets completed, tie-broken by points
     //   grail   — ranks by chase-pin (Grail) pull count
-    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds" | "grail">("points");
+    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds" | "grail" | "gvc">("points");
     const [herdsEntries, setHerdsEntries] = useState<Array<{
         username: string;
         herds: number;
@@ -639,6 +649,8 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         rank: number;
         avatarUrl?: string;
     }>>([]);
+    // GVC-only points board — same row shape as the open points board.
+    const [gvcEntries, setGvcEntries] = useState<EventEntry[]>([]);
     // Seed pin metadata (id, name, image, rarityLabel, points) from the
     // client-side event registry so pin art renders on the first frame
     // instead of waiting for the /api/promo/leaderboard round-trip.
@@ -686,6 +698,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setTotalPlayers(d.totalPlayers || 0);
                 setHerdsEntries(d.herdsLeaderboard || []);
                 setGrailEntries(d.grailLeaderboard || []);
+                setGvcEntries(d.gvcLeaderboard || []);
                 if (d.eventSet?.pins) {
                     // Merge server owned counts onto the client-seeded
                     // metadata rather than replacing wholesale — the
@@ -956,19 +969,21 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         {/* Content */}
                         {view === "leaderboard" ? (
                             <div className="px-5 pb-3 pt-3">
-                                {/* Points | Herds | Grail Chase subtoggle —
-                                    only on set events. Points ranks by
-                                    score. Herds ranks by full sets
-                                    completed (tie-break: points). Grail
-                                    Chase ranks by chase-pin (isChase)
-                                    pull count. */}
+                                {/* Points | Sets | Grail Chase [| Points/GVC]
+                                    subtoggle — only on set events. Points ranks
+                                    by score. Sets ranks by full-set completion
+                                    (timed: finish time). Grail Chase ranks by
+                                    chase-pin count. Points/GVC (when the event
+                                    gates a GVC prize track) is the points board
+                                    filtered to verified GVC holders. */}
                                 {promo.eventSetId && (
-                                    <div className="flex justify-center gap-1 mb-3">
+                                    <div className="flex justify-center flex-wrap gap-1 mb-3">
                                         {([
                                             { key: "points", label: "Total Points" },
                                             { key: "herds", label: setsLabel },
                                             { key: "grail", label: "Grail Chase" },
-                                        ] as const).map(({ key, label }) => {
+                                            ...(gvcBoard ? [{ key: "gvc" as const, label: gvcBoardLabel }] : []),
+                                        ] as Array<{ key: "points" | "herds" | "grail" | "gvc"; label: string }>).map(({ key, label }) => {
                                             const isActive = leaderboardMetric === key;
                                             return (
                                                 <button
@@ -1143,6 +1158,47 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 </div>
                                             </>
                                         )}
+                                        {/* Points/GVC view — identical to the
+                                            points board, filtered server-side to
+                                            verified GVC holders. */}
+                                        {leaderboardMetric === "gvc" && (
+                                            <>
+                                                <div className="mb-2 px-2 py-2 rounded-lg text-[10px] leading-snug font-mundial text-white/55" style={{ background: `${accent}0f`, border: `1px solid ${accent}22` }}>
+                                                    Ranks GVC NFT holders only. Connect the wallet holding your GVC (or a delegate.xyz wallet) to appear here.
+                                                </div>
+                                                {promo.eventSetId && setPins.length > 0 && gvcEntries.length > 0 && (
+                                                    <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
+                                                        <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                        <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">{setsLabel}</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
+                                                        <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
+                                                    </div>
+                                                )}
+                                                {gvcEntries.length === 0 ? (
+                                                    <div className="py-8 text-center font-mundial text-xs text-white/40">
+                                                        {!started
+                                                            ? "The Points/GVC board opens once the event begins."
+                                                            : "No verified GVC holders on the board yet."}
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1.5">
+                                                        {gvcEntries.map(entry => (
+                                                            <LeaderboardRow
+                                                                key={entry.username}
+                                                                entry={entry}
+                                                                isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                                accent={accent}
+                                                                currentAvatarUrl={currentAvatarUrl}
+                                                                isWinner={ended && entry.rank === 1}
+                                                                setPins={promo.eventSetId ? setPins : undefined}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                         {/* Grail Chase view — ranked by chase-pin
                                             pull count. Column order: RANK /
                                             COLLECTOR / GRAILS. */}
@@ -1286,8 +1342,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </>
                                 )}
 
-                                {/* User pinned row when not in top 50 */}
-                                {userRow && (
+                                {/* User pinned row when not in top 50. Hidden on
+                                    the GVC tab: userRow carries the open-board
+                                    rank, which wouldn't match the filtered GVC
+                                    ranking. */}
+                                {userRow && leaderboardMetric !== "gvc" && (
                                     <div className="mt-3 pt-3 border-t border-white/5">
                                         <Link
                                             href={`/u/${encodeURIComponent(userRow.username)}`}
