@@ -622,7 +622,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         [promo.eventSetId],
     );
     const gvcBoardLabel = useMemo(
-        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.gvcBoardLabel : null) ?? "Points/GVC",
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.gvcBoardLabel : null) ?? "GVC Holders",
         [promo.eventSetId],
     );
     // Set events open on the "Set" tab — players see the collection
@@ -1179,7 +1179,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 {gvcEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
                                                         {!started
-                                                            ? "The Points/GVC board opens once the event begins."
+                                                            ? "The GVC Holders board opens once the event begins."
                                                             : "No verified GVC holders on the board yet."}
                                                     </div>
                                                 ) : (

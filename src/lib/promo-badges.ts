@@ -131,7 +131,7 @@ export interface PromoEventSet {
      *  set. Off/absent for events without a GVC-gated prize track. */
     gvcBoard?: boolean;
     /** Sub-tab / column label for the GVC-only board. Defaults to
-     *  "Points/GVC". */
+     *  "GVC Holders". */
     gvcBoardLabel?: string;
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
@@ -599,7 +599,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setsBoardLabel: "Full Set Race",
         timedBoards: true,
         gvcBoard: true,
-        gvcBoardLabel: "Points/GVC",
+        gvcBoardLabel: "GVC Holders",
         setBonusLabel: "FULL SET OF 9",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
         partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo
