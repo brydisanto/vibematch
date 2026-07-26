@@ -745,6 +745,62 @@ export function eventSetReachedCapKey(setId: string, username: string): string {
     return `event_set:${setId}:reached_cap:${username}`;
 }
 
+// ── Axie-era leaderboard keys (completion-time + composite ranking) ──
+// These support events whose Sets board is a one-per-player COMPLETION
+// RACE (ranked by time) and whose Grails board is tie-broken by time to
+// reach a count. Claynoz keeps using the herds key above; new events use
+// these.
+
+/** Set-completion race zset. score = completion timestamp (ms). Written
+ *  ONCE per player (ZADD NX) the moment they first hold one of every base
+ *  (non-chase) pin. ZRANGE ascending = ranking (earliest completion wins);
+ *  the score doubles as the "finished at" timestamp the UI displays. One
+ *  entry per user, so it is inherently capped at 1 set per player. */
+export function eventSetSetDoneKey(setId: string): string {
+    return `event_set:${setId}:set_done`;
+}
+
+/** Grail race zset — ranks by grail count, tie-broken by TIME to reach
+ *  that count (earlier wins). Both encoded in one score so a single
+ *  ZREVRANGE returns the true order:
+ *      score = count × BUCKET + (BUCKET - 1 - secondsSinceEventStart)
+ *  A higher count always outranks a lower one; within a count, the
+ *  smaller elapsed-seconds (earlier) yields a higher score. BUCKET (1e7)
+ *  exceeds a 7-day event's second span (~6.05e5), and count × 1e7 stays
+ *  well inside float64's exact-integer range. */
+const GRAIL_BUCKET = 10_000_000;
+export function eventSetGrailsKey(setId: string): string {
+    return `event_set:${setId}:grails`;
+}
+export function encodeGrailScore(count: number, secondsSinceStart: number): number {
+    const s = Math.min(GRAIL_BUCKET - 1, Math.max(0, Math.floor(secondsSinceStart)));
+    return Math.max(0, Math.floor(count)) * GRAIL_BUCKET + (GRAIL_BUCKET - 1 - s);
+}
+export function decodeGrailScore(score: number): { count: number; secondsSinceStart: number } {
+    const count = Math.floor(score / GRAIL_BUCKET);
+    const inv = score - count * GRAIL_BUCKET;
+    return { count, secondsSinceStart: (GRAIL_BUCKET - 1) - inv };
+}
+
+/** GVC-holder-only points zset. Mirrors the main points zset but only
+ *  verified GVC holders are written to it, so the Points/GVC board is a
+ *  direct ZREVRANGE with no per-read ownership checks. Membership is
+ *  managed by the holder-verification subsystem (added on verify, and
+ *  the points value kept in lockstep with the main board on each
+ *  collect while the user is a verified holder). */
+export function eventSetPointsGvcKey(setId: string): string {
+    return `event_set:${setId}:points_gvc`;
+}
+
+/** Seconds elapsed since an event's startsAt, clamped to >= 0. Used to
+ *  encode "time to goal" into the grail + (future) rank composites so
+ *  timestamps stay small and comparable within the event window. */
+export function secondsSinceEventStart(set: Pick<PromoEventSet, "startsAt">, nowMs: number): number {
+    if (!set.startsAt) return 0;
+    const start = new Date(set.startsAt).getTime();
+    return Math.max(0, Math.floor((nowMs - start) / 1000));
+}
+
 /**
  * Compute a user's total event-set score from their per-pin owned
  * counts. Pure function — no KV reads — so the server can reuse it
