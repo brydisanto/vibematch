@@ -504,7 +504,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // Launch: Monday July 20 2026, 12:00 PM Eastern (16:00 UTC).
         // Window: 7 days, closing Monday July 27 12:00 PM Eastern.
         startsAt: "2026-07-20T16:00:00Z",
-        endsAt: "2026-07-27T16:00:00Z",
+        // PREVIEW SHIM (feat/event-axie only, never merge): end Claynoz
+        // early so the Axie set becomes the primary droppable event on
+        // the preview. Real value: "2026-07-27T16:00:00Z".
+        endsAt: "2026-07-25T00:00:00Z",
         tabLabel: "Set",
         // Temporary hero — pointing at the branded Cosmic pin since
         // it carries the Claynosaurz logo and reads well at hero size.
@@ -548,7 +551,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         accentColor: "#4A9EFF",
         // Launch: Monday Aug 3 2026, 12:00 PM Eastern (16:00 UTC).
         // Window: 7 days, closing Monday Aug 10 12:00 PM Eastern.
-        startsAt: "2026-08-03T16:00:00Z",
+        // PREVIEW SHIM (feat/event-axie only, never merge): pulled
+        // forward so the Axie event is live on the preview. Real value:
+        // "2026-08-03T16:00:00Z".
+        startsAt: "2026-07-24T00:00:00Z",
         endsAt: "2026-08-10T16:00:00Z",
         tabLabel: "Set",
         // Placeholder hero — swap for Axie key art.
