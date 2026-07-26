@@ -995,6 +995,24 @@ export async function POST(req: Request) {
                                     { nx: true },
                                 );
                             }
+                            // Axie-era boards — same writes as the live
+                            // collect path so a recovered pin still counts.
+                            const {
+                                eventSetSetDoneKey, eventSetGrailsKey, encodeGrailScore,
+                                secondsSinceEventStart, findPromoEventSet,
+                            } = await import('@/lib/promo-badges');
+                            const setDef = findPromoEventSet(stalePromo.eventSetId);
+                            const basePins = pins.filter(p => !p.isChase);
+                            const setComplete = basePins.length > 0 && basePins.every(p => (perPinOwned[p.id] ?? 0) >= 1);
+                            if (setComplete) {
+                                await kv.zadd(eventSetSetDoneKey(stalePromo.eventSetId), { nx: true }, { score: Date.now(), member: username });
+                            }
+                            if (stalePromo.isChase && setDef) {
+                                await kv.zadd(eventSetGrailsKey(stalePromo.eventSetId), {
+                                    score: encodeGrailScore(perPinOwned[stalePromo.id] ?? 1, secondsSinceEventStart(setDef, Date.now())),
+                                    member: username,
+                                });
+                            }
                         }
                     }
                 } else {
@@ -1250,6 +1268,32 @@ export async function POST(req: Request) {
                             Date.now(),
                             { nx: true },
                         );
+                    }
+                    // ── Axie-era boards (written generically; Claynoz
+                    // reads herds + grail-count instead, so these are
+                    // harmless extra state for it). ──
+                    const {
+                        eventSetSetDoneKey, eventSetGrailsKey, encodeGrailScore,
+                        secondsSinceEventStart, findPromoEventSet,
+                    } = await import('@/lib/promo-badges');
+                    const setDef = findPromoEventSet(promoDef.eventSetId);
+                    // Set-completion race: the FIRST time the player holds
+                    // one of every base (non-chase) pin, stamp the finish
+                    // time. NX → only the first completion sticks, and the
+                    // one-entry-per-member zset caps sets at 1/player.
+                    const basePins = pins.filter(p => !p.isChase);
+                    const setComplete = basePins.length > 0 && basePins.every(p => (perPinOwned[p.id] ?? 0) >= 1);
+                    if (setComplete) {
+                        await kv.zadd(eventSetSetDoneKey(promoDef.eventSetId), { nx: true }, { score: Date.now(), member: username });
+                    }
+                    // Grail race: on a grail pull, record count + time-to-
+                    // count so the grail board ranks by count, then earliest.
+                    if (promoDef.isChase && setDef) {
+                        const grailCount = typeof newCount === 'number' ? newCount : (perPinOwned[promoDef.id] ?? 1);
+                        await kv.zadd(eventSetGrailsKey(promoDef.eventSetId), {
+                            score: encodeGrailScore(grailCount, secondsSinceEventStart(setDef, Date.now())),
+                            member: username,
+                        });
                     }
                 }
                 // Eventide quest flag — flip once; cheap idempotent write
