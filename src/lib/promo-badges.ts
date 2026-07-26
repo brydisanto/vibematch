@@ -379,7 +379,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 1,
-        dropWeight: 20,
+        dropWeight: 52,
         rarityLabel: "Common",
     })),
     // 3× RARE (3 pts each)
@@ -394,7 +394,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 3,
-        dropWeight: 9,
+        dropWeight: 25,
         rarityLabel: "Rare",
     })),
     // 3× LEGENDARY (8 pts each)
@@ -409,7 +409,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 8,
-        dropWeight: 3,
+        dropWeight: 22,
         rarityLabel: "Legendary",
     })),
     // 1× GRAIL — ultra rare, excluded from set completion (isChase).
@@ -425,7 +425,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 25,
-        dropWeight: 0.5,
+        dropWeight: 3.3,
         rarityLabel: "Grail",
         isChase: true,
     },
@@ -592,19 +592,23 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
 
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
- * this hits, we skip the tier roll entirely and award the promo. Bumped
- * 10% → 15% → 20% (1 in 5) for the Claynosaurz partner event to (a)
- * accommodate a 5th chase tier without cannibalizing base rates and
- * (b) make the co-marketed event feel more generous to first-time
- * visitors from the partner's audience. Per-capsule odds within the
- * Claynosaurz set at 20%:
- *   Common          9.93%
- *   Rare            5.36%
- *   Epic            2.98%
- *   Legendary       1.39%
- *   Cosmic (chase)  0.33%  ← rarer than Legendary; excluded from set bonus
+ * this hits, we skip the tier roll entirely and award the promo. Global,
+ * but only the single active event uses it (events don't overlap).
+ *
+ * Claynosaurz ran at 20% (4-pin set): Common 9.93 / Rare 5.36 / Epic 2.98
+ * / Legendary 1.39 / Grail 0.33.
+ *
+ * Axie runs at 30% (9-pin set). A 9-pin set is a much steeper coupon-
+ * collector than 4, so the higher pool keeps the full-set grind in
+ * Claynoz's range (~90-100 capsules) while preserving a clean tier
+ * gradient and an identical grail rarity. Per-capsule odds within the
+ * Axie set at 30%:
+ *   Common (each of 3)     ~5.19%   (tier ~15.6%)
+ *   Rare (each of 3)       ~2.50%   (tier ~7.5%)
+ *   Legendary (each of 3)  ~2.20%   (tier ~6.6%)
+ *   Grail (chase)          ~0.33%   ← same as Claynoz; excluded from set
  */
-export const PROMO_DROP_RATE = 0.20;
+export const PROMO_DROP_RATE = 0.30;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
