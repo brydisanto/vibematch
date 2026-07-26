@@ -354,6 +354,77 @@ export const PROMO_BADGES: PromoBadge[] = [
         rarityLabel: "Grail",
         isChase: true,
     },
+
+    // ===================================================================
+    // AXIE INFINITY EVENT — "The Lumi Games" (working title)
+    // Aug 3 → Aug 10 2026, 12PM ET. 9 base pins across 3 rarities + 1
+    // grail. DRAFT VALUES: pin names, art paths, points, and dropWeights
+    // below are placeholders for review — swap when the Axie asset pack +
+    // final tuning land. No score cap on the points board this event.
+    // Board tiers map rarity → blue/silver/gold (grail → cosmic).
+    // ===================================================================
+    // 3× COMMON (1 pt each)
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_common_${n}`,
+        name: `Axie Common ${n}`,
+        image: `/badges/promo/set/axie/common_${n}.webp`,
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 1,
+        dropWeight: 20,
+        rarityLabel: "Common",
+    })),
+    // 3× RARE (3 pts each)
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_rare_${n}`,
+        name: `Axie Rare ${n}`,
+        image: `/badges/promo/set/axie/rare_${n}.webp`,
+        tier: "silver" as BadgeTier,
+        pointMultiplier: 1.5,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 3,
+        dropWeight: 9,
+        rarityLabel: "Rare",
+    })),
+    // 3× LEGENDARY (8 pts each)
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_legendary_${n}`,
+        name: `Axie Legendary ${n}`,
+        image: `/badges/promo/set/axie/legendary_${n}.webp`,
+        tier: "gold" as BadgeTier,
+        pointMultiplier: 2,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 8,
+        dropWeight: 3,
+        rarityLabel: "Legendary",
+    })),
+    // 1× GRAIL — ultra rare, excluded from set completion (isChase).
+    {
+        id: "axie_grail",
+        name: "Axie Grail",
+        description: "Ultra rare. The hardest pull in the event.",
+        image: "/badges/promo/set/axie/grail.webp",
+        tier: "cosmic" as BadgeTier,
+        pointMultiplier: 3,
+        isPromo: true,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 25,
+        dropWeight: 0.5,
+        rarityLabel: "Grail",
+        isChase: true,
+    },
 ];
 
 /**
@@ -465,6 +536,46 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setBonusLabel: "SET OF 4",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp",
         partnerLogo: "/assets/claynosaurz-logo.webp",
+    },
+    {
+        id: "axie_partner_event",
+        name: "Axie Infinity Event", // working title — swap when named
+        partnerName: "Axie Infinity",
+        description: "Collect the full Axie set, chase the grail, and climb the leaderboards.",
+        shortDescription: "Collect Axie pins to win prizes!",
+        eventWindow: "Axie Infinity x Pin Drop",
+        // Axie aqua-blue brand accent.
+        accentColor: "#4A9EFF",
+        // Launch: Monday Aug 3 2026, 12:00 PM Eastern (16:00 UTC).
+        // Window: 7 days, closing Monday Aug 10 12:00 PM Eastern.
+        startsAt: "2026-08-03T16:00:00Z",
+        endsAt: "2026-08-10T16:00:00Z",
+        tabLabel: "Set",
+        // Placeholder hero — swap for Axie key art.
+        heroImage: "/badges/promo/set/axie/grail.webp",
+        // NO points cap this event — points accumulate uncapped. Sets are
+        // a separate completion-time race (see the leaderboard route), so
+        // completing the set does not award bonus points on the points
+        // board.
+        setBonusPoints: 0,
+        // scoreCap intentionally omitted — no cap.
+        // Axie aqua board frame.
+        frameGradient: {
+            top:    "#B6E3FF",
+            mid:    "#4A9EFF",
+            bottom: "#123A6B",
+            shadow: "#123A6B",
+        },
+        // Axie pins are playable board tiles. NOTE: with 9 base pins the
+        // full-set-on-board promotion (Claynoz's 5-pin herd board) does
+        // not apply — 10 pins can't fill a 6-slot board. The every-board
+        // "at least one event pin" floor still holds. Board tile logic to
+        // be reviewed for a 9-pin set.
+        includeInGameTiles: true,
+        setTabLabel: "The Set",
+        setBonusLabel: "FULL SET OF 9",
+        gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
+        partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo
     },
 ];
 
