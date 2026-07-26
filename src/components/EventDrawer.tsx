@@ -578,6 +578,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.winners ?? null : null),
         [promo.eventSetId],
     );
+    // Completion-board label — "Herds" (Claynoz) or "Sets" (Axie), per
+    // the event config.
+    const setsLabel = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.setsBoardLabel : null) ?? "Herds",
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
@@ -928,7 +934,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     <div className="flex justify-center gap-1 mb-3">
                                         {([
                                             { key: "points", label: "Total Points" },
-                                            { key: "herds", label: "Herds" },
+                                            { key: "herds", label: setsLabel },
                                             { key: "grail", label: "Grail Chase" },
                                         ] as const).map(({ key, label }) => {
                                             const isActive = leaderboardMetric === key;
@@ -1085,7 +1091,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Herds</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">{setsLabel}</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
                                                         <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
@@ -1170,14 +1176,14 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                    <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>Herds</div>
+                                                    <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>{setsLabel}</div>
                                                     <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
                                                 </div>
                                                 {herdsEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
                                                         {!started
-                                                            ? "Herds will appear once the event begins."
-                                                            : "No full sets yet. Be the first to complete a herd."}
+                                                            ? `${setsLabel} will appear once the event begins.`
+                                                            : `No full sets yet. Be the first to complete a ${setsLabel.replace(/s$/, "").toLowerCase()}.`}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-1.5">

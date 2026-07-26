@@ -115,6 +115,10 @@ export interface PromoEventSet {
      *  which reads generically. Partner events with a themed name (e.g.
      *  "The Herd" for the Claynosaurz event) override here. */
     setTabLabel?: string;
+    /** Label for the completion leaderboard sub-tab + its column. Defaults
+     *  to "Herds" (Claynoz). Events whose set mechanic is a full-set
+     *  completion race use "Sets". */
+    setsBoardLabel?: string;
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -579,6 +583,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         // be reviewed for a 9-pin set.
         includeInGameTiles: true,
         setTabLabel: "The Set",
+        setsBoardLabel: "Sets",
         setBonusLabel: "FULL SET OF 9",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
         partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo
