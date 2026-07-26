@@ -10,7 +10,6 @@ import {
     eventSetPointsKey,
     eventSetHerdsKey,
     decodeHerdsScore,
-    eventSetReachedCapKey,
     findPromoEventSet,
     getEventSetPins,
 } from '@/lib/promo-badges';
@@ -97,116 +96,86 @@ export async function GET(req: Request) {
             if (currentUsername) {
                 await recoverStrandedPromoPending(currentUsername);
             }
-            const [topRaw, totalPlayersRaw, userScoreRaw, userAscRankRaw] = await Promise.all([
-                kv.zrange(key, 0, 49, { rev: true, withScores: true }) as Promise<Array<string | number>>,
+            type Row = { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string };
+            // Rank the FULL participant cohort, not the raw top-50. At the
+            // score cap almost everyone is tied on points, so fetching only
+            // the top-50 by raw zset score returns an arbitrary tied slice
+            // and the tiebreakers (grails → pins → herds) can never surface
+            // a deserving player who fell outside it, nor rank a player's
+            // own out-of-top-50 row correctly. So we pull every participant,
+            // apply the cascade globally, then slice the top 50 and locate
+            // the user from the same sorted list. (Fine at this event's
+            // scale of a few hundred; a much larger event should encode the
+            // tiebreakers into a composite zset score instead of ranking on
+            // read.)
+            const [allRaw, totalPlayersRaw] = await Promise.all([
+                kv.zrange(key, 0, -1, { rev: true, withScores: true }) as Promise<Array<string | number>>,
                 kv.zcard(key),
-                currentUsername ? kv.zscore(key, currentUsername) : Promise.resolve(null),
-                currentUsername ? kv.zrank(key, currentUsername) : Promise.resolve(null),
             ]);
-            const leaderboard: { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string }[] = [];
-            for (let i = 0; i < topRaw.length; i += 2) {
-                leaderboard.push({
-                    username: String(topRaw[i]),
-                    count: Number(topRaw[i + 1]),
-                    rank: (i / 2) + 1,
-                    pinCounts: {}, // filled in below
-                    avatarUrl: '', // filled in below
-                });
+            const all: Row[] = [];
+            for (let i = 0; i < allRaw.length; i += 2) {
+                all.push({ username: String(allRaw[i]), count: Number(allRaw[i + 1]), rank: 0, pinCounts: {}, avatarUrl: '' });
             }
-            // Batch-fetch profiles so the drawer doesn't fire N per-row
-            // fetches to /api/profiles when it opens. One mget covers
-            // every visible avatar in a single RTT.
-            if (leaderboard.length > 0) {
-                const profileKeys = leaderboard.map(e => `user:${e.username}`);
-                const profiles = await kv.mget(...profileKeys) as Array<{ avatarUrl?: string } | null>;
-                leaderboard.forEach((entry, i) => {
-                    entry.avatarUrl = profiles[i]?.avatarUrl ?? '';
-                });
-            }
-            // Enrich each leaderboard row with per-pin counts. One
-            // zscore per (pin × user) — 4 pins × 50 users = 200 reads,
-            // batched via Promise.all so it's a single RTT.
-            if (leaderboard.length > 0) {
+            // Per-pin counts for every participant — needed to compute the
+            // tiebreakers. One zscore per (pin × participant), batched.
+            if (all.length > 0) {
                 const pinPromises: Promise<number | null>[] = [];
                 const pinIndex: { entryIdx: number; pinId: string }[] = [];
-                leaderboard.forEach((entry, entryIdx) => {
+                all.forEach((entry, entryIdx) => {
                     pins.forEach(pin => {
                         pinIndex.push({ entryIdx, pinId: pin.id });
-                        pinPromises.push(
-                            kv.zscore(promoLeaderboardKey(pin.id), entry.username) as Promise<number | null>
-                        );
+                        pinPromises.push(kv.zscore(promoLeaderboardKey(pin.id), entry.username) as Promise<number | null>);
                     });
                 });
                 const allCounts = await Promise.all(pinPromises);
                 pinIndex.forEach((ref, i) => {
                     const v = allCounts[i];
-                    leaderboard[ref.entryIdx].pinCounts[ref.pinId] = typeof v === 'number' ? Number(v) : 0;
+                    all[ref.entryIdx].pinCounts[ref.pinId] = typeof v === 'number' ? Number(v) : 0;
                 });
             }
-            // Tiebreaker cascade for the points board: points →
-            // gigas (highest-points pin count) → total pins → speed
-            // to cap (earliest cappedTotal ≥ scoreCap). Reorders
-            // rows that share the same points score; ranks are
-            // reassigned after the sort so the client sees the true
-            // order.
-            if (leaderboard.length > 1) {
-                const gigaPin = [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
-                // Batch reached_cap timestamps — one mget for all rows.
-                const capKeys = leaderboard.map(e => eventSetReachedCapKey(querySetId, e.username));
-                const capTimestamps = capKeys.length > 0
-                    ? await kv.mget(...capKeys) as (number | string | null)[]
-                    : [];
-                const reachedAt = new Map<string, number>();
-                leaderboard.forEach((e, i) => {
-                    const raw = capTimestamps[i];
-                    const ts = typeof raw === 'number' ? raw : (typeof raw === 'string' ? Number(raw) : NaN);
-                    if (!isNaN(ts) && ts > 0) reachedAt.set(e.username, ts);
-                });
-                const totalPinsFor = (e: typeof leaderboard[number]) =>
-                    pins.reduce((sum, p) => sum + (e.pinCounts[p.id] ?? 0), 0);
-                leaderboard.sort((a, b) => {
-                    if (b.count !== a.count) return b.count - a.count;
-                    const aGigas = gigaPin ? (a.pinCounts[gigaPin.id] ?? 0) : 0;
-                    const bGigas = gigaPin ? (b.pinCounts[gigaPin.id] ?? 0) : 0;
-                    if (bGigas !== aGigas) return bGigas - aGigas;
-                    const aTotal = totalPinsFor(a);
-                    const bTotal = totalPinsFor(b);
-                    if (bTotal !== aTotal) return bTotal - aTotal;
-                    const aCap = reachedAt.get(a.username) ?? Infinity;
-                    const bCap = reachedAt.get(b.username) ?? Infinity;
-                    return aCap - bCap;
-                });
-                leaderboard.forEach((e, i) => { e.rank = i + 1; });
+            // Cascade: points → grails (chase-pin count) → total pins →
+            // herds (full sets, i.e. min of the base non-chase pin counts).
+            const grailPin = pins.find(p => p.isChase)
+                ?? [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+            const basePins = pins.filter(p => !p.isChase);
+            const totalPinsFor = (e: Row) => pins.reduce((sum, p) => sum + (e.pinCounts[p.id] ?? 0), 0);
+            const herdsFor = (e: Row) => basePins.length > 0 ? Math.min(...basePins.map(p => e.pinCounts[p.id] ?? 0)) : 0;
+            all.sort((a, b) => {
+                if (b.count !== a.count) return b.count - a.count;          // points
+                const aG = grailPin ? (a.pinCounts[grailPin.id] ?? 0) : 0;   // grails
+                const bG = grailPin ? (b.pinCounts[grailPin.id] ?? 0) : 0;
+                if (bG !== aG) return bG - aG;
+                const aT = totalPinsFor(a), bT = totalPinsFor(b);           // pins
+                if (bT !== aT) return bT - aT;
+                return herdsFor(b) - herdsFor(a);                           // herds
+            });
+            all.forEach((e, i) => { e.rank = i + 1; });
+
+            const leaderboard: Row[] = all.slice(0, 50);
+            // Avatars only for the rows we actually render (top 50).
+            if (leaderboard.length > 0) {
+                const profiles = await kv.mget(...leaderboard.map(e => `user:${e.username}`)) as Array<{ avatarUrl?: string } | null>;
+                leaderboard.forEach((e, i) => { e.avatarUrl = profiles[i]?.avatarUrl ?? ''; });
             }
-            const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : 0;
-            let userEntry: { username: string; count: number; rank: number; pinCounts: Record<string, number>; avatarUrl: string } | null = null;
-            // Per-pin owned counts for the signed-in user — drives the
-            // "Set" tab in the drawer.
+            const totalPlayers = typeof totalPlayersRaw === 'number' ? totalPlayersRaw : all.length;
+
+            // Signed-in user: pull their true ranked row from the sorted
+            // cohort. Drives both the pinned "You" row and the Set tab's
+            // owned counts.
             const ownedPerPin: Record<string, number> = {};
+            pins.forEach(p => { ownedPerPin[p.id] = 0; });
+            let userEntry: Row | null = null;
             if (currentUsername) {
-                const scores = await Promise.all(pins.map(p => kv.zscore(promoLeaderboardKey(p.id), currentUsername)));
-                pins.forEach((p, i) => {
-                    ownedPerPin[p.id] = typeof scores[i] === 'number' ? Number(scores[i]) : 0;
-                });
-            } else {
-                pins.forEach(p => { ownedPerPin[p.id] = 0; });
-            }
-            if (currentUsername) {
-                const inTop = leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
-                if (inTop) {
-                    userEntry = inTop;
-                } else if (userScoreRaw !== null && userScoreRaw !== undefined) {
-                    const ascRank = typeof userAscRankRaw === 'number' ? userAscRankRaw : null;
-                    const userProfile = await kv.get(`user:${currentUsername}`) as { avatarUrl?: string } | null;
-                    userEntry = {
-                        username: currentUsername,
-                        count: Number(userScoreRaw),
-                        rank: ascRank !== null ? totalPlayers - ascRank : totalPlayers,
-                        // Reuse the per-pin owned counts we already fetched
-                        // for the Set tab.
-                        pinCounts: { ...ownedPerPin },
-                        avatarUrl: userProfile?.avatarUrl ?? '',
-                    };
+                const me = all.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
+                if (me) {
+                    pins.forEach(p => { ownedPerPin[p.id] = me.pinCounts[p.id] ?? 0; });
+                    const inTop = leaderboard.find(e => e.username.toLowerCase() === currentUsername.toLowerCase());
+                    if (inTop) {
+                        userEntry = inTop;
+                    } else {
+                        const userProfile = await kv.get(`user:${currentUsername}`) as { avatarUrl?: string } | null;
+                        userEntry = { ...me, avatarUrl: userProfile?.avatarUrl ?? '' };
+                    }
                 }
             }
             // Herds leaderboard — same top-50 read, but from the herds

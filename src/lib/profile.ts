@@ -16,9 +16,9 @@ import {
  * FINAL leaderboard rank for a set event — matches the ordering the
  * EventDrawer shows, not raw zset order. Everyone with strictly more
  * points ranks above; the user's equal-points cohort is sorted by the
- * same tiebreaker cascade as /api/promo/leaderboard: gigas (highest-
- * points pin count) → total pins → speed to cap (earliest reached_cap
- * timestamp). Keep the comparator in lockstep with that route.
+ * same tiebreaker cascade as /api/promo/leaderboard: grails (chase-pin
+ * count) → total pins → herds (full sets completed). Keep the
+ * comparator in lockstep with that route.
  */
 async function eventSetFinalRank(setId: string, username: string, points: number): Promise<number> {
     const key = eventSetPointsKey(setId);
@@ -31,13 +31,14 @@ async function eventSetFinalRank(setId: string, username: string, points: number
     if (cohort.length <= 1) return higherCount + 1;
 
     const pins = getEventSetPins(setId);
-    const gigaPin = [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+    const grailPin = pins.find(p => p.isChase)
+        ?? [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+    const basePins = pins.filter(p => !p.isChase);
     const pinScores = await Promise.all(
         cohort.flatMap(member =>
             pins.map(p => kv.zscore(promoLeaderboardKey(p.id), member) as Promise<number | null>)
         ),
     );
-    const capStamps = await kv.mget(...cohort.map(m => eventSetReachedCapKey(setId, m))) as (number | string | null)[];
 
     const stats = cohort.map((member, i) => {
         const counts: Record<string, number> = {};
@@ -45,19 +46,17 @@ async function eventSetFinalRank(setId: string, username: string, points: number
             const v = pinScores[i * pins.length + j];
             counts[p.id] = typeof v === "number" ? Number(v) : 0;
         });
-        const rawTs = capStamps[i];
-        const ts = typeof rawTs === "number" ? rawTs : (typeof rawTs === "string" ? Number(rawTs) : NaN);
         return {
             member,
-            gigas: gigaPin ? (counts[gigaPin.id] ?? 0) : 0,
+            grails: grailPin ? (counts[grailPin.id] ?? 0) : 0,
             totalPins: pins.reduce((sum, p) => sum + (counts[p.id] ?? 0), 0),
-            capAt: !isNaN(ts) && ts > 0 ? ts : Infinity,
+            herds: basePins.length > 0 ? Math.min(...basePins.map(p => counts[p.id] ?? 0)) : 0,
         };
     });
     stats.sort((a, b) => {
-        if (b.gigas !== a.gigas) return b.gigas - a.gigas;
+        if (b.grails !== a.grails) return b.grails - a.grails;
         if (b.totalPins !== a.totalPins) return b.totalPins - a.totalPins;
-        return a.capAt - b.capAt;
+        return b.herds - a.herds;
     });
     const idx = stats.findIndex(s => s.member.toLowerCase() === username.toLowerCase());
     return higherCount + (idx >= 0 ? idx : cohort.length - 1) + 1;
