@@ -847,6 +847,17 @@ export function selectGameBadges(count: number = 6, seed?: number): Badge[] {
         cosmic: shuffle(pool.filter((b) => b.tier === "cosmic"), rng),
     };
 
+    // Rarity integrity: chase (Grail) pins only appear as tiles on the
+    // full-set board, where they're deliberately promoted below. On every
+    // other board, strip chase pins from the tier pools so a Grail tile
+    // stays a full-set-board exclusive and the chase keeps its rarity.
+    // No-op when no event is live (the pool has no chase pins then).
+    if (!forceSetOnBoard) {
+        (Object.keys(byTier) as BadgeTier[]).forEach(tier => {
+            byTier[tier] = byTier[tier].filter(b => !(b as { isChase?: boolean }).isChase);
+        });
+    }
+
     // When the special-board trigger fires, promote ALL of this set's
     // pins — chase included — to the front of their tier arrays so
     // selectFromTier picks them first. With the Claynoz tier stacking

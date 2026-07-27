@@ -589,11 +589,12 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
             bottom: "#123A6B",
             shadow: "#123A6B",
         },
-        // Axie pins are playable board tiles. NOTE: with 9 base pins the
-        // full-set-on-board promotion (Claynoz's 5-pin herd board) does
-        // not apply — 10 pins can't fill a 6-slot board. The every-board
-        // "at least one event pin" floor still holds. Board tile logic to
-        // be reviewed for a 9-pin set.
+        // Axie pins are playable board tiles. Every board carries at least
+        // one Axie base pin (Rare/Epic/Mystic). Roughly 1 in 5 boards fires
+        // the full-set board: all 6 tiles are Axie, composed 3 Rare / 1 Epic
+        // / 1 Mystic / 1 Grail, so the 3B/1S/1G/1C game distribution holds.
+        // The Grail only appears as a tile on that full-set board, keeping
+        // the chase rare on the board as well as in capsules.
         includeInGameTiles: true,
         setTabLabel: "The Set",
         setsBoardLabel: "Full Set Race",
