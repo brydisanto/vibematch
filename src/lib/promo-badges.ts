@@ -165,6 +165,14 @@ export interface PromoEventSet {
      *  separated by a small "×". Path under /public. When absent only
      *  the Pin Drop logo is shown. */
     partnerLogo?: string;
+    /** Optional BGM that takes over while the event is live. classicMusic
+     *  becomes the primary track on load (winning over the saved pick);
+     *  frenzyMusic owns Frenzy mode (with the usual tempo ramp). Each is a
+     *  path that must also exist in BGM_FILES (src/lib/sounds.ts) so the
+     *  track resolves + stays cyclable. When only classicMusic is set it
+     *  covers Frenzy too; when neither is set the default rotation plays. */
+    classicMusic?: string;
+    frenzyMusic?: string;
     /** Hard cap on the per-user leaderboard score. Once reached, the
      *  zset entry stops climbing — any further collects are still
      *  credited to per-pin counters but don't move the leaderboard
@@ -564,6 +572,9 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setBonusLabel: "SET OF 4",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp",
         partnerLogo: "/assets/claynosaurz-logo.webp",
+        // Single theme covered both modes; the generalized selector uses
+        // classicMusic for Frenzy too when frenzyMusic is absent.
+        classicMusic: "/music/claynoz-theme.mp3",
     },
     {
         id: "axie_partner_event",
@@ -620,6 +631,8 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
             "/backgrounds/game-bg-axie-4.webp",
         ],
         partnerLogo: "/assets/axie-logo.webp",
+        classicMusic: "/music/axie-summer.mp3",
+        frenzyMusic: "/music/axie-lunar-battle.mp3",
     },
 ];
 
