@@ -821,7 +821,18 @@ export default function AppClient() {
                   if (!isPromoActive()) return "/vibematchbg2.jpg";
                   const primary = getPrimaryActiveEvent();
                   if (primary?.kind !== "set" || !isEventSetLive(primary.set)) return "/vibematchbg2.jpg";
-                  return primary.set.gameBackground || "/vibematchbg2.jpg";
+                  const set = primary.set;
+                  // Rotation set: pick one deterministically from a hash of
+                  // this board's badge ids. Stable during a game (no flicker
+                  // on re-render), varies across games.
+                  const rotation = set.gameBackgrounds;
+                  if (rotation && rotation.length > 0) {
+                    const key = (game.state?.gameBadges ?? []).map(b => b.id).join(",");
+                    let h = 0;
+                    for (let i = 0; i < key.length; i++) h = ((h << 5) - h + key.charCodeAt(i)) | 0;
+                    return rotation[Math.abs(h) % rotation.length];
+                  }
+                  return set.gameBackground || "/vibematchbg2.jpg";
                 })()}
                 alt="Background"
                 fill

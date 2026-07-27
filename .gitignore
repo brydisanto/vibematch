@@ -49,3 +49,4 @@ DerivedData/
 # Python dev scripts
 *.py
 __pycache__/
+scripts/.axie-mock-users.json

@@ -150,8 +150,15 @@ export interface PromoEventSet {
     setBonusLabel?: string;
     /** Optional full-bleed background swapped in behind the game board
      *  while this set is active. Path under /public. When absent the
-     *  default vibematchbg2.jpg is used. */
+     *  default vibematchbg2.jpg is used. Doubles as the header-pill
+     *  thumbnail and the guaranteed-preloaded frame; when a rotation set
+     *  (gameBackgrounds) is present this should be one of its members. */
     gameBackground?: string;
+    /** Optional pool of backgrounds to rotate between per game. When set
+     *  and non-empty, the game board picks one deterministically per
+     *  board (stable during a game, varies across games). Falls back to
+     *  gameBackground when absent. */
+    gameBackgrounds?: string[];
     /** Optional partner logo shown alongside the Pin Drop logo above
      *  the game board during the event. The Pin Drop logo stays its
      *  usual size and slides left, the partner logo sits to its right
@@ -560,7 +567,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
     },
     {
         id: "axie_partner_event",
-        name: "Axie Infinity Event", // working title — swap when named
+        name: "Axie Infinity Mystic Chase",
         partnerName: "Axie Infinity",
         description: "Collect the full Axie set, chase the grail, and climb the leaderboards.",
         shortDescription: "Collect Axie pins to win prizes!",
@@ -602,7 +609,16 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         gvcBoard: true,
         gvcBoardLabel: "GVC Holders",
         setBonusLabel: "FULL SET OF 9",
-        gameBackground: "/backgrounds/game-bg-claynosaurz.webp", // placeholder — swap for Axie bg
+        // Four Axie backgrounds rotate per game (stable during a board,
+        // varies across games). gameBackground is bg-1 as the thumbnail +
+        // guaranteed-preload frame.
+        gameBackground: "/backgrounds/game-bg-axie-1.webp",
+        gameBackgrounds: [
+            "/backgrounds/game-bg-axie-1.webp",
+            "/backgrounds/game-bg-axie-2.webp",
+            "/backgrounds/game-bg-axie-3.webp",
+            "/backgrounds/game-bg-axie-4.webp",
+        ],
         partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo
     },
 ];
