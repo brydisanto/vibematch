@@ -1576,7 +1576,7 @@ function SetView({
                         <div className="flex items-center gap-2">
                             <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">{setBonusLabel}</span>
                             <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
-                                +{setBonusPoints} pts
+                                = +{setBonusPoints} bonus pts
                             </span>
                         </div>
                     )}

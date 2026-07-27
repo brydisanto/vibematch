@@ -619,7 +619,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         timedBoards: true,
         gvcBoard: true,
         gvcBoardLabel: "GVC Holders",
-        setBonusLabel: "FULL SET OF 9",
+        setBonusLabel: "EVERY FULL SET OF 9",
         // Four Axie backgrounds rotate per game (stable during a board,
         // varies across games). gameBackground is bg-1 as the thumbnail +
         // guaranteed-preload frame.
