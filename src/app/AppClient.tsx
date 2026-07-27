@@ -913,8 +913,8 @@ export default function AppClient() {
                         <Image
                           src={primary.set.partnerLogo}
                           alt={`${primary.set.name} logo`}
-                          width={1143}
-                          height={709}
+                          width={800}
+                          height={459}
                           className="w-auto h-[4.5rem] sm:h-24 lg:h-36 drop-shadow-[0_12px_45px_rgba(0,0,0,0.85)] object-contain"
                           priority
                           // Raw URL so the landing preloader's warm matches

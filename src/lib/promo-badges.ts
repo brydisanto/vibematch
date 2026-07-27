@@ -619,7 +619,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
             "/backgrounds/game-bg-axie-3.webp",
             "/backgrounds/game-bg-axie-4.webp",
         ],
-        partnerLogo: "/assets/claynosaurz-logo.webp", // placeholder — swap for Axie logo
+        partnerLogo: "/assets/axie-logo.webp",
     },
 ];
 
