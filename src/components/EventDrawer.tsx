@@ -85,9 +85,9 @@ function formatRemaining(targetMs: number): { d: number; h: number; m: number; s
 
 /** "JUL 7 · 12 PM ET" — date + time in America/New_York, capitalized
  *  to match the existing display weight. */
-// Full Set Race finish stamp — "AUG 4 · 2:47 PM ET" in two lines so it
-// fits the narrow board column. Returns a placeholder if the timestamp
-// is missing (shouldn't happen for a completed entry).
+// Full Set Race finish stamp, e.g. "AUG 4 · 2:47 PM ET". Rendered on a
+// single no-wrap line in the board column. Returns a placeholder if the
+// timestamp is missing (shouldn't happen for a completed entry).
 function formatFinishedAt(ms?: number): string {
     if (!ms || !Number.isFinite(ms)) return "—";
     try {
@@ -1138,7 +1138,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">{setsLabel}</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Sets</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
                                                         <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
@@ -1171,7 +1171,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">{setsLabel}</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Sets</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
                                                         <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
@@ -1265,7 +1265,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
                                                     {timedBoards ? (
-                                                        <div className="flex-shrink-0 w-28 text-center font-semibold" style={{ color: accent }}>Finished</div>
+                                                        <div className="flex-shrink-0 w-32 text-center font-semibold" style={{ color: accent }}>Finished</div>
                                                     ) : (
                                                         <>
                                                             <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>{setsLabel}</div>
@@ -1307,8 +1307,8 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                     </div>
                                                                     {timedBoards ? (
                                                                         <div
-                                                                            className="flex-shrink-0 w-28 text-center font-display font-semibold tabular-nums leading-tight"
-                                                                            style={{ fontSize: "12px", color: accent, textShadow: `0 0 10px ${accent}66` }}
+                                                                            className="flex-shrink-0 w-32 text-center font-display font-semibold tabular-nums whitespace-nowrap"
+                                                                            style={{ fontSize: "11px", color: accent, textShadow: `0 0 10px ${accent}66` }}
                                                                         >
                                                                             {formatFinishedAt(entry.completedAt)}
                                                                         </div>
