@@ -750,17 +750,23 @@ export function getPrimaryActiveEvent(): PrimaryEvent | null {
     // Any standalone droppable promo next.
     const standaloneDroppable = droppable.find(p => !p.eventSetId);
     if (standaloneDroppable) return { kind: "standalone", promo: standaloneDroppable };
-    // Fall back to any active set, including ended (archive view).
-    const anySetId = active.find(p => p.eventSetId)?.eventSetId;
-    if (anySetId) {
-        const set = findPromoEventSet(anySetId);
-        if (set) {
-            const pins = getEventSetPins(anySetId);
-            return { kind: "set", set, pins };
-        }
+    // Fall back to the MOST RECENT set, including ended (archive view).
+    // Ordering by startsAt (not array position) matters once more than one
+    // event has ended: the banner + drawer should surface the event that
+    // just finished, not whichever set happens to be defined first in
+    // PROMO_BADGES. Without this, the day Claynoz ended the header reverted
+    // to Craig (defined earlier) instead of showing Claynoz's final state.
+    const endedSets = [...new Set(active.filter(p => p.eventSetId).map(p => p.eventSetId as string))]
+        .map(id => findPromoEventSet(id))
+        .filter((s): s is PromoEventSet => !!s)
+        .sort((a, b) => (b.startsAt ? new Date(b.startsAt).getTime() : 0) - (a.startsAt ? new Date(a.startsAt).getTime() : 0));
+    if (endedSets.length > 0) {
+        const set = endedSets[0];
+        return { kind: "set", set, pins: getEventSetPins(set.id) };
     }
-    // Fall back to any active standalone (including ended).
-    const standalone = active.find(p => !p.eventSetId);
+    // Fall back to the most recent standalone (including ended), by endsAt.
+    const standalone = [...active.filter(p => !p.eventSetId)]
+        .sort((a, b) => (b.endsAt ? new Date(b.endsAt).getTime() : 0) - (a.endsAt ? new Date(a.endsAt).getTime() : 0))[0];
     if (standalone) return { kind: "standalone", promo: standalone };
     return null;
 }
