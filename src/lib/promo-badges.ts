@@ -381,50 +381,50 @@ export const PROMO_BADGES: PromoBadge[] = [
     // final tuning land. No score cap on the points board this event.
     // Board tiers map rarity → blue/silver/gold (grail → cosmic).
     // ===================================================================
-    // 3× COMMON (1 pt each)
+    // 3× RARE (2 pts each) — entry tier for the Axie special pins.
     ...([1, 2, 3] as const).map((n) => ({
-        id: `axie_common_${n}`,
-        name: `Axie Common ${n}`,
-        image: `/badges/promo/set/axie/common_${n}.webp`,
+        id: `axie_rare_${n}`,
+        name: `Axie Rare ${n}`,
+        image: `/badges/promo/set/axie/rare_${n}.webp`,
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
         isPromo: true as const,
         partnerName: "Axie Infinity",
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
-        points: 1,
+        points: 2,
         dropWeight: 52,
-        rarityLabel: "Common",
+        rarityLabel: "Rare",
     })),
-    // 3× RARE (3 pts each)
+    // 3× EPIC (4 pts each)
     ...([1, 2, 3] as const).map((n) => ({
-        id: `axie_rare_${n}`,
-        name: `Axie Rare ${n}`,
-        image: `/badges/promo/set/axie/rare_${n}.webp`,
+        id: `axie_epic_${n}`,
+        name: `Axie Epic ${n}`,
+        image: `/badges/promo/set/axie/epic_${n}.webp`,
         tier: "silver" as BadgeTier,
         pointMultiplier: 1.5,
         isPromo: true as const,
         partnerName: "Axie Infinity",
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
-        points: 3,
+        points: 4,
         dropWeight: 25,
-        rarityLabel: "Rare",
+        rarityLabel: "Epic",
     })),
-    // 3× LEGENDARY (8 pts each)
+    // 3× MYSTIC (10 pts each) — rarest base tier, gates full-set completion.
     ...([1, 2, 3] as const).map((n) => ({
-        id: `axie_legendary_${n}`,
-        name: `Axie Legendary ${n}`,
-        image: `/badges/promo/set/axie/legendary_${n}.webp`,
+        id: `axie_mystic_${n}`,
+        name: `Axie Mystic ${n}`,
+        image: `/badges/promo/set/axie/mystic_${n}.webp`,
         tier: "gold" as BadgeTier,
         pointMultiplier: 2,
         isPromo: true as const,
         partnerName: "Axie Infinity",
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
-        points: 8,
+        points: 10,
         dropWeight: 22,
-        rarityLabel: "Legendary",
+        rarityLabel: "Mystic",
     })),
     // 1× GRAIL — ultra rare, excluded from set completion (isChase).
     {
@@ -614,15 +614,16 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
  * Claynosaurz ran at 20% (4-pin set): Common 9.93 / Rare 5.36 / Epic 2.98
  * / Legendary 1.39 / Grail 0.33.
  *
- * Axie runs at 30% (9-pin set). A 9-pin set is a much steeper coupon-
- * collector than 4, so the higher pool keeps the full-set grind in
- * Claynoz's range (~90-100 capsules) while preserving a clean tier
- * gradient and an identical grail rarity. Per-capsule odds within the
- * Axie set at 30%:
- *   Common (each of 3)     ~5.19%   (tier ~15.6%)
- *   Rare (each of 3)       ~2.50%   (tier ~7.5%)
- *   Legendary (each of 3)  ~2.20%   (tier ~6.6%)
- *   Grail (chase)          ~0.33%   ← same as Claynoz; excluded from set
+ * Axie runs at 30% (9-pin set, tiers Rare/Epic/Mystic + Grail). A 9-pin
+ * set is a much steeper coupon-collector than 4, so the higher pool keeps
+ * the full-set grind in Claynoz's range (~90-100 capsules) while preserving
+ * a clean tier gradient and an identical grail rarity. Drop weights are
+ * unchanged from the earlier tuning; only the tier labels + point values
+ * (Rare 2 / Epic 4 / Mystic 10 / Grail 25) differ. Per-capsule odds at 30%:
+ *   Rare (each of 3)     ~5.19%   (tier ~15.6%)
+ *   Epic (each of 3)     ~2.50%   (tier ~7.5%)
+ *   Mystic (each of 3)   ~2.20%   (tier ~6.6%)
+ *   Grail (chase)        ~0.33%   ← same as Claynoz; excluded from set
  */
 export const PROMO_DROP_RATE = 0.30;
 
