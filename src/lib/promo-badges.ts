@@ -133,6 +133,13 @@ export interface PromoEventSet {
     /** Sub-tab / column label for the GVC-only board. Defaults to
      *  "GVC Holders". */
     gvcBoardLabel?: string;
+    /** When set, the leaderboard's top spotlight card (the "Most Grails"
+     *  giga callout) is replaced by an at-a-glance guide box listing each
+     *  board and the prize lines. Shown above every board's list. */
+    leaderboardGuide?: {
+        boards: { name: string; detail: string }[];
+        prizes: string[];
+    };
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -578,7 +585,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         id: "axie_partner_event",
         name: "Axie Pin Drop",
         partnerName: "Axie Infinity",
-        description: "Collect the full Axie set, chase the ultra rare grail, and climb all 4 leaderboards to win fun prizes. This is a speed event. The Full Set leaderboard is determined by time to completion. Speed is used as the first tiebreaker otherwise.",
+        description: "Collect the full Axie set, chase the ultra rare grail, and climb all 4 leaderboards to win fun prizes. The Full Set leaderboard is a race and winners are determined by time to completion. Speed is otherwise used as the first tiebreaker.",
         shortDescription: "Collect Axie pins to win prizes!",
         eventWindow: "Axie Infinity x Pin Drop",
         // Axie aqua-blue brand accent.
@@ -617,6 +624,20 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         timedBoards: true,
         gvcBoard: true,
         gvcBoardLabel: "GVC Holders",
+        leaderboardGuide: {
+            boards: [
+                { name: "Total Points", detail: "Every pin scores by rarity. Highest total wins." },
+                { name: "Full Set", detail: "A race. Complete all 9, ranked by time to finish." },
+                { name: "Grail Chase", detail: "Ranked by number of grails found." },
+                { name: "GVC Holders", detail: "Points ranking for verified GVC holders." },
+            ],
+            prizes: [
+                "1 NFT grand prize (Total Points #1)",
+                "2,500 $VIBESTR (top 100 Total Points)",
+                "100 collectible Axies (top 100 GVC Holders)",
+                "5,000+ limited-edition Axie accessories across the boards",
+            ],
+        },
         setBonusLabel: "EVERY FULL SET OF 9",
         // Four Axie backgrounds rotate per game (stable during a board,
         // varies across games). gameBackground is bg-1 as the thumbnail +

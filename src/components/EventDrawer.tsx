@@ -625,6 +625,12 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.gvcBoardLabel : null) ?? "GVC Holders",
         [promo.eventSetId],
     );
+    // When set, replaces the "Most Grails" spotlight with an at-a-glance
+    // board + prize guide for this event.
+    const leaderboardGuide = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.leaderboardGuide ?? null : null),
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
@@ -1027,15 +1033,48 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Event guide box — replaces the Most Grails
+                                            spotlight with an at-a-glance list of the
+                                            boards + prizes when the event supplies one. */}
+                                        {leaderboardGuide && (
+                                            <div
+                                                className="mb-4 rounded-xl p-4"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${accent}1c, ${accent}06)`,
+                                                    border: `1px solid ${accent}44`,
+                                                }}
+                                            >
+                                                <div className="font-display text-[10px] tracking-[0.28em] uppercase mb-2.5" style={{ color: accent, fontWeight: 600 }}>
+                                                    How to win
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {leaderboardGuide.boards.map(b => (
+                                                        <div key={b.name} className="leading-snug">
+                                                            <span className="font-display font-semibold text-[12px]" style={{ color: accent }}>{b.name}</span>
+                                                            <span className="font-mundial text-white/60 text-[11.5px]">{"  "}{b.detail}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-white/10">
+                                                    <div className="font-display text-[9px] tracking-[0.28em] uppercase mb-1.5 text-white/40">Prizes</div>
+                                                    <div className="flex flex-col gap-1">
+                                                        {leaderboardGuide.prizes.map(p => (
+                                                            <div key={p} className="flex gap-2 items-baseline font-mundial text-[11.5px] text-white/75">
+                                                                <span className="shrink-0" style={{ color: accent }}>◆</span>
+                                                                <span>{p}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         {/* GIGA CHAD callout — celebrates the player
                                             with the most pulls of the highest-points
-                                            pin in the set. Distinct prize lane from
-                                            the score-cap raffle, so leaders here can
-                                            differ from the top of the points board.
-                                            Derived from the visible top-50 rows;
-                                            adequate for events that fit in that
-                                            window. */}
+                                            pin in the set. Hidden when a leaderboardGuide
+                                            replaces it. Derived from the visible top-50
+                                            rows; adequate for events that fit that window. */}
                                         {(() => {
+                                            if (leaderboardGuide) return null;
                                             if (!promo.eventSetId || setPins.length === 0) return null;
                                             const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
                                             if (!gigaPin) return null;
