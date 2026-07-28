@@ -487,7 +487,7 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * board after the cascade settles. Now they get a beat to register
  * "I just made this."
  */
-function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
+function PowerTileCreationMoment({ effect, cellSize, gridOffset, board }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number }; board: Cell[][] }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     const created = effect.specialTilesCreated;
@@ -518,11 +518,13 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
     return (
         <>
             {/* Per-spawn rings — color-coded to the special being made.
-                Only specials that survived to the final board get a ring;
-                a special created and consumed in the same turn's cascade
-                never becomes a visible tile, so its ring would land on an
-                unrelated cell (the errant "random circle" bug). */}
-            {created.filter(c => c.survived).map((c, i) => {
+                Draw a ring ONLY where the CURRENT board actually holds a
+                matching special tile. This is authoritative: it skips
+                specials created and consumed in the same cascade (phantoms),
+                stale positions from a lingering prior-turn effect, and any
+                reconciliation mismatch — all of which produced the errant
+                "random circle" landing on an unrelated cell. */}
+            {created.filter(c => board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type).map((c, i) => {
                 const style = STYLES[c.type];
                 return (
                     <div
@@ -1278,7 +1280,7 @@ function GameBoardImpl({
 
                     {/* Power tile creation moment — slammed-in label +
                         tier ring at each spawn. */}
-                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} gridOffset={gridOffset} />
+                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} gridOffset={gridOffset} board={board} />
 
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}
