@@ -966,7 +966,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             fontWeight: 600,
                                         }}
                                     >
-                                        Prizes
+                                        How to win
                                     </button>
                                 )}
                                 {eventWinners && (
@@ -1435,11 +1435,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         ) : view === "prizes" && leaderboardGuide ? (
                             <div className="px-5 pb-4 pt-4">
                                 {/* Full how-to-win rundown: every board + the prize
-                                    lines. Per-board one-liners live on each
-                                    leaderboard sub-tab. */}
-                                <div className="font-display text-[11px] tracking-[0.28em] uppercase mb-3" style={{ color: accent, fontWeight: 600 }}>
-                                    How to win
-                                </div>
+                                    lines. The tab itself is titled "How to win". */}
                                 <div className="space-y-2.5 mb-5">
                                     {leaderboardGuide.boards.map((b, i) => (
                                         <div key={b.name} className="flex items-start gap-3">
