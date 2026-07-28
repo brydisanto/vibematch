@@ -953,7 +953,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         fontWeight: 600,
                                     }}
                                 >
-                                    Leaderboard
+                                    Leaderboards
                                 </button>
                                 {leaderboardGuide && (
                                     <button
@@ -1055,7 +1055,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             if (!board) return null;
                                             return (
                                                 <div
-                                                    className="mb-3 rounded-lg px-3 py-2 font-mundial text-[12px] text-white/70 leading-snug"
+                                                    className="mb-3 rounded-lg px-3 py-2 font-mundial text-[12px] text-white/70 leading-snug text-center"
                                                     style={{ background: `${accent}12`, border: `1px solid ${accent}30` }}
                                                 >
                                                     <span className="font-display font-semibold" style={{ color: accent }}>{board.name}.</span>{" "}
@@ -1197,9 +1197,6 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                             verified GVC holders. */}
                                         {leaderboardMetric === "gvc" && (
                                             <>
-                                                <div className="mb-2 px-2 py-2 rounded-lg text-[10px] leading-snug font-mundial text-white/55" style={{ background: `${accent}0f`, border: `1px solid ${accent}22` }}>
-                                                    Ranks GVC NFT holders only. Connect the wallet holding your GVC (or a delegate.xyz wallet) to appear here.
-                                                </div>
                                                 {promo.eventSetId && setPins.length > 0 && gvcEntries.length > 0 && (
                                                     <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
