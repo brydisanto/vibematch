@@ -592,13 +592,13 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         eventWindow: "Axie Infinity x Pin Drop",
         // Axie aqua-blue brand accent.
         accentColor: "#4A9EFF",
-        // Launch: Monday Aug 3 2026, 12:00 PM Eastern (16:00 UTC).
-        // Window: 7 days, closing Monday Aug 10 12:00 PM Eastern.
+        // Launch: Monday Aug 3 2026, 9:00 AM Eastern (EDT = UTC-4, 13:00 UTC).
+        // Window: 7 days, closing Monday Aug 10 9:00 AM Eastern (13:00 UTC).
         // PREVIEW SHIM (feat/event-axie only, never merge): pulled
         // forward so the Axie event is live on the preview. Real value:
-        // "2026-08-03T16:00:00Z".
+        // "2026-08-03T13:00:00Z".
         startsAt: "2026-07-24T00:00:00Z",
-        endsAt: "2026-08-10T16:00:00Z",
+        endsAt: "2026-08-10T13:00:00Z",
         tabLabel: "Set",
         // Placeholder hero — swap for Axie key art.
         heroImage: "/badges/promo/set/axie/grail.webp",
