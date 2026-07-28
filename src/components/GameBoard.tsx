@@ -536,7 +536,10 @@ function PowerTileCreationMoment({ effect }: { effect: MatchEffect }) {
                             color: "#FFFFFF",
                             WebkitTextStroke: `5px ${headline.color}`,
                             paintOrder: "stroke fill",
-                            textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
+                            // Tight glow only. The former 35px + 70px blurs formed
+                            // a large soft colored halo that read as an errant
+                            // "circle" floating over the board behind the word.
+                            textShadow: `0 0 10px ${headline.glow}, 0 5px 0 ${headline.color}, 0 7px 14px rgba(0,0,0,0.85)`,
                             letterSpacing: "-0.01em",
                         }}
                     >
