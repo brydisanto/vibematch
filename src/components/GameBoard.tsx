@@ -517,8 +517,12 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
 
     return (
         <>
-            {/* Per-spawn rings — color-coded to the special being made. */}
-            {created.map((c, i) => {
+            {/* Per-spawn rings — color-coded to the special being made.
+                Only specials that survived to the final board get a ring;
+                a special created and consumed in the same turn's cascade
+                never becomes a visible tile, so its ring would land on an
+                unrelated cell (the errant "random circle" bug). */}
+            {created.filter(c => c.survived).map((c, i) => {
                 const style = STYLES[c.type];
                 return (
                     <div

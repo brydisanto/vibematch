@@ -822,7 +822,7 @@ export interface TurnResult {
     // specials — e.g. a 6-in-a-row that randomly forms when bomb-cleared
     // cells get filled with fresh tiles — get `isInitial: false` so FTUE
     // hints don't fire for moves the player didn't actually make.
-    specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean }[];
+    specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean; survived: boolean }[];
     specialTilesTriggered: { pos: Position; type: SpecialTileType }[];
     cascadeCount: number;
     shapeBonus: ShapeBonus;
@@ -865,7 +865,7 @@ export function processTurn(
     // Start combo from carried-over value (cross-turn momentum)
     let combo = comboCarryIn;
     let totalMatches: Match[] = [];
-    const specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean }[] = [];
+    const specialTilesCreated: { pos: Position; type: SpecialTileType; isInitial: boolean; survived: boolean }[] = [];
     const specialTilesTriggered: { pos: Position; type: SpecialTileType }[] = [];
     let cascadeCount = 0;
 
@@ -925,7 +925,12 @@ export function processTurn(
                     // cascadeCount === 0 → this iteration is processing the
                     // player's initial swap match; anything later is a
                     // cascade side-effect.
-                    specialTilesCreated.push({ pos: midPos, type: specialType, isInitial: cascadeCount === 0 });
+                    // survived defaults false; the post-loop reconciliation
+                    // sets it true only when the special is still on the final
+                    // board. Specials created and consumed in the same turn's
+                    // cascade never become a visible tile, so their spawn ring
+                    // must not draw (it would land on an unrelated cell).
+                    specialTilesCreated.push({ pos: midPos, type: specialType, isInitial: cascadeCount === 0, survived: false });
                 }
             }
         }
@@ -1065,6 +1070,7 @@ export function processTurn(
             for (let c = 0; c < BOARD_SIZE; c++) {
                 if (currentBoard[r][c].id === placedId && currentBoard[r][c].isSpecial) {
                     specialTilesCreated[i].pos = { row: r, col: c };
+                    specialTilesCreated[i].survived = true;
                     break outer;
                 }
             }
