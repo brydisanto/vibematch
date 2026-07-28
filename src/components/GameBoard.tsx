@@ -487,11 +487,11 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * board after the cascade settles. Now they get a beat to register
  * "I just made this."
  */
-function PowerTileCreationMoment({ effect, cellSize, gridOffset, board }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number }; board: Cell[][] }) {
+function PowerTileCreationMoment({ effect }: { effect: MatchEffect }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     const created = effect.specialTilesCreated;
-    if (!created || created.length === 0 || cellSize === 0) return null;
+    if (!created || created.length === 0) return null;
 
     // Hold the creation moment until the board settles AND the combo
     // banner (fires at t=0, top: 14vh) has had its punch: the match-clear
@@ -517,36 +517,9 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset, board }: { effe
 
     return (
         <>
-            {/* Per-spawn rings — color-coded to the special being made.
-                Draw a ring ONLY where the CURRENT board actually holds a
-                matching special tile. This is authoritative: it skips
-                specials created and consumed in the same cascade (phantoms),
-                stale positions from a lingering prior-turn effect, and any
-                reconciliation mismatch — all of which produced the errant
-                "random circle" landing on an unrelated cell. */}
-            {created.filter(c => board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type).map((c, i) => {
-                const style = STYLES[c.type];
-                return (
-                    <div
-                        key={i}
-                        className="absolute pointer-events-none power-tile-create-ring"
-                        style={{
-                            left: gridOffset.x + cellSize * c.pos.col + cellSize / 2,
-                            top: gridOffset.y + cellSize * c.pos.row + cellSize / 2,
-                            zIndex: 38,
-                            width: cellSize * 1.4,
-                            height: cellSize * 1.4,
-                            marginLeft: -(cellSize * 1.4) / 2,
-                            marginTop: -(cellSize * 1.4) / 2,
-                            border: `4px solid ${style.color}`,
-                            borderRadius: "50%",
-                            boxShadow: `0 0 30px ${style.glow}, inset 0 0 20px ${style.glow}`,
-                            animationDelay: `${SETTLE_DELAY_S + i * 0.08}s`,
-                        }}
-                    />
-                );
-            })}
-
+            {/* The per-spawn ring is rendered inside the grid (see GameBoard's
+                tile layer) so it aligns to the tile; this component now only
+                owns the slammed-in headline label. */}
             {/* Slammed-in headline label, portal'd to the viewport-top
                 stack so it doesn't overlay the playing field. Stacks
                 below shape (10vh) and combo (16vh), out of the
@@ -1124,7 +1097,7 @@ function GameBoardImpl({
                 <div className="rounded-[13px] bg-[#111]/95 p-1 sm:p-2 h-full" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
                     <div
                         ref={gridRef}
-                        className="grid gap-[2px] sm:gap-1 h-full"
+                        className="grid gap-[2px] sm:gap-1 h-full relative"
                         style={{
                             gridTemplateColumns: `repeat(8, 1fr)`,
                             gridTemplateRows: `repeat(8, 1fr)`,
@@ -1239,6 +1212,41 @@ function GameBoardImpl({
                                 );
                             })
                         )}
+                        {/* Power-tile spawn rings — rendered INSIDE the grid, its
+                            own positioning context, so they align to the tile with
+                            no cross-container coordinate mapping. The effect-layer
+                            version mislanded because gridOffset (offsetParent-based)
+                            and the effect layer's absolute origin (containing-block
+                            based) diverge under the board's glow/shake transforms.
+                            One ring per freshly created special that is actually on
+                            the board right now (skips phantoms + stale positions). */}
+                        {cellSize > 0 && effectsQueue.flatMap(eff =>
+                            (eff.specialTilesCreated ?? [])
+                                .filter(c => board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type)
+                                .map((c, i) => {
+                                    const color = c.type === "bomb" ? "#FF3333" : c.type === "vibestreak" ? "#4AE0FF" : "#B366FF";
+                                    const glow = c.type === "bomb" ? "rgba(255,51,51,0.85)" : c.type === "vibestreak" ? "rgba(74,224,255,0.85)" : "rgba(179,102,255,0.95)";
+                                    return (
+                                        <div
+                                            key={`${eff.timestamp}-${c.pos.row}-${c.pos.col}`}
+                                            className="absolute pointer-events-none power-tile-create-ring"
+                                            style={{
+                                                left: cellSize * c.pos.col + cellSize / 2,
+                                                top: cellSize * c.pos.row + cellSize / 2,
+                                                width: cellSize * 1.4,
+                                                height: cellSize * 1.4,
+                                                marginLeft: -(cellSize * 1.4) / 2,
+                                                marginTop: -(cellSize * 1.4) / 2,
+                                                border: `4px solid ${color}`,
+                                                borderRadius: "50%",
+                                                boxShadow: `0 0 30px ${glow}, inset 0 0 20px ${glow}`,
+                                                zIndex: 30,
+                                                animationDelay: `${0.6 + i * 0.08}s`,
+                                            }}
+                                        />
+                                    );
+                                })
+                        )}
                     </div>
                 </div>
             </div>
@@ -1280,7 +1288,7 @@ function GameBoardImpl({
 
                     {/* Power tile creation moment — slammed-in label +
                         tier ring at each spawn. */}
-                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} gridOffset={gridOffset} board={board} />
+                    <PowerTileCreationMoment effect={effect} />
 
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}
