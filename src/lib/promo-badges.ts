@@ -389,17 +389,15 @@ export const PROMO_BADGES: PromoBadge[] = [
     },
 
     // ===================================================================
-    // AXIE INFINITY EVENT — "The Lumi Games" (working title)
-    // Aug 3 → Aug 10 2026, 12PM ET. 9 base pins across 3 rarities + 1
-    // grail. DRAFT VALUES: pin names, art paths, points, and dropWeights
-    // below are placeholders for review — swap when the Axie asset pack +
-    // final tuning land. No score cap on the points board this event.
+    // AXIE PIN DROP  (Aug 3 → Aug 10 2026, 12PM ET)
+    // 9 base pins across 3 rarities (Rare/Epic/Mystic) + 1 grail. Final
+    // art + named pins. No score cap on the points board this event.
     // Board tiers map rarity → blue/silver/gold (grail → cosmic).
     // ===================================================================
     // 3× RARE (2 pts each) — entry tier for the Axie special pins.
     ...([1, 2, 3] as const).map((n) => ({
         id: `axie_rare_${n}`,
-        name: `Axie Rare ${n}`,
+        name: ({ 1: "Ena", 2: "Tripp", 3: "Pomodoro" } as const)[n],
         image: `/badges/promo/set/axie/rare_${n}.webp`,
         tier: "blue" as BadgeTier,
         pointMultiplier: 1,
@@ -414,7 +412,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     // 3× EPIC (4 pts each)
     ...([1, 2, 3] as const).map((n) => ({
         id: `axie_epic_${n}`,
-        name: `Axie Epic ${n}`,
+        name: ({ 1: "Momo", 2: "Mit", 3: "Venoki" } as const)[n],
         image: `/badges/promo/set/axie/epic_${n}.webp`,
         tier: "silver" as BadgeTier,
         pointMultiplier: 1.5,
@@ -429,7 +427,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     // 3× MYSTIC (10 pts each) — rarest base tier, gates full-set completion.
     ...([1, 2, 3] as const).map((n) => ({
         id: `axie_mystic_${n}`,
-        name: `Axie Mystic ${n}`,
+        name: ({ 1: "Bubba", 2: "Olek", 3: "Puffy" } as const)[n],
         image: `/badges/promo/set/axie/mystic_${n}.webp`,
         tier: "gold" as BadgeTier,
         pointMultiplier: 2,
@@ -444,7 +442,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     // 1× GRAIL — ultra rare, excluded from set completion (isChase).
     {
         id: "axie_grail",
-        name: "Axie Grail",
+        name: "Axie Infinity",
         description: "Ultra rare. The hardest pull in the event.",
         image: "/badges/promo/set/axie/grail.webp",
         tier: "cosmic" as BadgeTier,
@@ -578,9 +576,9 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
     },
     {
         id: "axie_partner_event",
-        name: "Axie Infinity Mystic Chase",
+        name: "Axie Pin Drop",
         partnerName: "Axie Infinity",
-        description: "Collect the full Axie set, chase the grail, and climb the leaderboards.",
+        description: "Collect the full Axie set, chase the ultra rare grail, and climb all 4 leaderboards to win fun prizes. This is a speed event. The Full Set leaderboard is determined by time to completion. Speed is used as the first tiebreaker otherwise.",
         shortDescription: "Collect Axie pins to win prizes!",
         eventWindow: "Axie Infinity x Pin Drop",
         // Axie aqua-blue brand accent.
