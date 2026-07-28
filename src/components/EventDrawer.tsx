@@ -1047,22 +1047,6 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Per-board guide line — a single relevant
-                                            line for the active sub-tab. The full boards
-                                            + prizes rundown lives on the Prizes tab. */}
-                                        {leaderboardGuide && (() => {
-                                            const board = leaderboardGuide.boards.find(b => b.metric === leaderboardMetric);
-                                            if (!board) return null;
-                                            return (
-                                                <div
-                                                    className="mb-3 rounded-lg px-3 py-2 font-mundial text-[12px] text-white/70 leading-snug text-center"
-                                                    style={{ background: `${accent}12`, border: `1px solid ${accent}30` }}
-                                                >
-                                                    <span className="font-display font-semibold" style={{ color: accent }}>{board.name}.</span>{" "}
-                                                    {board.detail}
-                                                </div>
-                                            );
-                                        })()}
                                         {/* GIGA CHAD callout — celebrates the player
                                             with the most pulls of the highest-points
                                             pin in the set. Hidden when a leaderboardGuide
