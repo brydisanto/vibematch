@@ -635,7 +635,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
     // ranking second. Once winners are published, open there instead.
-    const [view, setView] = useState<"leaderboard" | "set" | "winners">(eventWinners ? "winners" : "set");
+    const [view, setView] = useState<"leaderboard" | "set" | "winners" | "prizes">(eventWinners ? "winners" : "set");
     // Sub-view inside the Leaderboard tab for set events. Three tabs:
     //   points  — score-based ranking (default)
     //   herds   — ranks by full sets completed, tie-broken by points
@@ -955,6 +955,20 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 >
                                     Leaderboard
                                 </button>
+                                {leaderboardGuide && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setView("prizes")}
+                                        className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                        style={{
+                                            color: view === "prizes" ? accent : "rgba(255,255,255,0.5)",
+                                            borderBottom: view === "prizes" ? `2px solid ${accent}` : "2px solid transparent",
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        Prizes
+                                    </button>
+                                )}
                                 {eventWinners && (
                                     <button
                                         type="button"
@@ -1033,41 +1047,22 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Event guide box — replaces the Most Grails
-                                            spotlight with an at-a-glance list of the
-                                            boards + prizes when the event supplies one. */}
-                                        {leaderboardGuide && (
-                                            <div
-                                                className="mb-4 rounded-xl p-4"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${accent}1c, ${accent}06)`,
-                                                    border: `1px solid ${accent}44`,
-                                                }}
-                                            >
-                                                <div className="font-display text-[10px] tracking-[0.28em] uppercase mb-2.5" style={{ color: accent, fontWeight: 600 }}>
-                                                    How to win
+                                        {/* Per-board guide line — a single relevant
+                                            line for the active sub-tab. The full boards
+                                            + prizes rundown lives on the Prizes tab. */}
+                                        {leaderboardGuide && (() => {
+                                            const board = leaderboardGuide.boards.find(b => b.metric === leaderboardMetric);
+                                            if (!board) return null;
+                                            return (
+                                                <div
+                                                    className="mb-3 rounded-lg px-3 py-2 font-mundial text-[12px] text-white/70 leading-snug"
+                                                    style={{ background: `${accent}12`, border: `1px solid ${accent}30` }}
+                                                >
+                                                    <span className="font-display font-semibold" style={{ color: accent }}>{board.name}.</span>{" "}
+                                                    {board.detail}
                                                 </div>
-                                                <div className="space-y-1.5">
-                                                    {leaderboardGuide.boards.map(b => (
-                                                        <div key={b.name} className="leading-snug">
-                                                            <span className="font-display font-semibold text-[12px]" style={{ color: accent }}>{b.name}</span>
-                                                            <span className="font-mundial text-white/60 text-[11.5px]">{"  "}{b.detail}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-3 pt-3 border-t border-white/10">
-                                                    <div className="font-display text-[9px] tracking-[0.28em] uppercase mb-1.5 text-white/40">Prizes</div>
-                                                    <div className="flex flex-col gap-1">
-                                                        {leaderboardGuide.prizes.map(p => (
-                                                            <div key={p} className="flex gap-2 items-baseline font-mundial text-[11.5px] text-white/75">
-                                                                <span className="shrink-0" style={{ color: accent }}>◆</span>
-                                                                <span>{p}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                            );
+                                        })()}
                                         {/* GIGA CHAD callout — celebrates the player
                                             with the most pulls of the highest-points
                                             pin in the set. Hidden when a leaderboardGuide
@@ -1455,6 +1450,47 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         </Link>
                                     </div>
                                 )}
+                            </div>
+                        ) : view === "prizes" && leaderboardGuide ? (
+                            <div className="px-5 pb-4 pt-4">
+                                {/* Full how-to-win rundown: every board + the prize
+                                    lines. Per-board one-liners live on each
+                                    leaderboard sub-tab. */}
+                                <div className="font-display text-[11px] tracking-[0.28em] uppercase mb-3" style={{ color: accent, fontWeight: 600 }}>
+                                    How to win
+                                </div>
+                                <div className="space-y-2.5 mb-5">
+                                    {leaderboardGuide.boards.map((b, i) => (
+                                        <div key={b.name} className="flex items-start gap-3">
+                                            <div
+                                                className="font-display font-black text-[11px] shrink-0 grid place-items-center rounded-md mt-0.5"
+                                                style={{ width: 22, height: 22, background: `${accent}22`, color: accent }}
+                                            >
+                                                {i + 1}
+                                            </div>
+                                            <div className="leading-snug">
+                                                <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>{b.name}</span>
+                                                <div className="font-mundial text-white/65 text-[13px] mt-0.5">{b.detail}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div
+                                    className="rounded-xl p-4"
+                                    style={{ background: `linear-gradient(135deg, ${accent}18, ${accent}06)`, border: `1px solid ${accent}44` }}
+                                >
+                                    <div className="font-display text-[10px] tracking-[0.28em] uppercase mb-2.5" style={{ color: accent, fontWeight: 600 }}>
+                                        Prize pool
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {leaderboardGuide.prizes.map(p => (
+                                            <div key={p} className="flex gap-2.5 items-baseline font-mundial text-[13px] text-white/80">
+                                                <span className="shrink-0" style={{ color: accent }}>◆</span>
+                                                <span>{p}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ) : view === "winners" && eventWinners ? (
                             <div className="px-5 pb-3 pt-3">

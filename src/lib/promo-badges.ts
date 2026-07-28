@@ -133,11 +133,13 @@ export interface PromoEventSet {
     /** Sub-tab / column label for the GVC-only board. Defaults to
      *  "GVC Holders". */
     gvcBoardLabel?: string;
-    /** When set, the leaderboard's top spotlight card (the "Most Grails"
-     *  giga callout) is replaced by an at-a-glance guide box listing each
-     *  board and the prize lines. Shown above every board's list. */
+    /** When set, adds a "Prizes" tab with the full how-to-win rundown
+     *  (every board + the prize lines), and replaces the leaderboard's
+     *  "Most Grails" spotlight with a single board-specific line on each
+     *  sub-tab. `metric` ties a board entry to its leaderboard sub-tab
+     *  (points | herds | grail | gvc). */
     leaderboardGuide?: {
-        boards: { name: string; detail: string }[];
+        boards: { metric: "points" | "herds" | "grail" | "gvc"; name: string; detail: string }[];
         prizes: string[];
     };
     /** Optional hero image for the drawer + header pill (large square or
@@ -626,10 +628,10 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         gvcBoardLabel: "GVC Holders",
         leaderboardGuide: {
             boards: [
-                { name: "Total Points", detail: "Every pin scores by rarity. Highest total wins." },
-                { name: "Full Set", detail: "A race. Complete all 9, ranked by time to finish." },
-                { name: "Grail Chase", detail: "Ranked by number of grails found." },
-                { name: "GVC Holders", detail: "Points ranking for verified GVC holders." },
+                { metric: "points", name: "Total Points", detail: "Every pin scores by rarity. Highest total wins." },
+                { metric: "herds", name: "Full Set", detail: "A race. Complete all 9, ranked by time to finish." },
+                { metric: "grail", name: "Grail Chase", detail: "Ranked by number of grails found." },
+                { metric: "gvc", name: "GVC Holders", detail: "Points ranking for verified GVC holders." },
             ],
             prizes: [
                 "1 NFT grand prize (Total Points #1)",
