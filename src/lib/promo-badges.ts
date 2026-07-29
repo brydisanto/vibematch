@@ -451,7 +451,7 @@ export const PROMO_BADGES: PromoBadge[] = [
     // 1× GRAIL — ultra rare, excluded from set completion (isChase).
     {
         id: "axie_grail",
-        name: "Axie Infinity",
+        name: "Kotaro",
         description: "Ultra rare. The hardest pull in the event.",
         image: "/badges/promo/set/axie/grail.webp",
         tier: "cosmic" as BadgeTier,
