@@ -600,8 +600,9 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         startsAt: "2026-07-24T00:00:00Z",
         endsAt: "2026-08-10T13:00:00Z",
         tabLabel: "Set",
-        // Placeholder hero — swap for Axie key art.
-        heroImage: "/badges/promo/set/axie/grail.webp",
+        // Drawer hero stays the Axie Infinity logo (the grail pin art is
+        // now Kotaro, a separate image).
+        heroImage: "/badges/promo/set/axie/hero-logo.webp",
         // NO points cap this event — points accumulate uncapped. Sets are
         // also a separate completion-time race (see the leaderboard route),
         // AND completing a full set of 9 awards +25 to the points board.
