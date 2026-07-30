@@ -637,7 +637,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
             prizes: [
                 "1 GVC NFT grand prize (Total Points #1).",
                 "250,000 $VIBESTR (5,000/each to Total Points #2-#51).",
-                "5,887 limited-edition Axie accessories across the Points, Full Set, and Grail Chase leaderboards. Accessory rewards scale by place of finish (see X thread for full breakdown). Accessories range from Common to Mystic.",
+                "5,877 limited-edition Axie accessories across the Points, Full Set, and Grail Chase leaderboards. Accessory rewards scale by place of finish (see X thread for full breakdown). Accessories range from Common to Mystic.",
                 "100 collectible Axies for the GVC Holders leaderboard. Japanese for #1-10, Nightmare for #11-#50, Summer for #51-#100.",
                 "1 Team of Axies airdropped to every GVC holder that plays in the event.",
             ],
