@@ -1306,38 +1306,47 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                 {loading ? (
                                     <div className="py-12 text-center font-mundial text-sm text-white/40">Loading winners…</div>
                                 ) : (() => {
-                                    // Leaderboard rows filtered to the prize
-                                    // winners, preserving leaderboard order.
-                                    // Prize text comes from the set config.
+                                    // Winners ordered by the Total Points board.
+                                    // When the config carries frozen final stats
+                                    // (points/herds/grails) we render THAT list
+                                    // directly, so winners who finished outside the
+                                    // live top-50 still appear; otherwise fall back
+                                    // to filtering the live leaderboard.
+                                    const basePins = setPins.filter(p => !p.isChase);
+                                    const gigaPin = setPins.length > 0 ? [...setPins].sort((a, b) => b.points - a.points)[0] : null;
+                                    const baked = eventWinners.length > 0 && eventWinners[0].points !== undefined;
                                     const prizeByUser = new Map(eventWinners.map(w => [w.username.toLowerCase(), w.prize]));
-                                    const winnerRows = entries.filter(e => prizeByUser.has(e.username.toLowerCase()));
-                                    if (winnerRows.length === 0) {
+                                    const rows: { username: string; points: number; herds: number; grails: number; prize: string; avatarUrl?: string }[] = baked
+                                        ? eventWinners.map(w => ({ username: w.username, points: w.points ?? 0, herds: w.herds ?? 0, grails: w.grails ?? 0, prize: w.prize }))
+                                        : entries.filter(e => prizeByUser.has(e.username.toLowerCase())).map(e => ({
+                                            username: e.username,
+                                            points: e.count,
+                                            herds: basePins.length > 0 ? Math.min(...basePins.map(p => e.pinCounts?.[p.id] ?? 0)) : 0,
+                                            grails: gigaPin ? (e.pinCounts?.[gigaPin.id] ?? 0) : 0,
+                                            prize: prizeByUser.get(e.username.toLowerCase()) || "",
+                                            avatarUrl: e.avatarUrl,
+                                        }));
+                                    if (rows.length === 0) {
                                         return (
                                             <div className="py-12 text-center font-mundial text-sm text-white/40">
                                                 Winners will appear here shortly.
                                             </div>
                                         );
                                     }
-                                    // Same stat derivations the leaderboard rows
-                                    // use: total event pins held + pulls of the
-                                    // highest-points ("Giga") pin in the set.
-                                    const gigaPin = setPins.length > 0 ? [...setPins].sort((a, b) => b.points - a.points)[0] : null;
                                     return (
                                         <>
                                             <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                 <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                 <div className="flex-1 min-w-0 pl-3">WINNER</div>
-                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Pins</div>
-                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Gigas</div>
+                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Herds</div>
+                                                <div className="flex-shrink-0 w-9 sm:w-11 text-center">Grails</div>
                                                 <div className="flex-shrink-0 w-11 sm:w-14 text-center">Points</div>
                                                 <div className="flex-shrink-0 w-20 sm:w-28 text-center tabular-nums font-semibold" style={{ color: accent }}>Prize</div>
                                             </div>
                                             <div className="space-y-1.5">
-                                                {winnerRows.map((entry, i) => {
+                                                {rows.map((entry, i) => {
                                                     const isYou = !!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase();
-                                                    const prize = prizeByUser.get(entry.username.toLowerCase()) || "";
-                                                    const totalPins = setPins.reduce((sum, p) => sum + (entry.pinCounts?.[p.id] ?? 0), 0);
-                                                    const gigaCount = gigaPin ? (entry.pinCounts?.[gigaPin.id] ?? 0) : 0;
+                                                    const prize = entry.prize;
                                                     return (
                                                         <Link
                                                             key={entry.username}
@@ -1364,25 +1373,25 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                 className="flex-shrink-0 w-9 sm:w-11 text-center font-display font-semibold tabular-nums"
                                                                 style={{
                                                                     fontSize: "14px",
-                                                                    color: totalPins > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                                                                    color: entry.herds > 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
                                                                 }}
                                                             >
-                                                                {totalPins}
+                                                                {entry.herds}
                                                             </div>
                                                             <div
                                                                 className="flex-shrink-0 w-9 sm:w-11 text-center font-display font-semibold tabular-nums"
                                                                 style={{
                                                                     fontSize: "14px",
-                                                                    color: gigaCount > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
+                                                                    color: entry.grails > 0 ? `${accent}cc` : "rgba(255,255,255,0.25)",
                                                                 }}
                                                             >
-                                                                {gigaCount}
+                                                                {entry.grails}
                                                             </div>
                                                             <div
                                                                 className="flex-shrink-0 w-11 sm:w-14 text-center font-display font-black tabular-nums"
                                                                 style={{ fontSize: "16px", color: "rgba(255,255,255,0.8)" }}
                                                             >
-                                                                {entry.count.toLocaleString()}
+                                                                {entry.points.toLocaleString()}
                                                             </div>
                                                             <div
                                                                 className="flex-shrink-0 w-20 sm:w-28 text-center font-display font-semibold text-[10px] sm:text-[12px] leading-tight rounded-lg px-1 py-1.5"

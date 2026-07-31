@@ -164,10 +164,14 @@ export interface PromoEventSet {
      *  co-marketing beat. */
     includeInGameTiles?: boolean;
     /** Post-event prize results. When present, the EventDrawer shows a
-     *  WINNERS tab that filters the leaderboard to these usernames
-     *  (keeping leaderboard order) with each player's prize appended.
-     *  Populate after prizes are decided; keyed by exact username. */
-    winners?: Array<{ username: string; prize: string }>;
+     *  WINNERS tab. Populate after prizes are decided; keyed by exact
+     *  username. When the optional final stats (points/herds/grails) are
+     *  supplied, the tab renders THIS list directly in the given order
+     *  (frozen final data) — which is required for winners who finished
+     *  outside the live top-50. Without them, it falls back to filtering
+     *  the live leaderboard to these usernames. Order this array by the
+     *  Total Points board ranking. */
+    winners?: Array<{ username: string; prize: string; points?: number; herds?: number; grails?: number }>;
 }
 
 export const PROMO_BADGES: PromoBadge[] = [
@@ -465,6 +469,29 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setBonusLabel: "SET OF 4",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp",
         partnerLogo: "/assets/claynosaurz-logo.webp",
+        // Final Comfy in Clay winners, ordered by the Total Points board.
+        // Stats baked in (frozen final data) so winners who finished
+        // outside the live top-50 (charles, dadutch, y00ted, zombegonetv)
+        // still render on the WINNERS tab.
+        winners: [
+            { username: "brandon87", prize: "1 Pioneer Pack", points: 100, herds: 8, grails: 4 },
+            { username: "gnz0", prize: "1 Pioneer Pack", points: 100, herds: 7, grails: 3 },
+            { username: "wyllt", prize: "1 Pioneer Pack", points: 100, herds: 4, grails: 3 },
+            { username: "checkmeh", prize: "1 Pioneer Pack", points: 100, herds: 2, grails: 3 },
+            { username: "kesha", prize: "1 Pioneer Pack", points: 100, herds: 2, grails: 3 },
+            { username: "economist", prize: "1 Pioneer Pack", points: 100, herds: 4, grails: 3 },
+            { username: "joker", prize: "1 Pioneer Pack", points: 100, herds: 10, grails: 2 },
+            { username: "tylersmom423", prize: "2 Pioneer Packs", points: 100, herds: 15, grails: 2 },
+            { username: "iammcmuffin", prize: "1 Pioneer Pack", points: 100, herds: 10, grails: 1 },
+            { username: "btdwayne", prize: "1 Pioneer Pack", points: 100, herds: 10, grails: 1 },
+            { username: "hermehs.the.bored", prize: "1 Pioneer Pack", points: 100, herds: 4, grails: 1 },
+            { username: "pinstripedgator", prize: "1 Pioneer Pack", points: 100, herds: 3, grails: 1 },
+            { username: "stuffkeithbuys", prize: "1 Pioneer Pack", points: 100, herds: 1, grails: 1 },
+            { username: "charles", prize: "3 Pioneer Packs", points: 100, herds: 15, grails: 0 },
+            { username: "dadutch", prize: "1 Pioneer Pack", points: 100, herds: 3, grails: 0 },
+            { username: "y00ted", prize: "1 Pioneer Pack", points: 100, herds: 3, grails: 0 },
+            { username: "zombegonetv", prize: "1 Pioneer Pack", points: 100, herds: 2, grails: 0 },
+        ],
     },
 ];
 
