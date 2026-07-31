@@ -1078,6 +1078,19 @@ function GameBoardImpl({
                 ? "from-[#FF5F1F]/50 via-[#FFE048]/40 to-[#FF5F1F]/50"
                 : "from-[#FFE048]/40 via-[#FF5F1F]/25 to-[#FFE048]/40";
 
+    // Cells that just gained a power tile this turn — drives the spawn
+    // ring, which is rendered INSIDE the tile (see the tile loop) so it is
+    // always aligned and can never grow past its own cell. Gated on the
+    // live board so it only fires on a real, present power tile.
+    const spawnRingCell = new Map<string, "bomb" | "vibestreak" | "cosmic_blast">();
+    for (const eff of effectsQueue) {
+        for (const c of eff.specialTilesCreated ?? []) {
+            if (board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type) {
+                spawnRingCell.set(`${c.pos.row},${c.pos.col}`, c.type);
+            }
+        }
+    }
+
     return (
         <div className="relative w-full h-full">
             {/* Feature 2: Milestone Banner */}
@@ -1187,6 +1200,19 @@ function GameBoardImpl({
 
                                         {Overlay && <Overlay />}
 
+                                        {(() => {
+                                            const st = spawnRingCell.get(`${rowIdx},${colIdx}`);
+                                            if (!st) return null;
+                                            const rc = st === "bomb" ? "#FF3333" : st === "vibestreak" ? "#4AE0FF" : "#B366FF";
+                                            const rg = st === "bomb" ? "rgba(255,51,51,0.85)" : st === "vibestreak" ? "rgba(74,224,255,0.85)" : "rgba(179,102,255,0.9)";
+                                            return (
+                                                <div
+                                                    className="absolute inset-0 pointer-events-none spawn-ring-in-tile"
+                                                    style={{ border: `4px solid ${rc}`, borderRadius: "50%", boxShadow: `0 0 18px ${rg}, inset 0 0 12px ${rg}`, zIndex: 25 }}
+                                                />
+                                            );
+                                        })()}
+
                                         {isHinted && !isSelected && (
                                             <div className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none hint-pulse-overlay" />
                                         )}
@@ -1215,46 +1241,8 @@ function GameBoardImpl({
                                 );
                             })
                         )}
-                        {/* Power-tile spawn rings — placed by CSS GRID CELL
-                            (gridColumn/gridRow), not by measured pixels. The grid
-                            positions each ring on the exact same cell as its tile
-                            with zero coordinate math, so it can never drift onto an
-                            unrelated tile (previous cellSize/offset math broke under
-                            the board's transforms, especially in Frenzy). One ring
-                            per freshly created special that is actually on the board
-                            right now (skips phantoms + stale positions). */}
-                        {effectsQueue.flatMap(eff =>
-                            (eff.specialTilesCreated ?? [])
-                                .filter(c => board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type)
-                                .map(c => {
-                                    const color = c.type === "bomb" ? "#FF3333" : c.type === "vibestreak" ? "#4AE0FF" : "#B366FF";
-                                    const glow = c.type === "bomb" ? "rgba(255,51,51,0.85)" : c.type === "vibestreak" ? "rgba(74,224,255,0.85)" : "rgba(179,102,255,0.95)";
-                                    return (
-                                        <div
-                                            key={`${eff.timestamp}-${c.pos.row}-${c.pos.col}`}
-                                            style={{
-                                                // Absolute + grid placement: the grid CELL is this
-                                                // element's containing block, so it sits exactly on
-                                                // the tile, and being out of flow it can't disturb
-                                                // the tiles' auto-placement.
-                                                position: "absolute", inset: 0,
-                                                gridColumn: c.pos.col + 1, gridRow: c.pos.row + 1,
-                                                pointerEvents: "none", zIndex: 30,
-                                            }}
-                                        >
-                                            <div
-                                                className="power-tile-create-ring"
-                                                style={{
-                                                    position: "absolute", inset: "-18%",
-                                                    border: `4px solid ${color}`,
-                                                    borderRadius: "50%",
-                                                    boxShadow: `0 0 26px ${glow}, inset 0 0 18px ${glow}`,
-                                                }}
-                                            />
-                                        </div>
-                                    );
-                                })
-                        )}
+                        {/* Spawn rings are rendered inside each tile (see the tile
+                            loop above), so no board-level ring layer is needed. */}
                     </div>
                 </div>
             </div>
