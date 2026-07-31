@@ -1215,38 +1215,43 @@ function GameBoardImpl({
                                 );
                             })
                         )}
-                        {/* Power-tile spawn rings — rendered INSIDE the grid, its
-                            own positioning context, so they align to the tile with
-                            no cross-container coordinate mapping. The effect-layer
-                            version mislanded because gridOffset (offsetParent-based)
-                            and the effect layer's absolute origin (containing-block
-                            based) diverge under the board's glow/shake transforms.
-                            One ring per freshly created special that is actually on
-                            the board right now (skips phantoms + stale positions). */}
-                        {cellSize > 0 && effectsQueue.flatMap(eff =>
+                        {/* Power-tile spawn rings — placed by CSS GRID CELL
+                            (gridColumn/gridRow), not by measured pixels. The grid
+                            positions each ring on the exact same cell as its tile
+                            with zero coordinate math, so it can never drift onto an
+                            unrelated tile (previous cellSize/offset math broke under
+                            the board's transforms, especially in Frenzy). One ring
+                            per freshly created special that is actually on the board
+                            right now (skips phantoms + stale positions). */}
+                        {effectsQueue.flatMap(eff =>
                             (eff.specialTilesCreated ?? [])
                                 .filter(c => board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type)
-                                .map((c, i) => {
+                                .map(c => {
                                     const color = c.type === "bomb" ? "#FF3333" : c.type === "vibestreak" ? "#4AE0FF" : "#B366FF";
                                     const glow = c.type === "bomb" ? "rgba(255,51,51,0.85)" : c.type === "vibestreak" ? "rgba(74,224,255,0.85)" : "rgba(179,102,255,0.95)";
                                     return (
                                         <div
                                             key={`${eff.timestamp}-${c.pos.row}-${c.pos.col}`}
-                                            className="absolute pointer-events-none power-tile-create-ring"
                                             style={{
-                                                left: cellSize * c.pos.col + cellSize / 2,
-                                                top: cellSize * c.pos.row + cellSize / 2,
-                                                width: cellSize * 1.4,
-                                                height: cellSize * 1.4,
-                                                marginLeft: -(cellSize * 1.4) / 2,
-                                                marginTop: -(cellSize * 1.4) / 2,
-                                                border: `4px solid ${color}`,
-                                                borderRadius: "50%",
-                                                boxShadow: `0 0 30px ${glow}, inset 0 0 20px ${glow}`,
-                                                zIndex: 30,
-                                                animationDelay: `${0.6 + i * 0.08}s`,
+                                                // Absolute + grid placement: the grid CELL is this
+                                                // element's containing block, so it sits exactly on
+                                                // the tile, and being out of flow it can't disturb
+                                                // the tiles' auto-placement.
+                                                position: "absolute", inset: 0,
+                                                gridColumn: c.pos.col + 1, gridRow: c.pos.row + 1,
+                                                pointerEvents: "none", zIndex: 30,
                                             }}
-                                        />
+                                        >
+                                            <div
+                                                className="power-tile-create-ring"
+                                                style={{
+                                                    position: "absolute", inset: "-18%",
+                                                    border: `4px solid ${color}`,
+                                                    borderRadius: "50%",
+                                                    boxShadow: `0 0 26px ${glow}, inset 0 0 18px ${glow}`,
+                                                }}
+                                            />
+                                        </div>
                                     );
                                 })
                         )}
