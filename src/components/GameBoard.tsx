@@ -487,11 +487,11 @@ function PowerTileDetonationFlash({ effect }: { effect: MatchEffect }) {
  * board after the cascade settles. Now they get a beat to register
  * "I just made this."
  */
-function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: MatchEffect; cellSize: number; gridOffset: { x: number; y: number } }) {
+function PowerTileCreationMoment({ effect }: { effect: MatchEffect }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     const created = effect.specialTilesCreated;
-    if (!created || created.length === 0 || cellSize === 0) return null;
+    if (!created || created.length === 0) return null;
 
     // Hold the creation moment until the board settles AND the combo
     // banner (fires at t=0, top: 14vh) has had its punch: the match-clear
@@ -517,30 +517,9 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
 
     return (
         <>
-            {/* Per-spawn rings — color-coded to the special being made. */}
-            {created.map((c, i) => {
-                const style = STYLES[c.type];
-                return (
-                    <div
-                        key={i}
-                        className="absolute pointer-events-none power-tile-create-ring"
-                        style={{
-                            left: gridOffset.x + cellSize * c.pos.col + cellSize / 2,
-                            top: gridOffset.y + cellSize * c.pos.row + cellSize / 2,
-                            zIndex: 38,
-                            width: cellSize * 1.4,
-                            height: cellSize * 1.4,
-                            marginLeft: -(cellSize * 1.4) / 2,
-                            marginTop: -(cellSize * 1.4) / 2,
-                            border: `4px solid ${style.color}`,
-                            borderRadius: "50%",
-                            boxShadow: `0 0 30px ${style.glow}, inset 0 0 20px ${style.glow}`,
-                            animationDelay: `${SETTLE_DELAY_S + i * 0.08}s`,
-                        }}
-                    />
-                );
-            })}
-
+            {/* The per-spawn ring is rendered inside the grid (see GameBoard's
+                tile layer) so it aligns to the tile; this component now only
+                owns the slammed-in headline label. */}
             {/* Slammed-in headline label, portal'd to the viewport-top
                 stack so it doesn't overlay the playing field. Stacks
                 below shape (10vh) and combo (16vh), out of the
@@ -557,7 +536,10 @@ function PowerTileCreationMoment({ effect, cellSize, gridOffset }: { effect: Mat
                             color: "#FFFFFF",
                             WebkitTextStroke: `5px ${headline.color}`,
                             paintOrder: "stroke fill",
-                            textShadow: `0 0 35px ${headline.glow}, 0 0 70px ${headline.glow}, 0 6px 0 ${headline.color}, 0 8px 16px rgba(0,0,0,0.85)`,
+                            // Tight glow only. The former 35px + 70px blurs formed
+                            // a large soft colored halo that read as an errant
+                            // "circle" floating over the board behind the word.
+                            textShadow: `0 0 10px ${headline.glow}, 0 5px 0 ${headline.color}, 0 7px 14px rgba(0,0,0,0.85)`,
                             letterSpacing: "-0.01em",
                         }}
                     >
@@ -1096,6 +1078,19 @@ function GameBoardImpl({
                 ? "from-[#FF5F1F]/50 via-[#FFE048]/40 to-[#FF5F1F]/50"
                 : "from-[#FFE048]/40 via-[#FF5F1F]/25 to-[#FFE048]/40";
 
+    // Cells that just gained a power tile this turn — drives the spawn
+    // ring, which is rendered INSIDE the tile (see the tile loop) so it is
+    // always aligned and can never grow past its own cell. Gated on the
+    // live board so it only fires on a real, present power tile.
+    const spawnRingCell = new Map<string, "bomb" | "vibestreak" | "cosmic_blast">();
+    for (const eff of effectsQueue) {
+        for (const c of eff.specialTilesCreated ?? []) {
+            if (board[c.pos.row]?.[c.pos.col]?.isSpecial === c.type) {
+                spawnRingCell.set(`${c.pos.row},${c.pos.col}`, c.type);
+            }
+        }
+    }
+
     return (
         <div className="relative w-full h-full">
             {/* Feature 2: Milestone Banner */}
@@ -1118,7 +1113,7 @@ function GameBoardImpl({
                 <div className="rounded-[13px] bg-[#111]/95 p-1 sm:p-2 h-full" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
                     <div
                         ref={gridRef}
-                        className="grid gap-[2px] sm:gap-1 h-full"
+                        className="grid gap-[2px] sm:gap-1 h-full relative"
                         style={{
                             gridTemplateColumns: `repeat(8, 1fr)`,
                             gridTemplateRows: `repeat(8, 1fr)`,
@@ -1205,6 +1200,19 @@ function GameBoardImpl({
 
                                         {Overlay && <Overlay />}
 
+                                        {(() => {
+                                            const st = spawnRingCell.get(`${rowIdx},${colIdx}`);
+                                            if (!st) return null;
+                                            const rc = st === "bomb" ? "#FF3333" : st === "vibestreak" ? "#4AE0FF" : "#B366FF";
+                                            const rg = st === "bomb" ? "rgba(255,51,51,0.85)" : st === "vibestreak" ? "rgba(74,224,255,0.85)" : "rgba(179,102,255,0.9)";
+                                            return (
+                                                <div
+                                                    className="absolute inset-0 pointer-events-none spawn-ring-in-tile"
+                                                    style={{ border: `4px solid ${rc}`, borderRadius: "50%", boxShadow: `0 0 18px ${rg}, inset 0 0 12px ${rg}`, zIndex: 25 }}
+                                                />
+                                            );
+                                        })()}
+
                                         {isHinted && !isSelected && (
                                             <div className="absolute inset-0 rounded-lg sm:rounded-xl pointer-events-none hint-pulse-overlay" />
                                         )}
@@ -1233,6 +1241,8 @@ function GameBoardImpl({
                                 );
                             })
                         )}
+                        {/* Spawn rings are rendered inside each tile (see the tile
+                            loop above), so no board-level ring layer is needed. */}
                     </div>
                 </div>
             </div>
@@ -1274,7 +1284,7 @@ function GameBoardImpl({
 
                     {/* Power tile creation moment — slammed-in label +
                         tier ring at each spawn. */}
-                    <PowerTileCreationMoment effect={effect} cellSize={cellSize} gridOffset={gridOffset} />
+                    <PowerTileCreationMoment effect={effect} />
 
                     {/* Combo streak banner */}
                     {shouldShowEffect('ComboStreakBanner') && <ComboStreakBanner effect={effect} />}

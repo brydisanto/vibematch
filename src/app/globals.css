@@ -622,6 +622,21 @@ body {
   will-change: transform, opacity;
 }
 
+/* Spawn ring rendered INSIDE the tile (absolute inset-0). Pulses out to
+   the tile edge and fades. Stays within the tile so overflow-hidden never
+   lets it grow across the board. Delayed so it fires after the drop. */
+@keyframes spawn-ring-in-tile-anim {
+  0%   { transform: scale(0.4);  opacity: 0; }
+  22%  { transform: scale(0.95); opacity: 1; }
+  60%  { transform: scale(1.05); opacity: 0.7; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+.spawn-ring-in-tile {
+  animation: spawn-ring-in-tile-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.45s;
+  will-change: transform, opacity;
+}
+
 /* ===== POWER TILE CREATION LABEL — slams in like the combo banner ===== */
 @keyframes power-tile-create-label-anim {
   0%   { transform: scale(2.2) translateY(-14px); opacity: 0; }
