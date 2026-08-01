@@ -611,7 +611,7 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         id: "axie_partner_event",
         name: "Axie Pin Drop",
         partnerName: "Axie Infinity",
-        description: "A seven-day event from Good Vibes Club and Axie Infinity. Collect the nine-pin Axie set, race the clock, and climb four leaderboards to win prizes. 1 GVC, 100 Axies, 5,877 accessories, and more are up for grabs. Note: the Full Set leaderboard is a race and winners are determined by time to completion.",
+        description: "A seven-day event from Good Vibes Club and Axie Infinity. Collect the nine-pin Axie set, race the clock, and climb four leaderboards to win prizes. 1 GVC, 100 Axies, 5,889 accessories, and more are up for grabs. Note: the Full Set leaderboard is a race and winners are determined by time to completion.",
         shortDescription: "Collect Axie pins to win prizes!",
         eventWindow: "Axie Infinity x Pin Drop",
         // Axie aqua-blue brand accent.
