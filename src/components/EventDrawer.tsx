@@ -1503,13 +1503,13 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     }
                                     return (
                                         <>
-                                            <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
+                                            <div className="flex items-center gap-3 sm:gap-5 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                 <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                 <div className="flex-1 min-w-0 pl-3">WINNER</div>
                                                 <div className="flex-shrink-0 w-9 sm:w-11 text-center">Herds</div>
                                                 <div className="flex-shrink-0 w-9 sm:w-11 text-center">Grails</div>
                                                 <div className="flex-shrink-0 w-11 sm:w-14 text-center">Points</div>
-                                                <div className="flex-shrink-0 w-20 sm:w-28 text-center tabular-nums font-semibold" style={{ color: accent }}>Prize</div>
+                                                <div className="flex-shrink-0 w-24 sm:w-32 text-center tabular-nums font-semibold" style={{ color: accent }}>Prize</div>
                                             </div>
                                             <div className="space-y-1.5">
                                                 {rows.map((entry, i) => {
@@ -1520,7 +1520,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                             key={entry.username}
                                                             href={`/u/${encodeURIComponent(entry.username)}`}
                                                             prefetch={false}
-                                                            className={`flex items-center gap-2 sm:gap-3 py-2.5 px-2 rounded-xl transition-colors ${
+                                                            className={`flex items-center gap-3 sm:gap-5 py-2.5 px-2 rounded-xl transition-colors ${
                                                                 isYou ? "bg-[#B366FF]/10 border border-[#B366FF]/20" : "hover:bg-white/[0.03]"
                                                             }`}
                                                         >
@@ -1562,7 +1562,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                 {entry.points.toLocaleString()}
                                                             </div>
                                                             <div
-                                                                className="flex-shrink-0 w-20 sm:w-28 text-center font-display font-semibold text-[10px] sm:text-[12px] leading-tight rounded-lg px-1 py-1.5"
+                                                                className="flex-shrink-0 w-24 sm:w-32 text-center font-display font-semibold text-[10px] sm:text-[12px] leading-tight whitespace-nowrap rounded-lg px-1.5 py-1.5"
                                                                 style={{
                                                                     color: accent,
                                                                     background: `${accent}14`,
