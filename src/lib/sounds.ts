@@ -96,6 +96,8 @@ export const BGM_TRACK_NAMES = [
     "Andromeda",
     "Sunlight",
     "Claynosaurz Theme",
+    "Axie Summer Theme",
+    "Axie Lunar Battle",
 ];
 
 const BGM_FILES = [
@@ -109,8 +111,26 @@ const BGM_FILES = [
     "/music/andromeda.mp3",
     "/music/sunlight.mp3",
     "/music/claynoz-theme.mp3",
+    "/music/axie-summer.mp3",
+    "/music/axie-lunar-battle.mp3",
 ];
-const CLAYNOZ_TRACK_INDEX = BGM_TRACK_NAMES.indexOf("Claynosaurz Theme");
+
+/** Track indices for the primary LIVE event, resolved from its config's
+ *  classicMusic / frenzyMusic paths. Either is -1 when the event doesn't
+ *  set that slot or no event is live. Generalizes the former Claynoz-only
+ *  theme hookup so each event can supply its own classic + frenzy tracks. */
+function activeEventTrackIndices(): { classic: number; frenzy: number } {
+    if (!isPromoActive()) return { classic: -1, frenzy: -1 };
+    const primary = getPrimaryActiveEvent();
+    if (primary?.kind !== "set" || !primary.set || !isEventSetLive(primary.set)) {
+        return { classic: -1, frenzy: -1 };
+    }
+    const set = primary.set as { classicMusic?: string; frenzyMusic?: string };
+    return {
+        classic: set.classicMusic ? BGM_FILES.indexOf(set.classicMusic) : -1,
+        frenzy: set.frenzyMusic ? BGM_FILES.indexOf(set.frenzyMusic) : -1,
+    };
+}
 
 /** True while the Claynosaurz set event is the primary active event AND
  *  inside its startsAt/endsAt window. Pre-start the event is announce-
@@ -127,12 +147,13 @@ export function isClaynozEventLive(): boolean {
 
 let currentBGMTrack = (() => {
     if (typeof window !== 'undefined') {
-        // The event theme is the primary track for everyone while the
-        // Claynosaurz event is live — it wins over any saved track
-        // preference at load. The switch button still cycles freely
+        // The event's classic theme is the primary track for everyone
+        // while an event with music is live — it wins over any saved
+        // track preference at load. The switch button still cycles freely
         // for the session, and saved picks resume after the event.
-        if (isClaynozEventLive() && CLAYNOZ_TRACK_INDEX >= 0) {
-            return CLAYNOZ_TRACK_INDEX;
+        const eventClassic = activeEventTrackIndices().classic;
+        if (eventClassic >= 0) {
+            return eventClassic;
         }
         const saved = localStorage.getItem(TRACK_STORAGE_KEY);
         if (saved !== null) {
@@ -321,12 +342,16 @@ function applyPlaybackRate(rate: number) {
 
 export function startFrenzyBGM() {
     savedTrackBeforeFrenzy = currentBGMTrack;
-    // During the Claynosaurz event the theme owns Frenzy too; the
-    // tempo ramp below still applies, so it speeds up as the clock
-    // runs down just like Werq did.
-    const frenzyTrack = isClaynozEventLive() && CLAYNOZ_TRACK_INDEX >= 0
-        ? CLAYNOZ_TRACK_INDEX
-        : FRENZY_TRACK_INDEX;
+    // During an event, its Frenzy track owns Frenzy mode; the tempo ramp
+    // below still applies, so it speeds up as the clock runs down just
+    // like Werq did. Fall back to the event's classic track if it only
+    // defines one, then to the default Frenzy track (Werq).
+    const ev = activeEventTrackIndices();
+    const frenzyTrack = ev.frenzy >= 0
+        ? ev.frenzy
+        : ev.classic >= 0
+            ? ev.classic
+            : FRENZY_TRACK_INDEX;
     currentBGMTrack = frenzyTrack >= 0 ? frenzyTrack : 0;
     bgmShouldPlay = true;
     if (bgmAudio) stopMP3();

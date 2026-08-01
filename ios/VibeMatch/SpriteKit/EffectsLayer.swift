@@ -35,11 +35,11 @@ final class EffectsLayer: SKNode {
     // MARK: - Constants
 
     private enum Colors {
-        static let lavender   = SKColor(red: 0x6C/255, green: 0x5C/255, blue: 0xE7/255, alpha: 1)
-        static let darkBase   = SKColor(red: 0x1A/255, green: 0x1A/255, blue: 0x2E/255, alpha: 1)
-        static let gold       = SKColor(red: 0xFF/255, green: 0xE0/255, blue: 0x48/255, alpha: 1)
-        static let orange     = SKColor(red: 0xFF/255, green: 0x5F/255, blue: 0x1F/255, alpha: 1)
-        static let cosmic     = SKColor(red: 0xB3/255, green: 0x66/255, blue: 0xFF/255, alpha: 1)
+        static let lavender   = SKColor(red: 108/255.0, green: 92/255.0, blue: 231/255.0, alpha: 1)
+        static let darkBase   = SKColor(red: 26/255.0, green: 5/255.0, blue: 51/255.0, alpha: 1)
+        static let gold       = SKColor(red: 255/255.0, green: 224/255.0, blue: 72/255.0, alpha: 1)
+        static let orange     = SKColor(red: 255/255.0, green: 95/255.0, blue: 31/255.0, alpha: 1)
+        static let cosmic     = SKColor(red: 179/255.0, green: 102/255.0, blue: 255/255.0, alpha: 1)
         static let flashWhite = SKColor(white: 1.0, alpha: 0.12)
         static let flashGold  = SKColor(red: 1, green: 0.88, blue: 0.28, alpha: 0.18)
         static let flashOrange = SKColor(red: 1, green: 0.37, blue: 0.12, alpha: 0.22)
@@ -57,8 +57,14 @@ final class EffectsLayer: SKNode {
     /// Container for hot streak orbit particles.
     private let orbitContainer: SKNode
 
+    /// Container for ambient floating particles.
+    private let ambientContainer: SKNode
+
     /// Tracks currently active orbit particles for cleanup.
     private var activeOrbitParticles: [SKNode] = []
+
+    /// Whether ambient particles are currently active.
+    private var ambientActive = false
 
     // MARK: - Init
 
@@ -79,11 +85,15 @@ final class EffectsLayer: SKNode {
         orbitContainer = SKNode()
         orbitContainer.zPosition = 40
 
+        ambientContainer = SKNode()
+        ambientContainer.zPosition = -2
+
         super.init()
 
         addChild(flashOverlay)
         addChild(boardGlow)
         addChild(orbitContainer)
+        addChild(ambientContainer)
     }
 
     @available(*, unavailable)
@@ -150,7 +160,6 @@ final class EffectsLayer: SKNode {
         }
 
         boardGlow.fillColor = glowColor
-        boardGlow.glowWidth = intensity >= .mega ? 12 : 6
 
         let fadeIn = SKAction.fadeAlpha(to: glowAlpha, duration: 0.3)
         boardGlow.run(fadeIn, withKey: "glowTransition")
@@ -284,48 +293,154 @@ final class EffectsLayer: SKNode {
     func triggerMatchEffects(intensity: EffectIntensity) {
         screenFlash(intensity: intensity)
 
-        if intensity >= .mega {
+        if intensity >= .big {
             boardShake(intensity: intensity)
         }
     }
 
     // MARK: - Board Shake
 
-    /// Shakes the parent scene's camera or the board layer for big matches.
+    /// Shakes the scene camera for big matches. Uses camera-based shake for smooth results.
+    /// Also triggers on big matches (combo >= 2) at lower intensity for more juice.
     private func boardShake(intensity: EffectIntensity) {
-        guard let scene = scene else { return }
+        guard let gameScene = scene as? GameScene else { return }
 
         let amplitude: CGFloat
         let duration: TimeInterval
+        let frequency: TimeInterval
 
         switch intensity {
-        case .normal, .big:
+        case .normal:
             return
+        case .big:
+            amplitude = 5
+            duration = 0.2
+            frequency = 0.03
         case .mega:
-            amplitude = 4
-            duration = 0.25
+            amplitude = 12
+            duration = 0.3
+            frequency = 0.025
         case .ultra:
-            amplitude = 8
-            duration = 0.40
+            amplitude = 20
+            duration = 0.45
+            frequency = 0.02
         }
 
-        let shakeCount = Int(duration / 0.04)
-        var actions: [SKAction] = []
+        gameScene.cameraShake(amplitude: amplitude, duration: duration, frequency: frequency)
+    }
 
-        for i in 0..<shakeCount {
-            let damping = 1.0 - (CGFloat(i) / CGFloat(shakeCount))
-            let dx = CGFloat.random(in: -amplitude...amplitude) * damping
-            let dy = CGFloat.random(in: -amplitude...amplitude) * damping
-            actions.append(SKAction.moveBy(x: dx, y: dy, duration: 0.04))
-        }
-        actions.append(SKAction.move(to: .zero, duration: 0.04))
+    // MARK: - Ambient Background Particles
 
-        // Shake the board's parent to affect all children.
-        if let boardLayer = scene.childNode(withName: "//boardLayer") {
-            boardLayer.run(SKAction.sequence(actions), withKey: "shake")
-        } else {
-            // Fallback: shake self (the effects layer moves, giving visual feedback).
-            run(SKAction.sequence(actions), withKey: "shake")
+    /// Starts ambient floating particles that drift slowly behind the board.
+    /// Creates a subtle sense of life and depth. Call once when the game starts.
+    func startAmbientParticles() {
+        guard !ambientActive else { return }
+        ambientActive = true
+
+        let particleCount = 18
+        let sceneWidth = (scene?.size.width ?? 400)
+        let sceneHeight = (scene?.size.height ?? 800)
+
+        let particleColors: [SKColor] = [
+            Colors.lavender.withAlphaComponent(0.15),
+            Colors.gold.withAlphaComponent(0.1),
+            SKColor.white.withAlphaComponent(0.08),
+            Colors.cosmic.withAlphaComponent(0.1)
+        ]
+
+        for i in 0..<particleCount {
+            let size = CGFloat.random(in: 1.5...4)
+            let particle = SKShapeNode(circleOfRadius: size)
+            particle.fillColor = particleColors[i % particleColors.count]
+            particle.strokeColor = .clear
+            particle.zPosition = -1
+
+            // Random starting position across the scene
+            let startX = CGFloat.random(in: -sceneWidth/2...sceneWidth/2)
+            let startY = CGFloat.random(in: -sceneHeight/2...sceneHeight/2)
+            particle.position = CGPoint(x: startX, y: startY)
+            particle.alpha = 0
+
+            ambientContainer.addChild(particle)
+
+            // Each particle drifts upward with gentle horizontal sway
+            let cycleDuration = TimeInterval.random(in: 6...12)
+            let driftY = CGFloat.random(in: 60...150)
+            let swayX = CGFloat.random(in: -30...30)
+            let startDelay = Double(i) * 0.5
+
+            let fadeIn = SKAction.fadeAlpha(to: CGFloat.random(in: 0.15...0.4), duration: 1.5)
+            let drift = SKAction.moveBy(x: swayX, y: driftY, duration: cycleDuration)
+            drift.timingMode = .easeInEaseOut
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: CGFloat.random(in: 1.2...1.6), duration: cycleDuration / 2),
+                SKAction.scale(to: 1.0, duration: cycleDuration / 2)
+            ])
+            let fadeOut = SKAction.fadeAlpha(to: 0, duration: 1.5)
+
+            let resetPos = SKAction.run {
+                particle.position = CGPoint(
+                    x: CGFloat.random(in: -sceneWidth/2...sceneWidth/2),
+                    y: CGFloat.random(in: -sceneHeight/2...(sceneHeight * -0.1))
+                )
+            }
+
+            let cycle = SKAction.sequence([
+                SKAction.wait(forDuration: startDelay),
+                fadeIn,
+                SKAction.group([drift, pulse]),
+                fadeOut,
+                resetPos
+            ])
+            particle.run(.repeatForever(cycle))
         }
+    }
+
+    /// Stops ambient particles.
+    func stopAmbientParticles() {
+        ambientContainer.removeAllChildren()
+        ambientActive = false
+    }
+
+    // MARK: - Urgency Overlay
+
+    /// Applies a pulsing red vignette when moves are critically low.
+    func setUrgencyOverlay(movesLeft: Int) {
+        removeAction(forKey: "urgencyPulse")
+
+        if movesLeft > 3 {
+            // Clear urgency
+            flashOverlay.removeAction(forKey: "urgencyGlow")
+            flashOverlay.run(SKAction.fadeAlpha(to: 0, duration: 0.3), withKey: "urgencyFade")
+            return
+        }
+
+        let pulseAlpha: CGFloat
+        let pulseSpeed: TimeInterval
+        let urgencyColor: SKColor
+
+        switch movesLeft {
+        case 3:
+            urgencyColor = SKColor(red: 1, green: 0.3, blue: 0.1, alpha: 1)
+            pulseAlpha = 0.06
+            pulseSpeed = 1.2
+        case 2:
+            urgencyColor = SKColor(red: 1, green: 0.2, blue: 0.1, alpha: 1)
+            pulseAlpha = 0.10
+            pulseSpeed = 0.8
+        default:
+            urgencyColor = SKColor(red: 1, green: 0.1, blue: 0.05, alpha: 1)
+            pulseAlpha = 0.15
+            pulseSpeed = 0.5
+        }
+
+        flashOverlay.color = urgencyColor
+
+        let pulseIn = SKAction.fadeAlpha(to: pulseAlpha, duration: pulseSpeed)
+        pulseIn.timingMode = .easeInEaseOut
+        let pulseOut = SKAction.fadeAlpha(to: pulseAlpha * 0.3, duration: pulseSpeed)
+        pulseOut.timingMode = .easeInEaseOut
+
+        flashOverlay.run(.repeatForever(.sequence([pulseIn, pulseOut])), withKey: "urgencyPulse")
     }
 }

@@ -11,6 +11,16 @@ enum SpecialTileType: String, Codable, Hashable, Sendable {
     case bomb
     case vibestreak
     case cosmicBlast = "cosmic_blast"
+
+    /// Player-facing display name. Internal engine still uses "vibestreak";
+    /// the player sees "Laser Party" (synced with web rename).
+    var displayName: String {
+        switch self {
+        case .bomb:        return "Bomb"
+        case .vibestreak:  return "Laser Party"
+        case .cosmicBlast: return "Cosmic Blast"
+        }
+    }
 }
 
 // MARK: - Cell
@@ -28,9 +38,37 @@ struct Cell: Hashable, Codable, Sendable {
     /// True if this cell has been cleared and is waiting for gravity fill.
     var isEmpty: Bool
 
-    init(badgeIndex: Int, isSpecial: SpecialTileType? = nil, isEmpty: Bool = false) {
+    /// Rows this tile fell during the last gravity pass. Animation metadata
+    /// mirroring the web engine's `dropDistance`; drives the drop-from-above
+    /// bounce in GameScene.
+    var dropDistance: Int
+
+    /// True if this tile entered from above the board in the last gravity
+    /// pass (web engine's `isNew`).
+    var isNew: Bool
+
+    init(
+        badgeIndex: Int,
+        isSpecial: SpecialTileType? = nil,
+        isEmpty: Bool = false,
+        dropDistance: Int = 0,
+        isNew: Bool = false
+    ) {
         self.badgeIndex = badgeIndex
         self.isSpecial = isSpecial
         self.isEmpty = isEmpty
+        self.dropDistance = dropDistance
+        self.isNew = isNew
+    }
+
+    /// Backward-compatible decoding: boards persisted before the animation
+    /// metadata existed decode with zeroed drop fields.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        badgeIndex = try c.decode(Int.self, forKey: .badgeIndex)
+        isSpecial = try c.decodeIfPresent(SpecialTileType.self, forKey: .isSpecial)
+        isEmpty = try c.decodeIfPresent(Bool.self, forKey: .isEmpty) ?? false
+        dropDistance = try c.decodeIfPresent(Int.self, forKey: .dropDistance) ?? 0
+        isNew = try c.decodeIfPresent(Bool.self, forKey: .isNew) ?? false
     }
 }

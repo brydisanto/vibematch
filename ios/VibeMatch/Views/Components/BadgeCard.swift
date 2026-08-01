@@ -43,8 +43,8 @@ struct BadgeCard: View {
                             )
                             .frame(width: size, height: size)
 
-                        // Try to load the badge image; fall back to an initial letter
-                        Image(badge.image)
+                        // Pin art from the Assets.xcassets/Badges/ namespace.
+                        Image(badge.assetName)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: size - 8, height: size - 8)
@@ -124,20 +124,11 @@ extension BadgeTier {
     /// Brand color for each badge tier.
     var displayColor: Color {
         switch self {
-        case .blue:   return Color(red: 0.29, green: 0.62, blue: 1.0)  // #4A9EFF
-        case .silver: return Color(red: 0.89, green: 0.91, blue: 0.94) // #E2E8F0
-        case .gold:   return Color(red: 1.0, green: 0.88, blue: 0.28)  // #FFE048
-        case .cosmic: return Color(red: 0.70, green: 0.40, blue: 1.0)  // #B366FF
-        }
-    }
-
-    /// Human-readable tier name.
-    var displayName: String {
-        switch self {
-        case .blue:   return "Common"
-        case .silver: return "Silver"
-        case .gold:   return "Gold"
-        case .cosmic: return "Cosmic"
+        case .blue:    return Color(red: 0.29, green: 0.62, blue: 1.0)  // #4A9EFF
+        case .silver:  return Color(red: 0.89, green: 0.91, blue: 0.94) // #E2E8F0
+        case .gold:    return Color(red: 1.0, green: 0.88, blue: 0.28)  // #FFE048
+        case .special: return Color(red: 1.0, green: 0.55, blue: 0.26)  // #FF8C42
+        case .cosmic:  return Color(red: 0.70, green: 0.40, blue: 1.0)  // #B366FF
         }
     }
 }

@@ -115,6 +115,33 @@ export interface PromoEventSet {
      *  which reads generically. Partner events with a themed name (e.g.
      *  "The Herd" for the Claynosaurz event) override here. */
     setTabLabel?: string;
+    /** Label for the completion leaderboard sub-tab + its column. Defaults
+     *  to "Herds" (Claynoz). Events whose set mechanic is a full-set
+     *  completion race use "Sets". */
+    setsBoardLabel?: string;
+    /** When true, the event uses the TIMED board model: the Sets board is
+     *  a one-per-player completion race ranked by finish time (from the
+     *  set_done zset), and the Grails board ranks by count then time-to-
+     *  count (from the grails composite). When false/absent, the Claynoz
+     *  model is used: Sets = herds count, Grails = raw grail-pin count. */
+    timedBoards?: boolean;
+    /** When true, the leaderboard exposes an extra "Points/GVC" board that
+     *  ranks only players verified to hold a GVC NFT (see src/lib/gvc.ts).
+     *  Same points cascade as the open board, filtered to the gvc:holders
+     *  set. Off/absent for events without a GVC-gated prize track. */
+    gvcBoard?: boolean;
+    /** Sub-tab / column label for the GVC-only board. Defaults to
+     *  "GVC Holders". */
+    gvcBoardLabel?: string;
+    /** When set, adds a "Prizes" tab with the full how-to-win rundown
+     *  (every board + the prize lines), and replaces the leaderboard's
+     *  "Most Grails" spotlight with a single board-specific line on each
+     *  sub-tab. `metric` ties a board entry to its leaderboard sub-tab
+     *  (points | herds | grail | gvc). */
+    leaderboardGuide?: {
+        boards: { metric: "points" | "herds" | "grail" | "gvc"; name: string; detail: string }[];
+        prizes: string[];
+    };
     /** Optional hero image for the drawer + header pill (large square or
      *  portrait works best). When absent the drawer falls back to the
      *  highest-points pin from the set, but a dedicated character /
@@ -132,14 +159,29 @@ export interface PromoEventSet {
     setBonusLabel?: string;
     /** Optional full-bleed background swapped in behind the game board
      *  while this set is active. Path under /public. When absent the
-     *  default vibematchbg2.jpg is used. */
+     *  default vibematchbg2.jpg is used. Doubles as the header-pill
+     *  thumbnail and the guaranteed-preloaded frame; when a rotation set
+     *  (gameBackgrounds) is present this should be one of its members. */
     gameBackground?: string;
+    /** Optional pool of backgrounds to rotate between per game. When set
+     *  and non-empty, the game board picks one deterministically per
+     *  board (stable during a game, varies across games). Falls back to
+     *  gameBackground when absent. */
+    gameBackgrounds?: string[];
     /** Optional partner logo shown alongside the Pin Drop logo above
      *  the game board during the event. The Pin Drop logo stays its
      *  usual size and slides left, the partner logo sits to its right
      *  separated by a small "×". Path under /public. When absent only
      *  the Pin Drop logo is shown. */
     partnerLogo?: string;
+    /** Optional BGM that takes over while the event is live. classicMusic
+     *  becomes the primary track on load (winning over the saved pick);
+     *  frenzyMusic owns Frenzy mode (with the usual tempo ramp). Each is a
+     *  path that must also exist in BGM_FILES (src/lib/sounds.ts) so the
+     *  track resolves + stays cyclable. When only classicMusic is set it
+     *  covers Frenzy too; when neither is set the default rotation plays. */
+    classicMusic?: string;
+    frenzyMusic?: string;
     /** Hard cap on the per-user leaderboard score. Once reached, the
      *  zset entry stops climbing — any further collects are still
      *  credited to per-pin counters but don't move the leaderboard
@@ -358,6 +400,75 @@ export const PROMO_BADGES: PromoBadge[] = [
         rarityLabel: "Grail",
         isChase: true,
     },
+
+    // ===================================================================
+    // AXIE PIN DROP  (Aug 3 → Aug 10 2026, 12PM ET)
+    // 9 base pins across 3 rarities (Rare/Epic/Mystic) + 1 grail. Final
+    // art + named pins. No score cap on the points board this event.
+    // Board tiers map rarity → blue/silver/gold (grail → cosmic).
+    // ===================================================================
+    // 3× RARE (2 pts each) — entry tier for the Axie special pins.
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_rare_${n}`,
+        name: ({ 1: "Ena", 2: "Tripp", 3: "Pomodoro" } as const)[n],
+        image: `/badges/promo/set/axie/rare_${n}.webp`,
+        tier: "blue" as BadgeTier,
+        pointMultiplier: 1,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 2,
+        dropWeight: 52,
+        rarityLabel: "Rare",
+    })),
+    // 3× EPIC (4 pts each)
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_epic_${n}`,
+        name: ({ 1: "Momo", 2: "Mit", 3: "Venoki" } as const)[n],
+        image: `/badges/promo/set/axie/epic_${n}.webp`,
+        tier: "silver" as BadgeTier,
+        pointMultiplier: 1.5,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 4,
+        dropWeight: 25,
+        rarityLabel: "Epic",
+    })),
+    // 3× MYSTIC (10 pts each) — rarest base tier, gates full-set completion.
+    ...([1, 2, 3] as const).map((n) => ({
+        id: `axie_mystic_${n}`,
+        name: ({ 1: "Bubba", 2: "Olek", 3: "Puffy" } as const)[n],
+        image: `/badges/promo/set/axie/mystic_${n}.webp`,
+        tier: "gold" as BadgeTier,
+        pointMultiplier: 2,
+        isPromo: true as const,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 10,
+        dropWeight: 22,
+        rarityLabel: "Mystic",
+    })),
+    // 1× GRAIL — ultra rare, excluded from set completion (isChase).
+    {
+        id: "axie_grail",
+        name: "Kotaro",
+        description: "Ultra rare. The hardest pull in the event.",
+        image: "/badges/promo/set/axie/grail.webp",
+        tier: "cosmic" as BadgeTier,
+        pointMultiplier: 3,
+        isPromo: true,
+        partnerName: "Axie Infinity",
+        tabLabel: "Set",
+        eventSetId: "axie_partner_event",
+        points: 25,
+        dropWeight: 3.3,
+        rarityLabel: "Grail",
+        isChase: true,
+    },
 ];
 
 /**
@@ -469,6 +580,9 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
         setBonusLabel: "SET OF 4",
         gameBackground: "/backgrounds/game-bg-claynosaurz.webp",
         partnerLogo: "/assets/claynosaurz-logo.webp",
+        // Single theme covered both modes; the generalized selector uses
+        // classicMusic for Frenzy too when frenzyMusic is absent.
+        classicMusic: "/music/claynoz-theme.mp3",
         // Final Comfy in Clay winners, ordered by the Total Points board.
         // Stats baked in (frozen final data) so winners who finished
         // outside the live top-50 (charles, dadutch, y00ted, zombegonetv)
@@ -493,23 +607,99 @@ export const PROMO_EVENT_SETS: PromoEventSet[] = [
             { username: "zombegonetv", prize: "1 Pioneer Pack", points: 100, herds: 2, grails: 0 },
         ],
     },
+    {
+        id: "axie_partner_event",
+        name: "Axie Pin Drop",
+        partnerName: "Axie Infinity",
+        description: "A seven-day event from Good Vibes Club and Axie Infinity. Collect the nine-pin Axie set, race the clock, and climb four leaderboards to win prizes. 1 GVC, 100 Axies, 5,877 accessories, and more are up for grabs. Note: the Full Set leaderboard is a race and winners are determined by time to completion.",
+        shortDescription: "Collect Axie pins to win prizes!",
+        eventWindow: "Axie Infinity x Pin Drop",
+        // Axie aqua-blue brand accent.
+        accentColor: "#4A9EFF",
+        // Launch: Monday Aug 3 2026, 9:00 AM Eastern (EDT = UTC-4, 13:00 UTC).
+        // Window: 7 days, closing Monday Aug 10 9:00 AM Eastern (13:00 UTC).
+        startsAt: "2026-08-03T13:00:00Z",
+        endsAt: "2026-08-10T13:00:00Z",
+        tabLabel: "Set",
+        // Drawer hero stays the Axie Infinity logo (the grail pin art is
+        // now Kotaro, a separate image).
+        heroImage: "/badges/promo/set/axie/hero-logo.webp",
+        // NO points cap this event — points accumulate uncapped. Sets are
+        // also a separate completion-time race (see the leaderboard route),
+        // AND completing a full set of 9 awards +25 to the points board.
+        setBonusPoints: 25,
+        // scoreCap intentionally omitted — no cap.
+        // Axie aqua board frame.
+        frameGradient: {
+            top:    "#B6E3FF",
+            mid:    "#4A9EFF",
+            bottom: "#123A6B",
+            shadow: "#123A6B",
+        },
+        // Axie pins are playable board tiles. Every board carries at least
+        // one Axie base pin (Rare/Epic/Mystic). Roughly 1 in 5 boards fires
+        // the full-set board: all 6 tiles are Axie, composed 3 Rare / 1 Epic
+        // / 1 Mystic / 1 Grail, so the 3B/1S/1G/1C game distribution holds.
+        // The Grail only appears as a tile on that full-set board, keeping
+        // the chase rare on the board as well as in capsules.
+        includeInGameTiles: true,
+        setTabLabel: "The Set",
+        setsBoardLabel: "Full Set Race",
+        timedBoards: true,
+        gvcBoard: true,
+        gvcBoardLabel: "GVC Holders",
+        leaderboardGuide: {
+            boards: [
+                { metric: "points", name: "Total Points", detail: "Every Axie pin scores by rarity. Highest total wins (no cap on points). Sets of 9 add +25 bonus points." },
+                { metric: "herds", name: "Full Set Race", detail: "Find all 9 Axie pins, ranked by time to finish (note: this excludes the grail pin)." },
+                { metric: "grail", name: "Grail Chase", detail: "Ranked by the number of grail pins found. Time is the tiebreaker." },
+                { metric: "gvc", name: "GVC Holders", detail: "A special points leaderboard for verified GVC holders (accepts delegate.xyz)." },
+            ],
+            prizes: [
+                "1 GVC NFT grand prize (Total Points #1).",
+                "250,000 $VIBESTR (5,000/each to Total Points #2-#51).",
+                "5,889 limited-edition Axie accessories across the Points, Full Set, and Grail Chase leaderboards. Accessory rewards scale by place of finish (see X thread for full breakdown). Accessories range from Common to Mystic.",
+                "100 collectible Axies for the GVC Holders leaderboard. Japanese for #1-10, Nightmare for #11-#50, Summer for #51-#100.",
+                "1 Team of Axies airdropped to every GVC holder that plays in the event.",
+            ],
+        },
+        setBonusLabel: "EVERY FULL SET OF 9",
+        // Four Axie backgrounds rotate per game (stable during a board,
+        // varies across games). gameBackground is bg-1 as the thumbnail +
+        // guaranteed-preload frame.
+        gameBackground: "/backgrounds/game-bg-axie-1.webp",
+        gameBackgrounds: [
+            "/backgrounds/game-bg-axie-1.webp",
+            "/backgrounds/game-bg-axie-2.webp",
+            "/backgrounds/game-bg-axie-3.webp",
+            "/backgrounds/game-bg-axie-4.webp",
+        ],
+        partnerLogo: "/assets/axie-logo.webp",
+        classicMusic: "/music/axie-summer.mp3",
+        frenzyMusic: "/music/axie-lunar-battle.mp3",
+    },
 ];
 
 /**
  * Drop chance per capsule open. Independent of the normal tier roll — when
- * this hits, we skip the tier roll entirely and award the promo. Bumped
- * 10% → 15% → 20% (1 in 5) for the Claynosaurz partner event to (a)
- * accommodate a 5th chase tier without cannibalizing base rates and
- * (b) make the co-marketed event feel more generous to first-time
- * visitors from the partner's audience. Per-capsule odds within the
- * Claynosaurz set at 20%:
- *   Common          9.93%
- *   Rare            5.36%
- *   Epic            2.98%
- *   Legendary       1.39%
- *   Cosmic (chase)  0.33%  ← rarer than Legendary; excluded from set bonus
+ * this hits, we skip the tier roll entirely and award the promo. Global,
+ * but only the single active event uses it (events don't overlap).
+ *
+ * Claynosaurz ran at 20% (4-pin set): Common 9.93 / Rare 5.36 / Epic 2.98
+ * / Legendary 1.39 / Grail 0.33.
+ *
+ * Axie runs at 30% (9-pin set, tiers Rare/Epic/Mystic + Grail). A 9-pin
+ * set is a much steeper coupon-collector than 4, so the higher pool keeps
+ * the full-set grind in Claynoz's range (~90-100 capsules) while preserving
+ * a clean tier gradient and an identical grail rarity. Drop weights are
+ * unchanged from the earlier tuning; only the tier labels + point values
+ * (Rare 2 / Epic 4 / Mystic 10 / Grail 25) differ. Per-capsule odds at 30%:
+ *   Rare (each of 3)     ~5.19%   (tier ~15.6%)
+ *   Epic (each of 3)     ~2.50%   (tier ~7.5%)
+ *   Mystic (each of 3)   ~2.20%   (tier ~6.6%)
+ *   Grail (chase)        ~0.33%   ← same as Claynoz; excluded from set
  */
-export const PROMO_DROP_RATE = 0.20;
+export const PROMO_DROP_RATE = 0.30;
 
 /**
  * Single source of truth for "is the promo currently live?". Read by:
@@ -653,6 +843,62 @@ export function decodeHerdsScore(score: number): { fullSets: number; cappedPoint
  *  reached the cap yet. */
 export function eventSetReachedCapKey(setId: string, username: string): string {
     return `event_set:${setId}:reached_cap:${username}`;
+}
+
+// ── Axie-era leaderboard keys (completion-time + composite ranking) ──
+// These support events whose Sets board is a one-per-player COMPLETION
+// RACE (ranked by time) and whose Grails board is tie-broken by time to
+// reach a count. Claynoz keeps using the herds key above; new events use
+// these.
+
+/** Set-completion race zset. score = completion timestamp (ms). Written
+ *  ONCE per player (ZADD NX) the moment they first hold one of every base
+ *  (non-chase) pin. ZRANGE ascending = ranking (earliest completion wins);
+ *  the score doubles as the "finished at" timestamp the UI displays. One
+ *  entry per user, so it is inherently capped at 1 set per player. */
+export function eventSetSetDoneKey(setId: string): string {
+    return `event_set:${setId}:set_done`;
+}
+
+/** Grail race zset — ranks by grail count, tie-broken by TIME to reach
+ *  that count (earlier wins). Both encoded in one score so a single
+ *  ZREVRANGE returns the true order:
+ *      score = count × BUCKET + (BUCKET - 1 - secondsSinceEventStart)
+ *  A higher count always outranks a lower one; within a count, the
+ *  smaller elapsed-seconds (earlier) yields a higher score. BUCKET (1e7)
+ *  exceeds a 7-day event's second span (~6.05e5), and count × 1e7 stays
+ *  well inside float64's exact-integer range. */
+const GRAIL_BUCKET = 10_000_000;
+export function eventSetGrailsKey(setId: string): string {
+    return `event_set:${setId}:grails`;
+}
+export function encodeGrailScore(count: number, secondsSinceStart: number): number {
+    const s = Math.min(GRAIL_BUCKET - 1, Math.max(0, Math.floor(secondsSinceStart)));
+    return Math.max(0, Math.floor(count)) * GRAIL_BUCKET + (GRAIL_BUCKET - 1 - s);
+}
+export function decodeGrailScore(score: number): { count: number; secondsSinceStart: number } {
+    const count = Math.floor(score / GRAIL_BUCKET);
+    const inv = score - count * GRAIL_BUCKET;
+    return { count, secondsSinceStart: (GRAIL_BUCKET - 1) - inv };
+}
+
+/** GVC-holder-only points zset. Mirrors the main points zset but only
+ *  verified GVC holders are written to it, so the Points/GVC board is a
+ *  direct ZREVRANGE with no per-read ownership checks. Membership is
+ *  managed by the holder-verification subsystem (added on verify, and
+ *  the points value kept in lockstep with the main board on each
+ *  collect while the user is a verified holder). */
+export function eventSetPointsGvcKey(setId: string): string {
+    return `event_set:${setId}:points_gvc`;
+}
+
+/** Seconds elapsed since an event's startsAt, clamped to >= 0. Used to
+ *  encode "time to goal" into the grail + (future) rank composites so
+ *  timestamps stay small and comparable within the event window. */
+export function secondsSinceEventStart(set: Pick<PromoEventSet, "startsAt">, nowMs: number): number {
+    if (!set.startsAt) return 0;
+    const start = new Date(set.startsAt).getTime();
+    return Math.max(0, Math.floor((nowMs - start) / 1000));
 }
 
 /**

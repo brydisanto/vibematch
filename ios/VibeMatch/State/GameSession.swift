@@ -31,6 +31,17 @@ enum MatchIntensity: Int, Comparable, Sendable {
         case .normal: return 1.2
         }
     }
+
+    /// Hit-stop freeze before the board state applies, web parity:
+    /// ultra 130ms, mega 80ms, everything else none. The matched tiles
+    /// flash in place during the freeze, then the cascade plays.
+    var hitStopDuration: TimeInterval {
+        switch self {
+        case .ultra: return 0.13
+        case .mega:  return 0.08
+        default:     return 0
+        }
+    }
 }
 
 // MARK: - Score Popup
@@ -120,11 +131,23 @@ final class GameSession {
         didSet { AudioEngine.shared.toggleMute() }
     }
 
+    /// Objective tracker for level mode (nil in classic/daily).
+    private(set) var objectiveTracker: ObjectiveTracker? = nil
+
+    /// Level definition for the current game (nil in classic/daily).
+    private(set) var levelConfig: LevelDefinition? = nil
+
     /// Whether a bonus capsule has been awarded this game (capped at 1 per game).
     private(set) var bonusCapsuleAwarded: Bool = false
 
     /// Set to true momentarily when a T/cross bonus capsule is triggered.
     private(set) var bonusCapsuleTriggered: Bool = false
+
+    /// Capsules earned at game-end via score thresholds + bonus shape.
+    /// Populated when gamePhase transitions to .gameover. The Pin Book
+    /// reveal flow consumes this list and migrates pins into the player
+    /// profile on open.
+    private(set) var earnedCapsules: [PinCapsule] = []
 
     /// Whether a new personal best was set this game.
     private(set) var isNewHighScore: Bool = false
@@ -151,7 +174,20 @@ final class GameSession {
     private(set) var invalidSwapPositions: [Position]? = nil
 
     /// Swap animation positions for the scene to animate before applying the result.
-    private(set) var swapAnimation: (pos1: Position, pos2: Position)? = nil
+    /// Set when a valid swap is initiated; cleared after ~250ms when the
+    /// session applies the post-match board.
+    private(set) var swapAnimation: SwapAnimation? = nil
+
+    struct SwapAnimation: Equatable, Hashable, Sendable {
+        let pos1: Position
+        let pos2: Position
+        let invalid: Bool
+        let id: UUID
+    }
+
+    /// Per-turn breakdown shown in the Move Log sheet. Newest entries
+    /// appended last; one entry per resolved (non-invalid) turn.
+    private(set) var moveLog: [MoveLogEntry] = []
 
     // MARK: - Private State
 
@@ -166,6 +202,17 @@ final class GameSession {
     private var hintHighlightTimer: Timer? = nil
 
     // MARK: - Computed Properties
+
+    /// Tier sort order used for picking the "top tier" pin in a move log entry.
+    private func tierOrder(_ tier: BadgeTier) -> Int {
+        switch tier {
+        case .blue: return 0
+        case .silver: return 1
+        case .special: return 2
+        case .gold: return 3
+        case .cosmic: return 4
+        }
+    }
 
     /// Determines the match intensity level for a given turn result.
     func matchIntensityForResult(_ result: TurnResult) -> MatchIntensity {
@@ -198,24 +245,38 @@ final class GameSession {
         gameMode = mode
 
         // Select badges and configure RNG based on mode
-        let seed: Int?
         switch mode {
         case .daily:
             let dailySeed = getDailySeed()
-            seed = dailySeed
-            var seeded = SeededRandom(seed: dailySeed)
             gameBadges = selectGameBadges(seed: dailySeed)
-            // We need a RandomNumberGenerator conformance for SeededRandom.
-            // For now, use the system RNG seeded boards are handled by createInitialState.
-            rng = SystemRandomNumberGenerator()
+            rng = SeededRandom(seed: dailySeed)
+            levelConfig = nil
+            objectiveTracker = nil
             let state = createInitialState(mode: mode, gameBadges: gameBadges, rng: &rng)
             applyGameState(state)
 
         case .classic:
-            seed = nil
             gameBadges = selectGameBadges()
             rng = SystemRandomNumberGenerator()
+            levelConfig = nil
+            objectiveTracker = nil
             let state = createInitialState(mode: mode, gameBadges: gameBadges, rng: &rng)
+            applyGameState(state)
+
+        case .level(let num):
+            guard let config = LevelCatalog.level(num) else { return }
+            levelConfig = config
+            gameBadges = selectLevelBadges(for: config)
+            rng = SystemRandomNumberGenerator()
+            let tracker = ObjectiveTracker()
+            tracker.configure(for: config)
+            objectiveTracker = tracker
+            let state = createInitialState(
+                mode: mode,
+                gameBadges: gameBadges,
+                movesOverride: config.movesAllowed,
+                rng: &rng
+            )
             applyGameState(state)
         }
 
@@ -230,12 +291,24 @@ final class GameSession {
         swapAnimation = nil
         bonusCapsuleAwarded = false
         bonusCapsuleTriggered = false
+        earnedCapsules = []
 
         // Start hint idle timer
         resetHintTimer()
 
-        // Audio: game start fanfare
+        #if DEBUG
+        // Debug-only short game for testing the game-over flow:
+        //   xcrun simctl launch booted com.goodvibesclub.pindrop -moves 3
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "-moves"), i + 1 < args.count,
+           let override = Int(args[i + 1]), override > 0 {
+            movesLeft = override
+        }
+        #endif
+
+        // Audio: game start fanfare + start BGM loop
         AudioEngine.shared.playSFX(.gameStart)
+        AudioEngine.shared.startRandomBGM()
         HapticManager.shared.playTileSelect()
     }
 
@@ -336,7 +409,7 @@ final class GameSession {
 
         // Valid swap -- animate then apply
         resetHintTimer()
-        swapAnimation = (pos1: pos1, pos2: pos2)
+        swapAnimation = SwapAnimation(pos1: pos1, pos2: pos2, invalid: false, id: UUID())
         isAnimating = true
 
         // Delay to let swap animation play, then apply the turn result
@@ -485,6 +558,10 @@ final class GameSession {
 
         // --- Match Intensity Visual Effect ---
 
+        // Publish the result BEFORE the intensity signal: the scene reads
+        // matched positions from lastTurnResult when matchIntensity fires,
+        // and the burst must play on the pre-apply board.
+        lastTurnResult = result
         matchIntensity = intensity
 
         // Clear match intensity after the effect duration
@@ -512,46 +589,105 @@ final class GameSession {
             }
         }
 
-        // --- Apply State ---
+        // --- Move Log Entry ---
+        //
+        // Captures the data the player needs to make sense of a turn after
+        // the fact: points, combo peak, cascade depth, shape bonus, the
+        // power tiles that spawned/fired, and the highest-tier pin matched.
+        // Skipped on no-cost results (special-tile direct activation when
+        // costMove is false) so the move-log row count tracks moves used.
+        if costMove {
+            let allMatches = result.matchesFound
+            let topTier: BadgeTier? = allMatches
+                .map { $0.badge.tier }
+                .max(by: { tierOrder($0) < tierOrder($1) })
+            let topTierName: String? = allMatches
+                .max(by: { tierOrder($0.badge.tier) < tierOrder($1.badge.tier) })?
+                .badge.name
+            let nextMoveNum = CLASSIC_MOVES - newMovesLeft  // 1..30
+            let entry = MoveLogEntry(
+                moveNum: max(1, nextMoveNum),
+                pointsGained: result.scoreGained,
+                matchesFound: allMatches.count,
+                cascadeCount: result.cascadeCount,
+                maxCombo: result.combo,
+                shapeBonus: result.shapeBonus?.type,
+                specialsCreated: result.specialTilesCreated.map { $0.type },
+                specialsTriggered: [],  // chain-reaction triggers not tracked yet
+                topTier: topTier,
+                topTierName: topTierName
+            )
+            moveLog.append(entry)
+        }
 
-        board = result.board
-        score = newScore
-        movesLeft = newMovesLeft
-        combo = result.combo
-        comboCarry = result.comboCarry
-        maxCombo = newMaxCombo
-        selectedTile = nil
-        matchCount = newMatchCount
-        totalCascades = totalCascades + result.cascadeCount
-        lastTurnResult = result
+        // --- Apply State (hit-stop deferred) ---
+        //
+        // Mirrors web: on mega/ultra the board apply is deferred so the
+        // matched tiles flash IN PLACE before the cascade plays out. The
+        // board sits in its post-swap state during the freeze.
+        let applyState: () -> Void = { [weak self] in
+            guard let self else { return }
 
-        // --- Game Over Check ---
+            self.board = result.board
+            self.score = newScore
+            self.movesLeft = newMovesLeft
+            self.combo = result.combo
+            self.comboCarry = result.comboCarry
+            self.maxCombo = newMaxCombo
+            self.selectedTile = nil
+            self.matchCount = newMatchCount
+            self.totalCascades = self.totalCascades + result.cascadeCount
 
-        let noMovesLeft = newMovesLeft <= 0
-        let noValidMoves = !noMovesLeft && !hasValidMoves(board: result.board, gameBadges: gameBadges)
-        let isGameOver = noMovesLeft || noValidMoves
+            // --- Objective Tracking (Level Mode) ---
 
-        if isGameOver {
-            // Keep isAnimating true to block input during wind-down.
-            // Transition to gameover after effects play out.
-            Timer.scheduledTimer(withTimeInterval: 1.8, repeats: false) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    guard let self else { return }
-                    AudioEngine.shared.playSFX(.gameOver)
-                    self.gamePhase = .gameover
-                    self.gameOverReason = noValidMoves ? .noValidMoves : .movesExhausted
-                    self.isAnimating = false
+            self.objectiveTracker?.updateAfterTurn(
+                result: result,
+                cumulativeScore: self.score,
+                gameBadges: self.gameBadges
+            )
+
+            // --- Game Over Check ---
+
+            let noMovesLeft = newMovesLeft <= 0
+            let noValidMoves = !noMovesLeft && !hasValidMoves(board: result.board, gameBadges: self.gameBadges)
+            let isGameOver = noMovesLeft || noValidMoves
+
+            if isGameOver {
+                // Keep isAnimating true to block input during wind-down.
+                // Transition to gameover after effects play out.
+                Timer.scheduledTimer(withTimeInterval: 1.8, repeats: false) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        AudioEngine.shared.playSFX(.gameOver)
+                        self.earnedCapsules = PinCapsuleAward.all(
+                            score: self.score,
+                            mode: self.gameMode,
+                            bonusShapeEarned: self.bonusCapsuleAwarded
+                        )
+                        self.gamePhase = .gameover
+                        self.gameOverReason = noValidMoves ? .noValidMoves : .movesExhausted
+                        self.isAnimating = false
+                    }
                 }
+            } else {
+                // Unblock input after a brief settle delay
+                Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        self?.isAnimating = false
+                    }
+                }
+                // Restart hint timer for next idle period
+                self.resetHintTimer()
+            }
+        }
+
+        let hitStop = intensity.hitStopDuration
+        if hitStop > 0 {
+            Timer.scheduledTimer(withTimeInterval: hitStop, repeats: false) { _ in
+                Task { @MainActor in applyState() }
             }
         } else {
-            // Unblock input after a brief settle delay
-            Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.isAnimating = false
-                }
-            }
-            // Restart hint timer for next idle period
-            resetHintTimer()
+            applyState()
         }
     }
 
@@ -596,18 +732,29 @@ final class GameSession {
     // MARK: - Invalid Swap Feedback
 
     /// Plays audio + haptic feedback for an invalid swap and triggers
-    /// a brief shake animation on the involved tiles.
+    /// a brief shake animation on the involved tiles. Mirrors the web
+    /// "bounce back" treatment so the player sees the attempted swap
+    /// instead of nothing happening.
     private func playInvalidSwapFeedback(positions: [Position]) {
         AudioEngine.shared.playSFX(.invalidSwap)
         HapticManager.shared.playInvalidSwap()
         AudioEngine.shared.duckMusic(duration: 0.2)
 
         invalidSwapPositions = positions
+        if positions.count == 2 {
+            swapAnimation = SwapAnimation(
+                pos1: positions[0],
+                pos2: positions[1],
+                invalid: true,
+                id: UUID()
+            )
+        }
 
         // Clear shake animation after 400ms
         Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.invalidSwapPositions = nil
+                self?.swapAnimation = nil
             }
         }
     }

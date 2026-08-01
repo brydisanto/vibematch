@@ -1,0 +1,64 @@
+{
+  "snapshotAt": "2026-06-08T16:00:05.368Z",
+  "classic": {
+    "total": 636,
+    "top3": [
+      {
+        "username": "sukoed",
+        "score": 340200,
+        "wallet": "0xcc6a99b3cea642acc1907c9beb30195c3e85cc52"
+      },
+      {
+        "username": "boombo",
+        "score": 325125,
+        "wallet": "0x0fc4acb5ceb9f2c681bf4da557fc4040ea66aef1"
+      },
+      {
+        "username": "moonrelium",
+        "score": 299262,
+        "wallet": "0x0fbec24786881a66b345f8c30ae9420de84d6315"
+      }
+    ]
+  },
+  "pins": {
+    "total": 638,
+    "completedAll101": 21,
+    "top3": [
+      {
+        "username": "bunya",
+        "uniquePins": 101,
+        "wallet": "0x26dd4199269bec9457f84adb029db917a910c711"
+      },
+      {
+        "username": "wyllt",
+        "uniquePins": 101,
+        "wallet": "0x94c47ed35fd041953352cd483b66ad1dba05e31f"
+      },
+      {
+        "username": "humanizer",
+        "uniquePins": 101,
+        "wallet": "0x07da53275190346f7e9b04254e412bba9c6d6b09"
+      }
+    ]
+  },
+  "opensea": {
+    "total": 565,
+    "top3": [
+      {
+        "username": "humanizer",
+        "pinsCollected": 65,
+        "wallet": "0x07da53275190346f7e9b04254e412bba9c6d6b09"
+      },
+      {
+        "username": "bunya",
+        "pinsCollected": 60,
+        "wallet": "0x26dd4199269bec9457f84adb029db917a910c711"
+      },
+      {
+        "username": "btdwayne",
+        "pinsCollected": 51,
+        "wallet": "0xd341108b067cd308cf8cc7e13fb9982b0cba2f4e"
+      }
+    ]
+  }
+}

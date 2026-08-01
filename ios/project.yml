@@ -1,4 +1,4 @@
-name: VibeMatch
+name: PinDrop
 options:
   bundleIdPrefix: com.goodvibesclub
   deploymentTarget:
@@ -8,7 +8,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    TARGETED_DEVICE_FAMILY: "1,2"  # iPhone and iPad
+    TARGETED_DEVICE_FAMILY: "1,2"
     INFOPLIST_KEY_UILaunchScreen_Generation: true
     INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
     INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
@@ -16,20 +16,28 @@ settings:
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 
 targets:
-  VibeMatch:
+  PinDrop:
     type: application
     platform: iOS
     sources:
       - path: VibeMatch
+        excludes:
+          - "Package.swift"
+          - ".build/**"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.goodvibesclub.vibematch
+        PRODUCT_BUNDLE_IDENTIFIER: com.goodvibesclub.pindrop
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: true
-        INFOPLIST_KEY_CFBundleDisplayName: VibeMatch
+        INFOPLIST_KEY_CFBundleDisplayName: Pin Drop
     info:
       path: VibeMatch/Info.plist
       properties:
         UIBackgroundModes: [audio]
-        NSMicrophoneUsageDescription: "VibeMatch needs microphone access for voice chat"
+        UIAppFonts:
+          - Brice-Black.otf
+          - Brice-Bold.otf
+          - Mundial-Bold.otf
+          - Mundial-Regular.otf
+          - MundialDemibold.otf

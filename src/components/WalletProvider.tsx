@@ -6,6 +6,7 @@ import { mainnet } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@rainbow-me/rainbowkit/styles.css';
 import VibestrHolderProbe from './VibestrHolderProbe';
+import GvcHolderProbe from './GvcHolderProbe';
 
 const config = getDefaultConfig({
     appName: 'Pin Drop',
@@ -32,6 +33,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
                 >
                     {children}
                     <VibestrHolderProbe />
+                    <GvcHolderProbe />
                 </RainbowKitProvider>
             </QueryClientProvider>
         </WagmiProvider>

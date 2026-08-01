@@ -2,26 +2,17 @@ import Foundation
 
 // MARK: - Constants
 
-let BASE_SCORES: [Int: Int] = [
-    3: 100,
-    4: 300,
-    5: 600,
-]
-// 6+ uses 1000
-let BASE_SCORE_6_PLUS = 1000
-
-let TIER_MULTIPLIERS: [BadgeTier: Double] = [
-    .blue: 1.0,
-    .silver: 1.5,
-    .gold: 2.0,
-    .cosmic: 3.0,
-]
+// Base scores used inline in calculateMatchScore: 3→100, 4→300, 5+→600
+// Tier multipliers come from badge.pointMultiplier (1.0/1.5/2.0/3.0)
 
 let SHAPE_MULTIPLIERS: [ShapeBonusType: Double] = [
     .L: 1.5,
     .T: 2.5,
     .cross: 4.0,
 ]
+
+/// Maximum cascades to prevent infinite loops (synced with web)
+let MAX_CASCADES = 50
 
 // MARK: - Cell ID Generator
 
@@ -287,8 +278,8 @@ func applySpecialTile(board: [[Cell]], pos: Position, specialType: SpecialTileTy
 // MARK: - Scoring
 
 /// Calculates score for a set of matches with the current combo level.
-/// Base scores: 3-match=100, 4-match=300, 5-match=600, 6+-match=1000.
-/// Combo multiplier: 1 + combo * 0.5.
+/// Base scores mirror web gameEngine.ts: 3-match=150, 4-match=450, 5+=900.
+/// Combo multiplier: 1 + combo * 1.0.
 /// Tier multiplier comes from the badge's pointMultiplier.
 func calculateMatchScore(matches: [Match], combo: Int) -> Int {
     var total = 0
@@ -297,17 +288,17 @@ func calculateMatchScore(matches: [Match], combo: Int) -> Int {
         let len = match.positions.count
         let baseScore: Int
         if len == 3 {
-            baseScore = 100
+            baseScore = 150
         } else if len == 4 {
-            baseScore = 300
-        } else if len == 5 {
-            baseScore = 600
+            baseScore = 450
         } else {
-            baseScore = 1000
+            // 5+ tiles all use 900 (synced with web)
+            baseScore = 900
         }
 
         let tierMultiplier = match.badge.pointMultiplier
-        let comboMultiplier = 1.0 + Double(combo) * 0.5
+        // 1.0x per combo level, mirrors web (deep cascades pay big).
+        let comboMultiplier = 1.0 + Double(combo) * 1.0
 
         total += Int(floor(Double(baseScore) * tierMultiplier * comboMultiplier))
     }
@@ -337,23 +328,37 @@ func applyGravity(board: [[Cell]], gameBadges: [Badge], rng: inout any RandomNum
     var newBoard = board
 
     for col in 0..<BOARD_SIZE {
-        // Collect non-matched tiles from bottom to top
-        var remaining: [Cell] = []
+        // Collect non-matched tiles from bottom to top, tracking original
+        // rows so survivors carry their fall distance (web: dropDistance).
+        var remaining: [(cell: Cell, originalRow: Int)] = []
         for row in stride(from: BOARD_SIZE - 1, through: 0, by: -1) {
             if !newBoard[row][col].isEmpty {
-                remaining.append(newBoard[row][col])
+                remaining.append((newBoard[row][col], row))
             }
         }
+
+        let numNewTiles = BOARD_SIZE - remaining.count
 
         // Fill from bottom
         for row in stride(from: BOARD_SIZE - 1, through: 0, by: -1) {
             let idx = BOARD_SIZE - 1 - row
             if idx < remaining.count {
-                newBoard[row][col] = remaining[idx]
+                let (cell, originalRow) = remaining[idx]
+                var moved = cell
+                moved.isNew = false
+                moved.dropDistance = max(0, row - originalRow)
+                newBoard[row][col] = moved
             } else {
-                // Generate new tile
+                // New tiles enter from above: distance = the column's fill
+                // depth, mirroring the web engine.
                 let badgeIndex = Int.random(in: 0..<gameBadges.count, using: &rng)
-                newBoard[row][col] = Cell(badgeIndex: badgeIndex, isSpecial: nil, isEmpty: false)
+                newBoard[row][col] = Cell(
+                    badgeIndex: badgeIndex,
+                    isSpecial: nil,
+                    isEmpty: false,
+                    dropDistance: numNewTiles,
+                    isNew: true
+                )
             }
         }
     }
@@ -393,9 +398,9 @@ func processTurn(
     // Detect geometric shapes from initial matches
     let shapeBonus = detectShapes(matches: initialMatches)
 
-    // Process cascades
+    // Process cascades (capped at MAX_CASCADES to prevent infinite loops)
     var matches = initialMatches
-    while !matches.isEmpty {
+    while !matches.isEmpty && cascadeCount < MAX_CASCADES {
         totalMatches.append(contentsOf: matches)
 
         // Check for special tiles to create
@@ -478,8 +483,8 @@ func processTurn(
         totalScore = Int(floor(Double(totalScore) * shape.multiplier))
     }
 
-    // Combo decay: carry over combo minus 1 for next turn, capped at 4
-    let comboCarryOut = min(max(combo - 1, 0), 4)
+    // Combo decay (synced with web): carry 2 if combo>=4, 1 if combo>=3, else 0
+    let comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0
 
     return TurnResult(
         board: currentBoard,
@@ -623,8 +628,8 @@ func triggerSpecialTile(
         matchLength: affected.count
     )
 
-    // Combo decay: carry over combo minus 1 for next turn, capped at 4
-    let comboCarryOut = min(max(combo - 1, 0), 4)
+    // Combo decay (synced with web): carry 2 if combo>=4, 1 if combo>=3, else 0
+    let comboCarryOut = combo >= 4 ? 2 : combo >= 3 ? 1 : 0
 
     return TurnResult(
         board: currentBoard,
@@ -704,13 +709,14 @@ func findBestHint(board: [[Cell]], gameBadges: [Badge]) -> HintResult? {
 // MARK: - Initial State
 
 /// Creates a fresh GameState for the given mode with a match-free board.
-func createInitialState(mode: GameMode, gameBadges: [Badge], rng: inout any RandomNumberGenerator) -> GameState {
+/// Use `movesOverride` for level mode to set custom move counts.
+func createInitialState(mode: GameMode, gameBadges: [Badge], movesOverride: Int? = nil, rng: inout any RandomNumberGenerator) -> GameState {
     let board = createBoard(badges: gameBadges, rng: &rng)
 
     return GameState(
         board: board,
         score: 0,
-        movesLeft: CLASSIC_MOVES,
+        movesLeft: movesOverride ?? CLASSIC_MOVES,
         combo: 0,
         comboCarry: 0,
         maxCombo: 0,

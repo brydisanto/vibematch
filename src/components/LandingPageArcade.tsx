@@ -501,6 +501,9 @@ export default function LandingPageArcade({
                     if (primary?.kind === "set") {
                         if (primary.set.heroImage) preload(primary.set.heroImage);
                         if (primary.set.gameBackground) preload(primary.set.gameBackground);
+                        // Warm every rotation background so whichever the
+                        // board picks is cache-hot (no white flash).
+                        (primary.set.gameBackgrounds ?? []).forEach(preload);
                         if (primary.set.partnerLogo) preload(primary.set.partnerLogo);
                     }
                 }

@@ -120,11 +120,11 @@ final class SoundSynthesizer {
         // TODO: Replace chestOpen with professional chest opening sample
         cache[GameSound.chestOpen.cacheKey] = generateChestOpen()
         // TODO: Replace badgeReveal with professional badge reveal samples per tier
-        cache[GameSound.badgeReveal(.common).cacheKey] = generateBadgeReveal(tier: .common)
-        cache[GameSound.badgeReveal(.uncommon).cacheKey] = generateBadgeReveal(tier: .uncommon)
-        cache[GameSound.badgeReveal(.rare).cacheKey] = generateBadgeReveal(tier: .rare)
-        cache[GameSound.badgeReveal(.epic).cacheKey] = generateBadgeReveal(tier: .epic)
-        cache[GameSound.badgeReveal(.legendary).cacheKey] = generateBadgeReveal(tier: .legendary)
+        cache[GameSound.badgeReveal(.blue).cacheKey] = generateBadgeReveal(tier: .blue)
+        cache[GameSound.badgeReveal(.silver).cacheKey] = generateBadgeReveal(tier: .silver)
+        cache[GameSound.badgeReveal(.gold).cacheKey] = generateBadgeReveal(tier: .gold)
+        cache[GameSound.badgeReveal(.special).cacheKey] = generateBadgeReveal(tier: .special)
+        cache[GameSound.badgeReveal(.cosmic).cacheKey] = generateBadgeReveal(tier: .cosmic)
         // TODO: Replace newBadgeDiscovered with professional discovery fanfare sample
         cache[GameSound.newBadgeDiscovered.cacheKey] = generateNewBadgeDiscovered()
 
@@ -246,47 +246,48 @@ final class SoundSynthesizer {
     // MARK: - Sound Generators
 
     // -- Match 3: C5-E5-G5 ascending sawtooth tones with low-pass for warmth --
+    // -- Match 3: bright C5-E5-G5 sine triad. Web uses sine throughout
+    //    for a clean chime; we were on sawtooth which read as buzzy.
     private func generateMatch3() -> AVAudioPCMBuffer {
         let duration = 0.35
         let buffer = makeBuffer(duration: duration)
         let sr = Int(Self.sampleRate)
 
-        // C5 (523Hz), E5 (659Hz), G5 (784Hz) — staggered
-        addTone(to: buffer, frequency: 523, amplitude: 0.25, startSample: 0,
-                sampleCount: Int(0.12 * Double(sr)), waveform: .sawtooth)
-        addTone(to: buffer, frequency: 659, amplitude: 0.25, startSample: Int(0.06 * Double(sr)),
-                sampleCount: Int(0.12 * Double(sr)), waveform: .sawtooth)
-        addTone(to: buffer, frequency: 784, amplitude: 0.30, startSample: Int(0.12 * Double(sr)),
-                sampleCount: Int(0.15 * Double(sr)), waveform: .sawtooth)
+        addTone(to: buffer, frequency: 523, amplitude: 0.12, startSample: 0,
+                sampleCount: Int(0.12 * Double(sr)), waveform: .sine)
+        addTone(to: buffer, frequency: 659, amplitude: 0.12, startSample: Int(0.06 * Double(sr)),
+                sampleCount: Int(0.12 * Double(sr)), waveform: .sine)
+        addTone(to: buffer, frequency: 784, amplitude: 0.14, startSample: Int(0.12 * Double(sr)),
+                sampleCount: Int(0.15 * Double(sr)), waveform: .sine)
 
-        applyLowPass(to: buffer, cutoffHz: 3000)
         clamp(buffer)
         return buffer
     }
 
-    // -- Match 4: C5-E5-G5-C6 ascending chord + sparkle noise --
+    // -- Match 4: C5-E5-G5-C6 ascending chord + sparkle noise. Mirrors web
+    //    `playMatch4Sound`: sine + triangle + sine + sine, amplitudes 0.12-0.16.
     private func generateMatch4() -> AVAudioPCMBuffer {
         let duration = 0.45
         let buffer = makeBuffer(duration: duration)
         let sr = Int(Self.sampleRate)
 
-        addTone(to: buffer, frequency: 523, amplitude: 0.22, startSample: 0,
-                sampleCount: Int(0.15 * Double(sr)), waveform: .sawtooth)
-        addTone(to: buffer, frequency: 659, amplitude: 0.20, startSample: Int(0.05 * Double(sr)),
+        addTone(to: buffer, frequency: 523, amplitude: 0.14, startSample: 0,
+                sampleCount: Int(0.15 * Double(sr)), waveform: .sine)
+        addTone(to: buffer, frequency: 659, amplitude: 0.12, startSample: Int(0.05 * Double(sr)),
                 sampleCount: Int(0.15 * Double(sr)), waveform: .triangle)
-        addTone(to: buffer, frequency: 784, amplitude: 0.22, startSample: Int(0.10 * Double(sr)),
-                sampleCount: Int(0.15 * Double(sr)), waveform: .sawtooth)
-        addTone(to: buffer, frequency: 1047, amplitude: 0.28, startSample: Int(0.15 * Double(sr)),
+        addTone(to: buffer, frequency: 784, amplitude: 0.14, startSample: Int(0.10 * Double(sr)),
+                sampleCount: Int(0.15 * Double(sr)), waveform: .sine)
+        addTone(to: buffer, frequency: 1047, amplitude: 0.16, startSample: Int(0.15 * Double(sr)),
                 sampleCount: Int(0.20 * Double(sr)), waveform: .sine)
-        addNoise(to: buffer, amplitude: 0.06, startSample: Int(0.10 * Double(sr)),
+        addNoise(to: buffer, amplitude: 0.04, startSample: Int(0.10 * Double(sr)),
                  sampleCount: Int(0.15 * Double(sr)))
 
-        applyLowPass(to: buffer, cutoffHz: 4000)
         clamp(buffer)
         return buffer
     }
 
-    // -- Match 5+: C5-E5-G5-C6-E6 arpeggio with sub bass and noise tail --
+    // -- Match 5+: C5-E5-G5-C6-E6 ascending fanfare + sub bass thump + noise.
+    //    Mirrors web `playMatch5Sound`: all sine, amplitudes 0.15-0.20.
     private func generateMatch5() -> AVAudioPCMBuffer {
         let duration = 0.55
         let buffer = makeBuffer(duration: duration)
@@ -296,20 +297,20 @@ final class SoundSynthesizer {
             (523, 0.0), (659, 0.04), (784, 0.08), (1047, 0.12), (1319, 0.16)
         ]
         for (freq, delay) in notes {
-            addTone(to: buffer, frequency: freq, amplitude: 0.22,
+            let waveform: Waveform = (freq == 1047) ? .triangle : .sine
+            addTone(to: buffer, frequency: freq, amplitude: 0.18,
                     startSample: Int(delay * Double(sr)),
-                    sampleCount: Int(0.15 * Double(sr)), waveform: .sawtooth)
+                    sampleCount: Int(0.15 * Double(sr)), waveform: waveform)
         }
-        // Sub bass thump
-        addTone(to: buffer, frequency: 80, amplitude: 0.25,
+        // Sub-bass thump — sine 80Hz, mirrors web amplitude 0.15
+        addTone(to: buffer, frequency: 80, amplitude: 0.15,
                 startSample: Int(0.08 * Double(sr)),
                 sampleCount: Int(0.30 * Double(sr)), waveform: .sine)
-        // Noise shimmer
-        addNoise(to: buffer, amplitude: 0.08,
+        // Noise shimmer 0.06
+        addNoise(to: buffer, amplitude: 0.06,
                  startSample: Int(0.12 * Double(sr)),
                  sampleCount: Int(0.25 * Double(sr)))
 
-        applyLowPass(to: buffer, cutoffHz: 5000)
         clamp(buffer)
         return buffer
     }
@@ -870,15 +871,15 @@ final class SoundSynthesizer {
         let noteCount: Int
 
         switch tier {
-        case .common:
+        case .blue:
             duration = 0.25; amplitude = 0.15; noteCount = 2
-        case .uncommon:
-            duration = 0.30; amplitude = 0.20; noteCount = 3
-        case .rare:
-            duration = 0.40; amplitude = 0.25; noteCount = 4
-        case .epic:
+        case .silver:
+            duration = 0.35; amplitude = 0.22; noteCount = 3
+        case .gold:
             duration = 0.50; amplitude = 0.30; noteCount = 5
-        case .legendary:
+        case .special:
+            duration = 0.50; amplitude = 0.30; noteCount = 5
+        case .cosmic:
             duration = 0.65; amplitude = 0.35; noteCount = 6
         }
 
@@ -893,7 +894,7 @@ final class SoundSynthesizer {
                     sampleCount: Int(0.12 * Double(sr)), waveform: .triangle)
         }
 
-        if tier == .legendary || tier == .epic {
+        if tier == .cosmic || tier == .gold {
             addNoise(to: buffer, amplitude: 0.06,
                      startSample: Int(Double(noteCount) * 0.06 * Double(sr)),
                      sampleCount: Int(0.15 * Double(sr)))

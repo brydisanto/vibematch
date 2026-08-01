@@ -1,8 +1,10 @@
 import AVFoundation
+import UIKit
+import UIKit
 
 // MARK: - GameSound Enum
 
-/// Every SFX in VibeMatch is triggered through this enum.
+/// Every SFX in Pin Drop is triggered through this enum.
 /// No hardcoded asset paths — all sounds resolve through the synthesizer or (future) asset loader.
 enum GameSound: Hashable {
     // Core match
@@ -109,7 +111,7 @@ enum MusicState: Equatable {
 
 // MARK: - AudioEngine
 
-/// Main audio manager for VibeMatch, built on AVAudioEngine.
+/// Main audio manager for Pin Drop, built on AVAudioEngine.
 ///
 /// Architecture:
 /// ```
@@ -322,6 +324,109 @@ final class AudioEngine {
         player.play()
     }
 
+    // MARK: - BGM Playback
+
+    /// Available background music tracks (file basenames, no extension).
+    /// Mirrors the web's 9-track Pin Drop BGM library. Add/remove here as
+    /// new MP3s are added to Resources/Music.
+    static let bgmTracks: [String] = [
+        "feel-the-beat",
+        "bean",
+        "werq",
+        "late-night-radio",
+        "funkorama",
+        "voxel-revolution",
+        "electrodoodle",
+        "andromeda",
+        "sunlight",
+    ]
+
+    private(set) var currentBGMTrack: String?
+    private var bgmBuffer: AVAudioPCMBuffer?
+
+    /// Plays a BGM track on loop through stem A. If a track is already
+    /// playing, it stops cleanly first. Looks up the file via Bundle.main.
+    func playBGM(_ trackName: String) {
+        guard !isMuted, isEngineRunning else { return }
+        // Stop any current BGM
+        stopBGM()
+
+        guard let url = Bundle.main.url(forResource: trackName, withExtension: "mp3") else {
+            print("[AudioEngine] BGM track not found: \(trackName)")
+            return
+        }
+
+        do {
+            let file = try AVAudioFile(forReading: url)
+            let format = file.processingFormat
+            guard let buffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: AVAudioFrameCount(file.length)
+            ) else {
+                print("[AudioEngine] Failed to allocate BGM buffer")
+                return
+            }
+            try file.read(into: buffer)
+            bgmBuffer = buffer
+
+            // Connect stemA with the BGM file's native format. Stem mixer
+            // and downstream nodes were created at the synth format; we
+            // re-attach the player path here.
+            engine.disconnectNodeOutput(stemA)
+            engine.connect(stemA, to: stemAMixer, format: format)
+
+            stemA.scheduleBuffer(buffer, at: nil, options: [.loops], completionHandler: nil)
+            stemA.play()
+            currentBGMTrack = trackName
+        } catch {
+            print("[AudioEngine] Failed to load BGM \(trackName): \(error)")
+        }
+    }
+
+    /// Display names for the BGM library, same order as `bgmTracks`.
+    /// Mirrors the web's BGM_TRACK_NAMES.
+    static let bgmTrackNames: [String] = [
+        "Feel The Beat",
+        "Bean",
+        "Werq",
+        "Late Night Radio",
+        "Funkorama",
+        "Voxel Revolution",
+        "Electrodoodle",
+        "Andromeda",
+        "Sunlight",
+    ]
+
+    /// Plays a randomly selected track from the BGM library.
+    func startRandomBGM() {
+        guard let track = Self.bgmTracks.randomElement() else { return }
+        playBGM(track)
+    }
+
+    /// Index of the last selected track; survives mute (when playBGM
+    /// early-returns) so repeated presses still cycle the whole library.
+    private var bgmTrackIndex = -1
+
+    /// Advances to the next track in the library (ordered, wrapping) and
+    /// plays it. Returns the display name for the in-game track toast.
+    /// Mirrors the web's switchBGMTrack().
+    @discardableResult
+    func switchBGMTrack() -> String {
+        // Resync with whatever is actually playing (e.g. startRandomBGM).
+        if let current = currentBGMTrack, let i = Self.bgmTracks.firstIndex(of: current) {
+            bgmTrackIndex = i
+        }
+        bgmTrackIndex = (bgmTrackIndex + 1) % Self.bgmTracks.count
+        playBGM(Self.bgmTracks[bgmTrackIndex])
+        return Self.bgmTrackNames[bgmTrackIndex]
+    }
+
+    func stopBGM() {
+        stemA.stop()
+        bgmBuffer = nil
+        currentBGMTrack = nil
+    }
+
     // MARK: - Music Ducking
 
     /// Ramp music bus volume to 0.15 over 50ms, then recover to set level after duration.
@@ -498,7 +603,7 @@ final class AudioEngine {
 
     @objc private func handleInterruption(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let typeValue = userInfo[AVAudioSession.interruptionTypeKey] as? UInt,
+              let typeValue = userInfo["AVAudioSessionInterruptionTypeKey"] as? UInt,
               let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
             return
         }
@@ -511,9 +616,9 @@ final class AudioEngine {
 
         case .ended:
             // Interruption ended. Check if we should resume.
-            if let optionsValue = userInfo[AVAudioSession.interruptionOptionKey] as? UInt {
+            if let optionsValue = userInfo["AVAudioSessionInterruptionOptionKey"] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
-                if options.contains(.shouldResume) {
+                if options.contains(.init(rawValue: 1)) { // shouldResume
                     configureAudioSession()
                     startEngine()
                 }
@@ -526,7 +631,7 @@ final class AudioEngine {
 
     @objc private func handleRouteChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let reasonValue = userInfo[AVAudioSession.routeChangeReasonKey] as? UInt,
+              let reasonValue = userInfo["AVAudioSessionRouteChangeReasonKey"] as? UInt,
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
             return
         }

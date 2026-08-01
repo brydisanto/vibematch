@@ -85,6 +85,30 @@ function formatRemaining(targetMs: number): { d: number; h: number; m: number; s
 
 /** "JUL 7 · 12 PM ET" — date + time in America/New_York, capitalized
  *  to match the existing display weight. */
+// Full Set Race finish stamp, e.g. "AUG 4 · 2:47 PM ET". Rendered on a
+// single no-wrap line in the board column. Returns a placeholder if the
+// timestamp is missing (shouldn't happen for a completed entry).
+function formatFinishedAt(ms?: number): string {
+    if (!ms || !Number.isFinite(ms)) return "—";
+    try {
+        const date = new Date(ms);
+        const dateStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            month: "short",
+            day: "numeric",
+        }).format(date).toUpperCase();
+        const timeStr = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        }).format(date).toUpperCase();
+        return `${dateStr} · ${timeStr} ET`;
+    } catch {
+        return "—";
+    }
+}
+
 function formatEasternLabel(iso: string): string {
     try {
         const date = new Date(iso);
@@ -578,22 +602,52 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.winners ?? null : null),
         [promo.eventSetId],
     );
+    // Completion-board label — "Herds" (Claynoz) or "Sets" (Axie), per
+    // the event config.
+    const setsLabel = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.setsBoardLabel : null) ?? "Herds",
+        [promo.eventSetId],
+    );
+    // Timed-board events (Axie) run the completion board as a one-time
+    // race: ranked by finish time, with a "Finished" timestamp column
+    // instead of a running full-set count.
+    const timedBoards = useMemo(
+        () => (promo.eventSetId ? !!findPromoEventSet(promo.eventSetId)?.timedBoards : false),
+        [promo.eventSetId],
+    );
+    // GVC-holder-only points board — an extra sub-tab shown only for
+    // events that gate a prize track on GVC ownership (Axie).
+    const gvcBoard = useMemo(
+        () => (promo.eventSetId ? !!findPromoEventSet(promo.eventSetId)?.gvcBoard : false),
+        [promo.eventSetId],
+    );
+    const gvcBoardLabel = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.gvcBoardLabel : null) ?? "GVC Holders",
+        [promo.eventSetId],
+    );
+    // When set, replaces the "Most Grails" spotlight with an at-a-glance
+    // board + prize guide for this event.
+    const leaderboardGuide = useMemo(
+        () => (promo.eventSetId ? findPromoEventSet(promo.eventSetId)?.leaderboardGuide ?? null : null),
+        [promo.eventSetId],
+    );
     // Set events open on the "Set" tab — players see the collection
     // surface (their progress + the pins to chase) before the
     // leaderboard. Reads as a personal "what's left" first, public
     // ranking second. Once winners are published, open there instead.
-    const [view, setView] = useState<"leaderboard" | "set" | "winners">(eventWinners ? "winners" : "set");
+    const [view, setView] = useState<"leaderboard" | "set" | "winners" | "prizes">(eventWinners ? "winners" : "set");
     // Sub-view inside the Leaderboard tab for set events. Three tabs:
     //   points  — score-based ranking (default)
     //   herds   — ranks by full sets completed, tie-broken by points
     //   grail   — ranks by chase-pin (Grail) pull count
-    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds" | "grail">("points");
+    const [leaderboardMetric, setLeaderboardMetric] = useState<"points" | "herds" | "grail" | "gvc">("points");
     const [herdsEntries, setHerdsEntries] = useState<Array<{
         username: string;
         herds: number;
         count: number;
         rank: number;
         avatarUrl?: string;
+        completedAt?: number; // timed events only: set-completion timestamp
     }>>([]);
     const [grailEntries, setGrailEntries] = useState<Array<{
         username: string;
@@ -601,6 +655,8 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
         rank: number;
         avatarUrl?: string;
     }>>([]);
+    // GVC-only points board — same row shape as the open points board.
+    const [gvcEntries, setGvcEntries] = useState<EventEntry[]>([]);
     // Seed pin metadata (id, name, image, rarityLabel, points) from the
     // client-side event registry so pin art renders on the first frame
     // instead of waiting for the /api/promo/leaderboard round-trip.
@@ -648,6 +704,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                 setTotalPlayers(d.totalPlayers || 0);
                 setHerdsEntries(d.herdsLeaderboard || []);
                 setGrailEntries(d.grailLeaderboard || []);
+                setGvcEntries(d.gvcLeaderboard || []);
                 if (d.eventSet?.pins) {
                     // Merge server owned counts onto the client-seeded
                     // metadata rather than replacing wholesale — the
@@ -896,8 +953,22 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         fontWeight: 600,
                                     }}
                                 >
-                                    Leaderboard
+                                    Leaderboards
                                 </button>
+                                {leaderboardGuide && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setView("prizes")}
+                                        className="px-3 py-2.5 font-display text-[13px] tracking-[0.22em] uppercase transition-colors"
+                                        style={{
+                                            color: view === "prizes" ? accent : "rgba(255,255,255,0.5)",
+                                            borderBottom: view === "prizes" ? `2px solid ${accent}` : "2px solid transparent",
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        How to win
+                                    </button>
+                                )}
                                 {eventWinners && (
                                     <button
                                         type="button"
@@ -918,19 +989,21 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                         {/* Content */}
                         {view === "leaderboard" ? (
                             <div className="px-5 pb-3 pt-3">
-                                {/* Points | Herds | Grail Chase subtoggle —
-                                    only on set events. Points ranks by
-                                    score. Herds ranks by full sets
-                                    completed (tie-break: points). Grail
-                                    Chase ranks by chase-pin (isChase)
-                                    pull count. */}
+                                {/* Points | Sets | Grail Chase [| Points/GVC]
+                                    subtoggle — only on set events. Points ranks
+                                    by score. Sets ranks by full-set completion
+                                    (timed: finish time). Grail Chase ranks by
+                                    chase-pin count. Points/GVC (when the event
+                                    gates a GVC prize track) is the points board
+                                    filtered to verified GVC holders. */}
                                 {promo.eventSetId && (
-                                    <div className="flex justify-center gap-1 mb-3">
+                                    <div className="flex justify-center flex-wrap gap-1 mb-3">
                                         {([
                                             { key: "points", label: "Total Points" },
-                                            { key: "herds", label: "Herds" },
+                                            { key: "herds", label: setsLabel },
                                             { key: "grail", label: "Grail Chase" },
-                                        ] as const).map(({ key, label }) => {
+                                            ...(gvcBoard ? [{ key: "gvc" as const, label: gvcBoardLabel }] : []),
+                                        ] as Array<{ key: "points" | "herds" | "grail" | "gvc"; label: string }>).map(({ key, label }) => {
                                             const isActive = leaderboardMetric === key;
                                             return (
                                                 <button
@@ -976,13 +1049,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     <>
                                         {/* GIGA CHAD callout — celebrates the player
                                             with the most pulls of the highest-points
-                                            pin in the set. Distinct prize lane from
-                                            the score-cap raffle, so leaders here can
-                                            differ from the top of the points board.
-                                            Derived from the visible top-50 rows;
-                                            adequate for events that fit in that
-                                            window. */}
+                                            pin in the set. Hidden when a leaderboardGuide
+                                            replaces it. Derived from the visible top-50
+                                            rows; adequate for events that fit that window. */}
                                         {(() => {
+                                            if (leaderboardGuide) return null;
                                             if (!promo.eventSetId || setPins.length === 0) return null;
                                             const gigaPin = [...setPins].sort((a, b) => b.points - a.points)[0];
                                             if (!gigaPin) return null;
@@ -1085,7 +1156,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                         <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
-                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Herds</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Sets</div>
                                                         <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
                                                         <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
                                                     </div>
@@ -1103,6 +1174,44 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                         />
                                                     ))}
                                                 </div>
+                                            </>
+                                        )}
+                                        {/* Points/GVC view — identical to the
+                                            points board, filtered server-side to
+                                            verified GVC holders. */}
+                                        {leaderboardMetric === "gvc" && (
+                                            <>
+                                                {promo.eventSetId && setPins.length > 0 && gvcEntries.length > 0 && (
+                                                    <div className="flex items-center gap-2 sm:gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
+                                                        <div className="flex-shrink-0 w-7 text-center">RANK</div>
+                                                        <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Pins</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Sets</div>
+                                                        <div className="flex-shrink-0 w-11 sm:w-14 text-center">Grails</div>
+                                                        <div className="flex-shrink-0 w-14 text-center tabular-nums font-semibold" style={{ color: accent }}>Points</div>
+                                                    </div>
+                                                )}
+                                                {gvcEntries.length === 0 ? (
+                                                    <div className="py-8 text-center font-mundial text-xs text-white/40">
+                                                        {!started
+                                                            ? "The GVC Holders board opens once the event begins."
+                                                            : "No verified GVC holders on the board yet."}
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1.5">
+                                                        {gvcEntries.map(entry => (
+                                                            <LeaderboardRow
+                                                                key={entry.username}
+                                                                entry={entry}
+                                                                isUser={!!currentUsername && entry.username.toLowerCase() === currentUsername.toLowerCase()}
+                                                                accent={accent}
+                                                                currentAvatarUrl={currentAvatarUrl}
+                                                                isWinner={ended && entry.rank === 1}
+                                                                setPins={promo.eventSetId ? setPins : undefined}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                         {/* Grail Chase view — ranked by chase-pin
@@ -1170,14 +1279,22 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                 <div className="flex items-center gap-3 px-2 pb-2 mb-1 border-b border-white/[0.05] text-[10px] tracking-[0.22em] uppercase font-display text-white/40">
                                                     <div className="flex-shrink-0 w-7 text-center">RANK</div>
                                                     <div className="flex-1 min-w-0 pl-3">COLLECTOR</div>
-                                                    <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>Herds</div>
-                                                    <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
+                                                    {timedBoards ? (
+                                                        <div className="flex-shrink-0 w-32 text-center font-semibold" style={{ color: accent }}>Finished</div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex-shrink-0 w-14 text-center font-semibold" style={{ color: accent }}>{setsLabel}</div>
+                                                            <div className="flex-shrink-0 w-14 text-center tabular-nums">Points</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                                 {herdsEntries.length === 0 ? (
                                                     <div className="py-8 text-center font-mundial text-xs text-white/40">
                                                         {!started
-                                                            ? "Herds will appear once the event begins."
-                                                            : "No full sets yet. Be the first to complete a herd."}
+                                                            ? `The ${setsLabel} board opens once the event begins.`
+                                                            : timedBoards
+                                                                ? "No one has completed the full set of 9 yet. Be the first to finish."
+                                                                : `No full sets yet. Be the first to complete a ${setsLabel.replace(/s$/, "").toLowerCase()}.`}
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-1.5">
@@ -1203,22 +1320,33 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                                                             {isYou ? "You" : entry.username}
                                                                         </div>
                                                                     </div>
-                                                                    <div
-                                                                        className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
-                                                                        style={{
-                                                                            fontSize: "18px",
-                                                                            color: accent,
-                                                                            textShadow: `0 0 12px ${accent}88`,
-                                                                        }}
-                                                                    >
-                                                                        {entry.herds}
-                                                                    </div>
-                                                                    <div
-                                                                        className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
-                                                                        style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
-                                                                    >
-                                                                        {entry.count}
-                                                                    </div>
+                                                                    {timedBoards ? (
+                                                                        <div
+                                                                            className="flex-shrink-0 w-32 text-center font-display font-semibold tabular-nums whitespace-nowrap"
+                                                                            style={{ fontSize: "11px", color: accent, textShadow: `0 0 10px ${accent}66` }}
+                                                                        >
+                                                                            {formatFinishedAt(entry.completedAt)}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div
+                                                                                className="flex-shrink-0 w-14 text-center font-display font-black tabular-nums"
+                                                                                style={{
+                                                                                    fontSize: "18px",
+                                                                                    color: accent,
+                                                                                    textShadow: `0 0 12px ${accent}88`,
+                                                                                }}
+                                                                            >
+                                                                                {entry.herds}
+                                                                            </div>
+                                                                            <div
+                                                                                className="flex-shrink-0 w-14 text-center font-display font-semibold tabular-nums"
+                                                                                style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}
+                                                                            >
+                                                                                {entry.count}
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                                 </Link>
                                                             );
                                                         })}
@@ -1229,8 +1357,11 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </>
                                 )}
 
-                                {/* User pinned row when not in top 50 */}
-                                {userRow && (
+                                {/* User pinned row when not in top 50. Hidden on
+                                    the GVC tab: userRow carries the open-board
+                                    rank, which wouldn't match the filtered GVC
+                                    ranking. */}
+                                {userRow && leaderboardMetric !== "gvc" && (
                                     <div className="mt-3 pt-3 border-t border-white/5">
                                         <Link
                                             href={`/u/${encodeURIComponent(userRow.username)}`}
@@ -1300,6 +1431,43 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                         </Link>
                                     </div>
                                 )}
+                            </div>
+                        ) : view === "prizes" && leaderboardGuide ? (
+                            <div className="px-5 pb-4 pt-4">
+                                {/* Full how-to-win rundown: every board + the prize
+                                    lines. The tab itself is titled "How to win". */}
+                                <div className="space-y-2.5 mb-5">
+                                    {leaderboardGuide.boards.map((b, i) => (
+                                        <div key={b.name} className="flex items-start gap-3">
+                                            <div
+                                                className="font-display font-black text-[11px] shrink-0 grid place-items-center rounded-md mt-0.5"
+                                                style={{ width: 22, height: 22, background: `${accent}22`, color: accent }}
+                                            >
+                                                {i + 1}
+                                            </div>
+                                            <div className="leading-snug">
+                                                <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>{b.name}</span>
+                                                <div className="font-mundial text-white/65 text-[13px] mt-0.5">{b.detail}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div
+                                    className="rounded-xl p-4"
+                                    style={{ background: `linear-gradient(135deg, ${accent}18, ${accent}06)`, border: `1px solid ${accent}44` }}
+                                >
+                                    <div className="font-display text-[10px] tracking-[0.28em] uppercase mb-2.5" style={{ color: accent, fontWeight: 600 }}>
+                                        Prize pool
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {leaderboardGuide.prizes.map(p => (
+                                            <div key={p} className="flex gap-2.5 items-baseline font-mundial text-[13px] text-white/80">
+                                                <span className="shrink-0" style={{ color: accent }}>◆</span>
+                                                <span>{p}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ) : view === "winners" && eventWinners ? (
                             <div className="px-5 pb-3 pt-3">
@@ -1469,7 +1637,7 @@ function SetView({
                         <div className="flex items-center gap-2">
                             <span className="font-display text-[9px] tracking-[0.22em] uppercase text-white/45">{setBonusLabel}</span>
                             <span className="font-display font-semibold text-[13px]" style={{ color: accent }}>
-                                +{setBonusPoints} pts
+                                = +{setBonusPoints} bonus pts
                             </span>
                         </div>
                     )}

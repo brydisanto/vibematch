@@ -33,6 +33,10 @@ struct GameOverView: View {
     var onPlayAgain: () -> Void
     var onGoHome: () -> Void
 
+    @Environment(AppState.self) private var appState
+    var onNextLevel: (() -> Void)? = nil
+    var progression: ProgressionManager? = nil
+
     @State private var displayScore: Int = 0
     @State private var showContent = false
     @State private var showRank = false
@@ -40,8 +44,13 @@ struct GameOverView: View {
     @State private var showButtons = false
     @State private var scoreFinished = false
     @State private var medallionRotation: Double = 0
+    @State private var levelResult: LevelResult? = nil
+    @State private var xpResult: (xpGained: Int, leveledUp: Bool, newLevel: Int)? = nil
+    @State private var previousXPProgress: Double = 0
 
     private var rank: RankConfig { getRank(for: session.score) }
+    private var isLevelMode: Bool { session.gameMode.isLevel }
+    private var objectiveMet: Bool { session.objectiveTracker?.isComplete ?? false }
 
     var body: some View {
         ZStack {
@@ -65,10 +74,11 @@ struct GameOverView: View {
                     // Rank label
                     if showRank {
                         Text(rank.label)
-                            .font(.system(size: 24, weight: .black, design: .rounded))
+                            .font(.custom("Brice-Black", size: 26))
                             .tracking(4)
                             .foregroundStyle(rank.color)
-                            .shadow(color: rank.color.opacity(0.5), radius: 16)
+                            .shadow(color: rank.color.opacity(0.6), radius: 16)
+                            .shadow(color: .black.opacity(0.7), radius: 0, y: 2)
                             .transition(.scale(scale: 0.5).combined(with: .opacity))
                     }
 
@@ -94,7 +104,20 @@ struct GameOverView: View {
                             .transition(.scale.combined(with: .opacity))
                     }
 
+                    // Pin capsule earnings banner
+                    if showStats && !session.earnedCapsules.isEmpty {
+                        earnedCapsulesBanner
+                            .padding(.top, 12)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    }
+
                     Spacer().frame(height: 8)
+
+                    // Level objective result (level mode)
+                    if isLevelMode && showRank {
+                        levelObjectiveResult
+                            .transition(.scale(scale: 0.5).combined(with: .opacity))
+                    }
 
                     // Star rating
                     if showRank {
@@ -102,8 +125,21 @@ struct GameOverView: View {
                             .transition(.scale(scale: 0.5).combined(with: .opacity))
                     }
 
-                    // Rank progress bar
-                    if showStats {
+                    // XP gain (level mode)
+                    if isLevelMode, let xpResult, showStats {
+                        XPGainView(
+                            xpGained: xpResult.xpGained,
+                            previousProgress: previousXPProgress,
+                            newProgress: progression?.playerXP.progress ?? 0,
+                            newLevel: xpResult.newLevel,
+                            didLevelUp: xpResult.leveledUp
+                        )
+                        .padding(.horizontal, 20)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
+                    // Rank progress bar (classic/daily only)
+                    if !isLevelMode && showStats {
                         rankProgressBar
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -122,14 +158,6 @@ struct GameOverView: View {
                     if showStats && !session.gameBadges.isEmpty {
                         badgeSection
                             .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    Spacer().frame(height: 12)
-
-                    // Craig reaction
-                    if showStats {
-                        craigReaction
-                            .transition(.scale.combined(with: .opacity))
                     }
 
                     Spacer().frame(height: 24)
@@ -152,6 +180,12 @@ struct GameOverView: View {
     // MARK: - Reveal Sequence
 
     private func startRevealSequence() {
+        // Process level results before showing anything
+        if isLevelMode, let progression {
+            previousXPProgress = progression.playerXP.progress
+            processLevelResults()
+        }
+
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2)) {
             showContent = true
         }
@@ -177,6 +211,27 @@ struct GameOverView: View {
         }
     }
 
+    private func processLevelResults() {
+        guard let progression, let levelNum = session.gameMode.levelNumber else { return }
+        let isFirstClear = !progression.levelProgress.isCompleted(levelNum)
+
+        // Record level completion
+        levelResult = progression.completeLevel(
+            levelNum,
+            score: session.score,
+            objectiveMet: objectiveMet
+        )
+
+        // Award XP (even if objective failed — you still get base XP)
+        let stars = levelResult?.stars ?? 0
+        xpResult = progression.awardXP(
+            score: session.score,
+            stars: stars,
+            maxCombo: session.maxCombo,
+            isFirstClear: isFirstClear && objectiveMet
+        )
+    }
+
     // MARK: - Score Counter Animation
 
     private func animateScoreCounter() {
@@ -199,6 +254,65 @@ struct GameOverView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Earned Capsules Banner
+
+    /// "PIN CAPSULES EARNED" banner — enamel-card styled, mirrors the
+    /// landing page's chunky aesthetic so the player gets a consistent
+    /// payoff visual at game-over.
+    private var earnedCapsulesBanner: some View {
+        let count = session.earnedCapsules.count
+        let capsuleLabel = count == 1 ? "PIN CAPSULE EARNED" : "PIN CAPSULES EARNED"
+        return EnamelCard(rim: ArcadeTokens.gold, dim: ArcadeTokens.goldDim, deep: ArcadeTokens.goldDeep, cornerRadius: 18, dropDepth: 5) {
+            VStack(spacing: 10) {
+                Text(capsuleLabel)
+                    .font(.custom("Brice-Black", size: 13))
+                    .tracking(2.5)
+                    .foregroundStyle(ArcadeTokens.gold)
+                    .shadow(color: .black.opacity(0.6), radius: 0, y: 1)
+
+                HStack(spacing: 8) {
+                    ForEach(0..<min(count, 6), id: \.self) { _ in
+                        capsuleGlyph
+                    }
+                    if count > 6 {
+                        Text("+\(count - 6)")
+                            .font(.custom("Brice-Black", size: 18))
+                            .foregroundStyle(ArcadeTokens.gold)
+                            .padding(.leading, 4)
+                    }
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 14)
+        }
+    }
+
+    private var capsuleGlyph: some View {
+        ZStack {
+            // Capsule body
+            SwiftUI.Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [VibeColors.primaryLight, VibeColors.primary],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 22, height: 32)
+                .overlay(
+                    SwiftUI.Capsule()
+                        .strokeBorder(VibeColors.primaryDeep.opacity(0.5), lineWidth: 1)
+                )
+
+            // Inner shine
+            SwiftUI.Capsule()
+                .fill(Color.white.opacity(0.4))
+                .frame(width: 6, height: 12)
+                .offset(x: -5, y: -8)
+        }
+        .shadow(color: VibeColors.primary.opacity(0.5), radius: 6)
     }
 
     // MARK: - Rank Medallion
@@ -260,9 +374,19 @@ struct GameOverView: View {
 
     private var scoreDisplay: some View {
         Text(displayScore.formatted(.number))
-            .font(.system(size: 52, weight: .black, design: .rounded))
-            .foregroundStyle(rank.color)
-            .shadow(color: rank.color.opacity(0.4), radius: 20)
+            .font(.custom("Brice-Black", size: 56))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [.white, rank.color],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .shadow(color: rank.color.opacity(0.55), radius: 24)
+            .shadow(color: .black.opacity(0.7), radius: 0, y: 3)
             .scaleEffect(scoreFinished ? 1.05 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.5), value: scoreFinished)
             .contentTransition(.numericText())
@@ -290,19 +414,58 @@ struct GameOverView: View {
             .shadow(color: VibeColors.orange.opacity(0.6), radius: 12)
     }
 
+    // MARK: - Level Objective Result
+
+    private var levelObjectiveResult: some View {
+        HStack(spacing: 8) {
+            Image(systemName: objectiveMet ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(objectiveMet ? .green : VibeColors.danger)
+
+            Text(objectiveMet ? "OBJECTIVE COMPLETE" : "OBJECTIVE FAILED")
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .tracking(1)
+                .foregroundStyle(objectiveMet ? .green : VibeColors.danger)
+
+            if let tracker = session.objectiveTracker {
+                Text(tracker.progressText)
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(VibeColors.textSecondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill((objectiveMet ? Color.green : VibeColors.danger).opacity(0.1))
+                .overlay(
+                    Capsule()
+                        .strokeBorder((objectiveMet ? Color.green : VibeColors.danger).opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
     // MARK: - Star Rating
+
+    private var levelStars: Int {
+        levelResult?.stars ?? 0
+    }
+
+    private var displayStars: Int {
+        isLevelMode ? levelStars : rank.stars
+    }
 
     private var starRating: some View {
         HStack(spacing: 8) {
             ForEach(1...3, id: \.self) { star in
-                Image(systemName: star <= rank.stars ? "star.fill" : "star")
+                Image(systemName: star <= displayStars ? "star.fill" : "star")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(
-                        star <= rank.stars
+                        star <= displayStars
                             ? VibeColors.gold
                             : Color.white.opacity(0.15)
                     )
-                    .shadow(color: star <= rank.stars ? VibeColors.gold.opacity(0.4) : .clear, radius: 6)
+                    .shadow(color: star <= displayStars ? VibeColors.gold.opacity(0.4) : .clear, radius: 6)
             }
         }
         .padding(.vertical, 8)
@@ -442,79 +605,73 @@ struct GameOverView: View {
             .sorted { (tierOrder[$0.tier] ?? 4) < (tierOrder[$1.tier] ?? 4) }
     }
 
-    // MARK: - Craig Reaction
-
-    private var craigReaction: some View {
-        VStack(spacing: 8) {
-            // Craig image with fallback
-            ZStack {
-                Circle()
-                    .fill(VibeColors.accentCool.opacity(0.1))
-                    .frame(width: 60, height: 60)
-
-                Image("craig")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-                    .background(
-                        Circle()
-                            .fill(VibeColors.accentCool.opacity(0.2))
-                            .frame(width: 50, height: 50)
-                            .overlay(
-                                Image(systemName: "figure.wave")
-                                    .font(.system(size: 24))
-                                    .foregroundStyle(VibeColors.accentCool.opacity(0.5))
-                            )
-                    )
-            }
-
-            Text(craigMessage)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(VibeColors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.vertical, 8)
-    }
-
-    private var craigMessage: String {
-        switch session.score {
-        case 20000...:  return "Craig is blown away! Cosmic vibes only!"
-        case 15000...:  return "Craig says: \"Pure gold, fam!\""
-        case 10000...:  return "Craig approves! Silver tier energy!"
-        case 5000...:   return "Craig nods: \"Not bad, keep vibin'!\""
-        default:        return "Craig believes in you! Try again!"
-        }
-    }
-
     // MARK: - Action Buttons
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
-            // Primary row
-            HStack(spacing: 12) {
-                VibeButton("Home", icon: "house.fill", variant: .secondary) {
-                    onGoHome()
-                }
+            if isLevelMode {
+                // Level mode buttons
+                HStack(spacing: 12) {
+                    VibeButton("Home", icon: "house.fill", variant: .secondary) {
+                        onGoHome()
+                    }
 
-                VibeButton("Share", icon: "square.and.arrow.up", variant: .secondary) {
-                    shareScore()
-                }
-
-                if session.gameMode == .classic {
-                    VibeButton("Rematch", icon: "arrow.counterclockwise", variant: .primary) {
+                    VibeButton("Retry", icon: "arrow.counterclockwise", variant: .secondary) {
                         onPlayAgain()
+                    }
+
+                    if objectiveMet, let onNextLevel {
+                        VibeButton("Next", icon: "arrow.right", variant: .primary) {
+                            onNextLevel()
+                        }
+                    }
+                }
+            } else {
+                // Classic/Daily mode buttons
+                HStack(spacing: 12) {
+                    VibeButton("Home", icon: "house.fill", variant: .secondary) {
+                        onGoHome()
+                    }
+
+                    VibeButton("Share", icon: "square.and.arrow.up", variant: .secondary) {
+                        shareScore()
+                    }
+
+                    if case .classic = session.gameMode {
+                        VibeButton("Rematch", icon: "arrow.counterclockwise", variant: .primary) {
+                            onPlayAgain()
+                        }
                     }
                 }
             }
         }
     }
 
+    // MARK: - Capsule Migration
+
+    /// Moves session.earnedCapsules into the player profile's unopened
+    /// queue and persists. Called on Home or Rematch so capsules survive
+    /// across runs and are visible in Pin Book.
+    private func migrateEarnedCapsules() {
+        guard !session.earnedCapsules.isEmpty else { return }
+        appState.playerProfile.unopenedCapsules.append(contentsOf: session.earnedCapsules)
+        appState.playerProfile.gamesPlayed += 1
+        if session.score > appState.playerProfile.highScore {
+            appState.playerProfile.highScore = session.score
+        }
+        appState.save()
+    }
+
     // MARK: - Share
 
     private func shareScore() {
-        let modeLabel = session.gameMode == .daily ? "Daily Challenge" : "Classic"
-        let text = "I scored \(session.score.formatted(.number)) on VibeMatch \(modeLabel)! Rank: \(rank.label) | Best Combo: x\(session.maxCombo) #VibeMatch"
+        let modeLabel: String
+        switch session.gameMode {
+        case .daily: modeLabel = "Daily Challenge"
+        case .level(let n): modeLabel = "Level \(n)"
+        case .classic: modeLabel = "Classic"
+        }
+        let text = "I scored \(session.score.formatted(.number)) on Pin Drop \(modeLabel). Rank: \(rank.label). Best Combo: x\(session.maxCombo). #PinDrop #GoodVibesClub"
 
         let activityVC = UIActivityViewController(
             activityItems: [text],

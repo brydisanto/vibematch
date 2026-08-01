@@ -142,10 +142,11 @@ struct FirstDiscoveryBonus: Sendable {
     /// Score bonus for discovering a badge, scaled by tier.
     static func bonusScore(for tier: BadgeTier) -> Int {
         switch tier {
-        case .blue:   return 100   // [PLACEHOLDER]
-        case .silver: return 250   // [PLACEHOLDER]
-        case .gold:   return 500   // [PLACEHOLDER]
-        case .cosmic: return 1000  // [PLACEHOLDER]
+        case .blue:    return 100   // [PLACEHOLDER]
+        case .silver:  return 250   // [PLACEHOLDER]
+        case .gold:    return 500   // [PLACEHOLDER]
+        case .special: return 500   // [PLACEHOLDER]
+        case .cosmic:  return 1000  // [PLACEHOLDER]
         }
     }
 }

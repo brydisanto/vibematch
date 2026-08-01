@@ -27,9 +27,23 @@ enum GamePhase: String, Codable, Hashable, Sendable {
 ///
 /// - classic: Standard mode with a fixed move count.
 /// - daily: Seeded daily challenge so all players get the same board.
-enum GameMode: String, Codable, Hashable, Sendable {
+/// - level: Content progression level with a specific objective.
+enum GameMode: Codable, Hashable, Sendable {
     case classic
     case daily
+    case level(Int)
+
+    /// Whether this mode is a level.
+    var isLevel: Bool {
+        if case .level = self { return true }
+        return false
+    }
+
+    /// The level number, if this is a level mode.
+    var levelNumber: Int? {
+        if case .level(let n) = self { return n }
+        return nil
+    }
 }
 
 // MARK: - Game Over Reason
