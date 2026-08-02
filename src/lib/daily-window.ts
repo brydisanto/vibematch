@@ -31,8 +31,30 @@
 const ET_TIMEZONE = 'America/New_York';
 
 /**
+ * Hour (ET, 24h) at which the daily window rolls over. Normally NOON (12).
+ *
+ * TEMPORARY — Axie Pin Drop event override: during the event week
+ * (Aug 3 2026 9 AM ET → Aug 10 2026 9 AM ET) the whole daily window
+ * (plays cap, daily leaderboard, streaks, Daily Challenge) rolls at
+ * 9 AM ET instead of noon, so everything refreshes in step with the
+ * event's 9 AM daily cadence. Auto-reverts to noon the moment the event
+ * ends. Both bounds are 13:00 UTC because Eastern is on EDT (UTC-4) for
+ * the entire window, so 9 AM ET === 13:00 UTC throughout (no DST flip).
+ *
+ * After 2026-08-10, delete this block and hard-code the reset hour back
+ * to 12 (the getEasternDailyKey / getNextNoonEastern callers below).
+ */
+const EVENT_9AM_RESET_START_MS = Date.UTC(2026, 7, 3, 13, 0, 0);  // Aug 3 2026, 13:00 UTC = 9 AM EDT
+const EVENT_9AM_RESET_END_MS = Date.UTC(2026, 7, 10, 13, 0, 0);   // Aug 10 2026, 13:00 UTC = 9 AM EDT
+export function getDailyResetHour(now: Date = new Date()): number {
+    const t = now.getTime();
+    return t >= EVENT_9AM_RESET_START_MS && t < EVENT_9AM_RESET_END_MS ? 9 : 12;
+}
+
+/**
  * Returns the daily window key (YYYY-MM-DD) the given timestamp falls
- * into. The window starts at noon ET on the labeled date.
+ * into. The window starts at the reset hour ET on the labeled date
+ * (normally noon; 9 AM during the Axie event — see getDailyResetHour).
  *
  * Examples (assuming non-DST math for simplicity):
  *   2026-05-20 14:00 ET → "2026-05-20" (1 PM, after noon ET 5-20)
@@ -52,11 +74,11 @@ export function getEasternDailyKey(now: Date = new Date()): string {
     const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
     const dateStr = `${get('year')}-${get('month')}-${get('day')}`;
     // Intl can emit "24" for the hour part at midnight in some locales;
-    // both "00" and "24" mean midnight, both are pre-noon.
+    // both "00" and "24" mean midnight, both are pre-reset-hour.
     const hourRaw = get('hour');
     const hour = hourRaw === '24' ? 0 : parseInt(hourRaw, 10);
-    if (hour < 12) {
-        // Still in yesterday's window (which started at noon ET the day before).
+    if (hour < getDailyResetHour(now)) {
+        // Still in yesterday's window (which started at the reset hour ET the day before).
         return shiftIsoDate(dateStr, -1);
     }
     return dateStr;
@@ -79,9 +101,9 @@ export function getNextNoonEastern(now: Date = new Date()): Date {
     const offsetToEt = now.getTime() - nyWall.getTime();
 
     const target = new Date(nyWall);
-    target.setHours(12, 0, 0, 0);
+    target.setHours(getDailyResetHour(now), 0, 0, 0);
     if (nyWall.getTime() >= target.getTime()) {
-        // Past noon ET already → roll to tomorrow's noon.
+        // Past the reset hour ET already → roll to tomorrow's reset.
         target.setDate(target.getDate() + 1);
     }
     return new Date(target.getTime() + offsetToEt);

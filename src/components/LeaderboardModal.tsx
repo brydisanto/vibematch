@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Trophy } from "lucide-react";
 import { BADGES } from "@/lib/badges";
 import { isPromoActive, getActivePromoBadges, getPrimaryActiveEvent } from "@/lib/promo-badges";
+import { getDailyResetHour } from "@/lib/daily-window";
 
 interface LeaderboardEntry {
     username: string;
@@ -77,7 +78,10 @@ function getNextNoonEastern(): Date {
     const nyWall = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
     const offsetToEt = now.getTime() - nyWall.getTime();
     const target = new Date(nyWall);
-    target.setHours(12, 0, 0, 0);
+    // Rolls at noon ET normally; 9 AM ET during the Axie event (see
+    // getDailyResetHour), so the "Resets in …" countdown matches the
+    // actual plays / leaderboard reset instead of pointing at noon.
+    target.setHours(getDailyResetHour(now), 0, 0, 0);
     if (nyWall.getTime() >= target.getTime()) {
         target.setDate(target.getDate() + 1);
     }

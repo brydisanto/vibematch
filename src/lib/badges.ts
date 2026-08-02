@@ -986,7 +986,15 @@ export function getDailySeed(date?: string): number {
         const dateStr = `${get("year")}-${get("month")}-${get("day")}`;
         const hourRaw = get("hour");
         const hour = hourRaw === "24" ? 0 : parseInt(hourRaw, 10);
-        if (hour < 12) {
+        // TEMPORARY Axie event override — must mirror src/lib/daily-window.ts
+        // getDailyResetHour: the daily window (incl. the Daily Challenge seed)
+        // rolls at 9 AM ET instead of noon during Aug 3–10 2026 (both 13:00 UTC,
+        // Eastern is on EDT the whole window). Revert to a constant 12 after the
+        // event. Keeping this in sync with daily-window.ts is what keeps the
+        // Daily Challenge puzzle aligned with the daily leaderboard key.
+        const nowMs = Date.now();
+        const resetHour = nowMs >= Date.UTC(2026, 7, 3, 13, 0, 0) && nowMs < Date.UTC(2026, 7, 10, 13, 0, 0) ? 9 : 12;
+        if (hour < resetHour) {
             const [y, m, dd] = dateStr.split("-").map(Number);
             const dt = new Date(Date.UTC(y, m - 1, dd));
             dt.setUTCDate(dt.getUTCDate() - 1);
