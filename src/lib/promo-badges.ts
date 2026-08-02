@@ -419,7 +419,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 2,
-        dropWeight: 52,
+        dropWeight: 58,
         rarityLabel: "Rare",
     })),
     // 3× EPIC (4 pts each)
@@ -434,7 +434,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 4,
-        dropWeight: 25,
+        dropWeight: 24,
         rarityLabel: "Epic",
     })),
     // 3× MYSTIC (10 pts each) — rarest base tier, gates full-set completion.
@@ -449,7 +449,7 @@ export const PROMO_BADGES: PromoBadge[] = [
         tabLabel: "Set",
         eventSetId: "axie_partner_event",
         points: 10,
-        dropWeight: 22,
+        dropWeight: 16,
         rarityLabel: "Mystic",
     })),
     // 1× GRAIL — ultra rare, excluded from set completion (isChase).
