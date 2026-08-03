@@ -5,6 +5,61 @@ import Link from "next/link";
 import { adminFetch, adminDownload } from "./_lib/adminFetch";
 import DailyStatsChart from "./_components/DailyStatsChart";
 import TreasuryAuditPanel from "./_components/TreasuryAuditPanel";
+import { PROMO_EVENT_SETS } from "@/lib/promo-badges";
+
+/**
+ * Event results export. Pick any event set and download the full participant
+ * record (rank, points, full sets, set-finish time, grails, wallet, email,
+ * GVC flag, created-at) as CSV. Ranking mirrors the live leaderboard cascade.
+ */
+function EventExportPanel() {
+    const events = PROMO_EVENT_SETS;
+    const [selected, setSelected] = useState(events[events.length - 1]?.id ?? "");
+    const [busy, setBusy] = useState(false);
+    const chosen = events.find(e => e.id === selected);
+
+    return (
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <h2 className="text-xl font-display font-black text-[#FFE048] uppercase mb-1">Event Results</h2>
+            <p className="text-white/40 text-xs mb-4">
+                Full participant record for a chosen event: rankings, scores, wallets, and recovery emails where available.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+                <select
+                    value={selected}
+                    onChange={e => setSelected(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#FFE048]"
+                >
+                    {events.map(ev => (
+                        <option key={ev.id} value={ev.id} className="bg-[#1a1a1a]">
+                            {ev.name}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    type="button"
+                    disabled={!selected || busy}
+                    onClick={() => {
+                        setBusy(true);
+                        adminDownload(
+                            `/api/admin/export?type=event&event=${encodeURIComponent(selected)}`,
+                            `event-${selected}.csv`,
+                        ).catch(() => {}).finally(() => setBusy(false));
+                    }}
+                    className="rounded-lg bg-[#FFE048] px-4 py-2 text-sm font-bold uppercase tracking-wider text-black hover:bg-[#FFE858] disabled:opacity-50"
+                >
+                    {busy ? "Exporting..." : "Export CSV"}
+                </button>
+            </div>
+            {chosen && (
+                <p className="text-white/30 text-[11px] mt-3">
+                    {chosen.name}{chosen.partnerName ? ` (${chosen.partnerName})` : ""}
+                    {chosen.endsAt ? ` — ends ${new Date(chosen.endsAt).toISOString().split("T")[0]}` : ""}
+                </p>
+            )}
+        </div>
+    );
+}
 
 // Sortable columns. The string union doubles as the column id for the
 // header click handlers and as the discriminator for the sort comparator.
@@ -178,6 +233,8 @@ export default function AdminDashboard() {
 
             {/* Treasury audit — diffs on-chain inflows against KV tx records */}
             <TreasuryAuditPanel />
+
+            <EventExportPanel />
 
             {/* Users */}
             <div>
