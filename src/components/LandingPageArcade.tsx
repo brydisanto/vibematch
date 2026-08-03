@@ -1458,7 +1458,7 @@ export default function LandingPageArcade({
                                                     {empty ? "Out of Plays" : "Daily Plays"}
                                                 </span>
                                                 <span className="text-[9px] text-white/45 tracking-wider mt-0.5">
-                                                    {remaining} OF {total}{bonusPrizeGames > 0 ? ` · +${bonusPrizeGames} BONUS` : ""}
+                                                    {remaining} OF {total}{bonusPrizeGames > 0 ? ` · incl. ${bonusPrizeGames} bonus` : ""}
                                                 </span>
                                             </div>
                                         </div>
