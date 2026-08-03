@@ -64,11 +64,20 @@ export async function POST(req: Request) {
 
         const sessionUsername = (session.username as string).toLowerCase();
 
-        // Wallet-only update: just save the wallet address to the existing profile
+        // Wallet-only update: save the wallet as the current address AND
+        // accumulate it into linkedWallets. Keeping every wallet a user has
+        // connected (not just the latest) is what lets the GVC board survive
+        // wallet-switching: a holder who keeps their GVC in a vault but pays
+        // from a hot wallet stays on the board because both wallets remain
+        // linked and the gvc-refresh cron checks all of them. Capped to the
+        // most-recent 12 to bound growth.
         if (walletAddress && !username) {
             const key = `user:${sessionUsername}`;
             const existing = (await kv.get(key)) as any || {};
-            await kv.set(key, { ...existing, walletAddress: walletAddress.toLowerCase() });
+            const w = walletAddress.toLowerCase();
+            const prev: string[] = Array.isArray(existing.linkedWallets) ? existing.linkedWallets : [];
+            const linkedWallets = prev.includes(w) ? prev : [...prev, w].slice(-12);
+            await kv.set(key, { ...existing, walletAddress: w, linkedWallets });
             invalidateUserProfileCache(sessionUsername);
             return NextResponse.json({ success: true, walletLinked: true });
         }

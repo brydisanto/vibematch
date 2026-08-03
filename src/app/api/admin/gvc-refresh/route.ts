@@ -33,9 +33,16 @@ function authorized(req: Request): boolean {
     return auth === `Bearer ${secret}`;
 }
 
-/** Collect { username, wallet } for every profile with a linked wallet. */
-async function linkedWallets(): Promise<Array<{ username: string; wallet: `0x${string}` }>> {
-    const out: Array<{ username: string; wallet: `0x${string}` }> = [];
+/**
+ * Collect { username, wallets[] } for every profile with a linked wallet.
+ * Wallets = the current walletAddress UNION every entry in linkedWallets, so
+ * a user who holds GVC in any wallet they've ever connected is captured even
+ * if their "current" wallet is a non-holding hot wallet. linkedWallets rides
+ * along on the same profile mget, so this adds no extra KV round-trips.
+ */
+async function linkedWallets(): Promise<Array<{ username: string; wallets: `0x${string}`[] }>> {
+    const re = /^0x[0-9a-fA-F]{40}$/;
+    const out: Array<{ username: string; wallets: `0x${string}`[] }> = [];
     let cursor = "0";
     do {
         // NOTE: Upstash SCAN cursors exceed JS safe-integer range — keep
@@ -44,11 +51,20 @@ async function linkedWallets(): Promise<Array<{ username: string; wallet: `0x${s
         cursor = scan[0];
         const keys = scan[1];
         if (keys.length > 0) {
-            const values = await kv.mget(...keys) as Array<{ walletAddress?: string } | null>;
+            const values = await kv.mget(...keys) as Array<{ walletAddress?: string; linkedWallets?: string[] } | null>;
             keys.forEach((k, i) => {
-                const wallet = values[i]?.walletAddress?.toLowerCase();
-                if (wallet && /^0x[0-9a-fA-F]{40}$/.test(wallet)) {
-                    out.push({ username: k.slice("user:".length).toLowerCase(), wallet: wallet as `0x${string}` });
+                const v = values[i];
+                const set = new Set<string>();
+                const primary = v?.walletAddress?.toLowerCase();
+                if (primary && re.test(primary)) set.add(primary);
+                if (Array.isArray(v?.linkedWallets)) {
+                    for (const lw of v!.linkedWallets) {
+                        const x = String(lw).toLowerCase();
+                        if (re.test(x)) set.add(x);
+                    }
+                }
+                if (set.size > 0) {
+                    out.push({ username: k.slice("user:".length).toLowerCase(), wallets: [...set] as `0x${string}`[] });
                 }
             });
         }
@@ -68,7 +84,15 @@ export async function GET(req: Request) {
     for (let i = 0; i < users.length; i += CONCURRENCY) {
         const batch = users.slice(i, i + CONCURRENCY);
         const results = await Promise.all(
-            batch.map(async u => (await isGvcHolder(u.wallet)) ? u.username : null),
+            batch.map(async u => {
+                // Holder if ANY linked wallet holds GVC (directly or via a
+                // delegate.xyz delegation, which isGvcHolder expands). Short-
+                // circuit on the first hit to keep RPC reads minimal.
+                for (const w of u.wallets) {
+                    if (await isGvcHolder(w)) return u.username;
+                }
+                return null;
+            }),
         );
         for (const username of results) if (username) holders.push(username);
     }
