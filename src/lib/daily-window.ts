@@ -38,13 +38,21 @@ const ET_TIMEZONE = 'America/New_York';
  * (plays cap, daily leaderboard, streaks, Daily Challenge) rolls at
  * 9 AM ET instead of noon, so everything refreshes in step with the
  * event's 9 AM daily cadence. Auto-reverts to noon the moment the event
- * ends. Both bounds are 13:00 UTC because Eastern is on EDT (UTC-4) for
- * the entire window, so 9 AM ET === 13:00 UTC throughout (no DST flip).
+ * ends. The END bound is 13:00 UTC because Eastern is on EDT (UTC-4)
+ * the whole window, so 9 AM ET === 13:00 UTC (no DST flip).
+ *
+ * START is the NOON before launch (noon ET Aug 2), not 9 AM Aug 3. The
+ * regime has to be active during the pre-launch morning so the "Resets
+ * In" countdown already points at 9 AM Aug 3 instead of noon. Flipping
+ * the hour to 9 that early is safe: pre-9 AM the window key is unchanged
+ * vs. the noon rule (hour < 9 and hour < 12 both roll to the prior day),
+ * so no window resets early — the first real 9 AM reset is still 9 AM
+ * Aug 3. The noon-ET Aug 2 reset happens normally at the START instant.
  *
  * After 2026-08-10, delete this block and hard-code the reset hour back
  * to 12 (the getEasternDailyKey / getNextNoonEastern callers below).
  */
-const EVENT_9AM_RESET_START_MS = Date.UTC(2026, 7, 3, 13, 0, 0);  // Aug 3 2026, 13:00 UTC = 9 AM EDT
+const EVENT_9AM_RESET_START_MS = Date.UTC(2026, 7, 2, 16, 0, 0);  // Aug 2 2026, 16:00 UTC = noon EDT (last noon before launch)
 const EVENT_9AM_RESET_END_MS = Date.UTC(2026, 7, 10, 13, 0, 0);   // Aug 10 2026, 13:00 UTC = 9 AM EDT
 export function getDailyResetHour(now: Date = new Date()): number {
     const t = now.getTime();
