@@ -84,6 +84,94 @@ function RerollReconcilePanel() {
 }
 
 /**
+ * Purchase (restock-plays) reconciliation. Runs the same job the hourly cron
+ * runs: credit paid-but-unrecorded purchases, and surface the two cases the
+ * cron can't auto-resolve — over-cap payments (need a credit/refund decision)
+ * and payments from wallets not linked to any account (need manual ID).
+ */
+function PurchaseReconcilePanel() {
+    const [running, setRunning] = useState(false);
+    const [result, setResult] = useState<null | {
+        credited: number; refundQueued: number; unresolved: number;
+        pendingRefunds: Array<{ username: string; packageSize: number; amount: string; rail: string; reason: string; txHash: string }>;
+        unresolvedPayments: Array<{ from: string; amount: string; rail: string; reason: string; txHash: string }>;
+    }>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const run = async () => {
+        setRunning(true);
+        setError(null);
+        try {
+            const res = await adminFetch("/api/admin/reconcile-purchases");
+            if (!res.ok) throw new Error(`Reconcile failed (${res.status})`);
+            setResult(await res.json());
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Reconcile failed");
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    const stat = (label: string, n: number, tone: string) => (
+        <div className="rounded-lg bg-white/[0.03] px-4 py-3 text-center">
+            <div className="text-2xl font-display font-black tabular-nums" style={{ color: tone }}>{n}</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mt-1">{label}</div>
+        </div>
+    );
+
+    return (
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <h2 className="text-xl font-display font-black text-[#FFE048] uppercase mb-1">Purchase Reconciliation</h2>
+            <p className="text-white/40 text-xs mb-4">
+                Credits paid-but-unrecorded restock purchases (mobile drops, timeouts). Surfaces over-cap payments and payments from unlinked wallets that need a manual call. Runs hourly on a cron; this runs it now.
+            </p>
+            <button
+                type="button"
+                disabled={running}
+                onClick={run}
+                className="rounded-lg bg-[#FFE048] px-4 py-2 text-sm font-bold uppercase tracking-wider text-black hover:bg-[#FFE858] disabled:opacity-50"
+            >
+                {running ? "Running..." : "Run reconcile now"}
+            </button>
+            {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+            {result && (
+                <>
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                        {stat("Credited", result.credited, "#4ADE80")}
+                        {stat("Over-cap refunds", result.refundQueued, result.pendingRefunds.length > 0 ? "#FBBF24" : "#FFFFFF66")}
+                        {stat("Unlinked payments", result.unresolved, result.unresolvedPayments.length > 0 ? "#F87171" : "#FFFFFF66")}
+                    </div>
+                    {result.pendingRefunds.length > 0 && (
+                        <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] p-3">
+                            <div className="text-[10px] uppercase tracking-wider text-amber-300/80 mb-2">Over-cap payments awaiting credit/refund</div>
+                            <div className="space-y-1">
+                                {result.pendingRefunds.map((r) => (
+                                    <div key={r.txHash} className="text-[11px] text-white/60 break-all">
+                                        <span className="text-white/85 font-semibold">{r.username}</span> — {r.packageSize} games ({r.amount} {r.rail}) — {r.reason}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {result.unresolvedPayments.length > 0 && (
+                        <div className="mt-3 rounded-lg border border-red-400/20 bg-red-400/[0.04] p-3">
+                            <div className="text-[10px] uppercase tracking-wider text-red-300/80 mb-2">Payments from unlinked wallets (manual ID)</div>
+                            <div className="space-y-1">
+                                {result.unresolvedPayments.map((r) => (
+                                    <div key={r.txHash} className="text-[11px] text-white/60 font-mono break-all">
+                                        {r.amount} {r.rail} from {r.from} — {r.reason}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+/**
  * Event results export. Pick any event set and download the full participant
  * record (rank, points, full sets, set-finish time, grails, wallet, email,
  * GVC flag, created-at) as CSV. Ranking mirrors the live leaderboard cascade.
@@ -313,6 +401,8 @@ export default function AdminDashboard() {
             <EventExportPanel />
 
             <RerollReconcilePanel />
+
+            <PurchaseReconcilePanel />
 
             {/* Users */}
             <div>

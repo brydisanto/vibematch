@@ -32,6 +32,7 @@ import {
     type PricingPackageId,
 } from '@/lib/pricing';
 import { getDailyTracker, getTodayKey, MAX_BONUS_PRIZE_GAMES_PER_DAY } from '@/app/api/pinbook/route';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,7 +78,51 @@ interface ReconcileResult {
     amountRaw: string;
     outcome:
         | { status: 'credited'; username: string; packageSize: number }
+        | { status: 'refund_queued'; username: string; packageSize: number; reason: string }
+        | { status: 'unresolved'; reason: string }
         | { status: 'skipped'; reason: string; username?: string };
+}
+
+const amountToStr = (amountRaw: string, rail: Rail) =>
+    (Number(amountRaw) / (rail === 'usdc' ? 1e6 : 1e18)).toString();
+
+/**
+ * Over-cap payment: the user paid but crediting would exceed the daily cap.
+ * Instead of skipping forever (silent loss), persist a purchase_refund entry
+ * for admin resolution (credit-over-cap or VIBESTR refund) and finalize the tx
+ * record with refund_pending so it stops being re-scanned every run.
+ */
+async function queuePurchaseRefund(
+    txHash: string, from: string, username: string, packageSize: number,
+    amountRaw: string, rail: Rail, timeStampMs: number, reason: string,
+): Promise<void> {
+    await kv.set(`purchase_refund:${txHash}`, JSON.stringify({
+        username, wallet: from, txHash, packageSize,
+        amount: amountToStr(amountRaw, rail), rail, reason,
+        createdAt: Date.now(), status: 'pending_admin_credit',
+    }));
+    await kv.set(`tx:${txHash}:processed`, JSON.stringify({
+        status: 'finalized', type: 'purchase', username, wallet: from, packageSize,
+        amount: amountToStr(amountRaw, rail), paymentRail: rail, timestamp: timeStampMs,
+        refund_pending: true, refund_reason: reason,
+    }));
+}
+
+/**
+ * A treasury inflow we can't auto-credit (wallet not linked to any account, or
+ * amount doesn't match a purchase package — e.g. a reroll payment from an
+ * unlinked wallet). Persist it so it surfaces in the admin panel for manual
+ * identification instead of vanishing. Idempotent per tx hash.
+ */
+async function recordUnresolved(
+    txHash: string, from: string, rail: Rail, amountRaw: string, reason: string, timeStampMs: number,
+): Promise<void> {
+    const key = `unresolved_payment:${txHash}`;
+    if (await kv.get(key)) return;
+    await kv.set(key, JSON.stringify({
+        txHash, from, rail, amount: amountToStr(amountRaw, rail),
+        reason, paidAt: timeStampMs, firstSeen: Date.now(), status: 'unresolved',
+    }));
 }
 
 function authorized(req: Request): boolean {
@@ -174,13 +219,20 @@ async function buildWalletMap(): Promise<Map<string, string>> {
         cursor = scan[0];
         const keys = scan[1];
         if (keys.length === 0) continue;
-        const values = await kv.mget(...keys) as Array<{ walletAddress?: string } | null>;
+        const values = await kv.mget(...keys) as Array<{ walletAddress?: string; linkedWallets?: string[] } | null>;
         keys.forEach((k, i) => {
-            const wallet = values[i]?.walletAddress?.toLowerCase();
-            if (wallet) {
-                // key is user:<username>
-                const username = k.slice('user:'.length).toLowerCase();
-                map.set(wallet, username);
+            const v = values[i];
+            // key is user:<username>
+            const username = k.slice('user:'.length).toLowerCase();
+            // Map the current wallet AND every wallet the user has linked, so a
+            // payment from a vault/second wallet still resolves to the account.
+            const primary = v?.walletAddress?.toLowerCase();
+            if (primary) map.set(primary, username);
+            if (Array.isArray(v?.linkedWallets)) {
+                for (const lw of v!.linkedWallets) {
+                    const x = String(lw).toLowerCase();
+                    if (x) map.set(x, username);
+                }
             }
         });
     } while (cursor !== '0');
@@ -235,22 +287,21 @@ async function reconcileTx(
     const amountRaw = tx.value;
     const base = { txHash, from, rail, amountRaw };
 
+    const timeStampMs = Number(tx.timeStamp) * 1000;
     const username = walletMap.get(from);
     if (!username) {
-        return { ...base, outcome: { status: 'skipped', reason: 'wallet not linked to any user' } };
+        // Not a known wallet (e.g. a reroll paid from a wallet the user never
+        // linked). Persist it so it surfaces for manual review instead of
+        // silently skipping every run.
+        await recordUnresolved(txHash, from, rail, amountRaw, 'wallet not linked to any user', timeStampMs);
+        return { ...base, outcome: { status: 'unresolved', reason: 'wallet not linked to any user' } };
     }
 
     const match = matchPackage(rail, BigInt(amountRaw), snapshot);
     if (!match) {
-        return { ...base, outcome: { status: 'skipped', reason: `amount ${amountRaw} does not match any package at current pricing`, username } };
-    }
-
-    // Daily cap check — read tracker, verify cap allows the grant.
-    const tracker = await getDailyTracker(username);
-    const currentBonus = tracker.bonusPrizeGames || 0;
-    const newBonus = currentBonus + match.packageSize;
-    if (newBonus > MAX_BONUS_PRIZE_GAMES_PER_DAY) {
-        return { ...base, outcome: { status: 'skipped', reason: `daily cap exceeded (${currentBonus}+${match.packageSize} > ${MAX_BONUS_PRIZE_GAMES_PER_DAY})`, username } };
+        // Linked wallet but not a purchase amount (often a reroll payment).
+        await recordUnresolved(txHash, from, rail, amountRaw, `amount ${amountToStr(amountRaw, rail)} ${rail} matches no purchase package`, timeStampMs);
+        return { ...base, outcome: { status: 'unresolved', reason: `amount does not match any package`, } };
     }
 
     // Per-user lock so we don't race a live purchase flow.
@@ -271,9 +322,14 @@ async function reconcileTx(
         // Re-check tracker inside the lock — a live purchase or another
         // reconciler pass may have updated it.
         const trackerFresh = await getDailyTracker(username);
-        const bonusFresh = (trackerFresh.bonusPrizeGames || 0) + match.packageSize;
+        const currentBonus = trackerFresh.bonusPrizeGames || 0;
+        const bonusFresh = currentBonus + match.packageSize;
         if (bonusFresh > MAX_BONUS_PRIZE_GAMES_PER_DAY) {
-            return { ...base, outcome: { status: 'skipped', reason: `daily cap exceeded after re-check`, username } };
+            // Paid over the daily cap. Queue a refund for admin resolution
+            // (credit-over-cap or refund) rather than skipping it forever.
+            const reason = `daily cap exceeded (${currentBonus}+${match.packageSize} > ${MAX_BONUS_PRIZE_GAMES_PER_DAY})`;
+            await queuePurchaseRefund(txHash, from, username, match.packageSize, amountRaw, rail, Number(tx.timeStamp) * 1000, reason);
+            return { ...base, outcome: { status: 'refund_queued', username, packageSize: match.packageSize, reason } };
         }
 
         // Grant games.
@@ -302,7 +358,10 @@ async function reconcileTx(
 }
 
 export async function GET(req: Request) {
-    if (!authorized(req)) {
+    // Bearer CRON_SECRET (Vercel cron) or an admin session (manual run).
+    let ok = authorized(req);
+    if (!ok) ok = !!(await requireAdmin(req));
+    if (!ok) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (!TREASURY_ADDRESS) {
@@ -357,32 +416,55 @@ export async function GET(req: Request) {
     }
 
     const credited = results.filter(r => r.outcome.status === 'credited').length;
+    const refundQueued = results.filter(r => r.outcome.status === 'refund_queued').length;
+    const unresolved = results.filter(r => r.outcome.status === 'unresolved').length;
     const skipped = results.filter(r => r.outcome.status === 'skipped').length;
+
+    // Surface the outstanding queues (over-cap refunds awaiting a decision +
+    // unidentified payments) so the admin panel can show them without a
+    // separate scan. Small sets, cheap to enumerate.
+    const [refundEntries, unresolvedEntries] = await Promise.all([
+        enumerate('purchase_refund:*', o => o?.status === 'pending_admin_credit'),
+        enumerate('unresolved_payment:*', o => o?.status === 'unresolved'),
+    ]);
 
     // Log this pass for admin review + future analysis.
     try {
         await kv.zadd(`reconcile_log`, {
             score: Date.now(),
             member: JSON.stringify({
-                at: Date.now(),
-                scanned: allTxs.length,
-                orphans: orphans.length,
-                credited,
-                skipped,
-                results: results.slice(0, 100),
+                at: Date.now(), scanned: allTxs.length, orphans: orphans.length,
+                credited, refundQueued, unresolved, skipped, results: results.slice(0, 100),
             }),
         });
     } catch (e) {
         console.error('[Reconcile] log write failed:', e);
     }
 
-    console.log(`[Reconcile] scanned=${allTxs.length} orphans=${orphans.length} credited=${credited} skipped=${skipped}`);
+    console.log(`[Reconcile] scanned=${allTxs.length} orphans=${orphans.length} credited=${credited} refundQueued=${refundQueued} unresolved=${unresolved} skipped=${skipped}`);
 
     return NextResponse.json({
         scanned: allTxs.length,
         orphans: orphans.length,
-        credited,
-        skipped,
+        credited, refundQueued, unresolved, skipped,
+        pendingRefunds: refundEntries,
+        unresolvedPayments: unresolvedEntries,
         results,
     });
+}
+
+/** Scan a key pattern and return parsed entries matching a predicate. */
+async function enumerate(pattern: string, pred: (o: any) => boolean): Promise<any[]> {
+    const keys: string[] = [];
+    let cursor: string | number = 0;
+    do {
+        const [next, batch] = (await kv.scan(cursor, { match: pattern, count: 200 })) as [string | number, string[]];
+        cursor = next;
+        keys.push(...batch);
+    } while (cursor !== 0 && cursor !== '0');
+    if (keys.length === 0) return [];
+    const vals = await kv.mget(...keys);
+    return vals
+        .map(v => (typeof v === 'string' ? JSON.parse(v) : v))
+        .filter(o => o && pred(o));
 }
