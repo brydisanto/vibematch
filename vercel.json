@@ -9,6 +9,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/admin/reconcile-rerolls",
+      "schedule": "15 * * * *"
+    },
+    {
       "path": "/api/admin/gvc-refresh",
       "schedule": "30 * * * *"
     }

@@ -169,12 +169,27 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 });
         }
 
-        // Replay protection
+        // Replay protection. The reservation carries everything the
+        // reconcile-rerolls cron needs to recover this reroll if the request
+        // dies before finalizing (mobile drop / function timeout): the amount
+        // owed (totalCapsules), the rail, and the wallet to re-verify against.
         const txKey = `tx:${normalizedTxHash}:processed`;
-        const reservation = await kv.set(txKey, JSON.stringify({ status: 'pending', username, type: 'reroll' }), { nx: true });
+        const reservation = await kv.set(txKey, JSON.stringify({
+            status: 'pending',
+            type: 'reroll',
+            username,
+            wallet: normalizedWallet,
+            burns: parsedBurns,
+            totalCapsules,
+            paymentRail,
+            createdAt: Date.now(),
+        }), { nx: true });
         if (!reservation) {
             return NextResponse.json({ error: 'Transaction already processed' }, { status: 409 });
         }
+        // Index this pending reservation so the cron can find + recover it
+        // cheaply. Removed on every terminal path (release / refund / finalize).
+        await kv.sadd('reroll:pending', normalizedTxHash).catch(() => {});
 
         const releaseReservation = async () => {
             try {
@@ -184,6 +199,7 @@ export async function POST(request: Request) {
                     if (parsed?.status === 'pending') await kv.del(txKey);
                 }
             } catch {}
+            await kv.srem('reroll:pending', normalizedTxHash).catch(() => {});
         };
 
         // Per-user lock
@@ -295,6 +311,7 @@ export async function POST(request: Request) {
                     refund_pending: true,
                     refund_reason: reason,
                 }));
+                await kv.srem('reroll:pending', normalizedTxHash).catch(() => {});
                 await kv.del(lockKey);
             } catch (e) {
                 console.error('[Reroll] queueRefund failed:', e);
@@ -408,6 +425,7 @@ export async function POST(request: Request) {
             paymentRail,
             timestamp: Date.now(),
         }));
+        await kv.srem('reroll:pending', normalizedTxHash).catch(() => {});
 
         await kv.del(lockKey);
 

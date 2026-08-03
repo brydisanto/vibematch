@@ -8,6 +8,82 @@ import TreasuryAuditPanel from "./_components/TreasuryAuditPanel";
 import { PROMO_EVENT_SETS } from "@/lib/promo-badges";
 
 /**
+ * Reroll reconciliation. Runs the same job the hourly cron runs: auto-credit
+ * owed reroll refunds and recover stuck (paid-but-uncredited) reroll
+ * reservations. Surfaces anything that needs a human.
+ */
+function RerollReconcilePanel() {
+    const [running, setRunning] = useState(false);
+    const [result, setResult] = useState<null | {
+        summary: { refundsCredited: number; stuckRecovered: number; stuckReleased: number; needsReview: number };
+        needsReview: Array<{ username: string; txHash: string; reason: string }>;
+    }>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const run = async () => {
+        setRunning(true);
+        setError(null);
+        try {
+            const res = await adminFetch("/api/admin/reconcile-rerolls");
+            if (!res.ok) throw new Error(`Reconcile failed (${res.status})`);
+            setResult(await res.json());
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Reconcile failed");
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    const s = result?.summary;
+    const stat = (label: string, n: number, tone: string) => (
+        <div className="rounded-lg bg-white/[0.03] px-4 py-3 text-center">
+            <div className="text-2xl font-display font-black tabular-nums" style={{ color: tone }}>{n}</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mt-1">{label}</div>
+        </div>
+    );
+
+    return (
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <h2 className="text-xl font-display font-black text-[#FFE048] uppercase mb-1">Reroll Reconciliation</h2>
+            <p className="text-white/40 text-xs mb-4">
+                Credits owed reroll refunds and recovers paid-but-uncredited rerolls (mobile drops, timeouts). Runs hourly on a cron; this button runs it now.
+            </p>
+            <button
+                type="button"
+                disabled={running}
+                onClick={run}
+                className="rounded-lg bg-[#FFE048] px-4 py-2 text-sm font-bold uppercase tracking-wider text-black hover:bg-[#FFE858] disabled:opacity-50"
+            >
+                {running ? "Running..." : "Run reconcile now"}
+            </button>
+            {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+            {s && (
+                <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                        {stat("Refunds credited", s.refundsCredited, "#4ADE80")}
+                        {stat("Stuck recovered", s.stuckRecovered, "#4ADE80")}
+                        {stat("Bogus released", s.stuckReleased, "#B366FF")}
+                        {stat("Needs review", s.needsReview, s.needsReview > 0 ? "#F87171" : "#FFFFFF66")}
+                    </div>
+                    {result!.needsReview.length > 0 && (
+                        <div className="mt-4 rounded-lg border border-red-400/20 bg-red-400/[0.04] p-3">
+                            <div className="text-[10px] uppercase tracking-wider text-red-300/80 mb-2">Needs manual review</div>
+                            <div className="space-y-1">
+                                {result!.needsReview.map((r) => (
+                                    <div key={r.txHash} className="text-[11px] text-white/60 font-mono break-all">
+                                        <span className="text-white/80">{r.username}</span> — {r.reason} — {r.txHash}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+/**
  * Event results export. Pick any event set and download the full participant
  * record (rank, points, full sets, set-finish time, grails, wallet, email,
  * GVC flag, created-at) as CSV. Ranking mirrors the live leaderboard cascade.
@@ -235,6 +311,8 @@ export default function AdminDashboard() {
             <TreasuryAuditPanel />
 
             <EventExportPanel />
+
+            <RerollReconcilePanel />
 
             {/* Users */}
             <div>
