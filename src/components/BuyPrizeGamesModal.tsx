@@ -142,6 +142,11 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [statusText, setStatusText] = useState('');
+    // Live bonus count, refreshed when the modal opens. The `currentBonus`
+    // prop can be stale (fetched earlier in the session), which let players
+    // pay for games that would exceed the daily cap. We guard on the fresher
+    // of the two so an at-cap player can't sign an over-cap purchase.
+    const [liveBonus, setLiveBonus] = useState(currentBonus);
     const pollingRef = useRef(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const addressRef = useRef(address);
@@ -165,6 +170,14 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
             .then(data => {
                 if (cancelled || !data) return;
                 setPricing(data as PricingSnapshot);
+            })
+            .catch(() => {});
+        // Refresh the true bonus-games count so the cap guard uses live data.
+        fetch('/api/pinbook')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (cancelled || !data || typeof data.bonusPrizeGames !== 'number') return;
+                setLiveBonus(data.bonusPrizeGames);
             })
             .catch(() => {});
         return () => { cancelled = true; };
@@ -193,7 +206,10 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
     const { sendTransactionAsync, isPending: isSendingEth } = useSendTransaction();
     const isSending = isWriting || isSendingEth;
 
-    const remaining = MAX_BONUS_PER_DAY - currentBonus;
+    // Guard on the fresher of prop vs live count so a stale prop can't let an
+    // at-cap player buy over the cap.
+    const effectiveBonus = Math.max(currentBonus, liveBonus);
+    const remaining = MAX_BONUS_PER_DAY - effectiveBonus;
     const selectedPackageId = PACKAGE_IDS[selectedSize];
     const selectedEntry = pricing?.packages[selectedPackageId] ?? null;
     const selectedRequiredWei = selectedEntry ? railWei(selectedEntry, paymentRail) : BigInt(0);
@@ -421,9 +437,9 @@ export default function BuyPrizeGamesModal({ isOpen, onClose, currentBonus, onSu
                                 <>
                                     <h2 className="font-display text-2xl font-black text-[#FFE048] mb-4 uppercase">More Bonus Games</h2>
 
-                                    {currentBonus > 0 && (
+                                    {effectiveBonus > 0 && (
                                         <p className="text-[#FFE048]/70 text-[10px] font-mundial mb-3">
-                                            You&apos;ve already added {currentBonus} bonus {currentBonus === 1 ? 'game' : 'games'} today. Max {MAX_BONUS_PER_DAY}/day.
+                                            You&apos;ve already added {effectiveBonus} bonus {effectiveBonus === 1 ? 'game' : 'games'} today. Max {MAX_BONUS_PER_DAY}/day.
                                         </p>
                                     )}
 
