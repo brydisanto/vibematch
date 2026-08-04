@@ -16,7 +16,7 @@
 
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { gvcHoldersKey, isGvcHolder } from "@/lib/gvc";
+import { gvcHoldersKey, checkGvcHolder } from "@/lib/gvc";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -79,40 +79,58 @@ export async function GET(req: Request) {
 
     const started = Date.now();
     const users = await linkedWallets();
-    const holders: string[] = [];
+    const key = gvcHoldersKey();
+
+    // NON-DESTRUCTIVE update. We start from the CURRENT membership and only
+    // ADD confirmed holders / REMOVE confirmed non-holders. A player whose
+    // status can't be verified this run (RPC/registry hiccup) is left exactly
+    // as-is. This is what stops transient failures from churning real holders
+    // off the board — the old full-rebuild dropped anyone whose balanceOf read
+    // failed, and the set decayed a little every run.
+    const next = new Set((await kv.smembers(key)) as string[]);
+    let added = 0, removed = 0, unknown = 0;
 
     for (let i = 0; i < users.length; i += CONCURRENCY) {
         const batch = users.slice(i, i + CONCURRENCY);
         const results = await Promise.all(
             batch.map(async u => {
-                // Holder if ANY linked wallet holds GVC (directly or via a
-                // delegate.xyz delegation, which isGvcHolder expands). Short-
-                // circuit on the first hit to keep RPC reads minimal.
+                // Aggregate the tri-state across all of a user's wallets:
+                // holds if ANY confirmed holds; unknown if none confirmed but
+                // at least one couldn't be verified; else confirmed no.
+                let anyUnknown = false;
                 for (const w of u.wallets) {
-                    if (await isGvcHolder(w)) return u.username;
+                    const s = await checkGvcHolder(w);
+                    if (s === "holds") return { username: u.username, status: "holds" as const };
+                    if (s === "unknown") anyUnknown = true;
                 }
-                return null;
+                return { username: u.username, status: (anyUnknown ? "unknown" : "no") as "unknown" | "no" };
             }),
         );
-        for (const username of results) if (username) holders.push(username);
+        for (const { username, status } of results) {
+            if (status === "holds") { if (!next.has(username)) added++; next.add(username); }
+            else if (status === "no") { if (next.has(username)) removed++; next.delete(username); }
+            else unknown++;
+        }
     }
 
-    // Atomically swap the set to the freshly-computed membership so a
-    // reader never sees a half-rebuilt set.
-    const key = gvcHoldersKey();
+    // Atomically swap in the updated set so a reader never sees a partial write.
     const tmp = `${key}:rebuild`;
+    const nextArr = [...next];
     await kv.del(tmp);
-    if (holders.length > 0) await kv.sadd(tmp, holders[0], ...holders.slice(1));
-    await kv.rename(tmp, key).catch(async () => {
-        // rename fails if tmp is empty (never created). In that case there
-        // are zero holders — just clear the live set.
+    if (nextArr.length > 0) {
+        await kv.sadd(tmp, nextArr[0], ...nextArr.slice(1));
+        await kv.rename(tmp, key).catch(async () => { await kv.del(key); });
+    } else {
         await kv.del(key);
-    });
+    }
 
     return NextResponse.json({
         ok: true,
         scanned: users.length,
-        holders: holders.length,
+        holders: nextArr.length,
+        added,
+        removed,
+        unknown,
         ms: Date.now() - started,
     });
 }

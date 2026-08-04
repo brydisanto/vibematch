@@ -51,8 +51,11 @@ const ZERO = BigInt(0);
  * the GVC contract). Delegate resolution is best-effort — a registry
  * hiccup never blocks the direct-balance path.
  */
-export async function resolveGvcCandidates(wallet: `0x${string}`): Promise<`0x${string}`[]> {
+export async function resolveGvcCandidates(
+    wallet: `0x${string}`,
+): Promise<{ candidates: `0x${string}`[]; delegationOk: boolean }> {
     const candidates = new Set<string>([wallet.toLowerCase()]);
+    let delegationOk = false;
     try {
         const client = getMainnetClient();
         const delegations = await client.readContract({
@@ -68,21 +71,21 @@ export async function resolveGvcCandidates(wallet: `0x${string}`): Promise<`0x${
                 ((d.type_ === 2 || d.type_ === 3) && d.contract_.toLowerCase() === gvc); // CONTRACT / ERC721
             if (scopesGvc && d.from) candidates.add(d.from.toLowerCase());
         }
+        delegationOk = true;
     } catch {
-        // Registry unreachable — fall back to direct wallet only.
+        // Registry unreachable — we may have missed a delegating vault, so the
+        // caller must treat a zero direct balance as UNKNOWN, not "no".
+        delegationOk = false;
     }
-    return [...candidates] as `0x${string}`[];
+    return { candidates: [...candidates] as `0x${string}`[], delegationOk };
 }
 
-/**
- * True if `wallet` holds GVC directly or via an incoming delegation from
- * a GVC-holding vault. Reads balanceOf across all candidate addresses,
- * short-circuiting on the first positive balance.
- */
-export async function isGvcHolder(wallet: `0x${string}`): Promise<boolean> {
+/** Read balanceOf(GVC, addr) with retries. Returns null only if every
+ *  attempt failed, so a caller can tell "confirmed 0" from "couldn't read". */
+async function readGvcBalance(addr: `0x${string}`): Promise<bigint | null> {
     const client = getMainnetClient();
-    const candidates = await resolveGvcCandidates(wallet);
-    for (const addr of candidates) {
+    const RETRIES = 3;
+    for (let attempt = 0; attempt < RETRIES; attempt++) {
         try {
             const balance = await client.readContract({
                 address: GVC_CONTRACT,
@@ -90,11 +93,44 @@ export async function isGvcHolder(wallet: `0x${string}`): Promise<boolean> {
                 functionName: "balanceOf",
                 args: [addr],
             });
-            const held = typeof balance === "bigint" ? balance : BigInt(balance as unknown as string);
-            if (held > ZERO) return true;
+            return typeof balance === "bigint" ? balance : BigInt(balance as unknown as string);
         } catch {
-            // Skip a single failed read; try the next candidate.
+            if (attempt < RETRIES - 1) {
+                await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+            }
         }
     }
-    return false;
+    return null;
+}
+
+export type GvcHolderStatus = "holds" | "no" | "unknown";
+
+/**
+ * Tri-state GVC holder check. "unknown" means we could NOT verify (an RPC
+ * balance read failed, or the delegation lookup failed so a delegating vault
+ * may have been missed). Callers that decide REMOVAL must never drop a holder
+ * on "unknown" — only on a confirmed "no". Prevents transient RPC failures
+ * from churning real holders off the board.
+ */
+export async function checkGvcHolder(wallet: `0x${string}`): Promise<GvcHolderStatus> {
+    const { candidates, delegationOk } = await resolveGvcCandidates(wallet);
+    let anyReadFailed = false;
+    for (const addr of candidates) {
+        const bal = await readGvcBalance(addr);
+        if (bal === null) { anyReadFailed = true; continue; }
+        if (bal > ZERO) return "holds";
+    }
+    // No candidate confirmed a balance. If anything was unverifiable, we can't
+    // be sure they don't hold — say "unknown" so membership is preserved.
+    if (anyReadFailed || !delegationOk) return "unknown";
+    return "no";
+}
+
+/**
+ * True if `wallet` holds GVC directly or via delegation. Add-only callers
+ * (verify-on-connect) use this: only a definitive "holds" adds to the set;
+ * "no"/"unknown" never remove.
+ */
+export async function isGvcHolder(wallet: `0x${string}`): Promise<boolean> {
+    return (await checkGvcHolder(wallet)) === "holds";
 }
