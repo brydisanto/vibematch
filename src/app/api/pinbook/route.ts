@@ -22,6 +22,7 @@ import {
 import { frenzyCapsulesForScore, classicCapsulesForScore } from '@/lib/gameEngine';
 import { logAuditEvent } from '@/lib/audit-log';
 import { checkAutomatedAgent, checkOrigin } from '@/lib/anti-automation';
+import { recordAccountSignalsThrottled, extractIp } from '@/lib/account-signals';
 
 const FRENZY_CAPSULE_SCORE_THRESHOLD = 30000;
 
@@ -531,6 +532,10 @@ export async function POST(req: Request) {
             });
 
         } else if (body.action === 'logGame') {
+            // Passively record which IP + device this account plays from, for
+            // multi-account clustering. Throttled + fire-and-forget so it never
+            // slows or fails a game submission.
+            void recordAccountSignalsThrottled(username, extractIp(req), body.fingerprint);
             // Log a completed game for admin forensics AND for server-side achievement
             // verification. Stats are client-reported; bounded for sanity. Match-token
             // validated games are additionally stored keyed by matchId so the achievements

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Badge, BADGES, BadgeTier } from "./badges";
 import { findPromoBadge } from "./promo-badges";
+import { getDeviceFingerprint } from "./deviceFingerprint";
 
 /**
  * Unified badge lookup for capsule reveals. The server can return
@@ -71,6 +72,9 @@ interface PendingLogPayload {
     /** Tier-1 bot-detection telemetry. Optional so legacy queued
      *  entries (queued before this field existed) still POST cleanly. */
     behavioral?: { webdriver: boolean; untrustedEvents: number; gameDurationMs: number };
+    /** Device fingerprint for multi-account clustering. Optional so legacy
+     *  queued entries still POST cleanly. */
+    fingerprint?: string;
     queuedAt: number;
 }
 
@@ -209,6 +213,7 @@ async function flushPendingLogs(): Promise<void> {
             stats: entry.stats,
             moveSequence: entry.moveSequence ?? [],
             behavioral: entry.behavioral,
+            fingerprint: entry.fingerprint,
         });
         if (ok) {
             localStorage.removeItem(key);
@@ -418,6 +423,7 @@ export function usePinBook() {
             stats,
             moveSequence,
             behavioral,
+            fingerprint: getDeviceFingerprint(),
         });
     }, []);
 

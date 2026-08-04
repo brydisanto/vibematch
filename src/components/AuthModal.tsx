@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, User, Loader2, ArrowRight, ShieldAlert } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -54,7 +55,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                 const res = await fetch("/api/auth/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password, newPassword }),
+                    body: JSON.stringify({ username, password, newPassword, fingerprint: getDeviceFingerprint() }),
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -88,6 +89,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = "l
                 body: JSON.stringify({
                     username,
                     password,
+                    fingerprint: getDeviceFingerprint(),
                     ...(mode === "register" && referralCode ? { referralCode } : {}),
                 }),
             });

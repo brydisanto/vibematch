@@ -7,6 +7,7 @@ import {
     encrypt,
     SESSION_COOKIE_NAME,
 } from "@/lib/auth";
+import { recordAccountSignals } from "@/lib/account-signals";
 
 // Rate limit: 10 attempts per 15 minutes per IP+username combo
 const LOGIN_WINDOW_SECONDS = 15 * 60;
@@ -38,7 +39,7 @@ const MIN_PASSWORD_LENGTH = 8;
  */
 export async function POST(req: Request) {
     try {
-        const { username, password, newPassword } = await req.json();
+        const { username, password, newPassword, fingerprint } = await req.json();
 
         if (!username || !password) {
             return NextResponse.json({ error: "Username and password required" }, { status: 400 });
@@ -146,6 +147,9 @@ export async function POST(req: Request) {
             path: "/",
             maxAge: 60 * 60 * 24 * 7, // 7 days
         });
+
+        // Capture login IP + device for multi-account clustering.
+        await recordAccountSignals(user.username, ip, fingerprint);
 
         return res;
     } catch (error) {

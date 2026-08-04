@@ -84,6 +84,87 @@ function RerollReconcilePanel() {
 }
 
 /**
+ * Multi-account clusters. Lists accounts that share an IP or device
+ * fingerprint (passively captured on register/login/play), so suspected
+ * multi-account groups can be reviewed before validating reward payouts.
+ */
+function ClustersPanel() {
+    const [running, setRunning] = useState(false);
+    const [result, setResult] = useState<null | {
+        ipClusters: number; deviceClusters: number; accountsInClusters: number;
+        clusters: Array<{ type: "ip" | "device"; value: string; count: number; members: string[] }>;
+    }>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const run = async () => {
+        setRunning(true);
+        setError(null);
+        try {
+            const res = await adminFetch("/api/admin/clusters");
+            if (!res.ok) throw new Error(`Failed (${res.status})`);
+            setResult(await res.json());
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed");
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    return (
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <h2 className="text-xl font-display font-black text-[#FFE048] uppercase mb-1">Multi-Account Clusters</h2>
+            <p className="text-white/40 text-xs mb-4">
+                Accounts sharing an IP or device fingerprint (captured passively on register / login / play). Candidate multi-account groups to review before paying out event rewards.
+            </p>
+            <button
+                type="button"
+                disabled={running}
+                onClick={run}
+                className="rounded-lg bg-[#FFE048] px-4 py-2 text-sm font-bold uppercase tracking-wider text-black hover:bg-[#FFE858] disabled:opacity-50"
+            >
+                {running ? "Scanning..." : "Scan for clusters"}
+            </button>
+            {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+            {result && (
+                <>
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                        <div className="rounded-lg bg-white/[0.03] px-4 py-3 text-center">
+                            <div className="text-2xl font-display font-black tabular-nums text-white/80">{result.ipClusters}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/40 mt-1">Shared IPs</div>
+                        </div>
+                        <div className="rounded-lg bg-white/[0.03] px-4 py-3 text-center">
+                            <div className="text-2xl font-display font-black tabular-nums text-white/80">{result.deviceClusters}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/40 mt-1">Shared devices</div>
+                        </div>
+                        <div className="rounded-lg bg-white/[0.03] px-4 py-3 text-center">
+                            <div className="text-2xl font-display font-black tabular-nums" style={{ color: result.accountsInClusters > 0 ? "#FBBF24" : "#FFFFFF66" }}>{result.accountsInClusters}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/40 mt-1">Accounts flagged</div>
+                        </div>
+                    </div>
+                    {result.clusters.length > 0 && (
+                        <div className="mt-4 space-y-2 max-h-[420px] overflow-y-auto">
+                            {result.clusters.map((c) => (
+                                <div key={`${c.type}:${c.value}`} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${c.type === "ip" ? "bg-blue-400/15 text-blue-300" : "bg-purple-400/15 text-purple-300"}`}>{c.type}</span>
+                                        <span className="text-[11px] font-mono text-white/40 break-all">{c.value}</span>
+                                        <span className="text-[11px] text-white/50 ml-auto">{c.count} accounts</span>
+                                    </div>
+                                    <div className="text-[12px] text-white/75 break-words">{c.members.join(", ")}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {result.clusters.length === 0 && (
+                        <p className="text-white/40 text-xs mt-3">No shared-signal clusters yet. Signals accumulate as accounts log in and play.</p>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+/**
  * Purchase (restock-plays) reconciliation. Runs the same job the hourly cron
  * runs: credit paid-but-unrecorded purchases, and surface the two cases the
  * cron can't auto-resolve — over-cap payments (need a credit/refund decision)
@@ -403,6 +484,8 @@ export default function AdminDashboard() {
             <RerollReconcilePanel />
 
             <PurchaseReconcilePanel />
+
+            <ClustersPanel />
 
             {/* Users */}
             <div>

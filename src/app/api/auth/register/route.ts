@@ -2,10 +2,11 @@ import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { hashPassword, encrypt, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { processReferral } from "@/app/api/referral/route";
+import { recordAccountSignals, extractIp } from "@/lib/account-signals";
 
 export async function POST(req: Request) {
     try {
-        const { username, password, referralCode } = await req.json();
+        const { username, password, referralCode, fingerprint } = await req.json();
 
         if (!username || !password) {
             return NextResponse.json({ error: "Username and password required" }, { status: 400 });
@@ -59,6 +60,9 @@ export async function POST(req: Request) {
         };
 
         await kv.set(userKey, newUser);
+
+        // Capture signup IP + device for multi-account clustering.
+        await recordAccountSignals(username, ip, fingerprint);
 
         // Also ensure a profile entry exists or is initialized
         const profileKey = `user:${username.toLowerCase()}`;
