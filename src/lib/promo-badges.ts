@@ -860,6 +860,14 @@ export function eventSetSetDoneKey(setId: string): string {
     return `event_set:${setId}:set_done`;
 }
 
+/** "Joined" zset — stamps the moment a player first collects ANY pin in the
+ *  event (i.e. first lands on the leaderboard). Written ZADD NX on every
+ *  collect so only the earliest pull's timestamp sticks. The score is the
+ *  first-pin Unix-ms timestamp; used for the export's first_pin_at column. */
+export function eventSetJoinedKey(setId: string): string {
+    return `event_set:${setId}:joined`;
+}
+
 /** Grail race zset — ranks by grail count, tie-broken by TIME to reach
  *  that count (earlier wins). Both encoded in one score so a single
  *  ZREVRANGE returns the true order:

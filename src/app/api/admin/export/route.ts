@@ -6,6 +6,7 @@ import {
     getEventSetPins,
     eventSetPointsKey,
     eventSetSetDoneKey,
+    eventSetJoinedKey,
     promoLeaderboardKey,
 } from "@/lib/promo-badges";
 import { gvcHoldersKey } from "@/lib/gvc";
@@ -213,6 +214,13 @@ async function exportEvent(setId: string) {
         for (let i = 0; i < raw.length; i += 2) setDoneAt.set(String(raw[i]), Number(raw[i + 1]));
     }
 
+    // First-pin ("joined the leaderboard") timestamps for every participant.
+    const joinedAt = new Map<string, number>();
+    {
+        const raw = await kv.zrange(eventSetJoinedKey(setId), 0, -1, { withScores: true }) as Array<string | number>;
+        for (let i = 0; i < raw.length; i += 2) joinedAt.set(String(raw[i]), Number(raw[i + 1]));
+    }
+
     // Cascade identical to the live board.
     const grailPin = pins.find(p => p.isChase) ?? [...pins].sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
     const basePins = pins.filter(p => !p.isChase);
@@ -246,18 +254,20 @@ async function exportEvent(setId: string) {
         : [];
 
     const headers = [
-        "rank", "username", "points", "full_sets", "set_finish_time",
+        "rank", "username", "points", "full_sets", "first_pin_at", "set_finish_time",
         "grails", "total_pins", "wallet_address", "email", "gvc_holder", "created_at",
     ];
     const rows: string[] = [headers.join(",")];
     all.forEach((e, i) => {
         const doneMs = setDoneAt.get(e.username);
         const grails = grailPin ? (e.pinCounts[grailPin.id] ?? 0) : 0;
+        const joinedMs = joinedAt.get(e.username);
         const row = [
             e.rank,
             escCsv(e.username),
             e.points,
             fullSetsFor(e),
+            escCsv(joinedMs != null ? new Date(joinedMs).toISOString() : ""),
             escCsv(doneMs != null ? new Date(doneMs).toISOString() : ""),
             grails,
             totalPinsFor(e),

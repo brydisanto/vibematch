@@ -1252,6 +1252,10 @@ export async function POST(req: Request) {
                     });
                     const { cappedTotal, cap, fullSets } = computeEventSetScore(promoDef.eventSetId, perPinOwned);
                     await kv.zadd(eventSetPointsKey(promoDef.eventSetId), { score: cappedTotal, member: username });
+                    // Stamp when the player first joined the event (first pin
+                    // of any kind). NX → only the earliest pull's time sticks.
+                    const { eventSetJoinedKey } = await import('@/lib/promo-badges');
+                    await kv.zadd(eventSetJoinedKey(promoDef.eventSetId), { nx: true }, { score: Date.now(), member: username });
                     // Herds leaderboard — sorted by fullSets primary,
                     // points secondary. Written in lockstep with points.
                     // First cap-crossing timestamp powers the "speed to
