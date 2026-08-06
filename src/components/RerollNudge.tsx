@@ -84,7 +84,7 @@ export default function RerollNudge({ isOpen, onClose, onReroll, burnableDupes, 
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
-                                        <span>Stack points fast and jump up the leaderboard</span>
+                                        <span className="text-white/80 font-semibold">Stack points fast and jump up the leaderboard</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] text-white/60 font-mundial">
                                         <span className="text-[#FFE048]">✓</span>
