@@ -66,11 +66,14 @@ export default function RerollNudge({ isOpen, onClose, onReroll, burnableDupes, 
                                 />
 
                                 <h2 className="font-display text-xl sm:text-2xl font-black text-[#FFE048] uppercase leading-tight mb-2" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                                    Turn your dupes into pulls
+                                    Turn your dupes into new pulls
                                 </h2>
 
+                                <p className="text-white/70 text-sm font-mundial leading-relaxed mb-3">
+                                    You&apos;re sitting on <strong className="text-[#FFE048]">{burnableDupes.toLocaleString()} duplicate pins</strong> in your Pinbook.
+                                </p>
                                 <p className="text-white/70 text-sm font-mundial leading-relaxed mb-5">
-                                    You&apos;re sitting on <strong className="text-[#FFE048]">{burnableDupes.toLocaleString()} duplicate pins</strong> in your Pinbook. Reroll them into fresh capsules for a shot at Axie event pins and points before the event ends.
+                                    Reroll them into <strong className="text-[#FFE048]">fresh capsules</strong> for a shot at Axie event pins and points before the event ends.
                                 </p>
 
                                 <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-5 text-left space-y-1.5">
