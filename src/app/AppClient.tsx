@@ -21,6 +21,8 @@ import PinBook from "@/components/PinBook";
 import VibeCapsule from "@/components/VibeCapsule";
 import CapsuleSequence from "@/components/CapsuleSequence";
 import PrizeGamesOnboarding from "@/components/PrizeGamesOnboarding";
+import RerollNudge from "@/components/RerollNudge";
+import { rerollReserve } from "@/lib/reroll-reserve";
 import dynamic from "next/dynamic";
 
 // Wallet-dependent components loaded client-only (RainbowKit uses localStorage)
@@ -89,6 +91,7 @@ export default function AppClient() {
   const [referralSnapshot, setReferralSnapshot] = useState(0);
   const [showBuyPrizeGames, setShowBuyPrizeGames] = useState(false);
   const [prizeOnboarding, setPrizeOnboarding] = useState<null | { variant: "running-low" | "capped"; remaining: number }>(null);
+  const [rerollNudge, setRerollNudge] = useState<null | { burnableDupes: number; rerolls: number }>(null);
   const [showReroll, setShowReroll] = useState(false);
   // WalletProvider lazy-mount gate. Mounting WagmiProvider +
   // QueryClientProvider + RainbowKitProvider at root on every render
@@ -412,6 +415,7 @@ export default function AppClient() {
       // 5. First-time prize-games onboarding: show a one-time modal when the user
       // first runs low or hits the cap in classic mode. Gated by localStorage so
       // each variant only fires once ever per user.
+      let onboardingShown = false;
       if (mode === 'classic' && userProfile?.username) {
         try {
           const effectiveCap = 10 + (pinBook.state.bonusPrizeGames || 0);
@@ -423,10 +427,31 @@ export default function AppClient() {
             seen.capped = true;
             localStorage.setItem(seenKey, JSON.stringify(seen));
             setPrizeOnboarding({ variant: 'capped', remaining: 0 });
+            onboardingShown = true;
           } else if (remaining <= 3 && remaining > 0 && !seen.runningLow) {
             seen.runningLow = true;
             localStorage.setItem(seenKey, JSON.stringify(seen));
             setPrizeOnboarding({ variant: 'running-low', remaining });
+            onboardingShown = true;
+          }
+        } catch {
+          // localStorage unavailable — silently skip
+        }
+      }
+
+      // 5b. Reroll-reserve nudge: one-time-per-user prompt for players sitting
+      // on burnable duplicate pins worth >=5 rerolls who have NEVER rerolled.
+      // Points them at the reroll flow to convert dry powder into event pulls.
+      // Skipped if the prize modal just fired, so we never stack two pop-ups.
+      if (!onboardingShown && userProfile?.username && (pinBook.state.lifetimeRerollsCompleted || 0) === 0) {
+        try {
+          const seenKey = `vibematch_reroll_nudge:${userProfile.username.toLowerCase()}`;
+          if (!localStorage.getItem(seenKey)) {
+            const { burnableDupes, rerolls } = rerollReserve(pinBook.state.pins);
+            if (rerolls >= 5) {
+              localStorage.setItem(seenKey, '1'); // set immediately: show at most once, ever
+              setRerollNudge({ burnableDupes, rerolls });
+            }
           }
         } catch {
           // localStorage unavailable — silently skip
@@ -1454,6 +1479,17 @@ export default function AppClient() {
         onBuy={() => {
           setPrizeOnboarding(null);
           setShowBuyPrizeGames(true);
+        }}
+      />
+
+      <RerollNudge
+        isOpen={rerollNudge !== null}
+        burnableDupes={rerollNudge?.burnableDupes || 0}
+        rerolls={rerollNudge?.rerolls || 0}
+        onClose={() => setRerollNudge(null)}
+        onReroll={() => {
+          setRerollNudge(null);
+          setShowReroll(true);
         }}
       />
 
