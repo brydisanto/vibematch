@@ -1357,7 +1357,7 @@ export default function EventDrawer({ onClose, currentUsername, currentAvatarUrl
                                     </>
                                 )}
 
-                                {/* User pinned row when not in top 50. Hidden on
+                                {/* User pinned row when not in the top 100. Hidden on
                                     the GVC tab: userRow carries the open-board
                                     rank, which wouldn't match the filtered GVC
                                     ranking. */}

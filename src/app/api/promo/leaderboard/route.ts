@@ -164,8 +164,8 @@ export async function GET(req: Request) {
             });
             all.forEach((e, i) => { e.rank = i + 1; });
 
-            const leaderboard: Row[] = all.slice(0, 50);
-            // Avatars only for the rows we actually render (top 50).
+            const leaderboard: Row[] = all.slice(0, 100);
+            // Avatars only for the rows we actually render (top 100).
             if (leaderboard.length > 0) {
                 const profiles = await kv.mget(...leaderboard.map(e => `user:${e.username}`)) as Array<{ avatarUrl?: string } | null>;
                 leaderboard.forEach((e, i) => { e.avatarUrl = profiles[i]?.avatarUrl ?? ''; });
@@ -201,7 +201,7 @@ export async function GET(req: Request) {
             const herdsLeaderboard: { username: string; herds: number; count: number; rank: number; avatarUrl: string; completedAt?: number }[] = [];
             if (timed) {
                 const { eventSetSetDoneKey } = await import('@/lib/promo-badges');
-                const doneRaw = await kv.zrange(eventSetSetDoneKey(querySetId), 0, 49, { withScores: true }) as Array<string | number>;
+                const doneRaw = await kv.zrange(eventSetSetDoneKey(querySetId), 0, 99, { withScores: true }) as Array<string | number>;
                 for (let i = 0; i < doneRaw.length; i += 2) {
                     herdsLeaderboard.push({
                         username: String(doneRaw[i]),
@@ -214,7 +214,7 @@ export async function GET(req: Request) {
                 }
             } else {
                 const herdsKey = eventSetHerdsKey(querySetId);
-                const herdsRaw = await kv.zrange(herdsKey, 0, 49, { rev: true, withScores: true }) as Array<string | number>;
+                const herdsRaw = await kv.zrange(herdsKey, 0, 99, { rev: true, withScores: true }) as Array<string | number>;
                 for (let i = 0; i < herdsRaw.length; i += 2) {
                     const username = String(herdsRaw[i]);
                     const decoded = decodeHerdsScore(Number(herdsRaw[i + 1]));
@@ -243,7 +243,7 @@ export async function GET(req: Request) {
             const grailLeaderboard: { username: string; count: number; rank: number; avatarUrl: string }[] = [];
             if (chasePin && timed) {
                 const { eventSetGrailsKey, decodeGrailScore } = await import('@/lib/promo-badges');
-                const grailRaw = await kv.zrange(eventSetGrailsKey(querySetId), 0, 49, { rev: true, withScores: true }) as Array<string | number>;
+                const grailRaw = await kv.zrange(eventSetGrailsKey(querySetId), 0, 99, { rev: true, withScores: true }) as Array<string | number>;
                 for (let i = 0; i < grailRaw.length; i += 2) {
                     grailLeaderboard.push({
                         username: String(grailRaw[i]),
@@ -255,7 +255,7 @@ export async function GET(req: Request) {
             } else if (chasePin) {
                 const grailRaw = await kv.zrange(
                     promoLeaderboardKey(chasePin.id),
-                    0, 49,
+                    0, 99,
                     { rev: true, withScores: true },
                 ) as Array<string | number>;
                 for (let i = 0; i < grailRaw.length; i += 2) {
@@ -286,7 +286,7 @@ export async function GET(req: Request) {
                 if (holders.size > 0) {
                     gvcLeaderboard = all
                         .filter(e => holders.has(e.username.toLowerCase()))
-                        .slice(0, 50)
+                        .slice(0, 100)
                         .map((e, i) => ({ ...e, rank: i + 1 }));
                     if (gvcLeaderboard.length > 0) {
                         const profiles = await kv.mget(...gvcLeaderboard.map(e => `user:${e.username}`)) as Array<{ avatarUrl?: string } | null>;
