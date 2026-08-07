@@ -711,9 +711,12 @@ export async function POST(req: Request) {
             // Sorted set keyed by timestamp for easy pagination
             const logKey = `gamelog:${username}`;
             await kv.zadd(logKey, { score: Date.now(), member: JSON.stringify(logEntry) });
+            // Cap kept lean (100) to bound KV storage — the DB hit its capacity
+            // quota during the event with 500. 100 recent games is plenty for
+            // forensics; gameplay never reads gamelog.
             const count = await kv.zcard(logKey);
-            if (count > 500) {
-                await kv.zremrangebyrank(logKey, 0, count - 501);
+            if (count > 100) {
+                await kv.zremrangebyrank(logKey, 0, count - 101);
             }
 
             // Replay record: store the move sequence in a separate key
