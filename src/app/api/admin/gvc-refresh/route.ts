@@ -113,6 +113,13 @@ export async function GET(req: Request) {
         }
     }
 
+    // Manual overrides: always-included holders the on-chain check can't see —
+    // e.g. someone whose GVC is currently on loan / delegated out of their
+    // wallet. Union them in unconditionally so the sweep never drops them.
+    const manual = (await kv.smembers("gvc:holders:manual")) as string[];
+    let manualKept = 0;
+    for (const u of manual) { const lc = String(u).toLowerCase(); if (!next.has(lc)) manualKept++; next.add(lc); }
+
     // Atomically swap in the updated set so a reader never sees a partial write.
     const tmp = `${key}:rebuild`;
     const nextArr = [...next];
@@ -131,6 +138,7 @@ export async function GET(req: Request) {
         added,
         removed,
         unknown,
+        manualKept,
         ms: Date.now() - started,
     });
 }
